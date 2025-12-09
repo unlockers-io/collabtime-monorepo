@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { UserPlus, X } from "lucide-react";
 import { addMember } from "@/lib/actions";
-import type { TeamMember } from "@/types";
+import type { TeamGroup, TeamMember } from "@/types";
 import {
   COMMON_TIMEZONES,
   formatTimezoneLabel,
@@ -24,21 +25,48 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
+import { GroupSelector } from "@/components/group-selector";
 
 type AddMemberFormProps = {
   teamId: string;
+  groups: TeamGroup[];
   onMemberAdded: (member: TeamMember) => void;
   isFirstMember: boolean;
 };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
+const TITLE_PLACEHOLDERS = [
+  "Software Engineer",
+  "Product Manager",
+  "Designer",
+  "Marketing Manager",
+  "CEO",
+  "CTO",
+  "Business Analyst",
+  "Data Scientist",
+  "DevOps Engineer",
+  "QA Engineer",
+  "Sales Representative",
+  "Customer Success",
+  "HR Manager",
+  "Finance Manager",
+  "Operations Manager",
+];
+
+const getRandomPlaceholder = () =>
+  TITLE_PLACEHOLDERS[Math.floor(Math.random() * TITLE_PLACEHOLDERS.length)];
+
 const AddMemberForm = ({
   teamId,
+  groups,
   onMemberAdded,
   isFirstMember,
 }: AddMemberFormProps) => {
   const [isOpen, setIsOpen] = useState(isFirstMember);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
+  const [titlePlaceholder] = useState(getRandomPlaceholder);
   const defaultTimezone = getUserTimezone();
 
   const formSchema = z.object({
@@ -65,22 +93,11 @@ const AddMemberForm = ({
 
   const { handleSubmit, control, reset, formState } = form;
 
-  // Close form on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen && !isFirstMember) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isFirstMember]);
-
   const onSubmit = async (data: FormValues) => {
     const result = await addMember(teamId, {
       ...data,
       title: data.title ?? "",
+      groupId: selectedGroupId,
     });
 
     if (result.success) {
@@ -91,6 +108,7 @@ const AddMemberForm = ({
         workingHoursStart: 9,
         workingHoursEnd: 17,
       });
+      setSelectedGroupId(undefined);
       setIsOpen(false);
       onMemberAdded(result.data.member);
     } else {
@@ -106,23 +124,7 @@ const AddMemberForm = ({
         className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-neutral-200 bg-neutral-50/50 text-neutral-600 hover:border-neutral-400 hover:bg-neutral-100/50 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/50"
         onClick={() => setIsOpen(true)}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="transition-transform group-hover:scale-110"
-        >
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <line x1="19" x2="19" y1="8" y2="14" />
-          <line x1="22" x2="16" y1="11" y2="11" />
-        </svg>
+        <UserPlus className="h-5 w-5 transition-transform group-hover:scale-110" />
         <span className="font-medium">Add Team Member</span>
       </Button>
     );
@@ -134,23 +136,7 @@ const AddMemberForm = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 dark:bg-neutral-100">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-white dark:text-neutral-900"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <line x1="19" x2="19" y1="8" y2="14" />
-                <line x1="22" x2="16" y1="11" y2="11" />
-              </svg>
+              <UserPlus className="h-5 w-5 text-white dark:text-neutral-900" />
             </div>
             <div>
               <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
@@ -167,25 +153,12 @@ const AddMemberForm = ({
             <Button
               type="button"
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => setIsOpen(false)}
               aria-label="Close form"
-              className="h-8 w-8 rounded-lg p-0 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              className="h-10 w-10 shrink-0 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
+              <X className="h-5 w-5" />
             </Button>
           )}
         </div>
@@ -218,32 +191,47 @@ const AddMemberForm = ({
               control={control}
               name="title"
               render={({ field }) => (
-                <Input {...field} id="title" placeholder="Software Engineer" />
+                <Input {...field} id="title" placeholder={titlePlaceholder} />
               )}
             />
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="timezone">Timezone</Label>
-          <Controller
-            control={control}
-            name="timezone"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="timezone">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {COMMON_TIMEZONES.map((tz) => (
-                    <SelectItem key={tz} value={tz}>
-                      {formatTimezoneLabel(tz, true)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="timezone">Timezone</Label>
+            <Controller
+              control={control}
+              name="timezone"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="timezone">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMMON_TIMEZONES.map((tz) => (
+                      <SelectItem key={tz} value={tz}>
+                        {formatTimezoneLabel(tz, true)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          {groups.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="group">Group (optional)</Label>
+              <GroupSelector
+                id="group"
+                groups={groups}
+                value={selectedGroupId}
+                onValueChange={setSelectedGroupId}
+                placeholder="No group"
+              />
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -306,27 +294,12 @@ const AddMemberForm = ({
           >
             {formState.isSubmitting ? (
               <>
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <Spinner />
                 Adding...
               </>
             ) : (
               <>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <line x1="19" x2="19" y1="8" y2="14" />
-                  <line x1="22" x2="16" y1="11" y2="11" />
-                </svg>
+                <UserPlus className="h-5 w-5" />
                 Add Member
               </>
             )}

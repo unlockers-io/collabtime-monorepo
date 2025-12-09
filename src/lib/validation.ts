@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { COMMON_TIMEZONES } from "./timezones";
 
+const UUIDSchema = z.uuid("Invalid ID format");
+
 const TeamMemberInputSchema = z.object({
   name: z
     .string()
@@ -21,19 +23,34 @@ const TeamMemberInputSchema = z.object({
     .int()
     .min(0, "Working hours end must be 0-23")
     .max(23, "Working hours end must be 0-23"),
+  groupId: UUIDSchema.optional(),
 });
 
 const TeamMemberUpdateSchema = TeamMemberInputSchema.partial();
 
-const UUIDSchema = z.uuid("Invalid ID format");
+const TeamGroupInputSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Group name is required")
+    .max(50, "Group name must be 50 characters or less")
+    .trim(),
+});
+
+const TeamGroupUpdateSchema = TeamGroupInputSchema.partial();
 
 type TeamMemberInput = z.infer<typeof TeamMemberInputSchema>;
 type TeamMemberUpdate = z.infer<typeof TeamMemberUpdateSchema>;
+type TeamGroupInput = z.infer<typeof TeamGroupInputSchema>;
+type TeamGroupUpdate = z.infer<typeof TeamGroupUpdateSchema>;
 
 export {
+  TeamGroupInputSchema,
+  TeamGroupUpdateSchema,
   TeamMemberInputSchema,
   TeamMemberUpdateSchema,
   UUIDSchema,
+  type TeamGroupInput,
+  type TeamGroupUpdate,
   type TeamMemberInput,
   type TeamMemberUpdate,
 };

@@ -4,11 +4,13 @@ import { v4 as uuidv4 } from "uuid";
 import { redis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS } from "./redis";
 import { realtime } from "./realtime";
 import {
+  TeamGroupInputSchema,
+  TeamGroupUpdateSchema,
   TeamMemberInputSchema,
   TeamMemberUpdateSchema,
   UUIDSchema,
 } from "./validation";
-import type { Team, TeamMember } from "@/types";
+import type { Team, TeamGroup, TeamMember } from "@/types";
 import z from "zod";
 
 type ActionResult<T> = {
@@ -27,6 +29,7 @@ const createTeam = async (): Promise<ActionResult<string>> => {
       name: "",
       createdAt: new Date().toISOString(),
       members: [],
+      groups: [],
     };
 
     await redis.set(`team:${teamId}`, JSON.stringify(team), {
@@ -55,9 +58,9 @@ const getTeam = async (teamId: string): Promise<Team | null> => {
 
     const team = typeof data === "string" ? JSON.parse(data) : data;
 
-    // Ensure backwards compatibility for teams without name field
-    if (team.name === undefined) {
-      team.name = "";
+    // Ensure groups array exists for backward compatibility
+    if (!team.groups) {
+      team.groups = [];
     }
 
     return team;
@@ -310,13 +313,214 @@ const validateTeam = async (teamId: string): Promise<boolean> => {
   }
 };
 
+const createGroup = async (
+  teamId: string,
+  input: { name: string }
+): Promise<ActionResult<{ team: Team; group: TeamGroup }>> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    const inputResult = TeamGroupInputSchema.safeParse(input);
+    if (!inputResult.success) {
+      const errorMessage = inputResult.error.issues[0]?.message ?? "Invalid group data";
+      return { success: false, error: errorMessage };
+    }
+
+    const team = await getTeam(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    const newGroup: TeamGroup = {
+      id: uuidv4(),
+      name: inputResult.data.name,
+      order: team.groups.length,
+    };
+
+    team.groups.push(newGroup);
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.groupCreated", newGroup);
+
+    return { success: true, data: { team, group: newGroup } };
+  } catch (error) {
+    console.error("Failed to create group:", error);
+    return { success: false, error: "Failed to create group" };
+  }
+};
+
+const updateGroup = async (
+  teamId: string,
+  groupId: string,
+  updates: Partial<{ name: string }>
+): Promise<ActionResult<Team>> => {
+  try {
+    const teamUuidResult = UUIDSchema.safeParse(teamId);
+    const groupUuidResult = UUIDSchema.safeParse(groupId);
+
+    if (!teamUuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+    if (!groupUuidResult.success) {
+      return { success: false, error: "Invalid group ID" };
+    }
+
+    const updateResult = TeamGroupUpdateSchema.safeParse(updates);
+    if (!updateResult.success) {
+      const errorMessage = updateResult.error.issues[0]?.message ?? "Invalid update data";
+      return { success: false, error: errorMessage };
+    }
+
+    const team = await getTeam(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    const groupIndex = team.groups.findIndex((g) => g.id === groupId);
+    if (groupIndex === -1) {
+      return { success: false, error: "Group not found" };
+    }
+
+    const updatedGroup = {
+      ...team.groups[groupIndex],
+      ...updateResult.data,
+    };
+
+    team.groups[groupIndex] = updatedGroup;
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.groupUpdated", updatedGroup);
+
+    return { success: true, data: team };
+  } catch (error) {
+    console.error("Failed to update group:", error);
+    return { success: false, error: "Failed to update group" };
+  }
+};
+
+const removeGroup = async (
+  teamId: string,
+  groupId: string
+): Promise<ActionResult<Team>> => {
+  try {
+    const teamUuidResult = UUIDSchema.safeParse(teamId);
+    const groupUuidResult = UUIDSchema.safeParse(groupId);
+
+    if (!teamUuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+    if (!groupUuidResult.success) {
+      return { success: false, error: "Invalid group ID" };
+    }
+
+    const team = await getTeam(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    const groupExists = team.groups.some((g) => g.id === groupId);
+    if (!groupExists) {
+      return { success: false, error: "Group not found" };
+    }
+
+    // Remove the group
+    team.groups = team.groups.filter((g) => g.id !== groupId);
+
+    // Unassign all members from this group
+    team.members = team.members.map((m) =>
+      m.groupId === groupId ? { ...m, groupId: undefined } : m
+    );
+
+    // Update order values for remaining groups
+    team.groups = team.groups.map((g, index) => ({ ...g, order: index }));
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.groupRemoved", { groupId });
+
+    return { success: true, data: team };
+  } catch (error) {
+    console.error("Failed to remove group:", error);
+    return { success: false, error: "Failed to remove group" };
+  }
+};
+
+const reorderGroups = async (
+  teamId: string,
+  orderedIds: string[]
+): Promise<ActionResult<Team>> => {
+  try {
+    const teamUuidResult = UUIDSchema.safeParse(teamId);
+    if (!teamUuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    const idsResult = z.array(UUIDSchema).safeParse(orderedIds);
+    if (!idsResult.success) {
+      return { success: false, error: "Invalid group IDs" };
+    }
+
+    const team = await getTeam(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    // Ensure provided IDs match the existing group set
+    const existingIds = new Set(team.groups.map((g) => g.id));
+    const providedIds = new Set(orderedIds);
+    if (existingIds.size !== providedIds.size) {
+      return { success: false, error: "Group list mismatch" };
+    }
+    for (const id of existingIds) {
+      if (!providedIds.has(id)) {
+        return { success: false, error: "Group list mismatch" };
+      }
+    }
+
+    // Reorder groups to match the provided order and update order values
+    const groupMap = new Map(team.groups.map((g) => [g.id, g]));
+    team.groups = orderedIds.map((id, index) => ({
+      ...groupMap.get(id)!,
+      order: index,
+    }));
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.groupsReordered", {
+      order: orderedIds,
+    });
+
+    return { success: true, data: team };
+  } catch (error) {
+    console.error("Failed to reorder groups:", error);
+    return { success: false, error: "Failed to reorder groups" };
+  }
+};
+
 export {
+  createGroup,
   createTeam,
   getTeam,
   addMember,
+  removeGroup,
   removeMember,
-  updateMember,
+  reorderGroups,
   reorderMembers,
+  updateGroup,
+  updateMember,
   updateTeamName,
   validateTeam,
 };

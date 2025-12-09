@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 type ButtonVariant = "default" | "secondary" | "outline" | "ghost" | "destructive";
-type ButtonSize = "sm" | "md" | "lg" | "icon";
+type ButtonSize = "sm" | "md" | "lg" | "icon" | "icon-sm";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
@@ -27,6 +27,7 @@ const sizeClasses: Record<ButtonSize, string> = {
   md: "h-10 px-4 text-sm",
   lg: "h-12 px-5 text-base",
   icon: "h-10 w-10",
+  "icon-sm": "h-9 w-9",
 };
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

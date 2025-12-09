@@ -1,3 +1,9 @@
+type TeamGroup = {
+  id: string;
+  name: string;
+  order: number;
+};
+
 type TeamMember = {
   id: string;
   name: string;
@@ -5,6 +11,7 @@ type TeamMember = {
   timezone: string;
   workingHoursStart: number; // 0-23 in their local timezone
   workingHoursEnd: number; // 0-23 in their local timezone
+  groupId?: string; // Optional: undefined = ungrouped
 };
 
 type Team = {
@@ -12,6 +19,7 @@ type Team = {
   name: string;
   createdAt: string;
   members: TeamMember[];
+  groups: TeamGroup[];
 };
 
-export type { Team, TeamMember };
+export type { Team, TeamGroup, TeamMember };

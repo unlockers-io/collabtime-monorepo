@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import type { TeamMember } from "@/types";
+import { Pencil, Trash2, X } from "lucide-react";
+import type { TeamGroup, TeamMember } from "@/types";
 import { removeMember, updateMember } from "@/lib/actions";
+import { Button } from "@/components/ui/button";
+import { GroupSelector } from "@/components/group-selector";
 import {
   COMMON_TIMEZONES,
   formatTimezoneLabel,
@@ -17,10 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 
 type MemberCardProps = {
   member: TeamMember;
   teamId: string;
+  groups: TeamGroup[];
   onMemberRemoved: (memberId: string) => void;
   onMemberUpdated: (member: TeamMember) => void;
 };
@@ -30,6 +35,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MemberCard = ({
   member,
   teamId,
+  groups,
   onMemberRemoved,
   onMemberUpdated,
 }: MemberCardProps) => {
@@ -43,6 +49,7 @@ const MemberCard = ({
     member.workingHoursStart
   );
   const [workingHoursEnd, setWorkingHoursEnd] = useState(member.workingHoursEnd);
+  const [groupId, setGroupId] = useState<string | undefined>(member.groupId);
 
   // Sync local form state when member prop updates (e.g., via realtime)
   useEffect(() => {
@@ -51,6 +58,7 @@ const MemberCard = ({
     setTimezone(member.timezone);
     setWorkingHoursStart(member.workingHoursStart);
     setWorkingHoursEnd(member.workingHoursEnd);
+    setGroupId(member.groupId);
   }, [member]);
 
   const handleCancel = useCallback(() => {
@@ -59,20 +67,9 @@ const MemberCard = ({
     setTimezone(member.timezone);
     setWorkingHoursStart(member.workingHoursStart);
     setWorkingHoursEnd(member.workingHoursEnd);
+    setGroupId(member.groupId);
     setIsEditing(false);
-  }, [member.name, member.title, member.timezone, member.workingHoursStart, member.workingHoursEnd]);
-
-  // Close edit form on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isEditing) {
-        handleCancel();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isEditing, handleCancel]);
+  }, [member.name, member.title, member.timezone, member.workingHoursStart, member.workingHoursEnd, member.groupId]);
 
   useEffect(() => {
     const checkAvailability = () => {
@@ -111,6 +108,7 @@ const MemberCard = ({
         timezone,
         workingHoursStart,
         workingHoursEnd,
+        groupId,
       });
       if (result.success) {
         toast.success("Member updated");
@@ -122,6 +120,7 @@ const MemberCard = ({
           timezone,
           workingHoursStart,
           workingHoursEnd,
+          groupId,
         });
       } else {
         toast.error(result.error);
@@ -139,23 +138,10 @@ const MemberCard = ({
           <button
             type="button"
             onClick={handleCancel}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
             aria-label="Cancel editing"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -186,22 +172,38 @@ const MemberCard = ({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            Timezone
-          </label>
-          <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {COMMON_TIMEZONES.map((tz) => (
-                <SelectItem key={tz} value={tz}>
-                  {formatTimezoneLabel(tz, true)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              Timezone
+            </label>
+            <Select value={timezone} onValueChange={setTimezone}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COMMON_TIMEZONES.map((tz) => (
+                  <SelectItem key={tz} value={tz}>
+                    {formatTimezoneLabel(tz, true)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {groups.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                Group
+              </label>
+              <GroupSelector
+                groups={groups}
+                value={groupId}
+                onValueChange={setGroupId}
+                placeholder="No group"
+              />
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -269,8 +271,17 @@ const MemberCard = ({
     );
   }
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", member.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
   return (
-    <div className="group flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:border-neutral-300 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700">
+    <div
+      className="group flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:border-neutral-300 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
+      draggable
+      onDragStart={handleDragStart}
+    >
       <div className="flex items-start gap-3">
         {/* Avatar with status */}
         <div className="relative shrink-0">
@@ -286,13 +297,18 @@ const MemberCard = ({
 
         {/* Info */}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span className="font-semibold text-neutral-900 dark:text-neutral-100">
               {member.name}
             </span>
             {member.title && (
               <span className="text-sm text-neutral-500 dark:text-neutral-400">
                 {member.title}
+              </span>
+            )}
+            {member.groupId && groups.find((g) => g.id === member.groupId) && (
+              <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                {groups.find((g) => g.id === member.groupId)?.name}
               </span>
             )}
           </div>
@@ -315,54 +331,25 @@ const MemberCard = ({
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-1">
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => setIsEditing(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+            className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
             aria-label={`Edit ${member.name}`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-              <path d="m15 5 4 4" />
-            </svg>
-          </button>
-          <button
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={handleRemove}
             disabled={isPending}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+            className="text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
             aria-label={`Remove ${member.name}`}
           >
-            {isPending ? (
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600 dark:border-neutral-600 dark:border-t-neutral-300" />
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 6h18" />
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                <line x1="10" x2="10" y1="11" y2="17" />
-                <line x1="14" x2="14" y1="11" y2="17" />
-              </svg>
-            )}
-          </button>
+            {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
     </div>

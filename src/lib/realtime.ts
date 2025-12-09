@@ -11,6 +11,13 @@ const TeamMemberSchema = z.object({
   timezone: z.string(),
   workingHoursStart: z.number(),
   workingHoursEnd: z.number(),
+  groupId: z.string().optional(),
+});
+
+const TeamGroupSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  order: z.number(),
 });
 
 const schema = {
@@ -20,6 +27,10 @@ const schema = {
     memberUpdated: TeamMemberSchema,
     membersReordered: z.object({ order: z.array(z.string()) }),
     nameUpdated: z.object({ name: z.string() }),
+    groupCreated: TeamGroupSchema,
+    groupUpdated: TeamGroupSchema,
+    groupRemoved: z.object({ groupId: z.string() }),
+    groupsReordered: z.object({ order: z.array(z.string()) }),
   },
 };
 

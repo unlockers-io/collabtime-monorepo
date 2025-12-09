@@ -1,116 +1,88 @@
 "use client";
 
-import { AnimatePresence, motion, Reorder, useDragControls } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import type { Team, TeamMember } from "@/types";
+import {
+  Check,
+  Clock,
+  Copy,
+  Globe,
+  Pencil,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import type { Team, TeamGroup, TeamMember } from "@/types";
+import { AddGroupForm } from "@/components/add-group-form";
 import { AddMemberForm } from "@/components/add-member-form";
+import { GroupHeader } from "@/components/group-header";
 import { MemberCard } from "@/components/member-card";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { useVisitedTeams } from "@/hooks/use-visited-teams";
 import { useRealtime } from "@/lib/realtime-client";
-import {
-  reorderMembers as reorderMembersAction,
-  updateTeamName as updateTeamNameAction,
-} from "@/lib/actions";
+import { updateTeamName as updateTeamNameAction } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 
 type TeamPageClientProps = {
   team: Team;
 };
 
-type ReorderableCardProps = {
-  member: TeamMember;
-  teamId: string;
-  onMemberRemoved: (memberId: string) => void;
-  onMemberUpdated: (member: TeamMember) => void;
-};
-
-const ReorderableCard = ({
-  member,
-  teamId,
-  onMemberRemoved,
-  onMemberUpdated,
-}: ReorderableCardProps) => {
-  const dragControls = useDragControls();
-
-  return (
-    <Reorder.Item
-      as="div"
-      value={member}
-      layout="position"
-      dragListener={false}
-      dragControls={dragControls}
-      className="group/reorder relative select-none"
-      whileDrag={{
-        boxShadow:
-          "0 10px 40px -10px rgba(0,0,0,0.2), 0 4px 12px -4px rgba(0,0,0,0.15)",
-        zIndex: 50,
-      }}
-    >
-      {/* Mobile drag handle */}
-      <button
-        type="button"
-        className="absolute -top-2 left-2 flex h-7 w-7 cursor-grab touch-none items-center justify-center rounded-lg bg-neutral-100 text-neutral-400 shadow-sm active:cursor-grabbing dark:bg-neutral-800 dark:text-neutral-500 sm:hidden"
-        onPointerDown={(e) => dragControls.start(e)}
-        aria-label="Drag to reorder"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="9" cy="5" r="1" />
-          <circle cx="9" cy="12" r="1" />
-          <circle cx="9" cy="19" r="1" />
-          <circle cx="15" cy="5" r="1" />
-          <circle cx="15" cy="12" r="1" />
-          <circle cx="15" cy="19" r="1" />
-        </svg>
-      </button>
-      {/* Desktop: entire card is draggable */}
-      <div
-        className="hidden cursor-grab active:cursor-grabbing sm:block"
-        onPointerDown={(e) => dragControls.start(e)}
-      >
-        <MemberCard
-          member={member}
-          teamId={teamId}
-          onMemberRemoved={onMemberRemoved}
-          onMemberUpdated={onMemberUpdated}
-        />
-      </div>
-      {/* Mobile: card is not draggable, only handle is */}
-      <div className="sm:hidden">
-        <MemberCard
-          member={member}
-          teamId={teamId}
-          onMemberRemoved={onMemberRemoved}
-          onMemberUpdated={onMemberUpdated}
-        />
-      </div>
-    </Reorder.Item>
-  );
-};
+const COLLAPSED_GROUPS_KEY = "collab-time-collapsed-groups";
 
 const TeamPageClient = ({ team }: TeamPageClientProps) => {
   const [members, setMembers] = useState<TeamMember[]>(team.members);
+  const [groups, setGroups] = useState<TeamGroup[]>(team.groups ?? []);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  // Load collapsed groups from localStorage after hydration
+  useEffect(() => {
+    const stored = localStorage.getItem(COLLAPSED_GROUPS_KEY);
+    if (stored) {
+      setCollapsedGroups(new Set(JSON.parse(stored)));
+    }
+  }, []);
   const [, startTransition] = useTransition();
   const [hasCopied, setHasCopied] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const { saveVisitedTeam } = useVisitedTeams();
   const [teamName, setTeamName] = useState(team.name);
   const lastRemovalRef = useRef<{ id: string; ts: number }>({ id: "", ts: 0 });
-  const reorderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const previousOrderRef = useRef<TeamMember[]>(team.members);
   const previousNameRef = useRef(team.name);
+
+  // Persist collapsed groups to localStorage
+  useEffect(() => {
+    localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...collapsedGroups]));
+  }, [collapsedGroups]);
+
+  const toggleGroupCollapse = useCallback((groupId: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        // Expanding - always allowed
+        next.delete(groupId);
+      } else {
+        // Collapsing - check if this would leave at least one member visible
+        // Calculate how many members would be visible after this collapse
+        const collapsedAfter = new Set([...prev, groupId]);
+
+        // Count visible members: ungrouped + members in non-collapsed groups
+        const ungroupedCount = members.filter((m) => !m.groupId).length;
+        const visibleGroupedCount = members.filter((m) => {
+          if (!m.groupId) return false; // Ungrouped counted separately
+          return !collapsedAfter.has(m.groupId);
+        }).length;
+
+        const totalVisibleAfter = ungroupedCount + visibleGroupedCount;
+
+        // Only allow collapse if at least one member remains visible
+        if (totalVisibleAfter > 0) {
+          next.add(groupId);
+        }
+      }
+      return next;
+    });
+  }, [members]);
 
   // Subscribe to realtime events for this team
   useRealtime({
@@ -121,6 +93,10 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
       "team.memberUpdated",
       "team.membersReordered",
       "team.nameUpdated",
+      "team.groupCreated",
+      "team.groupUpdated",
+      "team.groupRemoved",
+      "team.groupsReordered",
     ],
     onData({ event, data }) {
       if (event === "team.memberAdded") {
@@ -170,6 +146,37 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
       } else if (event === "team.nameUpdated") {
         const { name } = data as { name: string };
         setTeamName(name);
+      } else if (event === "team.groupCreated") {
+        const newGroup = data as TeamGroup;
+        setGroups((prev) => {
+          if (prev.some((g) => g.id === newGroup.id)) {
+            return prev;
+          }
+          return [...prev, newGroup];
+        });
+      } else if (event === "team.groupUpdated") {
+        const updatedGroup = data as TeamGroup;
+        setGroups((prev) =>
+          prev.map((g) => (g.id === updatedGroup.id ? updatedGroup : g))
+        );
+      } else if (event === "team.groupRemoved") {
+        const { groupId } = data as { groupId: string };
+        setGroups((prev) => prev.filter((g) => g.id !== groupId));
+        // Unassign members from the removed group
+        setMembers((prev) =>
+          prev.map((m) => (m.groupId === groupId ? { ...m, groupId: undefined } : m))
+        );
+      } else if (event === "team.groupsReordered") {
+        const { order } = data as { order: string[] };
+        setGroups((prev) => {
+          const map = new Map(prev.map((g) => [g.id, g]));
+          return order
+            .map((id, index) => {
+              const group = map.get(id);
+              return group ? { ...group, order: index } : null;
+            })
+            .filter(Boolean) as TeamGroup[];
+        });
       }
     },
   });
@@ -178,15 +185,6 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
   useEffect(() => {
     saveVisitedTeam(team.id, members.length, teamName);
   }, [team.id, members.length, teamName, saveVisitedTeam]);
-
-  // Cleanup reorder timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (reorderTimeoutRef.current) {
-        clearTimeout(reorderTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Re-fetch team data when tab regains focus to ensure sync
   useEffect(() => {
@@ -197,8 +195,8 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
           if (response.ok) {
             const freshTeam = (await response.json()) as Team;
             setMembers(freshTeam.members);
+            setGroups(freshTeam.groups ?? []);
             setTeamName(freshTeam.name);
-            previousOrderRef.current = freshTeam.members;
             previousNameRef.current = freshTeam.name;
           }
         } catch {
@@ -239,36 +237,11 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
     }
   };
 
-  // Members are already ordered from the server; derive array for UI
+  // Members are already ordered from the server; keep as-is
   const orderedMembers = useMemo(() => members, [members]);
 
-  // Debounced reorder to prevent multiple server calls while dragging
-  const handleReorder = useCallback((newOrder: TeamMember[]) => {
-    // Update UI immediately
-    setMembers(newOrder);
-
-    // Clear any pending server update
-    if (reorderTimeoutRef.current) {
-      clearTimeout(reorderTimeoutRef.current);
-    }
-
-    // Debounce the server call
-    reorderTimeoutRef.current = setTimeout(() => {
-      const newOrderIds = newOrder.map((m) => m.id);
-      const previous = previousOrderRef.current;
-      previousOrderRef.current = newOrder;
-
-      startTransition(async () => {
-        const result = await reorderMembersAction(team.id, newOrderIds);
-        if (!result.success) {
-          toast.error(result.error);
-          // revert on failure
-          setMembers(previous);
-          previousOrderRef.current = previous;
-        }
-      });
-    }, 300);
-  }, [team.id, startTransition]);
+  // Convert Set to array for stable prop reference
+  const collapsedGroupIds = useMemo(() => [...collapsedGroups], [collapsedGroups]);
 
   // Callbacks for local state updates (realtime handles cross-user sync)
   const handleMemberAdded = useCallback((newMember: TeamMember) => {
@@ -289,6 +262,62 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
       prev.map((m) => (m.id === updatedMember.id ? updatedMember : m))
     );
   }, []);
+
+  const handleGroupAdded = useCallback((newGroup: TeamGroup) => {
+    setGroups((prev) => {
+      if (prev.some((g) => g.id === newGroup.id)) {
+        return prev;
+      }
+      return [...prev, newGroup];
+    });
+  }, []);
+
+  const handleGroupUpdated = useCallback((updatedGroup: TeamGroup) => {
+    setGroups((prev) =>
+      prev.map((g) => (g.id === updatedGroup.id ? updatedGroup : g))
+    );
+  }, []);
+
+  const handleGroupRemoved = useCallback((groupId: string) => {
+    setGroups((prev) => prev.filter((g) => g.id !== groupId));
+    // Unassign members from the removed group
+    setMembers((prev) =>
+      prev.map((m) => (m.groupId === groupId ? { ...m, groupId: undefined } : m))
+    );
+  }, []);
+
+  const handleMemberDroppedOnGroup = useCallback(
+    async (memberId: string, groupId: string) => {
+      const member = members.find((m) => m.id === memberId);
+      if (!member) return;
+
+      // Skip if already in this group
+      if (member.groupId === groupId) return;
+
+      // Optimistic update
+      setMembers((prev) =>
+        prev.map((m) => (m.id === memberId ? { ...m, groupId } : m))
+      );
+
+      // Import dynamically to avoid issues
+      const { updateMember } = await import("@/lib/actions");
+      const result = await updateMember(team.id, memberId, { groupId });
+
+      if (result.success) {
+        const group = groups.find((g) => g.id === groupId);
+        toast.success(`${member.name} added to ${group?.name ?? "group"}`);
+      } else {
+        // Revert on failure
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.id === memberId ? { ...m, groupId: member.groupId } : m
+          )
+        );
+        toast.error(result.error);
+      }
+    },
+    [members, groups, team.id]
+  );
 
   const handleCopyLink = async () => {
     try {
@@ -318,22 +347,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-900 transition-opacity hover:opacity-80 dark:bg-neutral-100"
                 aria-label="Go to homepage"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-white dark:text-neutral-900"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-                  <path d="M2 12h20" />
-                </svg>
+                <Globe className="h-5 w-5 text-white dark:text-neutral-900" />
               </Link>
               {isEditingName ? (
                 <input
@@ -352,26 +366,14 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
                   className="group flex min-w-0 items-center gap-2 text-xl font-bold tracking-tight sm:text-2xl"
                 >
                   <span className="truncate">{teamName || "Team Workspace"}</span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                  <Pencil
                     className={cn(
-                      "shrink-0 text-neutral-400 transition-opacity",
+                      "h-3.5 w-3.5 shrink-0 text-neutral-400 transition-opacity",
                       teamName
                         ? "opacity-0 group-hover:opacity-100"
                         : "opacity-100"
                     )}
-                  >
-                    <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-                    <path d="m15 5 4 4" />
-                  </svg>
+                  />
                 </button>
               )}
             </div>
@@ -390,19 +392,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
                     transition={{ duration: 0.15 }}
                     className="text-green-600 dark:text-green-400"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
+                    <Check className="h-4 w-4" />
                   </motion.div>
                 ) : (
                   <motion.div
@@ -412,20 +402,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
                     exit={{ scale: 0.8, opacity: 0 }}
                     transition={{ duration: 0.15 }}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                    </svg>
+                    <Copy className="h-4 w-4" />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -447,21 +424,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
           >
             <div className="border-b border-neutral-100 px-4 py-3 dark:border-neutral-800 sm:px-6 sm:py-4">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-neutral-500"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
+                <Clock className="h-4 w-4 text-neutral-500" />
                 Working Hours Overview
               </h2>
               <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
@@ -469,10 +432,53 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
               </p>
             </div>
             <div className="p-4 sm:p-6">
-              <TimezoneVisualizer members={orderedMembers} />
+              <TimezoneVisualizer
+                members={orderedMembers}
+                groups={groups}
+                collapsedGroupIds={collapsedGroupIds}
+                onToggleGroupCollapse={toggleGroupCollapse}
+              />
             </div>
           </motion.section>
         )}
+
+        {/* Groups */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col gap-3"
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Users className="h-5 w-5 text-neutral-500" />
+              Groups
+            </h2>
+            <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+              {groups.length}
+            </span>
+          </div>
+
+          {groups.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {[...groups]
+                .sort((a, b) => a.order - b.order)
+                .map((group) => (
+                  <GroupHeader
+                    key={group.id}
+                    group={group}
+                    teamId={team.id}
+                    memberCount={members.filter((m) => m.groupId === group.id).length}
+                    onGroupUpdated={handleGroupUpdated}
+                    onGroupRemoved={handleGroupRemoved}
+                    onMemberDropped={handleMemberDroppedOnGroup}
+                  />
+                ))}
+            </div>
+          )}
+
+          <AddGroupForm teamId={team.id} onGroupAdded={handleGroupAdded} />
+        </motion.section>
 
         {/* Team Members */}
         <motion.section
@@ -483,23 +489,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
         >
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-neutral-500"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
+              <Users className="h-5 w-5 text-neutral-500" />
               Team Members
             </h2>
             <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
@@ -510,23 +500,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
           {members.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900/50">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-neutral-500"
-                >
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <line x1="19" x2="19" y1="8" y2="14" />
-                  <line x1="22" x2="16" y1="11" y2="11" />
-                </svg>
+                <UserPlus className="h-6 w-6 text-neutral-500" />
               </div>
               <h3 className="mt-4 font-semibold text-neutral-900 dark:text-neutral-100">
                 No team members yet
@@ -540,34 +514,31 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
               <MemberCard
                 member={members[0]}
                 teamId={team.id}
+                groups={groups}
                 onMemberRemoved={handleMemberRemoved}
                 onMemberUpdated={handleMemberUpdated}
               />
             </div>
           ) : (
-            <Reorder.Group
-              as="div"
-              axis="y"
-              values={orderedMembers}
-              onReorder={handleReorder}
-              className="flex flex-col gap-3"
-            >
+            <div className="flex flex-col gap-3">
               {orderedMembers.map((member) => (
-                <ReorderableCard
+                <MemberCard
                   key={member.id}
                   member={member}
                   teamId={team.id}
+                  groups={groups}
                   onMemberRemoved={handleMemberRemoved}
                   onMemberUpdated={handleMemberUpdated}
                 />
               ))}
-            </Reorder.Group>
+            </div>
           )}
 
           <AddMemberForm
             teamId={team.id}
+            groups={groups}
             onMemberAdded={handleMemberAdded}
-            isFirstMember={team.members.length === 0}
+            isFirstMember={members.length === 0}
           />
         </motion.section>
       </motion.main>

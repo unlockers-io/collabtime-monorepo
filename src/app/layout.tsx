@@ -84,7 +84,6 @@ const RootLayout = ({
           {children}
           <Toaster
             position="bottom-right"
-            richColors
             toastOptions={{
               classNames: {
                 toast:
@@ -97,6 +96,14 @@ const RootLayout = ({
                   "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800",
                 closeButton:
                   "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100",
+                success:
+                  "border border-amber-400/40 bg-neutral-50 text-neutral-900 shadow-lg dark:border-amber-300/30 dark:bg-neutral-900 dark:text-neutral-50",
+                error:
+                  "border border-red-400/50 bg-neutral-50 text-neutral-900 shadow-lg dark:border-red-400/40 dark:bg-neutral-900 dark:text-neutral-50",
+                info:
+                  "border border-sky-400/40 bg-neutral-50 text-neutral-900 shadow-lg dark:border-sky-300/30 dark:bg-neutral-900 dark:text-neutral-50",
+                warning:
+                  "border border-amber-400/50 bg-neutral-50 text-neutral-900 shadow-lg dark:border-amber-300/40 dark:bg-neutral-900 dark:text-neutral-50",
               },
             }}
           />
