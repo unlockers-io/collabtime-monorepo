@@ -1,5 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocalStorage } from "./use-local-storage";
+import { validateTeam } from "@/lib/actions";
 
 const STORAGE_KEY = "collab-time-visited-teams";
 const MAX_VISITED_TEAMS = 10;
@@ -16,6 +17,41 @@ const useVisitedTeams = () => {
     STORAGE_KEY,
     []
   );
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setIsHydrated(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated || visitedTeams.length === 0) return;
+
+    let cancelled = false;
+    const runValidation = async () => {
+      try {
+        const results = await Promise.all(
+          visitedTeams.map(async (team) => {
+            const exists = await validateTeam(team.id);
+            return { id: team.id, exists };
+          })
+        );
+
+        if (cancelled) return;
+        const invalidIds = results.filter((r) => !r.exists).map((r) => r.id);
+        if (invalidIds.length > 0) {
+          setVisitedTeams((teams) => teams.filter((t) => !invalidIds.includes(t.id)));
+        }
+      } catch {
+        // ignore validation failures; keep current list
+      }
+    };
+
+    runValidation();
+    return () => {
+      cancelled = true;
+    };
+  }, [isHydrated, visitedTeams, setVisitedTeams]);
 
   const saveVisitedTeam = useCallback(
     (teamId: string, memberCount: number, name?: string) => {
@@ -66,6 +102,7 @@ const useVisitedTeams = () => {
 
   return {
     visitedTeams,
+    isHydrated,
     saveVisitedTeam,
     updateTeamName,
     removeVisitedTeam,

@@ -19,10 +19,17 @@ const schema = {
     memberRemoved: z.object({ memberId: z.string() }),
     memberUpdated: TeamMemberSchema,
     membersReordered: z.object({ order: z.array(z.string()) }),
+    nameUpdated: z.object({ name: z.string() }),
   },
 };
 
-const realtime = new Realtime({ schema, redis });
+const realtime = new Realtime({
+  schema,
+  redis,
+  history: {
+    maxLength: 10,
+  },
+});
 
 type RealtimeEvents = InferRealtimeEvents<typeof realtime>;
 

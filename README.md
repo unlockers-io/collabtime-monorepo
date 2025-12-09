@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Collab Time
+
+A real-time team timezone visualizer that helps distributed teams find the best time to collaborate across different timezones.
+
+## Features
+
+- **Real-time Collaboration**: Changes sync instantly across all connected browsers using Upstash Realtime
+- **Timezone Visualization**: See team members' working hours mapped to your local timezone
+- **Overlap Detection**: Automatically calculate overlapping working hours between team members
+- **Drag & Drop Reordering**: Organize team members with smooth drag-and-drop (mobile-friendly handles included)
+- **Shareable Teams**: Each team gets a unique URL that can be shared with colleagues
+- **Dark Mode Support**: Fully responsive design with light and dark theme support
+- **No Account Required**: Create and share teams without signing up
+
+## Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) with App Router
+- **Database**: [Upstash Redis](https://upstash.com/redis) for serverless data storage
+- **Real-time**: [Upstash Realtime](https://upstash.com/docs/redis/sdks/realtime) for live synchronization
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Animations**: [Motion](https://motion.dev/) (Framer Motion)
+- **Forms**: [React Hook Form](https://react-hook-form.com/) with [Zod](https://zod.dev/) validation
+- **Notifications**: [Sonner](https://sonner.emilkowal.ski/) for toast notifications
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- pnpm (recommended) or npm
+- Upstash Redis database
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+UPSTASH_REDIS_REST_URL=your_upstash_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Install dependencies
+pnpm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Run the development server
+pnpm dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-To learn more about Next.js, take a look at the following resources:
+## How It Works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Create a Team**: Click "Create New Team" on the homepage
+2. **Add Members**: Add team members with their name, timezone, and working hours
+3. **Share the Link**: Copy the team URL and share it with your colleagues
+4. **Visualize Overlap**: Use the timezone visualizer to find the best meeting times
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+Deploy to [Vercel](https://vercel.com) with one click:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/collab-time)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Make sure to add your Upstash Redis environment variables in the Vercel dashboard.
+
+## License
+
+MIT

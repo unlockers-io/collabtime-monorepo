@@ -11,7 +11,7 @@ import { createTeam } from "@/lib/actions";
 const Home = () => {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
-  const { visitedTeams, removeVisitedTeam } = useVisitedTeams();
+  const { visitedTeams, removeVisitedTeam, isHydrated } = useVisitedTeams();
 
   const handleCreateTeam = async () => {
     setIsCreating(true);
@@ -50,8 +50,8 @@ const Home = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6">
-      <main className="flex w-full max-w-lg flex-col items-center gap-12">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:px-6">
+      <main className="flex w-full max-w-lg flex-col items-center gap-10 sm:gap-12">
         {/* Logo and title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -60,18 +60,18 @@ const Home = () => {
           className="flex flex-col items-center gap-6 text-center"
         >
           {/* Globe icon */}
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-neutral-900 dark:bg-neutral-100">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-900 dark:bg-neutral-100 sm:h-20 sm:w-20">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="40"
-              height="40"
+              width="32"
+              height="32"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-white dark:text-neutral-900"
+              className="text-white dark:text-neutral-900 sm:h-10 sm:w-10"
             >
               <circle cx="12" cy="12" r="10" />
               <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
@@ -79,11 +79,11 @@ const Home = () => {
             </svg>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          <div className="flex flex-col gap-2 sm:gap-3">
+            <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
               Collab Time
             </h1>
-            <p className="max-w-sm text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
+            <p className="max-w-sm text-base leading-relaxed text-neutral-600 dark:text-neutral-400 sm:text-lg">
               Visualize your team&apos;s working hours across timezones. Find
               the perfect moment to connect.
             </p>
@@ -100,7 +100,7 @@ const Home = () => {
           <button
             onClick={handleCreateTeam}
             disabled={isCreating}
-            className="group flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-neutral-900 px-8 text-lg font-semibold text-white transition-all hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200 dark:focus-visible:ring-neutral-100 dark:focus-visible:ring-offset-neutral-950 sm:w-auto sm:min-w-72"
+            className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-6 text-base font-semibold text-white transition-all hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200 dark:focus-visible:ring-neutral-100 dark:focus-visible:ring-offset-neutral-950 sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg"
           >
             {isCreating ? (
               <>
@@ -136,7 +136,7 @@ const Home = () => {
 
         {/* Visited Teams */}
         <AnimatePresence>
-          {visitedTeams.length > 0 && (
+          {isHydrated && visitedTeams.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

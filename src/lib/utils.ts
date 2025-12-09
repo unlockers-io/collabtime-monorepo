@@ -1,7 +1,5 @@
 const formatHour = (hour: number): string => {
-  const ampm = hour >= 12 ? "PM" : "AM";
-  const h = hour % 12 || 12;
-  return `${h}:00 ${ampm}`;
+  return `${hour.toString().padStart(2, "0")}:00`;
 };
 
 const debounce = <T extends (...args: Parameters<T>) => void>(
@@ -15,4 +13,7 @@ const debounce = <T extends (...args: Parameters<T>) => void>(
   };
 };
 
-export { formatHour, debounce };
+const cn = (...classes: Array<string | undefined | false | null>) =>
+  classes.filter(Boolean).join(" ");
+
+export { formatHour, debounce, cn };

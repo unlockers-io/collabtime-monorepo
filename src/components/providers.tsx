@@ -7,7 +7,11 @@ type ProvidersProps = {
 };
 
 const Providers = ({ children }: ProvidersProps) => {
-  return <RealtimeProvider>{children}</RealtimeProvider>;
+  return (
+    <RealtimeProvider api={{ url: "/api/realtime" }}>
+      {children}
+    </RealtimeProvider>
+  );
 };
 
 export { Providers };

@@ -24,6 +24,7 @@ const createTeam = async (): Promise<ActionResult<string>> => {
     const teamId = uuidv4();
     const team: Team = {
       id: teamId,
+      name: "",
       createdAt: new Date().toISOString(),
       members: [],
     };
@@ -52,7 +53,14 @@ const getTeam = async (teamId: string): Promise<Team | null> => {
       return null;
     }
 
-    return typeof data === "string" ? JSON.parse(data) : data;
+    const team = typeof data === "string" ? JSON.parse(data) : data;
+
+    // Ensure backwards compatibility for teams without name field
+    if (team.name === undefined) {
+      team.name = "";
+    }
+
+    return team;
   } catch (error) {
     console.error("Failed to get team:", error);
     return null;
@@ -253,6 +261,40 @@ const reorderMembers = async (
   }
 };
 
+const updateTeamName = async (
+  teamId: string,
+  name: string
+): Promise<ActionResult<Team>> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    const trimmedName = name.trim().slice(0, 100);
+
+    const team = await getTeam(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    team.name = trimmedName;
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.nameUpdated", {
+      name: trimmedName,
+    });
+
+    return { success: true, data: team };
+  } catch (error) {
+    console.error("Failed to update team name:", error);
+    return { success: false, error: "Failed to update team name" };
+  }
+};
+
 const validateTeam = async (teamId: string): Promise<boolean> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
@@ -275,5 +317,6 @@ export {
   removeMember,
   updateMember,
   reorderMembers,
+  updateTeamName,
   validateTeam,
 };

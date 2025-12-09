@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
-import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
 import "@/styles/globals.css";
+import { Toaster } from "sonner";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -11,9 +11,63 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Collab Time - Team Timezone Visualizer",
+  title: {
+    default: "Collab Time - Team Timezone Visualizer",
+    template: "%s | Collab Time",
+  },
   description:
-    "Visualize your team's working hours across timezones. Find the best time to collaborate.",
+    "Visualize your team's working hours across timezones. Find the perfect moment to connect with distributed teams. No account required.",
+  keywords: [
+    "timezone",
+    "team collaboration",
+    "remote work",
+    "distributed teams",
+    "working hours",
+    "time zones",
+    "meeting planner",
+    "overlap hours",
+  ],
+  authors: [{ name: "Collab Time" }],
+  creator: "Collab Time",
+  metadataBase: new URL(
+    process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000"
+  ),
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "Collab Time",
+    title: "Collab Time - Team Timezone Visualizer",
+    description:
+      "Visualize your team's working hours across timezones. Find the perfect moment to connect.",
+    images: [
+      {
+        url: "/og",
+        width: 1200,
+        height: 630,
+        alt: "Collab Time - Team Timezone Visualizer",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Collab Time - Team Timezone Visualizer",
+    description:
+      "Visualize your team's working hours across timezones. Find the perfect moment to connect.",
+    images: ["/og"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 const RootLayout = ({
@@ -28,7 +82,24 @@ const RootLayout = ({
       >
         <Providers>
           {children}
-          <Toaster richColors />
+          <Toaster
+            position="bottom-right"
+            richColors
+            toastOptions={{
+              classNames: {
+                toast:
+                  "border border-neutral-200/80 bg-white text-neutral-900 shadow-lg dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50",
+                title: "font-semibold",
+                description: "text-sm text-neutral-600 dark:text-neutral-300",
+                actionButton:
+                  "bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200",
+                cancelButton:
+                  "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800",
+                closeButton:
+                  "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100",
+              },
+            }}
+          />
         </Providers>
       </body>
     </html>

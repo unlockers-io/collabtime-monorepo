@@ -1,10 +1,17 @@
 "use client";
 
-import { motion } from "motion/react";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { TeamMember } from "@/types";
 import { convertHourToTimezone, getUserTimezone } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type TimezoneVisualizerProps = {
   members: TeamMember[];
@@ -28,6 +35,14 @@ const useClientValue = <T,>(clientValue: () => T, serverValue: T): T => {
   return useSyncExternalStore(emptySubscribe, clientValue, () => serverValue);
 };
 
+// Stable references for useSyncExternalStore to avoid infinite loops
+const tickSubscribe = (callback: () => void) => {
+  const interval = setInterval(callback, 30000);
+  return () => clearInterval(interval);
+};
+const getTickSnapshot = () => Date.now();
+const getTickServerSnapshot = () => 0;
+
 const TimezoneVisualizer = ({ members }: TimezoneVisualizerProps) => {
   const [selectedAId, setSelectedAId] = useState<string | null>(
     () => members[0]?.id ?? null,
@@ -36,6 +51,8 @@ const TimezoneVisualizer = ({ members }: TimezoneVisualizerProps) => {
     const first = members[0]?.id;
     return members.find((m) => m.id !== first)?.id ?? null;
   });
+  const [hoverInfo, setHoverInfo] = useState<{ x: number; hour: number } | null>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
 
   const [activeAId, activeBId] = useMemo(() => {
     const ids = members.map((m) => m.id);
@@ -53,13 +70,9 @@ const TimezoneVisualizer = ({ members }: TimezoneVisualizerProps) => {
 
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
   const tick = useSyncExternalStore(
-    (callback) => {
-      // Update every 30 seconds instead of every second
-      const interval = setInterval(callback, 30000);
-      return () => clearInterval(interval);
-    },
-    () => Date.now(),
-    () => 0,
+    tickSubscribe,
+    getTickSnapshot,
+    getTickServerSnapshot,
   );
 
   const nowPosition = useMemo(() => {
@@ -122,169 +135,253 @@ const TimezoneVisualizer = ({ members }: TimezoneVisualizerProps) => {
       .map((_, hour) => selectedAHours[hour] && selectedBHours[hour]);
   }, [selectedRowA, selectedRowB, selectedAHours, selectedBHours]);
 
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!timelineRef.current) return;
+    const rect = timelineRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = x / rect.width;
+    const hour = Math.floor(percentage * 24);
+    const clampedHour = Math.max(0, Math.min(23, hour));
+    setHoverInfo({ x, hour: clampedHour });
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoverInfo(null);
+  }, []);
+
   if (members.length === 0 || !viewerTimezone) {
     return null;
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Time labels */}
-      <div className="mt-3 flex items-center gap-3">
-        <div className="w-28 shrink-0" />
-        <div className="flex flex-1 justify-between px-0.5">
-          {[0, 6, 12, 18, 23].map((hour) => (
-            <span
-              key={hour}
-              className="text-xs tabular-nums text-neutral-400 dark:text-neutral-500"
-            >
-              {formatHour(hour)}
-            </span>
-          ))}
+      {/* Time axis with tick marks */}
+      <div className="flex gap-2 sm:gap-3">
+        <div className="w-8 shrink-0 sm:w-24" />
+        <div className="flex flex-1 justify-between">
+          {[0, 6, 12, 18, 24].map((hour, index, arr) => {
+            const isFirst = index === 0;
+            const isLast = index === arr.length - 1;
+            return (
+              <div
+                key={hour}
+                className="flex flex-col"
+                style={{
+                  alignItems: isFirst ? "flex-start" : isLast ? "flex-end" : "center",
+                }}
+              >
+                <span className="whitespace-nowrap text-[10px] tabular-nums text-neutral-400 dark:text-neutral-500 sm:text-xs">
+                  {formatHour(hour % 24)}
+                </span>
+                <div className="mt-1 h-1.5 w-px bg-neutral-300 dark:bg-neutral-600" />
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Member rows */}
-      <div className="flex flex-col gap-3">
-        {memberRows.map(({ member, hours }, index) => (
-          <motion.div
-            key={member.id}
-            layout
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 500,
-              damping: 30,
-              delay: index * 0.05,
-            }}
-            className="flex items-center gap-3"
-          >
-            <div className="flex w-28 shrink-0 items-center gap-2 overflow-hidden">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900">
-                {member.name.charAt(0).toUpperCase()}
-              </div>
-              <span className="truncate text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                {member.name}
+      {/* Member rows with shared current time indicator */}
+      <div className="flex items-stretch gap-2 sm:gap-3">
+        {/* Names column */}
+        <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
+          {memberRows.map(({ member }, index) => {
+            const isSelected = member.id === activeAId || member.id === activeBId;
+            return (
+              <motion.div
+                key={member.id}
+                layout
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 30,
+                  delay: index * 0.05,
+                }}
+                className="flex h-8 items-center justify-center sm:justify-start sm:gap-2"
+              >
+                <div className="relative">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900 sm:h-7 sm:w-7 sm:text-xs">
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  <AnimatePresence>
+                    {isSelected && members.length > 1 && (
+                      <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                        className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-neutral-50 bg-neutral-900 dark:border-neutral-900 dark:bg-neutral-50 sm:h-3 sm:w-3"
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
+                <span className="hidden truncate text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:block">
+                  {member.name}
+                </span>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Timeline container with single current time indicator */}
+        <div
+          ref={timelineRef}
+          className="relative flex-1 cursor-crosshair"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
+          {/* Hover indicator line - spans all rows */}
+          {hoverInfo !== null && (
+            <div
+              className="pointer-events-none absolute bottom-0 top-0 z-10 w-px bg-neutral-400/50 dark:bg-neutral-500/50"
+              style={{ left: `${hoverInfo.x}px` }}
+            />
+          )}
+
+          {/* Hover tooltip */}
+          {hoverInfo !== null && (
+            <div
+              className="pointer-events-none absolute z-30 -translate-x-1/2 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+              style={{
+                left: `${hoverInfo.x}px`,
+                top: "-40px",
+              }}
+            >
+              <span className="font-medium tabular-nums text-neutral-900 dark:text-neutral-100">
+                {formatHour(hoverInfo.hour)}
               </span>
             </div>
+          )}
 
-            <div className="relative flex flex-1 gap-px overflow-hidden rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800">
-              {/* Current time indicator */}
-              {nowPosition !== null && (
-                <div
-                  className="absolute bottom-0 top-0 z-20 w-0.5 rounded-full bg-red-500 shadow-sm"
-                  style={{ left: `calc(${nowPosition}% + 4px)` }}
-                >
-                  <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-red-500" />
-                </div>
-              )}
-
-              {/* Hour blocks */}
-              {hours.map((isWorking, hour) => {
-                const overlapsWithSelected =
-                  activeAId &&
-                  activeBId &&
-                  [activeAId, activeBId].includes(member.id) &&
-                  overlapHours[hour];
-                return (
-                  <div
-                    key={hour}
-                    className={`relative h-6 flex-1 transition-colors ${
-                      hour === 0 ? "rounded-l" : hour === 23 ? "rounded-r" : ""
-                    } ${
-                      isWorking
-                        ? "bg-neutral-900 dark:bg-neutral-100"
-                        : "bg-neutral-200/50 dark:bg-neutral-700/50"
-                    }`}
-                    title={`${formatHour(hour)} - ${isWorking ? "Working" : "Off"}${
-                      overlapsWithSelected ? " (overlaps with selected)" : ""
-                    }`}
-                  >
-                    {overlapsWithSelected && (
-                      <span className="absolute inset-0 bg-emerald-400/50 mix-blend-screen dark:bg-emerald-300/40" />
-                    )}
-                  </div>
-                );
-              })}
+          {/* Current time indicator - spans all rows */}
+          {nowPosition !== null && (
+            <div
+              className="pointer-events-none absolute bottom-0 top-0 z-20 w-0.5 rounded-full bg-red-500 shadow-sm"
+              style={{ left: `${nowPosition}%` }}
+            >
+              <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-red-500" />
             </div>
-          </motion.div>
-        ))}
+          )}
+
+          {/* Hour bars */}
+          <div className="flex flex-col gap-3">
+            {memberRows.map(({ member, hours }, index) => (
+              <motion.div
+                key={member.id}
+                layout
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 30,
+                  delay: index * 0.05,
+                }}
+                className="flex h-8 gap-px overflow-hidden rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800"
+              >
+                {hours.map((isWorking, hour) => {
+                  const overlapsWithSelected =
+                    activeAId &&
+                    activeBId &&
+                    [activeAId, activeBId].includes(member.id) &&
+                    overlapHours[hour];
+                  return (
+                    <div
+                      key={hour}
+                      className={`relative h-full flex-1 transition-colors ${
+                        hour === 0 ? "rounded-l" : hour === 23 ? "rounded-r" : ""
+                      } ${
+                        isWorking
+                          ? "bg-neutral-900 dark:bg-neutral-100"
+                          : "bg-neutral-200/50 dark:bg-neutral-700/50"
+                      }`}
+                    >
+                      {overlapsWithSelected && (
+                        <span className="absolute inset-0 bg-emerald-400/50 mix-blend-screen dark:bg-emerald-300/40" />
+                      )}
+                    </div>
+                  );
+                })}
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Overlap indicator */}
       {members.length > 1 && (
         <div className="flex flex-col gap-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
-          <div className="flex flex-col gap-3 rounded-xl bg-white dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row sm:items-center sm:justify-between">
-             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 w-full sm:w-auto">
-              <div className="flex items-center gap-2 sm:min-w-[180px]">
-                <select
-                  value={activeAId ?? ""}
-                  onChange={(e) => setSelectedAId(e.target.value)}
-                  className="h-10 w-full appearance-none rounded-md border border-neutral-200 bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23737373%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-4 bg-position-[right_12px_center] bg-no-repeat px-2 pr-8 text-sm font-semibold text-neutral-900 shadow-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-400 dark:focus:ring-neutral-400/20"
-                >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
+              <Select value={activeAId ?? ""} onValueChange={setSelectedAId}>
+                <SelectTrigger className="h-9 w-full sm:w-auto sm:min-w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
                   {members
                     .filter(
                       (member) =>
-                        member.id === activeAId || member.id !== activeBId,
+                        member.id === activeAId || member.id !== activeBId
                     )
                     .map((member) => (
-                      <option key={member.id} value={member.id}>
+                      <SelectItem key={member.id} value={member.id}>
                         {member.name}
-                      </option>
+                      </SelectItem>
                     ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 sm:min-w-[180px]">
-                <select
-                  value={activeBId ?? ""}
-                  onChange={(e) => setSelectedBId(e.target.value)}
-                  className="h-10 w-full appearance-none rounded-md border border-neutral-200 bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23737373%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-4 bg-position-[right_12px_center] bg-no-repeat px-2 pr-8 text-sm font-semibold text-neutral-900 shadow-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-400 dark:focus:ring-neutral-400/20"
-                >
+                </SelectContent>
+              </Select>
+              <Select value={activeBId ?? ""} onValueChange={setSelectedBId}>
+                <SelectTrigger className="h-9 w-full sm:w-auto sm:min-w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
                   {members
                     .filter(
                       (member) =>
-                        member.id === activeBId || member.id !== activeAId,
+                        member.id === activeBId || member.id !== activeAId
                     )
                     .map((member) => (
-                      <option key={member.id} value={member.id}>
+                      <SelectItem key={member.id} value={member.id}>
                         {member.name}
-                      </option>
+                      </SelectItem>
                     ))}
-                </select>
-              </div>
-              <div className="text-xs text-neutral-600 dark:text-neutral-300 sm:min-w-40">
-                Overlap:{" "}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs tabular-nums text-neutral-600 dark:text-neutral-300 sm:text-sm">
+              Overlap:{" "}
+              <span className="font-medium">
                 {(() => {
                   const start = overlapHours.findIndex(Boolean);
                   const end = overlapHours.lastIndexOf(true);
-                  if (start === -1 || end === -1)
-                    return "No overlap in your time";
+                  if (start === -1 || end === -1) return "No overlap";
                   const endExclusive = end + 1;
                   return `${formatHour(start)} – ${formatHour(endExclusive % 24)}`;
                 })()}
-              </div>
-            </div>
+              </span>
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex w-28 shrink-0 items-center gap-2">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex w-8 shrink-0 items-center justify-center sm:w-24 sm:justify-start sm:gap-2">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 sm:h-7 sm:w-7">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
+                  width="12"
+                  height="12"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-neutral-600 dark:text-neutral-400"
+                  className="text-neutral-600 dark:text-neutral-400 sm:h-[14px] sm:w-[14px]"
                 >
                   <path d="M20 6 9 17l-5-5" />
                 </svg>
               </div>
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              <span className="hidden text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:block">
                 Overlap
               </span>
             </div>
