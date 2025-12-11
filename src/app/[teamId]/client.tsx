@@ -22,6 +22,7 @@ import { useVisitedTeams } from "@/hooks/use-visited-teams";
 import { useRealtime } from "@/lib/realtime-client";
 import { updateTeamName as updateTeamNameAction } from "@/lib/actions";
 import { cn } from "@/lib/utils";
+import { DragProvider } from "@/contexts/drag-context";
 
 type TeamPageClientProps = {
   team: Team;
@@ -330,8 +331,9 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
   };
 
   return (
-    <div className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
-      <motion.main
+    <DragProvider>
+      <div className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <motion.main
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
@@ -530,8 +532,9 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
 
           <AddGroupForm teamId={team.id} onGroupAdded={handleGroupAdded} />
         </motion.section>
-      </motion.main>
-    </div>
+        </motion.main>
+      </div>
+    </DragProvider>
   );
 };
 
