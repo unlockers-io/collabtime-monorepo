@@ -52,7 +52,7 @@ const Home = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:px-6">
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6">
       <main className="flex w-full max-w-lg flex-col items-center gap-10 sm:gap-12">
         {/* Logo and title */}
         <motion.div

@@ -79,14 +79,16 @@ const RootLayout = ({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistMono.variable} font-(family-name:--font-geist-mono) antialiased bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 selection:bg-neutral-200 selection:text-neutral-900`}
+        className={`${geistMono.variable} font-(family-name:--font-geist-mono) antialiased bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 selection:bg-neutral-200 selection:text-neutral-900 min-h-screen flex flex-col`}
       >
         <Providers>
           <header className="fixed top-0 right-0 z-50 p-4">
             <ModeToggle />
           </header>
-          {children}
-          <footer className="mt-10 border-t border-neutral-200 px-4 py-6 text-sm text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
+          <div className="flex-1 flex flex-col">
+            {children}
+          </div>
+          <footer className="border-t border-neutral-200 px-4 py-6 text-sm text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
             <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3">
               <span>© {new Date().getFullYear()} Collab Time. All rights reserved.</span>
               <a

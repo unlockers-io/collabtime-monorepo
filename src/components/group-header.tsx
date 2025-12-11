@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import { useDrag } from "@/contexts/drag-context";
 
 type GroupHeaderProps = {
   group: TeamGroup;
@@ -31,6 +32,7 @@ const GroupHeader = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
+  const { isDragging } = useDrag();
 
   const handleStartEditing = useCallback(() => {
     setEditingName(group.name);
@@ -97,10 +99,12 @@ const GroupHeader = ({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-colors",
+        "flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-all",
         isDragOver
-          ? "bg-neutral-200 ring-2 ring-neutral-400 ring-inset dark:bg-neutral-700 dark:ring-neutral-500"
-          : "bg-neutral-100 dark:bg-neutral-800"
+          ? "bg-neutral-200 ring-2 ring-neutral-900 ring-inset dark:bg-neutral-700 dark:ring-neutral-100"
+          : isDragging
+            ? "bg-neutral-100 ring-2 ring-dashed ring-neutral-300 dark:bg-neutral-800 dark:ring-neutral-600"
+            : "bg-neutral-100 dark:bg-neutral-800"
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -136,8 +140,13 @@ const GroupHeader = ({
           {memberCount}
         </span>
 
-        {isDragOver && (
-          <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+        {(isDragging || isDragOver) && (
+          <span className={cn(
+            "text-sm font-medium transition-colors",
+            isDragOver
+              ? "text-neutral-900 dark:text-neutral-100"
+              : "text-neutral-500 dark:text-neutral-400"
+          )}>
             Drop to add
           </span>
         )}

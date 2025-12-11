@@ -64,10 +64,18 @@ const AddMemberForm = ({
   onMemberAdded,
   isFirstMember,
 }: AddMemberFormProps) => {
-  const [isOpen, setIsOpen] = useState(isFirstMember);
+  // Track user interaction with the form. Once a user opens or closes the form,
+  // that decision takes precedence over the isFirstMember prop. This prevents
+  // the form from closing due to realtime updates while the user is typing.
+  const [userIntent, setUserIntent] = useState<"open" | "closed" | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
   const [titlePlaceholder] = useState(getRandomPlaceholder);
   const defaultTimezone = getUserTimezone();
+
+  // Form is open if:
+  // 1. User explicitly opened it (userIntent === "open"), OR
+  // 2. No user interaction yet AND isFirstMember is true
+  const isOpen = userIntent === "open" || (userIntent === null && isFirstMember);
 
   const formSchema = z.object({
     name: z.string().min(1, "Name is required"),
@@ -109,7 +117,7 @@ const AddMemberForm = ({
         workingHoursEnd: 17,
       });
       setSelectedGroupId(undefined);
-      setIsOpen(false);
+      setUserIntent(null); // Reset to allow isFirstMember prop to take over
       onMemberAdded(result.data.member);
     } else {
       toast.error(result.error);
@@ -122,7 +130,7 @@ const AddMemberForm = ({
         variant="outline"
         type="button"
         className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-neutral-200 bg-neutral-50/50 text-neutral-600 hover:border-neutral-400 hover:bg-neutral-100/50 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/50"
-        onClick={() => setIsOpen(true)}
+        onClick={() => setUserIntent("open")}
       >
         <UserPlus className="h-5 w-5 transition-transform group-hover:scale-110" />
         <span className="font-medium">Add Team Member</span>
@@ -154,7 +162,7 @@ const AddMemberForm = ({
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => setIsOpen(false)}
+              onClick={() => setUserIntent("closed")}
               aria-label="Close form"
               className="h-10 w-10 shrink-0 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
             >
@@ -309,7 +317,7 @@ const AddMemberForm = ({
               type="button"
               variant="outline"
               className="h-11"
-              onClick={() => setIsOpen(false)}
+              onClick={() => setUserIntent("closed")}
             >
               Cancel
             </Button>

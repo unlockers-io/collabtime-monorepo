@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { useDrag } from "@/contexts/drag-context";
 
 type MemberCardProps = {
   member: TeamMember;
@@ -50,6 +51,7 @@ const MemberCard = ({
   );
   const [workingHoursEnd, setWorkingHoursEnd] = useState(member.workingHoursEnd);
   const [groupId, setGroupId] = useState<string | undefined>(member.groupId);
+  const { startDrag, endDrag } = useDrag();
 
   // Sync local form state when member prop updates (e.g., via realtime)
   useEffect(() => {
@@ -274,13 +276,19 @@ const MemberCard = ({
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData("text/plain", member.id);
     e.dataTransfer.effectAllowed = "move";
+    startDrag();
+  };
+
+  const handleDragEnd = () => {
+    endDrag();
   };
 
   return (
     <div
-      className="group flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:border-neutral-300 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
+      className="group flex cursor-grab flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:border-neutral-300 hover:shadow-md active:cursor-grabbing dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
       draggable
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <div className="flex items-start gap-3">
         {/* Avatar with status */}
