@@ -1,3 +1,10 @@
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+const cn = (...inputs: ClassValue[]) => {
+  return twMerge(clsx(inputs));
+};
+
 const formatHour = (hour: number): string => {
   return `${hour.toString().padStart(2, "0")}:00`;
 };
@@ -13,7 +20,4 @@ const debounce = <T extends (...args: Parameters<T>) => void>(
   };
 };
 
-const cn = (...classes: Array<string | undefined | false | null>) =>
-  classes.filter(Boolean).join(" ");
-
-export { formatHour, debounce, cn };
+export { cn, formatHour, debounce };
