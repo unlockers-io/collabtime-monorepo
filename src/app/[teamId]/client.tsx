@@ -10,7 +10,6 @@ import {
   Copy,
   Globe,
   Pencil,
-  UserPlus,
   Users,
 } from "lucide-react";
 import type { Team, TeamGroup, TeamMember } from "@/types";
@@ -442,49 +441,11 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
           </motion.section>
         )}
 
-        {/* Groups */}
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col gap-3"
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Users className="h-5 w-5 text-neutral-500" />
-              Groups
-            </h2>
-            <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-              {groups.length}
-            </span>
-          </div>
-
-          {groups.length > 0 && (
-            <div className="flex flex-col gap-3">
-              {[...groups]
-                .sort((a, b) => a.order - b.order)
-                .map((group) => (
-                  <GroupHeader
-                    key={group.id}
-                    group={group}
-                    teamId={team.id}
-                    memberCount={members.filter((m) => m.groupId === group.id).length}
-                    onGroupUpdated={handleGroupUpdated}
-                    onGroupRemoved={handleGroupRemoved}
-                    onMemberDropped={handleMemberDroppedOnGroup}
-                  />
-                ))}
-            </div>
-          )}
-
-          <AddGroupForm teamId={team.id} onGroupAdded={handleGroupAdded} />
-        </motion.section>
-
         {/* Team Members */}
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col gap-4"
         >
           <div className="flex items-center justify-between">
@@ -497,29 +458,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
             </span>
           </div>
 
-          {members.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900/50">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-                <UserPlus className="h-6 w-6 text-neutral-500" />
-              </div>
-              <h3 className="mt-4 font-semibold text-neutral-900 dark:text-neutral-100">
-                No team members yet
-              </h3>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                Add yourself to get started!
-              </p>
-            </div>
-          ) : members.length === 1 ? (
-            <div className="flex flex-col gap-3">
-              <MemberCard
-                member={members[0]}
-                teamId={team.id}
-                groups={groups}
-                onMemberRemoved={handleMemberRemoved}
-                onMemberUpdated={handleMemberUpdated}
-              />
-            </div>
-          ) : (
+          {members.length > 0 && (
             <div className="flex flex-col gap-3">
               {orderedMembers.map((member) => (
                 <MemberCard
@@ -540,6 +479,56 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
             onMemberAdded={handleMemberAdded}
             isFirstMember={members.length === 0}
           />
+        </motion.section>
+
+        {/* Groups */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col gap-3"
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Users className="h-5 w-5 text-neutral-500" />
+              Groups
+            </h2>
+            <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+              {groups.length}
+            </span>
+          </div>
+
+          {groups.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900/50">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
+                <Users className="h-6 w-6 text-neutral-500" />
+              </div>
+              <h3 className="mt-4 font-semibold text-neutral-900 dark:text-neutral-100">
+                Organize with groups
+              </h3>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
+                Create groups to organize team members by department, project, or location. Drag and drop members into groups to categorize them.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {[...groups]
+                .sort((a, b) => a.order - b.order)
+                .map((group) => (
+                  <GroupHeader
+                    key={group.id}
+                    group={group}
+                    teamId={team.id}
+                    memberCount={members.filter((m) => m.groupId === group.id).length}
+                    onGroupUpdated={handleGroupUpdated}
+                    onGroupRemoved={handleGroupRemoved}
+                    onMemberDropped={handleMemberDroppedOnGroup}
+                  />
+                ))}
+            </div>
+          )}
+
+          <AddGroupForm teamId={team.id} onGroupAdded={handleGroupAdded} />
         </motion.section>
       </motion.main>
     </div>
