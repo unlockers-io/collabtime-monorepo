@@ -330,7 +330,7 @@ const MemberCard = ({
               {formatHour(member.workingHoursEnd)}
             </span>
             {isAvailable && (
-              <span className="font-medium text-green-600 dark:text-green-400">
+              <span className="font-medium text-green-700 dark:text-green-400">
                 Available now
               </span>
             )}

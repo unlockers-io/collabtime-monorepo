@@ -364,9 +364,9 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
               ) : (
                 <button
                   onClick={() => setIsEditingName(true)}
-                  className="group flex min-w-0 items-center gap-2 text-xl font-bold tracking-tight sm:text-2xl"
+                  className="group flex min-w-0 items-center gap-2"
                 >
-                  <span className="truncate">{teamName || "Team Workspace"}</span>
+                  <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">{teamName || "Team Workspace"}</h1>
                   <Pencil
                     className={cn(
                       "h-3.5 w-3.5 shrink-0 text-neutral-400 transition-opacity",
@@ -391,7 +391,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.8, opacity: 0 }}
                     transition={{ duration: 0.15 }}
-                    className="text-green-600 dark:text-green-400"
+                    className="text-green-700 dark:text-green-400"
                   >
                     <Check className="h-4 w-4" />
                   </motion.div>

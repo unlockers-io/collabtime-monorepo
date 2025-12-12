@@ -1,10 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Check, ChevronRight, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { AlertCircle, Check, CheckCircle, ChevronRight, Clock, Minus, Plus, Users, X } from "lucide-react";
 import type { TeamGroup, TeamMember } from "@/types";
-import { convertHourToTimezone, getUserTimezone } from "@/lib/timezones";
+import { convertHourToTimezone, getDayOffset, getUserTimezone } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -17,6 +17,9 @@ import {
   SelectLabel,
   SelectGroup,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 type TimezoneVisualizerProps = {
   members: TeamMember[];
@@ -44,16 +47,21 @@ const useClientValue = <T,>(clientValue: () => T, serverValue: T): T => {
 };
 
 // Stable references for useSyncExternalStore to avoid infinite loops
+let cachedTick = Date.now();
 const tickSubscribe = (callback: () => void) => {
-  const interval = setInterval(callback, 30000);
+  const interval = setInterval(() => {
+    cachedTick = Date.now();
+    callback();
+  }, 30000);
   return () => clearInterval(interval);
 };
-const getTickSnapshot = () => Date.now();
+const getTickSnapshot = () => cachedTick;
 const getTickServerSnapshot = () => 0;
 
 type MemberRow = {
   member: TeamMember;
   hours: boolean[];
+  dayOffset: number;
 };
 
 type GroupedSection = {
@@ -89,57 +97,87 @@ const TimezoneVisualizer = ({
     return null;
   };
 
-  const [selectedA, setSelectedA] = useState<Selection | null>(
-    () => {
-      const first = members[0];
-      return first ? { type: "member", id: first.id } : null;
-    },
-  );
-  const [selectedB, setSelectedB] = useState<Selection | null>(() => {
-    const first = members[0]?.id;
-    const second = members.find((m) => m.id !== first);
-    return second ? { type: "member", id: second.id } : null;
-  });
+  // Compare mode state - starts empty, user opens it explicitly
+  const [isComparing, setIsComparing] = useState(false);
+  const [compareSelections, setCompareSelections] = useState<Selection[]>([]);
   const [hoverInfo, setHoverInfo] = useState<{ x: number; relativeX: number; hour: number } | null>(null);
-  const [overlapHoverHour, setOverlapHoverHour] = useState<number | null>(null);
+  const [isLineVisible, setIsLineVisible] = useState(false);
   const sectionsContainerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
-  const overlapBarRef = useRef<HTMLDivElement>(null);
+  const lineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Derive safe selections without triggering state updates to avoid render loops
-  const activeA = useMemo((): Selection | null => {
-    if (!members.length) return null;
-    if (!selectedA) return { type: "member", id: members[0].id };
-    if (selectedA.type === "member") {
-      return members.some((m) => m.id === selectedA.id)
-        ? selectedA
-        : { type: "member", id: members[0].id };
+  // Debounce line visibility - hide when moving fast, show when stopped
+  useEffect(() => {
+    if (hoverInfo === null) {
+      setIsLineVisible(false);
+      if (lineDebounceRef.current) {
+        clearTimeout(lineDebounceRef.current);
+        lineDebounceRef.current = null;
+      }
+      return;
     }
-    // group
-    if (groups.some((g) => g.id === selectedA.id)) {
-      return selectedA;
-    }
-    return { type: "member", id: members[0].id };
-  }, [members, groups, selectedA]);
 
-  const activeB = useMemo((): Selection | null => {
-    if (!members.length) return null;
-    if (!selectedB) {
-      const second = members.find((m) => m.id !== activeA?.id);
-      return second ? { type: "member", id: second.id } : { type: "member", id: members[0].id };
-    }
-    if (selectedB.type === "member") {
-      if (members.some((m) => m.id === selectedB.id)) return selectedB;
-      const fallback = members.find((m) => m.id !== activeA?.id) ?? members[0];
-      return { type: "member", id: fallback.id };
-    }
-    if (groups.some((g) => g.id === selectedB.id)) return selectedB;
-    const fallback = members.find((m) => m.id !== activeA?.id) ?? members[0];
-    return { type: "member", id: fallback.id };
-  }, [members, groups, selectedB, activeA]);
+    // Hide immediately when position changes
+    setIsLineVisible(false);
 
-  const activeAValue = activeA ? serializeSelection(activeA) : "";
-  const activeBValue = activeB ? serializeSelection(activeB) : "";
+    // Clear existing timeout
+    if (lineDebounceRef.current) {
+      clearTimeout(lineDebounceRef.current);
+    }
+
+    // Show after a short delay (when mouse stops)
+    lineDebounceRef.current = setTimeout(() => {
+      setIsLineVisible(true);
+    }, 50);
+
+    return () => {
+      if (lineDebounceRef.current) {
+        clearTimeout(lineDebounceRef.current);
+      }
+    };
+  }, [hoverInfo?.relativeX]);
+
+
+  // Validate selections - remove any that no longer exist
+  const validSelections = useMemo(() => {
+    return compareSelections.filter((sel) => {
+      if (sel.type === "member") {
+        return members.some((m) => m.id === sel.id);
+      }
+      return groups.some((g) => g.id === sel.id);
+    });
+  }, [compareSelections, members, groups]);
+
+  // Helper to add a selection
+  const addSelection = useCallback((sel: Selection) => {
+    setCompareSelections((prev) => {
+      const key = serializeSelection(sel);
+      if (prev.some((s) => serializeSelection(s) === key)) return prev;
+      return [...prev, sel];
+    });
+  }, []);
+
+  // Helper to remove a selection
+  const removeSelection = useCallback((sel: Selection) => {
+    setCompareSelections((prev) => {
+      const key = serializeSelection(sel);
+      return prev.filter((s) => serializeSelection(s) !== key);
+    });
+  }, []);
+
+  // Get name for a selection
+  const getSelectionName = useCallback((sel: Selection): string => {
+    if (sel.type === "member") {
+      return members.find((m) => m.id === sel.id)?.name ?? "Unknown";
+    }
+    return groups.find((g) => g.id === sel.id)?.name ?? "Unknown";
+  }, [members, groups]);
+
+  // Check if a selection is already selected
+  const isSelectionSelected = useCallback((sel: Selection): boolean => {
+    const key = serializeSelection(sel);
+    return validSelections.some((s) => serializeSelection(s) === key);
+  }, [validSelections]);
 
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
   const tick = useSyncExternalStore(
@@ -156,6 +194,9 @@ const TimezoneVisualizer = ({
 
   const memberRows = useMemo(() => {
     if (!viewerTimezone) return [];
+
+    // Use tick to recalculate day offsets when time updates
+    void tick;
 
     return members.map((member) => {
       const hours = new Array(24).fill(false);
@@ -183,9 +224,11 @@ const TimezoneVisualizer = ({
         }
       }
 
-      return { member, hours };
+      const dayOffset = getDayOffset(member.timezone, viewerTimezone);
+
+      return { member, hours, dayOffset };
     });
-  }, [members, viewerTimezone]);
+  }, [members, viewerTimezone, tick]);
 
   // Organize member rows by group (only show groups that have members)
   const groupedSections = useMemo((): GroupedSection[] => {
@@ -248,22 +291,85 @@ const TimezoneVisualizer = ({
     [memberRows, members]
   );
 
-  const selectedAHours = useMemo(
-    () => getHoursForSelection(activeA),
-    [activeA, getHoursForSelection]
-  );
-  const selectedBHours = useMemo(
-    () => getHoursForSelection(activeB),
-    [activeB, getHoursForSelection]
-  );
+  // Count total people in selections (groups count as their member count)
+  const totalPeopleSelected = useMemo(() => {
+    let count = 0;
+    for (const sel of validSelections) {
+      if (sel.type === "member") {
+        count += 1;
+      } else {
+        // Group - count all members in group
+        count += members.filter((m) => m.groupId === sel.id).length;
+      }
+    }
+    return count;
+  }, [validSelections, members]);
 
-  // Calculate overlap hours between selected pair
-  const overlapHours = useMemo(() => {
-    if (!activeA || !activeB) return new Array(24).fill(false);
-    return new Array(24)
-      .fill(false)
-      .map((_, hour) => selectedAHours[hour] && selectedBHours[hour]);
-  }, [activeA, activeB, selectedAHours, selectedBHours]);
+  // Check if we can show overlap (at least 2 people total)
+  const canShowOverlap = totalPeopleSelected >= 2;
+
+  // Calculate overlap hours - intersection of ALL selected members/groups
+  // Also calculate partial overlap (some but not all)
+  const { overlapHours, partialOverlapHours, overlapCounts } = useMemo(() => {
+    const empty = {
+      overlapHours: new Array(24).fill(false) as boolean[],
+      partialOverlapHours: new Array(24).fill(false) as boolean[],
+      overlapCounts: new Array(24).fill(0) as number[],
+    };
+    if (!canShowOverlap) return empty;
+
+    // Collect all individual member hours for overlap calculation
+    const allMemberHours: boolean[][] = [];
+    for (const sel of validSelections) {
+      if (sel.type === "member") {
+        const row = memberRows.find((r) => r.member.id === sel.id);
+        if (row) allMemberHours.push(row.hours);
+      } else {
+        // Group - add each member's hours individually
+        const groupMembers = members.filter((m) => m.groupId === sel.id);
+        for (const member of groupMembers) {
+          const row = memberRows.find((r) => r.member.id === member.id);
+          if (row) allMemberHours.push(row.hours);
+        }
+      }
+    }
+
+    if (allMemberHours.length < 2) return empty;
+
+    const totalPeople = allMemberHours.length;
+
+    // Count how many people are working at each hour
+    const counts = new Array(24).fill(0).map((_, hour) =>
+      allMemberHours.filter((hours) => hours[hour]).length
+    );
+
+    // Full overlap = ALL members are working at that hour
+    const full = counts.map((count) => count === totalPeople);
+
+    // Partial overlap = at least 2 people working, but not all
+    const partial = counts.map((count, hour) => count >= 2 && !full[hour]);
+
+    return {
+      overlapHours: full,
+      partialOverlapHours: partial,
+      overlapCounts: counts,
+    };
+  }, [canShowOverlap, validSelections, memberRows, members]);
+
+  // Calculate overlap status: none, partial, full, or mixed
+  // - none: no hours where at least 2 people overlap
+  // - partial: only partial overlap hours (some but not all people)
+  // - full: only full overlap hours (all people)
+  // - mixed: has both partial and full overlap hours
+  const overlapStatus = useMemo(() => {
+    const hasFullOverlap = overlapHours.some(Boolean);
+    const hasPartialOverlap = partialOverlapHours.some(Boolean);
+
+    if (!hasFullOverlap && !hasPartialOverlap) return "none" as const;
+    if (hasFullOverlap && hasPartialOverlap) return "mixed" as const;
+    if (hasFullOverlap) return "full" as const;
+    return "partial" as const;
+  }, [overlapHours, partialOverlapHours]);
 
   // Get members from a selection (for showing in hover tooltip)
   const getMembersForSelection = useCallback(
@@ -279,43 +385,40 @@ const TimezoneVisualizer = ({
     [members]
   );
 
-  // Get members available at a specific hour
+  // Get all members available at a specific hour from all selections
   const getAvailableMembersAtHour = useCallback(
-    (hour: number): { a: TeamMember[]; b: TeamMember[] } => {
-      const aMembersList = getMembersForSelection(activeA);
-      const bMembersList = getMembersForSelection(activeB);
+    (hour: number): Map<string, TeamMember[]> => {
+      const result = new Map<string, TeamMember[]>();
 
-      const aAvailable = aMembersList.filter((m) => {
-        const row = memberRows.find((r) => r.member.id === m.id);
-        return row?.hours[hour] ?? false;
-      });
+      for (const sel of validSelections) {
+        const selMembers = getMembersForSelection(sel);
+        const available = selMembers.filter((m) => {
+          const row = memberRows.find((r) => r.member.id === m.id);
+          return row?.hours[hour] ?? false;
+        });
+        result.set(serializeSelection(sel), available);
+      }
 
-      const bAvailable = bMembersList.filter((m) => {
-        const row = memberRows.find((r) => r.member.id === m.id);
-        return row?.hours[hour] ?? false;
-      });
-
-      return { a: aAvailable, b: bAvailable };
+      return result;
     },
-    [activeA, activeB, getMembersForSelection, memberRows]
+    [validSelections, getMembersForSelection, memberRows]
   );
 
-  // Check if a member is part of the current selection
-  const isMemberSelected = useCallback(
+  // Check if a member is part of any current selection (for highlighting)
+  const isMemberInCompare = useCallback(
     (memberId: string): boolean => {
-      if (activeA?.type === "member" && activeA.id === memberId) return true;
-      if (activeB?.type === "member" && activeB.id === memberId) return true;
-      if (activeA?.type === "group") {
-        const member = members.find((m) => m.id === memberId);
-        if (member?.groupId === activeA.id) return true;
-      }
-      if (activeB?.type === "group") {
-        const member = members.find((m) => m.id === memberId);
-        if (member?.groupId === activeB.id) return true;
+      if (!isComparing || validSelections.length === 0) return false;
+
+      for (const sel of validSelections) {
+        if (sel.type === "member" && sel.id === memberId) return true;
+        if (sel.type === "group") {
+          const member = members.find((m) => m.id === memberId);
+          if (member?.groupId === sel.id) return true;
+        }
       }
       return false;
     },
-    [activeA, activeB, members]
+    [isComparing, validSelections, members]
   );
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -366,7 +469,7 @@ const TimezoneVisualizer = ({
                   alignItems: isFirst ? "flex-start" : isLast ? "flex-end" : "center",
                 }}
               >
-                <span className="whitespace-nowrap text-[10px] tabular-nums text-neutral-400 dark:text-neutral-500 sm:text-xs">
+                <span className="whitespace-nowrap text-[10px] tabular-nums text-neutral-600 dark:text-neutral-400 sm:text-xs">
                   {formatHour(hour % 24)}
                 </span>
                 <div className="mt-1 h-1.5 w-px bg-neutral-300 dark:bg-neutral-600" />
@@ -405,9 +508,10 @@ const TimezoneVisualizer = ({
         {/* Hover line spanning all grouped rows */}
         {hoverInfo !== null && (
           <div
-            className="pointer-events-none absolute inset-y-0 z-30 w-px bg-neutral-400/60 dark:bg-neutral-500/60"
+            className="pointer-events-none absolute inset-y-0 z-30 w-px bg-neutral-400/60 transition-opacity duration-150 ease-out dark:bg-neutral-500/60"
             style={{
               left: `${hoverInfo.relativeX}px`,
+              opacity: isLineVisible ? 1 : 0,
             }}
           />
         )}
@@ -423,13 +527,13 @@ const TimezoneVisualizer = ({
                 <button
                   type="button"
                   onClick={() => onToggleGroupCollapse?.(section.group!.id)}
-                  className="flex items-center gap-2 text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                  className="-ml-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-xs font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                 >
                   <ChevronRight
                     className={`h-3 w-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
                   />
                   <span>{section.group.name}</span>
-                  <span className="text-neutral-400 dark:text-neutral-500">
+                  <span className="text-neutral-500 dark:text-neutral-400">
                     ({section.rows.length})
                   </span>
                 </button>
@@ -437,7 +541,7 @@ const TimezoneVisualizer = ({
 
               {/* Ungrouped header (only show if there are groups) */}
               {!section.group && groups.length > 0 && (
-                <div className="flex items-center gap-2 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
                   <span>Ungrouped</span>
                   <span>({section.rows.length})</span>
                 </div>
@@ -456,11 +560,16 @@ const TimezoneVisualizer = ({
                     <div className="flex items-stretch gap-2 sm:gap-3">
                       {/* Names column */}
                       <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
-                        {visibleRows.map(({ member }) => {
-                          const isSelected = isMemberSelected(member.id);
-                          return (
+                        {visibleRows.map(({ member, dayOffset }) => {
+                          const isSelected = isMemberInCompare(member.id);
+                          const dayOffsetLabel = dayOffset > 0
+                            ? `${Math.abs(dayOffset)} day${Math.abs(dayOffset) > 1 ? "s" : ""} ahead`
+                            : dayOffset < 0
+                              ? `${Math.abs(dayOffset)} day${Math.abs(dayOffset) > 1 ? "s" : ""} behind`
+                              : null;
+
+                          const content = (
                             <div
-                              key={member.id}
                               className="flex h-8 items-center justify-center sm:justify-start sm:gap-2"
                             >
                               <div className="relative">
@@ -470,12 +579,32 @@ const TimezoneVisualizer = ({
                                 {isSelected && members.length > 1 && (
                                   <div className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-neutral-50 bg-neutral-900 dark:border-neutral-900 dark:bg-neutral-50 sm:h-3 sm:w-3" />
                                 )}
+                                {dayOffset !== 0 && (
+                                  <div className="absolute -bottom-0.5 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-amber-950 dark:bg-amber-500 dark:text-amber-950 sm:h-4 sm:w-4 sm:text-[9px]">
+                                    {dayOffset > 0 ? `+${dayOffset}` : dayOffset}
+                                  </div>
+                                )}
                               </div>
                               <span className="hidden truncate text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:block">
                                 {member.name}
                               </span>
                             </div>
                           );
+
+                          if (dayOffsetLabel) {
+                            return (
+                              <Tooltip key={member.id}>
+                                <TooltipTrigger asChild>
+                                  {content}
+                                </TooltipTrigger>
+                                <TooltipContent side="left">
+                                  <span>{dayOffsetLabel}</span>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          }
+
+                          return <div key={member.id}>{content}</div>;
                         })}
                       </div>
 
@@ -489,7 +618,7 @@ const TimezoneVisualizer = ({
                         {/* Hover tooltip */}
                         {sectionIndex === 0 && hoverInfo !== null && (
                           <div
-                            className="pointer-events-none absolute z-30 -translate-x-1/2 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+                            className="pointer-events-none absolute z-30 -translate-x-1/2 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs ring-1 ring-neutral-950/5 dark:border-neutral-700 dark:bg-neutral-800 dark:ring-white/10"
                             style={{
                               left: `${hoverInfo.x}px`,
                               top: "-40px",
@@ -504,23 +633,22 @@ const TimezoneVisualizer = ({
                         {/* Hour bars */}
                         <div className="flex flex-col gap-3">
                           {visibleRows.map(({ member, hours }) => (
-                            <div
-                              key={member.id}
-                              className="flex h-8 gap-px overflow-hidden rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800"
-                            >
-                              {hours.map((isWorking, hour) => {
-                                const classes = `h-full flex-1 transition-colors ${
-                                  hour === 0 ? "rounded-l" : hour === 23 ? "rounded-r" : ""
-                                } ${
-                                  isWorking
-                                    ? "bg-neutral-900 dark:bg-neutral-100"
-                                    : "bg-neutral-200/50 dark:bg-neutral-700/50"
-                                }`;
-
-                                return (
+                              <div
+                                key={member.id}
+                                className="flex h-8 gap-px overflow-hidden rounded-lg bg-neutral-200 p-1 dark:bg-neutral-900"
+                              >
+                                {hours.map((isWorking, hour) => (
                                   <Tooltip key={hour}>
                                     <TooltipTrigger asChild>
-                                      <div className={classes} />
+                                      <div
+                                        className={`h-full flex-1 ${
+                                          hour === 0 ? "rounded-l" : hour === 23 ? "rounded-r" : ""
+                                        } ${
+                                          isWorking
+                                            ? "bg-neutral-900 dark:bg-neutral-50"
+                                            : "bg-neutral-300 dark:bg-neutral-700"
+                                        }`}
+                                      />
                                     </TooltipTrigger>
                                     <TooltipContent side="top">
                                       <div className="font-medium tabular-nums">
@@ -528,9 +656,8 @@ const TimezoneVisualizer = ({
                                       </div>
                                     </TooltipContent>
                                   </Tooltip>
-                                );
-                              })}
-                            </div>
+                                ))}
+                              </div>
                           ))}
                         </div>
                       </div>
@@ -543,252 +670,308 @@ const TimezoneVisualizer = ({
         })}
       </div>
 
-      {/* Overlap indicator */}
-      {members.length > 1 && (
-        <div className="flex flex-col gap-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
-              <Select
-                value={activeAValue}
-                onValueChange={(val) => {
-                  const sel = deserializeSelection(val);
-                  if (sel && val !== activeAValue) setSelectedA(sel);
-                }}
-              >
-                <SelectTrigger className="h-9 w-full sm:w-auto sm:min-w-40">
-                  <SelectValue>
-                    {activeA?.type === "member"
-                      ? members.find((m) => m.id === activeA.id)?.name
-                      : activeA?.type === "group"
-                        ? groups.find((g) => g.id === activeA.id)?.name
-                        : "Select..."}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Members</SelectLabel>
-                    {members.map((member) => {
-                      const val = serializeSelection({ type: "member", id: member.id });
-                      return (
-                        <SelectItem
-                          key={`member:${member.id}`}
-                          value={val}
-                          disabled={val === activeBValue}
-                        >
-                          {member.name}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectGroup>
-                  {groups.filter((g) => members.some((m) => m.groupId === g.id)).length > 0 && (
-                    <>
-                      <SelectSeparator />
-                      <SelectGroup>
-                        <SelectLabel>Groups</SelectLabel>
-                        {groups
-                          .filter((g) => members.some((m) => m.groupId === g.id))
-                          .map((group) => {
-                            const val = serializeSelection({ type: "group", id: group.id });
-                            return (
-                              <SelectItem
-                                key={`group:${group.id}`}
-                                value={val}
-                                disabled={val === activeBValue}
-                              >
-                                <span className="flex items-center gap-2">
-                                  <Users className="h-3 w-3" />
-                                  {group.name}
-                                </span>
-                              </SelectItem>
-                            );
-                          })}
-                      </SelectGroup>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-              <Select
-                value={activeBValue}
-                onValueChange={(val) => {
-                  const sel = deserializeSelection(val);
-                  if (sel && val !== activeBValue) setSelectedB(sel);
-                }}
-              >
-                <SelectTrigger className="h-9 w-full sm:w-auto sm:min-w-40">
-                  <SelectValue>
-                    {activeB?.type === "member"
-                      ? members.find((m) => m.id === activeB.id)?.name
-                      : activeB?.type === "group"
-                        ? groups.find((g) => g.id === activeB.id)?.name
-                        : "Select..."}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Members</SelectLabel>
-                    {members.map((member) => {
-                      const val = serializeSelection({ type: "member", id: member.id });
-                      return (
-                        <SelectItem
-                          key={`member:${member.id}`}
-                          value={val}
-                          disabled={val === activeAValue}
-                        >
-                          {member.name}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectGroup>
-                  {groups.filter((g) => members.some((m) => m.groupId === g.id)).length > 0 && (
-                    <>
-                      <SelectSeparator />
-                      <SelectGroup>
-                        <SelectLabel>Groups</SelectLabel>
-                        {groups
-                          .filter((g) => members.some((m) => m.groupId === g.id))
-                          .map((group) => {
-                            const val = serializeSelection({ type: "group", id: group.id });
-                            return (
-                              <SelectItem
-                                key={`group:${group.id}`}
-                                value={val}
-                                disabled={val === activeAValue}
-                              >
-                                <span className="flex items-center gap-2">
-                                  <Users className="h-3 w-3" />
-                                  {group.name}
-                                </span>
-                              </SelectItem>
-                            );
-                          })}
-                      </SelectGroup>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <p className="text-xs tabular-nums text-neutral-600 dark:text-neutral-300 sm:text-sm">
-              Overlap:{" "}
-              <span className="font-medium">
-                {(() => {
-                  const start = overlapHours.findIndex(Boolean);
-                  const end = overlapHours.lastIndexOf(true);
-                  if (start === -1 || end === -1) return "No overlap";
-                  const endExclusive = end + 1;
-                  return `${formatHour(start)} – ${formatHour(endExclusive % 24)}`;
-                })()}
-              </span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex w-8 shrink-0 items-center justify-center sm:w-24 sm:justify-start sm:gap-2">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 sm:h-7 sm:w-7">
-                <Check className="h-3 w-3 text-neutral-600 dark:text-neutral-400 sm:h-3.5 sm:w-3.5" />
-              </div>
-              <span className="hidden text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:block">
-                Overlap
-              </span>
-            </div>
-
-            <div
-              ref={overlapBarRef}
-              className="relative flex flex-1 cursor-crosshair gap-px overflow-hidden rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800"
-              onMouseLeave={() => setOverlapHoverHour(null)}
+      {/* Find Best Time - Compare Timezones */}
+      {members.length >= 2 && (
+        <AnimatePresence mode="wait">
+          {!isComparing ? (
+            <motion.div
+              key="compare-button"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15 }}
             >
-              {overlapHours.map((isOverlap, hour) => {
-                const baseCell = (
-                  <div
-                    className={`h-6 flex-1 transition-colors ${
-                      hour === 0 ? "rounded-l" : hour === 23 ? "rounded-r" : ""
-                    } ${
-                      isOverlap
-                        ? "bg-neutral-600 dark:bg-neutral-400"
-                        : "bg-neutral-200/50 dark:bg-neutral-700/50"
-                    } ${overlapHoverHour === hour ? "ring-2 ring-neutral-400 ring-inset" : ""}`}
-                    onMouseEnter={() =>
-                      setOverlapHoverHour((prev) =>
-                        isOverlap && prev !== hour ? hour : isOverlap ? prev : null
-                      )
-                    }
-                  />
-                );
+              <Button
+                variant="outline"
+                type="button"
+                className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-neutral-200 bg-neutral-50/50 text-neutral-600 hover:border-neutral-400 hover:bg-neutral-100/50 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/50"
+                onClick={() => setIsComparing(true)}
+              >
+                <Clock className="h-5 w-5 transition-transform group-hover:scale-110" />
+                <span className="font-medium">Find Best Meeting Time</span>
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="compare-panel"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15 }}
+            >
+              <Card className="flex flex-col gap-4 p-4">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-900 dark:bg-neutral-100">
+                      <Clock className="h-4 w-4 text-white dark:text-neutral-900" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                        Find Best Meeting Time
+                      </h3>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        Select people or groups to compare
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    onClick={() => {
+                      setIsComparing(false);
+                      setCompareSelections([]);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
 
-                if (!isOverlap) {
-                  return (
-                    <div
-                      key={hour}
-                      className={`h-6 flex-1 transition-colors ${
-                        hour === 0 ? "rounded-l" : hour === 23 ? "rounded-r" : ""
-                      } ${
-                        isOverlap
-                          ? "bg-neutral-600 dark:bg-neutral-400"
-                          : "bg-neutral-200/50 dark:bg-neutral-700/50"
-                      } ${overlapHoverHour === hour ? "ring-2 ring-neutral-400 ring-inset" : ""}`}
-                    />
-                  );
-                }
+                {/* Selections */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {validSelections.map((sel) => (
+                    <Badge
+                      key={serializeSelection(sel)}
+                      variant="secondary"
+                      className="flex items-center gap-1.5 py-1 pl-2 pr-1"
+                    >
+                      {sel.type === "group" && <Users className="h-3 w-3" />}
+                      <span>{getSelectionName(sel)}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeSelection(sel)}
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-neutral-300 dark:hover:bg-neutral-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
 
-                const { a, b } = getAvailableMembersAtHour(hour);
-                const aName = activeA?.type === "member"
-                  ? members.find((m) => m.id === activeA.id)?.name
-                  : groups.find((g) => g.id === activeA?.id)?.name;
-                const bName = activeB?.type === "member"
-                  ? members.find((m) => m.id === activeB.id)?.name
-                  : groups.find((g) => g.id === activeB?.id)?.name;
+                  {/* Add selector */}
+                  <Select
+                    value=""
+                    onValueChange={(val) => {
+                      const sel = deserializeSelection(val);
+                      if (sel) addSelection(sel);
+                    }}
+                  >
+                    {validSelections.length === 0 ? (
+                      <SelectTrigger className="h-8 w-auto gap-1.5 border-dashed px-3 [&>svg:last-child]:hidden">
+                        <Plus className="h-4 w-4" />
+                        <span className="text-sm">Add</span>
+                      </SelectTrigger>
+                    ) : (
+                      <SelectTrigger className="h-7 w-7 justify-center rounded-full border-dashed p-0 [&>svg:last-child]:hidden">
+                        <Plus className="h-4 w-4" />
+                      </SelectTrigger>
+                    )}
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Members</SelectLabel>
+                        {members.map((member) => {
+                          const sel: Selection = { type: "member", id: member.id };
+                          const isAlreadySelected = isSelectionSelected(sel);
+                          return (
+                            <SelectItem
+                              key={`member:${member.id}`}
+                              value={serializeSelection(sel)}
+                              disabled={isAlreadySelected}
+                            >
+                              {member.name}
+                              {isAlreadySelected && (
+                                <Check className="ml-auto h-3 w-3 text-neutral-400" />
+                              )}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                      {groups.filter((g) => members.some((m) => m.groupId === g.id)).length > 0 && (
+                        <>
+                          <SelectSeparator />
+                          <SelectGroup>
+                            <SelectLabel>Groups</SelectLabel>
+                            {groups
+                              .filter((g) => members.some((m) => m.groupId === g.id))
+                              .map((group) => {
+                                const sel: Selection = { type: "group", id: group.id };
+                                const isAlreadySelected = isSelectionSelected(sel);
+                                return (
+                                  <SelectItem
+                                    key={`group:${group.id}`}
+                                    value={serializeSelection(sel)}
+                                    disabled={isAlreadySelected}
+                                  >
+                                    <span className="flex items-center gap-2">
+                                      <Users className="h-3 w-3" />
+                                      {group.name}
+                                    </span>
+                                    {isAlreadySelected && (
+                                      <Check className="ml-auto h-3 w-3 text-neutral-400" />
+                                    )}
+                                  </SelectItem>
+                                );
+                              })}
+                          </SelectGroup>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                return (
-                  <Tooltip key={hour}>
-                    <TooltipTrigger asChild>{baseCell}</TooltipTrigger>
-                    <TooltipContent side="top">
-                      <div className="font-medium tabular-nums text-neutral-900 dark:text-neutral-50">
-                        {formatHour(hour)}
+                {/* Overlap result */}
+                {canShowOverlap && (
+                  <div className="flex flex-col gap-3 border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                    {/* Time range info - only show when there is overlap */}
+                    <p className="text-right text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
+                      {(() => {
+                        // Combine full and partial overlap for summary
+                        const anyOverlap = overlapHours.map((full, i) => full || partialOverlapHours[i]);
+                        const start = anyOverlap.findIndex(Boolean);
+                        const end = anyOverlap.lastIndexOf(true);
+                        if (start === -1 || end === -1) return null;
+                        const fullHours = overlapHours.filter(Boolean).length;
+                        const partialHoursCount = partialOverlapHours.filter(Boolean).length;
+                        const endExclusive = end + 1;
+                        return (
+                          <span>
+                            {formatHour(start)} – {formatHour(endExclusive % 24)}
+                            <span className="ml-1">
+                              ({fullHours}h full{partialHoursCount > 0 ? `, ${partialHoursCount}h partial` : ""})
+                            </span>
+                          </span>
+                        );
+                      })()}
+                    </p>
+                    {/* Overlap row - following same pattern as member rows */}
+                    <div className="flex items-stretch gap-2 sm:gap-3">
+                      {/* Icon + label column - aligned with avatars */}
+                      <div className="flex w-8 shrink-0 flex-col sm:w-24">
+                        <div className="flex h-8 items-center justify-center sm:justify-start sm:gap-2">
+                          {overlapStatus === "none" && (
+                            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 sm:h-7 sm:w-7">
+                              <X className="h-3 w-3 text-red-600 dark:text-red-400 sm:h-3.5 sm:w-3.5" />
+                            </div>
+                          )}
+                          {overlapStatus === "partial" && (
+                            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 sm:h-7 sm:w-7">
+                              <Minus className="h-3 w-3 text-amber-600 dark:text-amber-400 sm:h-3.5 sm:w-3.5" />
+                            </div>
+                          )}
+                          {(overlapStatus === "mixed" || overlapStatus === "full") && (
+                            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 sm:h-7 sm:w-7">
+                              <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400 sm:h-3.5 sm:w-3.5" />
+                            </div>
+                          )}
+                          <span className="hidden truncate text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:block">
+                            {overlapStatus === "none" ? "No overlap" : "Overlap"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="mt-1 flex flex-col gap-1">
-                        {a.length > 0 && (
-                          <div>
-                            {activeA?.type === "group" ? (
-                              <>
-                                <span className="text-neutral-500 dark:text-neutral-400">
-                                  {aName}:
-                                </span>{" "}
-                                <span className="text-neutral-800 dark:text-neutral-200">
-                                  {a.map((m) => m.name).join(", ")}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-neutral-800 dark:text-neutral-200">
-                                {a.map((m) => m.name).join(", ")}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {b.length > 0 && (
-                          <div>
-                            {activeB?.type === "group" ? (
-                              <>
-                                <span className="text-neutral-500 dark:text-neutral-400">
-                                  {bName}:
-                                </span>{" "}
-                                <span className="text-neutral-800 dark:text-neutral-200">
-                                  {b.map((m) => m.name).join(", ")}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-neutral-800 dark:text-neutral-200">
-                                {b.map((m) => m.name).join(", ")}
-                              </span>
-                            )}
-                          </div>
-                        )}
+
+                      {/* Overlap bar */}
+                      <div className="flex-1">
+                        <div className="flex h-8 gap-px overflow-hidden rounded-lg bg-neutral-200 p-1 dark:bg-neutral-900">
+                        {Array.from({ length: 24 }, (_, hour) => {
+                          const isFullOverlap = overlapHours[hour];
+                          const isPartialOverlap = partialOverlapHours[hour];
+                          const hasAnyOverlap = isFullOverlap || isPartialOverlap;
+
+                          // Determine color based on overlap type for this specific hour
+                          let overlapColor: string;
+                          if (isFullOverlap) {
+                            overlapColor = "bg-emerald-500 dark:bg-emerald-400";
+                          } else if (isPartialOverlap) {
+                            overlapColor = "bg-amber-500 dark:bg-amber-400";
+                          } else {
+                            overlapColor = "bg-neutral-300 dark:bg-neutral-700";
+                          }
+
+                          if (!hasAnyOverlap) {
+                            return (
+                              <Tooltip key={hour}>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    className={`h-6 flex-1 ${
+                                      hour === 0 ? "rounded-l" : hour === 23 ? "rounded-r" : ""
+                                    } bg-neutral-300 dark:bg-neutral-700`}
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <div className="font-medium tabular-nums">
+                                    {formatHour(hour)}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          }
+
+                          const availableMap = getAvailableMembersAtHour(hour);
+                          const overlapLabel = isFullOverlap
+                            ? `All ${totalPeopleSelected} available`
+                            : `${overlapCounts[hour]} of ${totalPeopleSelected} available`;
+
+                          return (
+                            <Tooltip key={hour}>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className={`h-6 flex-1 ${
+                                    hour === 0 ? "rounded-l" : hour === 23 ? "rounded-r" : ""
+                                  } ${overlapColor}`}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <div className="font-medium tabular-nums text-neutral-900 dark:text-neutral-50">
+                                  {formatHour(hour)}
+                                </div>
+                                <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                                  {overlapLabel}
+                                </div>
+                                <div className="mt-1 flex flex-col gap-1">
+                                  {validSelections.map((sel) => {
+                                    const available = availableMap.get(serializeSelection(sel)) ?? [];
+                                    if (available.length === 0) return null;
+                                    const isGroup = sel.type === "group";
+                                    return (
+                                      <div key={serializeSelection(sel)}>
+                                        {isGroup ? (
+                                          <>
+                                            <span className="text-neutral-500 dark:text-neutral-400">
+                                              {getSelectionName(sel)}:
+                                            </span>{" "}
+                                            <span className="text-neutral-800 dark:text-neutral-200">
+                                              {available.map((m) => m.name).join(", ")}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <span className="text-neutral-800 dark:text-neutral-200">
+                                            {available.map((m) => m.name).join(", ")}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                        </div>
                       </div>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+                    </div>
+                  </div>
+                )}
+
+                {!canShowOverlap && (
+                  <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+                    Select at least 2 people to find overlapping times
+                  </p>
+                )}
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
       )}
 
       {/* Legend */}
@@ -797,11 +980,19 @@ const TimezoneVisualizer = ({
           <div className="h-3 w-3 rounded bg-neutral-900 dark:bg-neutral-100" />
           <span>Working hours</span>
         </div>
-        {members.length > 1 && (
-          <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded bg-neutral-600 dark:bg-neutral-400" />
-            <span>Overlap</span>
-          </div>
+        {isComparing && canShowOverlap && (
+          <>
+            <div className="flex items-center gap-1.5">
+              <div className="h-3 w-3 rounded bg-emerald-500 dark:bg-emerald-400" />
+              <span>Full overlap</span>
+            </div>
+            {totalPeopleSelected >= 3 && (
+              <div className="flex items-center gap-1.5">
+                <div className="h-3 w-3 rounded bg-amber-500 dark:bg-amber-400" />
+                <span>Partial overlap</span>
+              </div>
+            )}
+          </>
         )}
         <div className="flex items-center gap-1.5">
           <div className="flex items-center">
