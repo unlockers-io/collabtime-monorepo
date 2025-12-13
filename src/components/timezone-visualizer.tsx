@@ -654,17 +654,25 @@ const TimezoneVisualizer = ({
     [members]
   );
 
-  const getAvailableMembersAtHour = useCallback(
-    (hour: number): Map<string, TeamMember[]> => {
-      const result = new Map<string, TeamMember[]>();
+  const getMembersAvailabilityAtHour = useCallback(
+    (hour: number): Map<string, { available: TeamMember[]; unavailable: TeamMember[] }> => {
+      const result = new Map<string, { available: TeamMember[]; unavailable: TeamMember[] }>();
 
       for (const sel of validSelections) {
         const selMembers = getMembersForSelection(sel);
-        const available = selMembers.filter((m) => {
+        const available: TeamMember[] = [];
+        const unavailable: TeamMember[] = [];
+
+        for (const m of selMembers) {
           const row = memberRows.find((r) => r.member.id === m.id);
-          return row?.hours[hour] ?? false;
-        });
-        result.set(serializeSelection(sel), available);
+          if (row?.hours[hour]) {
+            available.push(m);
+          } else {
+            unavailable.push(m);
+          }
+        }
+
+        result.set(serializeSelection(sel), { available, unavailable });
       }
 
       return result;
@@ -876,10 +884,21 @@ const TimezoneVisualizer = ({
           );
         }
 
-        const availableMap = getAvailableMembersAtHour(hour);
+        const availabilityMap = getMembersAvailabilityAtHour(hour);
         const overlapLabel = isFullOverlap
           ? `All ${totalPeopleSelected} available`
           : `${overlapCounts[hour]} of ${totalPeopleSelected} available`;
+
+        // Collect all available and unavailable members across selections
+        const allAvailable: TeamMember[] = [];
+        const allUnavailable: TeamMember[] = [];
+        for (const sel of validSelections) {
+          const data = availabilityMap.get(serializeSelection(sel));
+          if (data) {
+            allAvailable.push(...data.available);
+            allUnavailable.push(...data.unavailable);
+          }
+        }
 
         return (
           <Tooltip key={hour}>
@@ -891,32 +910,26 @@ const TimezoneVisualizer = ({
                 {formatHour(hour)}
               </div>
               <div className="text-xs text-neutral-500 dark:text-neutral-400">{overlapLabel}</div>
-              <div className="mt-1 flex flex-col gap-1">
-                {validSelections.map((sel) => {
-                  const available = availableMap.get(serializeSelection(sel)) ?? [];
-                  if (available.length === 0) return null;
-                  const isGroup = sel.type === "group";
-
-                  return (
-                    <div key={serializeSelection(sel)}>
-                      {isGroup ? (
-                        <>
-                          <span className="text-neutral-500 dark:text-neutral-400">
-                            {getSelectionName(sel)}:
-                          </span>{" "}
-                          <span className="text-neutral-800 dark:text-neutral-200">
-                            {available.map((m) => m.name).join(", ")}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-neutral-800 dark:text-neutral-200">
-                          {available.map((m) => m.name).join(", ")}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              {allAvailable.length > 0 && (
+                <div className="mt-1.5 flex flex-col gap-0.5">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                    Available
+                  </span>
+                  <span className="text-xs text-neutral-800 dark:text-neutral-200">
+                    {allAvailable.map((m) => m.name).join(", ")}
+                  </span>
+                </div>
+              )}
+              {isPartialOverlap && allUnavailable.length > 0 && (
+                <div className="mt-1.5 flex flex-col gap-0.5">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-red-600 dark:text-red-400">
+                    Unavailable
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {allUnavailable.map((m) => m.name).join(", ")}
+                  </span>
+                </div>
+              )}
             </TooltipContent>
           </Tooltip>
         );
