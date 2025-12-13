@@ -237,13 +237,20 @@ const HourBlock = memo(function HourBlock({
   }, [hour, isWorking, onClickRef]);
 
   return (
-    <button
-      ref={buttonRef}
-      type="button"
-      onClick={handleClick}
-      className={`h-full flex-1 cursor-[inherit] ${getRoundedCornerClass(hour)}`}
-      style={{ backgroundColor: baseColor }}
-    />
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={handleClick}
+          className={`h-full flex-1 cursor-[inherit] ${getRoundedCornerClass(hour)}`}
+          style={{ backgroundColor: baseColor }}
+        />
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        <span className="font-medium tabular-nums">{formatHour(hour)}</span>
+      </TooltipContent>
+    </Tooltip>
   );
 });
 
