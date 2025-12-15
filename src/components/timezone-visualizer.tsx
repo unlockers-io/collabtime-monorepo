@@ -831,7 +831,10 @@ const TimezoneVisualizer = ({
     const content = (
       <div className="flex h-8 items-center justify-center sm:justify-start sm:gap-2">
         <div className="relative">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900 sm:h-7 sm:w-7 sm:text-xs">
+          <div
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900 sm:h-7 sm:w-7 sm:text-xs"
+            title={member.name}
+          >
             {member.name.charAt(0).toUpperCase()}
           </div>
           {isSelected && members.length > 1 && (
@@ -843,7 +846,10 @@ const TimezoneVisualizer = ({
             </div>
           )}
         </div>
-        <span className="hidden truncate text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:block">
+        <span
+          className="hidden truncate text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:block"
+          title={member.name}
+        >
           {member.name}
         </span>
       </div>
