@@ -82,9 +82,6 @@ const RootLayout = ({
         className={`${geistMono.variable} font-(family-name:--font-geist-mono) antialiased bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 selection:bg-neutral-200 selection:text-neutral-900 min-h-screen flex flex-col`}
       >
         <Providers>
-          <header className="fixed top-0 right-0 z-50 p-4">
-            <ModeToggle />
-          </header>
           <div className="flex-1 flex flex-col">
             {children}
           </div>

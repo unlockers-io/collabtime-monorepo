@@ -17,6 +17,8 @@ import { AddGroupForm } from "@/components/add-group-form";
 import { AddMemberForm } from "@/components/add-member-form";
 import { GroupHeader } from "@/components/group-header";
 import { MemberCard } from "@/components/member-card";
+import { ModeToggle } from "@/components/mode-toggle";
+import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { useVisitedTeams } from "@/hooks/use-visited-teams";
 import { useRealtime } from "@/lib/realtime-client";
@@ -379,41 +381,55 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
               )}
             </div>
 
-            <button
-              onClick={handleCopyLink}
-              className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 shadow-sm transition-all hover:border-neutral-300 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:bg-neutral-800 dark:focus-visible:ring-neutral-100 dark:focus-visible:ring-offset-neutral-950 sm:px-4"
-            >
-              <AnimatePresence mode="wait">
-                {hasCopied ? (
-                  <motion.div
-                    key="check"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="text-green-700 dark:text-green-400"
-                  >
-                    <Check className="h-4 w-4" />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="copy"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <span className="hidden sm:inline">{hasCopied ? "Copied!" : "Copy Link"}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopyLink}
+                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 shadow-sm transition-all hover:border-neutral-300 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:bg-neutral-800 dark:focus-visible:ring-neutral-100 dark:focus-visible:ring-offset-neutral-950 sm:px-4"
+              >
+                <AnimatePresence mode="wait">
+                  {hasCopied ? (
+                    <motion.div
+                      key="check"
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.8, opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="text-green-700 dark:text-green-400"
+                    >
+                      <Check className="h-4 w-4" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="copy"
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.8, opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <span className="hidden sm:inline">{hasCopied ? "Copied!" : "Copy Link"}</span>
+              </button>
+              <ModeToggle />
+            </div>
           </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Share this page with your team to collaborate across timezones
           </p>
         </header>
+
+        {/* Team Insights */}
+        {members.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <TeamInsights members={orderedMembers} groups={groups} />
+          </motion.section>
+        )}
 
         {/* Timezone Visualizer */}
         {members.length > 0 && (
