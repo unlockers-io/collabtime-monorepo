@@ -17,6 +17,7 @@ import { AddGroupForm } from "@/components/add-group-form";
 import { AddMemberForm } from "@/components/add-member-form";
 import { GroupHeader } from "@/components/group-header";
 import { MemberCard } from "@/components/member-card";
+import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { useVisitedTeams } from "@/hooks/use-visited-teams";
 import { useRealtime } from "@/lib/realtime-client";
@@ -414,6 +415,17 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
             Share this page with your team to collaborate across timezones
           </p>
         </header>
+
+        {/* Team Insights */}
+        {members.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <TeamInsights members={orderedMembers} groups={groups} />
+          </motion.section>
+        )}
 
         {/* Timezone Visualizer */}
         {members.length > 0 && (
