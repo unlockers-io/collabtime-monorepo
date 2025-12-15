@@ -1,15 +1,20 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
 import type { TeamGroup, TeamMember } from "@/types";
 import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
+
+const SOON_THRESHOLD_HOURS = 2;
+const MAX_ONLINE_DISPLAY = 5;
+const MAX_SOON_DISPLAY = 3;
 
 type TeamInsightsProps = {
   members: TeamMember[];
   groups?: TeamGroup[];
 };
 
+// No-op subscribe function for useSyncExternalStore when no subscriptions are needed
 const emptySubscribe = () => () => {};
 
 const useClientValue = <T,>(clientValue: () => T, serverValue: T): T => {
@@ -40,17 +45,17 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
 
   const memberStatuses = useMemo((): MemberStatus[] => {
     if (!viewerTimezone) return [];
+    // Include tick in the dependency to trigger recalculation every 30 seconds
     void tick;
 
     const now = new Date();
-    const currentHourInViewer = parseInt(
-      now.toLocaleString("en-US", {
-        timeZone: viewerTimezone,
-        hour: "numeric",
-        hour12: false,
-      }),
-      10
-    );
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: viewerTimezone,
+      hour: "numeric",
+      hour12: false,
+    });
+    const hourPart = formatter.formatToParts(now).find((p) => p.type === "hour");
+    const currentHourInViewer = hourPart ? parseInt(hourPart.value, 10) : 0;
 
     return members.map((member) => {
       const working = isCurrentlyWorking(
@@ -75,11 +80,11 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
 
       if (!working) {
         let diff = startInViewer - currentHourInViewer;
-        if (diff <= 0) diff += 24;
+        if (diff < 0) diff += 24;
         hoursUntilStart = diff;
       } else {
         let diff = endInViewer - currentHourInViewer;
-        if (diff <= 0) diff += 24;
+        if (diff < 0) diff += 24;
         hoursUntilEnd = diff;
       }
 
@@ -100,7 +105,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
   const comingSoonMembers = useMemo(
     () =>
       memberStatuses
-        .filter((s) => !s.isWorking && s.hoursUntilStart !== null && s.hoursUntilStart <= 2)
+        .filter((s) => !s.isWorking && s.hoursUntilStart !== null && s.hoursUntilStart <= SOON_THRESHOLD_HOURS)
         .sort((a, b) => (a.hoursUntilStart ?? 0) - (b.hoursUntilStart ?? 0)),
     [memberStatuses]
   );
@@ -108,19 +113,22 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
   const leavingSoonMembers = useMemo(
     () =>
       memberStatuses
-        .filter((s) => s.isWorking && s.hoursUntilEnd !== null && s.hoursUntilEnd <= 2)
+        .filter((s) => s.isWorking && s.hoursUntilEnd !== null && s.hoursUntilEnd <= SOON_THRESHOLD_HOURS)
         .sort((a, b) => (a.hoursUntilEnd ?? 0) - (b.hoursUntilEnd ?? 0)),
     [memberStatuses]
+  );
+
+  const getGroupName = useCallback(
+    (groupId?: string) => {
+      if (!groupId) return null;
+      return groups.find((g) => g.id === groupId)?.name ?? null;
+    },
+    [groups]
   );
 
   if (members.length === 0 || !viewerTimezone) {
     return null;
   }
-
-  const getGroupName = (groupId?: string) => {
-    if (!groupId) return null;
-    return groups.find((g) => g.id === groupId)?.name ?? null;
-  };
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-5">
@@ -145,7 +153,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
           </div>
           {onlineMembers.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
-              {onlineMembers.slice(0, 5).map(({ member }) => {
+              {onlineMembers.slice(0, MAX_ONLINE_DISPLAY).map(({ member }) => {
                 const groupName = getGroupName(member.groupId);
                 return (
                   <div
@@ -158,9 +166,9 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
                   </div>
                 );
               })}
-              {onlineMembers.length > 5 && (
+              {onlineMembers.length > MAX_ONLINE_DISPLAY && (
                 <div className="flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-neutral-500 shadow-sm dark:bg-neutral-700 dark:text-neutral-400">
-                  +{onlineMembers.length - 5} more
+                  +{onlineMembers.length - MAX_ONLINE_DISPLAY} more
                 </div>
               )}
             </div>
@@ -186,7 +194,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
           </div>
           {comingSoonMembers.length > 0 ? (
             <div className="flex flex-col gap-1.5">
-              {comingSoonMembers.slice(0, 3).map(({ member, hoursUntilStart }) => (
+              {comingSoonMembers.slice(0, MAX_SOON_DISPLAY).map(({ member, hoursUntilStart }) => (
                 <div
                   key={member.id}
                   className="flex items-center justify-between rounded-lg bg-white px-2.5 py-1.5 shadow-sm dark:bg-neutral-700"
@@ -199,15 +207,15 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
                   </span>
                 </div>
               ))}
-              {comingSoonMembers.length > 3 && (
+              {comingSoonMembers.length > MAX_SOON_DISPLAY && (
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  +{comingSoonMembers.length - 3} more starting soon
+                  +{comingSoonMembers.length - MAX_SOON_DISPLAY} more starting soon
                 </p>
               )}
             </div>
           ) : (
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              No one starting in the next 2 hours
+              No one starting in the next {SOON_THRESHOLD_HOURS} hours
             </p>
           )}
         </div>
@@ -227,7 +235,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
           </div>
           {leavingSoonMembers.length > 0 ? (
             <div className="flex flex-col gap-1.5">
-              {leavingSoonMembers.slice(0, 3).map(({ member, hoursUntilEnd }) => (
+              {leavingSoonMembers.slice(0, MAX_SOON_DISPLAY).map(({ member, hoursUntilEnd }) => (
                 <div
                   key={member.id}
                   className="flex items-center justify-between rounded-lg bg-white px-2.5 py-1.5 shadow-sm dark:bg-neutral-700"
@@ -240,15 +248,15 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
                   </span>
                 </div>
               ))}
-              {leavingSoonMembers.length > 3 && (
+              {leavingSoonMembers.length > MAX_SOON_DISPLAY && (
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  +{leavingSoonMembers.length - 3} more wrapping up
+                  +{leavingSoonMembers.length - MAX_SOON_DISPLAY} more wrapping up
                 </p>
               )}
             </div>
           ) : (
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              No one ending in the next 2 hours
+              No one ending in the next {SOON_THRESHOLD_HOURS} hours
             </p>
           )}
         </div>
