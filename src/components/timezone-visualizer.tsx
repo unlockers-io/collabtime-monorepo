@@ -923,27 +923,30 @@ const TimezoneVisualizer = ({
                   {overlapLabel}
                 </div>
                 {availableByTeam.size > 0 && (
-                  <div className="mt-1.5 flex flex-col gap-0.5">
+                  <div className="mt-1.5 flex flex-col gap-4">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
                       Available by team
                     </span>
                     {Array.from(availableByTeam.entries()).map(([teamName, names]) => (
-                      <div key={`${teamName}-available`} className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-neutral-800 dark:text-neutral-200">{teamName}</span>
-                        <span className="text-emerald-600 dark:text-emerald-400">{names.join(", ")}</span>
+                      <div key={`${teamName}-available`} className="flex items-center justify-between gap-4 text-xs">
+                        <span className="font-medium text-neutral-800 dark:text-neutral-200 truncate">{teamName}</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 truncate">{names.join(", ")}</span>
                       </div>
                     ))}
                   </div>
                 )}
                 {!isFullOverlap && unavailableByTeam.size > 0 && (
-                  <div className="mt-1.5 flex flex-col gap-0.5">
+                  <div className="mt-1.5 flex flex-col gap-4">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-red-600 dark:text-red-400">
                       Unavailable
                     </span>
                     {Array.from(unavailableByTeam.entries()).map(([teamName, names]) => (
-                      <div key={`${teamName}-unavailable`} className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
-                        <span className="font-medium text-neutral-700 dark:text-neutral-300">{teamName}</span>
-                        <span>{names.join(", ")}</span>
+                      <div
+                        key={`${teamName}-unavailable`}
+                        className="flex items-center justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400"
+                      >
+                        <span className="font-medium text-neutral-700 dark:text-neutral-300 truncate">{teamName}</span>
+                        <span className="truncate">{names.join(", ")}</span>
                       </div>
                     ))}
                   </div>
