@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
-import { motion } from "motion/react";
 import { toast } from "sonner";
 import { Pencil, Trash2, Users } from "lucide-react";
 import type { TeamGroup } from "@/types";
@@ -100,42 +99,17 @@ const GroupHeader = ({
   return (
     <div
       className={cn(
-        "group relative flex h-full min-h-[180px] flex-col rounded-2xl border-2 p-4 transition-all",
+        "group flex h-full min-h-[180px] flex-col rounded-2xl border-2 p-4 transition-all",
         isDragOver
           ? "border-neutral-900 bg-neutral-200 dark:border-neutral-100 dark:bg-neutral-700"
-          : "border-transparent bg-neutral-100 dark:bg-neutral-800"
+          : isDragging
+            ? "border-dashed border-neutral-400 bg-neutral-100 dark:border-neutral-500 dark:bg-neutral-800"
+            : "border-transparent bg-neutral-100 dark:bg-neutral-800"
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Animated marching ants border */}
-      {isDragging && !isDragOver && (
-        <svg
-          className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
-          aria-hidden="true"
-        >
-          <motion.rect
-            x="1"
-            y="1"
-            width="calc(100% - 2px)"
-            height="calc(100% - 2px)"
-            rx="15"
-            ry="15"
-            fill="none"
-            className="stroke-neutral-400 dark:stroke-neutral-500"
-            strokeWidth="2"
-            strokeDasharray="8 8"
-            initial={{ strokeDashoffset: 0 }}
-            animate={{ strokeDashoffset: -16 }}
-            transition={{
-              duration: 0.4,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </svg>
-      )}
       {/* Top row: Icon and Actions */}
       <div className="flex items-start justify-between">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
