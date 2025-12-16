@@ -99,7 +99,7 @@ const GroupHeader = ({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-all",
+        "group flex h-full min-h-[180px] flex-col rounded-2xl p-4 transition-all",
         isDragOver
           ? "bg-neutral-200 ring-2 ring-neutral-900 ring-inset dark:bg-neutral-700 dark:ring-neutral-100"
           : isDragging
@@ -110,11 +110,27 @@ const GroupHeader = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
-          <Users className="h-5 w-5" />
+      {/* Top row: Icon and Actions */}
+      <div className="flex items-start justify-between">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
+          <Users className="h-6 w-6" />
         </div>
 
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={handleRemove}
+          disabled={isPending}
+          className="shrink-0 text-neutral-400 opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+          aria-label={`Remove group ${group.name}`}
+        >
+          {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Group info - stacked vertically */}
+      <div className="mt-3 flex flex-1 flex-col gap-2">
         {isEditing ? (
           <Input
             type="text"
@@ -123,46 +139,41 @@ const GroupHeader = ({
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="h-9 flex-1 text-sm font-medium"
+            className="h-9 text-sm font-medium"
           />
         ) : (
           <button
             type="button"
             onClick={handleStartEditing}
-            className="group flex min-w-0 items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100"
+            className="group/name flex items-center gap-1.5 text-left"
           >
-            <span className="truncate">{group.name}</span>
-            <Pencil className="h-4 w-4 shrink-0 text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100" />
+            <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+              {group.name}
+            </span>
+            <Pencil className="h-3.5 w-3.5 shrink-0 text-neutral-400 opacity-0 transition-opacity group-hover/name:opacity-100" />
           </button>
         )}
 
-        <span className="shrink-0 rounded-full bg-neutral-200 px-2.5 py-1 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
-          {memberCount}
-        </span>
-
-        {(isDragging || isDragOver) && (
-          <span className={cn(
-            "text-sm font-medium transition-colors",
-            isDragOver
-              ? "text-neutral-900 dark:text-neutral-100"
-              : "text-neutral-500 dark:text-neutral-400"
-          )}>
-            Drop to add
+        {/* Member count badge */}
+        <div className="mt-auto">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-200 px-2.5 py-1 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
+            <Users className="h-3 w-3" />
+            {memberCount} {memberCount === 1 ? "member" : "members"}
           </span>
+        </div>
+
+        {/* Drop indicator */}
+        {(isDragging || isDragOver) && (
+          <div className={cn(
+            "mt-2 flex items-center justify-center rounded-xl border-2 border-dashed py-3 text-sm font-medium transition-colors",
+            isDragOver
+              ? "border-neutral-400 bg-neutral-100 text-neutral-900 dark:border-neutral-500 dark:bg-neutral-600 dark:text-neutral-100"
+              : "border-neutral-300 text-neutral-500 dark:border-neutral-600 dark:text-neutral-400"
+          )}>
+            Drop here to add
+          </div>
         )}
       </div>
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        onClick={handleRemove}
-        disabled={isPending}
-        className="shrink-0 text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-        aria-label={`Remove group ${group.name}`}
-      >
-        {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
-      </Button>
     </div>
   );
 };

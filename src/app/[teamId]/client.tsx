@@ -8,6 +8,7 @@ import {
   Check,
   Clock,
   Copy,
+  FolderKanban,
   Globe,
   Pencil,
   Users,
@@ -18,6 +19,7 @@ import { AddMemberForm } from "@/components/add-member-form";
 import { GroupHeader } from "@/components/group-header";
 import { MemberCard } from "@/components/member-card";
 import { ModeToggle } from "@/components/mode-toggle";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { useVisitedTeams } from "@/hooks/use-visited-teams";
@@ -334,12 +336,12 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
 
   return (
     <DragProvider>
-      <div className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="min-h-screen w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
         <motion.main
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="mx-auto flex w-full max-w-4xl flex-col gap-8"
+        className="mx-auto flex w-full max-w-[1800px] flex-col gap-6"
       >
         {/* Header */}
         <header className="flex flex-col gap-4">
@@ -459,95 +461,97 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
           </motion.section>
         )}
 
-        {/* Team Members */}
-        <motion.section
+        {/* Team Members & Groups - Two column layout on large screens */}
+        <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col gap-4"
+          className="grid grid-cols-1 gap-6 xl:grid-cols-2"
         >
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Users className="h-5 w-5 text-neutral-500" />
-              Team Members
-            </h2>
-            <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-              {members.length}
-            </span>
-          </div>
-
-          {members.length > 0 && (
-            <div className="flex flex-col gap-3">
-              {orderedMembers.map((member) => (
-                <MemberCard
-                  key={member.id}
-                  member={member}
-                  teamId={team.id}
-                  groups={groups}
-                  onMemberRemoved={handleMemberRemoved}
-                  onMemberUpdated={handleMemberUpdated}
-                />
-              ))}
+          {/* Team Members */}
+          <section className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <Users className="h-5 w-5 text-neutral-500" />
+                Team Members
+              </h2>
+              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                {members.length}
+              </span>
             </div>
-          )}
 
-          <AddMemberForm
-            teamId={team.id}
-            groups={groups}
-            onMemberAdded={handleMemberAdded}
-            isFirstMember={members.length === 0}
-          />
-        </motion.section>
+            {members.length > 0 && (
+              <ScrollArea className="max-h-[600px]">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4 pr-4">
+                  {orderedMembers.map((member) => (
+                    <MemberCard
+                      key={member.id}
+                      member={member}
+                      teamId={team.id}
+                      groups={groups}
+                      onMemberRemoved={handleMemberRemoved}
+                      onMemberUpdated={handleMemberUpdated}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
 
-        {/* Groups */}
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col gap-3"
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Users className="h-5 w-5 text-neutral-500" />
-              Groups
-            </h2>
-            <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-              {groups.length}
-            </span>
-          </div>
+            <AddMemberForm
+              teamId={team.id}
+              groups={groups}
+              onMemberAdded={handleMemberAdded}
+              isFirstMember={members.length === 0}
+            />
+          </section>
 
-          {groups.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900/50">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-                <Users className="h-6 w-6 text-neutral-500" />
+          {/* Groups */}
+          <section className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <FolderKanban className="h-5 w-5 text-neutral-500" />
+                Groups
+              </h2>
+              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                {groups.length}
+              </span>
+            </div>
+
+            {groups.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900/50">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
+                  <FolderKanban className="h-6 w-6 text-neutral-500" />
+                </div>
+                <h3 className="mt-4 font-semibold text-neutral-900 dark:text-neutral-100">
+                  Organize with groups
+                </h3>
+                <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
+                  Create groups to organize team members by department, project, or location. Drag and drop members into groups to categorize them.
+                </p>
               </div>
-              <h3 className="mt-4 font-semibold text-neutral-900 dark:text-neutral-100">
-                Organize with groups
-              </h3>
-              <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
-                Create groups to organize team members by department, project, or location. Drag and drop members into groups to categorize them.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {[...groups]
-                .sort((a, b) => a.order - b.order)
-                .map((group) => (
-                  <GroupHeader
-                    key={group.id}
-                    group={group}
-                    teamId={team.id}
-                    memberCount={members.filter((m) => m.groupId === group.id).length}
-                    onGroupUpdated={handleGroupUpdated}
-                    onGroupRemoved={handleGroupRemoved}
-                    onMemberDropped={handleMemberDroppedOnGroup}
-                  />
-                ))}
-            </div>
-          )}
+            ) : (
+              <ScrollArea className="max-h-[600px]">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4 pr-4">
+                  {[...groups]
+                    .sort((a, b) => a.order - b.order)
+                    .map((group) => (
+                      <GroupHeader
+                        key={group.id}
+                        group={group}
+                        teamId={team.id}
+                        memberCount={members.filter((m) => m.groupId === group.id).length}
+                        onGroupUpdated={handleGroupUpdated}
+                        onGroupRemoved={handleGroupRemoved}
+                        onMemberDropped={handleMemberDroppedOnGroup}
+                      />
+                    ))}
+                </div>
+              </ScrollArea>
+            )}
 
-          <AddGroupForm teamId={team.id} onGroupAdded={handleGroupAdded} />
-        </motion.section>
+            <AddGroupForm teamId={team.id} onGroupAdded={handleGroupAdded} />
+          </section>
+        </motion.div>
         </motion.main>
       </div>
     </DragProvider>
