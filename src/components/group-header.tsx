@@ -32,7 +32,10 @@ const GroupHeader = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
-  const { isDragging } = useDrag();
+  const { isDragging, draggedMemberGroupId } = useDrag();
+
+  // Check if the member being dragged is already in this group
+  const isCurrentGroup = isDragging && draggedMemberGroupId === group.id;
 
   const handleStartEditing = useCallback(() => {
     setEditingName(group.name);
@@ -78,6 +81,10 @@ const GroupHeader = ({
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    if (isCurrentGroup) {
+      e.dataTransfer.dropEffect = "none";
+      return;
+    }
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     setIsDragOver(true);
@@ -99,12 +106,14 @@ const GroupHeader = ({
   return (
     <div
       className={cn(
-        "group flex h-full min-h-[180px] flex-col rounded-2xl p-4 transition-all",
-        isDragOver
-          ? "bg-neutral-200 ring-2 ring-neutral-900 ring-inset dark:bg-neutral-700 dark:ring-neutral-100"
-          : isDragging
-            ? "bg-neutral-100 ring-2 ring-dashed ring-neutral-300 dark:bg-neutral-800 dark:ring-neutral-600"
-            : "bg-neutral-100 dark:bg-neutral-800"
+        "group flex h-full min-h-[180px] flex-col rounded-2xl border-2 p-4 transition-all",
+        isCurrentGroup
+          ? "cursor-not-allowed border-transparent bg-neutral-100 opacity-50 dark:bg-neutral-800"
+          : isDragOver
+            ? "border-neutral-900 bg-neutral-200 dark:border-neutral-100 dark:bg-neutral-700"
+            : isDragging
+              ? "border-dashed border-neutral-400 bg-neutral-100 dark:border-neutral-500 dark:bg-neutral-800"
+              : "border-transparent bg-neutral-100 dark:bg-neutral-800"
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -162,17 +171,6 @@ const GroupHeader = ({
           </span>
         </div>
 
-        {/* Drop indicator */}
-        {(isDragging || isDragOver) && (
-          <div className={cn(
-            "mt-2 flex items-center justify-center rounded-xl border-2 border-dashed py-3 text-sm font-medium transition-colors",
-            isDragOver
-              ? "border-neutral-400 bg-neutral-100 text-neutral-900 dark:border-neutral-500 dark:bg-neutral-600 dark:text-neutral-100"
-              : "border-neutral-300 text-neutral-500 dark:border-neutral-600 dark:text-neutral-400"
-          )}>
-            Drop here to add
-          </div>
-        )}
       </div>
     </div>
   );

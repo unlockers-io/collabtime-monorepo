@@ -910,6 +910,15 @@ const TimezoneVisualizer = ({
           const availableByTeam = bucketByTeam(allAvailable);
           const unavailableByTeam = bucketByTeam(allUnavailable);
 
+          // Identify teams where no one is available (entire team unavailable)
+          const fullyUnavailableTeams = Array.from(unavailableByTeam.keys()).filter(
+            (teamName) => !availableByTeam.has(teamName)
+          );
+          // Teams with some members available and some unavailable
+          const partiallyUnavailableTeams = Array.from(unavailableByTeam.entries()).filter(
+            ([teamName]) => availableByTeam.has(teamName)
+          );
+
           return (
             <Tooltip key={hour}>
               <TooltipTrigger asChild>
@@ -940,7 +949,20 @@ const TimezoneVisualizer = ({
                     <span className="text-[10px] font-medium uppercase tracking-wide text-red-600 dark:text-red-400">
                       Unavailable
                     </span>
-                    {Array.from(unavailableByTeam.entries()).map(([teamName, names]) => (
+                    {/* Teams with no one available - shown with strikethrough */}
+                    {fullyUnavailableTeams.map((teamName) => (
+                      <div
+                        key={`${teamName}-fully-unavailable`}
+                        className="flex items-center justify-between gap-4 text-xs text-neutral-400 dark:text-neutral-500"
+                      >
+                        <span className="font-medium line-through truncate">{teamName}</span>
+                        <span className="truncate">
+                          {unavailableByTeam.get(teamName)?.join(", ")}
+                        </span>
+                      </div>
+                    ))}
+                    {/* Teams with some members unavailable */}
+                    {partiallyUnavailableTeams.map(([teamName, names]) => (
                       <div
                         key={`${teamName}-unavailable`}
                         className="flex items-center justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400"

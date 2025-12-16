@@ -4,7 +4,8 @@ import { createContext, useCallback, useContext, useState } from "react";
 
 type DragContextValue = {
   isDragging: boolean;
-  startDrag: () => void;
+  draggedMemberGroupId: string | undefined;
+  startDrag: (groupId: string | undefined) => void;
   endDrag: () => void;
 };
 
@@ -16,17 +17,24 @@ type DragProviderProps = {
 
 const DragProvider = ({ children }: DragProviderProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [draggedMemberGroupId, setDraggedMemberGroupId] = useState<
+    string | undefined
+  >(undefined);
 
-  const startDrag = useCallback(() => {
+  const startDrag = useCallback((groupId: string | undefined) => {
     setIsDragging(true);
+    setDraggedMemberGroupId(groupId);
   }, []);
 
   const endDrag = useCallback(() => {
     setIsDragging(false);
+    setDraggedMemberGroupId(undefined);
   }, []);
 
   return (
-    <DragContext.Provider value={{ isDragging, startDrag, endDrag }}>
+    <DragContext.Provider
+      value={{ isDragging, draggedMemberGroupId, startDrag, endDrag }}
+    >
       {children}
     </DragContext.Provider>
   );
