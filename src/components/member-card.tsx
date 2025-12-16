@@ -6,11 +6,22 @@ import { Pencil, Trash2 } from "lucide-react";
 import type { TeamGroup, TeamMember } from "@/types";
 import { removeMember } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
-import { formatTimezoneLabel, isCurrentlyWorking } from "@/lib/timezones";
+import {
+  formatTimezoneLabel,
+  isCurrentlyWorking,
+  getMinutesUntilAvailable,
+  formatTimeUntilAvailable,
+} from "@/lib/timezones";
 import { cn, formatHour } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { useDrag } from "@/contexts/drag-context";
 import { EditMemberDialog } from "@/components/edit-member-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type MemberCardProps = {
   member: TeamMember;
@@ -29,6 +40,7 @@ const MemberCard = ({
 }: MemberCardProps) => {
   const [isPending, startTransition] = useTransition();
   const [isAvailable, setIsAvailable] = useState(false);
+  const [minutesUntilAvailable, setMinutesUntilAvailable] = useState(0);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const { isDragging, startDrag, endDrag } = useDrag();
@@ -50,13 +62,24 @@ const MemberCard = ({
 
   useEffect(() => {
     const checkAvailability = () => {
-      setIsAvailable(
-        isCurrentlyWorking(
-          member.timezone,
-          member.workingHoursStart,
-          member.workingHoursEnd
-        )
+      const available = isCurrentlyWorking(
+        member.timezone,
+        member.workingHoursStart,
+        member.workingHoursEnd
       );
+      setIsAvailable(available);
+
+      if (!available) {
+        setMinutesUntilAvailable(
+          getMinutesUntilAvailable(
+            member.timezone,
+            member.workingHoursStart,
+            member.workingHoursEnd
+          )
+        );
+      } else {
+        setMinutesUntilAvailable(0);
+      }
     };
 
     checkAvailability();
@@ -162,11 +185,27 @@ const MemberCard = ({
 
           {/* Status badges */}
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {isAvailable && (
+            {isAvailable ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
                 Available
               </span>
+            ) : (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex cursor-default items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                      Not Available
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Available {formatTimeUntilAvailable(minutesUntilAvailable)}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             {member.groupId && groups.find((g) => g.id === member.groupId) && (
               <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">

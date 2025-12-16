@@ -130,6 +130,65 @@ const getDayOffset = (
   return diffDays;
 };
 
+const getMinutesUntilAvailable = (
+  timezone: string,
+  workingHoursStart: number,
+  workingHoursEnd: number
+): number => {
+  // If currently working, return 0
+  if (isCurrentlyWorking(timezone, workingHoursStart, workingHoursEnd)) {
+    return 0;
+  }
+
+  const now = new Date();
+  const currentHour = parseInt(
+    now.toLocaleString("en-US", {
+      timeZone: timezone,
+      hour: "numeric",
+      hour12: false,
+    }),
+    10
+  );
+  const currentMinute = parseInt(
+    now.toLocaleString("en-US", {
+      timeZone: timezone,
+      minute: "numeric",
+    }),
+    10
+  );
+
+  const currentMinutesFromMidnight = currentHour * 60 + currentMinute;
+  const workStartMinutes = workingHoursStart * 60;
+
+  let minutesUntilAvailable: number;
+
+  if (currentMinutesFromMidnight < workStartMinutes) {
+    // Work hasn't started yet today
+    minutesUntilAvailable = workStartMinutes - currentMinutesFromMidnight;
+  } else {
+    // Work already ended today, calculate time until tomorrow's start
+    const minutesUntilMidnight = 24 * 60 - currentMinutesFromMidnight;
+    minutesUntilAvailable = minutesUntilMidnight + workStartMinutes;
+  }
+
+  return minutesUntilAvailable;
+};
+
+const formatTimeUntilAvailable = (minutes: number): string => {
+  if (minutes === 0) return "Available now";
+
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+
+  if (hours === 0) {
+    return `in ${mins}m`;
+  }
+  if (mins === 0) {
+    return `in ${hours}h`;
+  }
+  return `in ${hours}h ${mins}m`;
+};
+
 export {
   COMMON_TIMEZONES,
   getTimezoneOffset,
@@ -138,4 +197,6 @@ export {
   convertHourToTimezone,
   isCurrentlyWorking,
   getDayOffset,
+  getMinutesUntilAvailable,
+  formatTimeUntilAvailable,
 };

@@ -27,6 +27,10 @@ import { useRealtime } from "@/lib/realtime-client";
 import { updateTeamName as updateTeamNameAction } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 import { DragProvider } from "@/contexts/drag-context";
+import {
+  isCurrentlyWorking,
+  getMinutesUntilAvailable,
+} from "@/lib/timezones";
 
 type TeamPageClientProps = {
   team: Team;
@@ -241,8 +245,43 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
     }
   };
 
-  // Members are already ordered from the server; keep as-is
-  const orderedMembers = useMemo(() => members, [members]);
+  // Sort members: available first, then by time until available
+  const orderedMembers = useMemo(() => {
+    return [...members].sort((a, b) => {
+      const aIsAvailable = isCurrentlyWorking(
+        a.timezone,
+        a.workingHoursStart,
+        a.workingHoursEnd
+      );
+      const bIsAvailable = isCurrentlyWorking(
+        b.timezone,
+        b.workingHoursStart,
+        b.workingHoursEnd
+      );
+
+      // Available members come first
+      if (aIsAvailable && !bIsAvailable) return -1;
+      if (!aIsAvailable && bIsAvailable) return 1;
+
+      // If both unavailable, sort by time until available
+      if (!aIsAvailable && !bIsAvailable) {
+        const aMinutes = getMinutesUntilAvailable(
+          a.timezone,
+          a.workingHoursStart,
+          a.workingHoursEnd
+        );
+        const bMinutes = getMinutesUntilAvailable(
+          b.timezone,
+          b.workingHoursStart,
+          b.workingHoursEnd
+        );
+        return aMinutes - bMinutes;
+      }
+
+      // If both available, keep original order
+      return 0;
+    });
+  }, [members]);
 
   // Convert Set to array for stable prop reference
   const collapsedGroupIds = useMemo(() => [...collapsedGroups], [collapsedGroups]);
