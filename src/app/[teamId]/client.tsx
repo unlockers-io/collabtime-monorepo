@@ -334,12 +334,12 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
 
   return (
     <DragProvider>
-      <div className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="min-h-screen w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
         <motion.main
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="mx-auto flex w-full max-w-4xl flex-col gap-8"
+        className="mx-auto flex w-full max-w-[1800px] flex-col gap-6"
       >
         {/* Header */}
         <header className="flex flex-col gap-4">
@@ -477,7 +477,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
           </div>
 
           {members.length > 0 && (
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
               {orderedMembers.map((member) => (
                 <MemberCard
                   key={member.id}
@@ -504,7 +504,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-4"
         >
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -529,7 +529,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
               {[...groups]
                 .sort((a, b) => a.order - b.order)
                 .map((group) => (

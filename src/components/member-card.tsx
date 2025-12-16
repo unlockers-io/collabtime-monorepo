@@ -285,60 +285,27 @@ const MemberCard = ({
 
   return (
     <div
-      className="group flex cursor-grab flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:border-neutral-300 hover:shadow-md active:cursor-grabbing dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
+      className="group flex h-full min-h-[180px] cursor-grab flex-col rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:border-neutral-300 hover:shadow-md active:cursor-grabbing dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex items-start gap-3">
+      {/* Top row: Avatar and Actions */}
+      <div className="flex items-start justify-between">
         {/* Avatar with status */}
-        <div className="relative shrink-0">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-900 text-sm font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900">
+        <div className="relative">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900 text-base font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900">
             {member.name.charAt(0).toUpperCase()}
           </div>
           {isAvailable && (
-            <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-white bg-green-500 dark:border-neutral-900">
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-green-500 dark:border-neutral-900">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
             </span>
           )}
         </div>
 
-        {/* Info */}
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-              {member.name}
-            </span>
-            {member.title && (
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                {member.title}
-              </span>
-            )}
-            {member.groupId && groups.find((g) => g.id === member.groupId) && (
-              <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-                {groups.find((g) => g.id === member.groupId)?.name}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-            <span>{formatTimezoneLabel(member.timezone)}</span>
-            <span className="hidden text-neutral-300 dark:text-neutral-600 sm:inline">
-              &middot;
-            </span>
-            <span>
-              {formatHour(member.workingHoursStart)} –{" "}
-              {formatHour(member.workingHoursEnd)}
-            </span>
-            {isAvailable && (
-              <span className="font-medium text-green-700 dark:text-green-400">
-                Available now
-              </span>
-            )}
-          </div>
-        </div>
-
         {/* Actions */}
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -358,6 +325,43 @@ const MemberCard = ({
           >
             {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
           </Button>
+        </div>
+      </div>
+
+      {/* Info - stacked vertically */}
+      <div className="mt-3 flex flex-1 flex-col gap-1.5">
+        <div className="flex flex-col gap-0.5">
+          <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+            {member.name}
+          </span>
+          {member.title && (
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">
+              {member.title}
+            </span>
+          )}
+        </div>
+
+        {/* Timezone and hours */}
+        <div className="mt-auto flex flex-col gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <span className="truncate">{formatTimezoneLabel(member.timezone)}</span>
+          <span>
+            {formatHour(member.workingHoursStart)} – {formatHour(member.workingHoursEnd)}
+          </span>
+        </div>
+
+        {/* Status badges */}
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {isAvailable && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+              Available
+            </span>
+          )}
+          {member.groupId && groups.find((g) => g.id === member.groupId) && (
+            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+              {groups.find((g) => g.id === member.groupId)?.name}
+            </span>
+          )}
         </div>
       </div>
     </div>
