@@ -14,8 +14,8 @@ import {
   Users,
 } from "lucide-react";
 import type { Team, TeamGroup, TeamMember } from "@/types";
-import { AddGroupForm } from "@/components/add-group-form";
-import { AddMemberForm } from "@/components/add-member-form";
+import { AddGroupDialog } from "@/components/add-group-dialog";
+import { AddMemberDialog } from "@/components/add-member-dialog";
 import { GroupHeader } from "@/components/group-header";
 import { MemberCard } from "@/components/member-card";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -497,7 +497,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
               </ScrollArea>
             )}
 
-            <AddMemberForm
+            <AddMemberDialog
               teamId={team.id}
               groups={groups}
               onMemberAdded={handleMemberAdded}
@@ -549,7 +549,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
               </ScrollArea>
             )}
 
-            <AddGroupForm teamId={team.id} onGroupAdded={handleGroupAdded} />
+            <AddGroupDialog teamId={team.id} onGroupAdded={handleGroupAdded} />
           </section>
         </motion.div>
         </motion.main>
