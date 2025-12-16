@@ -31,7 +31,7 @@ const MemberCard = ({
   const [isAvailable, setIsAvailable] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const { startDrag, endDrag } = useDrag();
+  const { isDragging, startDrag, endDrag } = useDrag();
 
   // Detect touch device to disable dragging on mobile
   useEffect(() => {
@@ -92,7 +92,7 @@ const MemberCard = ({
       <div
         className={cn(
           "group flex h-full min-h-[180px] flex-col rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:border-neutral-300 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700",
-          isDraggable && "cursor-grab active:cursor-grabbing"
+          isDraggable && (isDragging ? "cursor-grabbing" : "cursor-grab")
         )}
         draggable={isDraggable}
         onDragStart={isDraggable ? handleDragStart : undefined}
