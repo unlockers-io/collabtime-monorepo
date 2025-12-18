@@ -236,7 +236,9 @@ const HourBlock = memo(function HourBlock({
         />
       </TooltipTrigger>
       <TooltipContent side="top">
-        <span className="font-medium tabular-nums">{formatHour(hour)}</span>
+        <span className="font-medium tabular-nums">
+          {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
+        </span>
       </TooltipContent>
     </Tooltip>
   );
@@ -857,7 +859,9 @@ const TimezoneVisualizer = ({
                   />
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  <div className="font-medium tabular-nums">{formatHour(hour)}</div>
+                  <div className="font-medium tabular-nums">
+                    {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
+                  </div>
                 </TooltipContent>
               </Tooltip>
             );
@@ -911,7 +915,7 @@ const TimezoneVisualizer = ({
               </TooltipTrigger>
               <TooltipContent side="top">
                 <div className="font-medium tabular-nums text-neutral-900 dark:text-neutral-50">
-                  {formatHour(hour)}
+                  {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
                 </div>
                 <div className="text-xs text-neutral-500 dark:text-neutral-400">
                   {overlapLabel}
