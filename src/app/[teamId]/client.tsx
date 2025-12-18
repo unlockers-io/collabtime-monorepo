@@ -16,6 +16,7 @@ import {
 import type { Team, TeamGroup, TeamMember } from "@/types";
 import { AddGroupDialog } from "@/components/add-group-dialog";
 import { AddMemberDialog } from "@/components/add-member-dialog";
+import { CurrentTimeDisplay } from "@/components/current-time-display";
 import { GroupHeader } from "@/components/group-header";
 import { MemberCard } from "@/components/member-card";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -423,6 +424,7 @@ const TeamPageClient = ({ team }: TeamPageClientProps) => {
             </div>
 
             <div className="flex items-center gap-2">
+              <CurrentTimeDisplay />
               <button
                 onClick={handleCopyLink}
                 className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 shadow-sm transition-all hover:border-neutral-300 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:bg-neutral-800 dark:focus-visible:ring-neutral-100 dark:focus-visible:ring-offset-neutral-950 sm:px-4"

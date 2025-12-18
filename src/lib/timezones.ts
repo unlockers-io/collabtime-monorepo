@@ -189,6 +189,19 @@ const formatTimeUntilAvailable = (minutes: number): string => {
   return `in ${hours}h ${mins}m`;
 };
 
+const formatTimezoneAbbreviation = (timezone: string): string => {
+  const now = new Date();
+  // Get the timezone abbreviation (e.g., "PST", "EST", "GMT")
+  const parts = now
+    .toLocaleTimeString("en-US", {
+      timeZone: timezone,
+      timeZoneName: "short",
+    })
+    .split(" ");
+  // The abbreviation is typically the last part
+  return parts[parts.length - 1] ?? timezone.split("/").pop() ?? timezone;
+};
+
 export {
   COMMON_TIMEZONES,
   getTimezoneOffset,
@@ -199,4 +212,5 @@ export {
   getDayOffset,
   getMinutesUntilAvailable,
   formatTimeUntilAvailable,
+  formatTimezoneAbbreviation,
 };

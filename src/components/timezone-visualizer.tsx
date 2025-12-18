@@ -23,6 +23,7 @@ import {
 
 import type { TeamGroup, TeamMember } from "@/types";
 import { convertHourToTimezone, getDayOffset, getUserTimezone } from "@/lib/timezones";
+import { useSecondTick } from "@/lib/use-tick";
 import { formatHour } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,7 +86,6 @@ type OverlapData = {
 
 const HOURS_IN_DAY = 24;
 const TIME_AXIS_HOURS = [0, 6, 12, 18, 24];
-const TICK_INTERVAL_MS = 30_000;
 const HOVER_HIDE_DELAY_MS = 800;
 const PULSE_DURATION_MS = 500;
 
@@ -160,20 +160,6 @@ const emptySubscribe = () => () => {};
 
 const useClientValue = <T,>(clientValue: () => T, serverValue: T): T =>
   useSyncExternalStore(emptySubscribe, clientValue, () => serverValue);
-
-// Stable tick for time updates (avoids infinite loops with useSyncExternalStore)
-let cachedTick = Date.now();
-
-const tickSubscribe = (callback: () => void) => {
-  const interval = setInterval(() => {
-    cachedTick = Date.now();
-    callback();
-  }, TICK_INTERVAL_MS);
-  return () => clearInterval(interval);
-};
-
-const getTickSnapshot = () => cachedTick;
-const getTickServerSnapshot = () => 0;
 
 // ============================================================================
 // Memoized Sub-Components
@@ -412,17 +398,17 @@ const TimezoneVisualizer = ({
 
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
 
-  const tick = useSyncExternalStore(tickSubscribe, getTickSnapshot, getTickServerSnapshot);
+  // Tick timestamp that updates every second - used as a dependency to trigger recalculation
+  const tick = useSecondTick();
 
   const nowPosition = useMemo(() => {
     if (!viewerTimezone) return null;
-    void tick; // Dependency for recalculation
     return getCurrentTimePosition(viewerTimezone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tick triggers recalculation every second
   }, [viewerTimezone, tick]);
 
   const memberRows = useMemo((): MemberRow[] => {
     if (!viewerTimezone) return [];
-    void tick; // Dependency for recalculation
 
     return members.map((member) => {
       const hours = [...EMPTY_HOURS];
@@ -453,7 +439,7 @@ const TimezoneVisualizer = ({
       const dayOffset = getDayOffset(member.timezone, viewerTimezone);
       return { member, hours, dayOffset };
     });
-  }, [members, viewerTimezone, tick]);
+  }, [members, viewerTimezone]);
 
   const memberRowById = useMemo(
     () => new Map(memberRows.map((row) => [row.member.id, row])),
@@ -695,7 +681,6 @@ const TimezoneVisualizer = ({
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!timelineRef.current || !sectionsContainerRef.current) return;
 
-      const rect = timelineRef.current.getBoundingClientRect();
       const containerRect = sectionsContainerRef.current.getBoundingClientRect();
       const relativeX = e.clientX - containerRect.left;
 
