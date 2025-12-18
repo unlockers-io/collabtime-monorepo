@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Enums
+// ═══════════════════════════════════════════════════════════════
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  incomplete
+  incomplete_expired
+  trialing
+  active
+  past_due
+  canceled
+  unpaid
+  paused
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Better Auth Models
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  emailVerified    Boolean          @default(false)
+  name             String?
+  image            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Collabtime-specific
+  subscriptionPlan SubscriptionPlan @default(FREE)
+  stripeCustomerId String?          @unique
+
+  // Relations
+  accounts         Account[]
+  sessions         Session[]
+  subscriptions    Subscription[]
+  spaces           Space[]
+
+  @@index([email])
+  @@index([stripeCustomerId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique @db.VarChar(512)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?  @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+  @@index([identifier])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Stripe Subscription Model
+// ═══════════════════════════════════════════════════════════════
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  plan                 SubscriptionPlan   @default(FREE)
+  referenceId          String             @unique
+  stripeCustomerId     String?
+  stripeSubscriptionId String?            @unique
+  status               SubscriptionStatus @default(incomplete)
+  periodStart          DateTime?
+  periodEnd            DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Collabtime Space Model (links to Redis team data)
+// ═══════════════════════════════════════════════════════════════
+
+model Space {
+  id             String   @id @default(cuid())
+
+  // Link to Redis team data (team:{teamId})
+  teamId         String   @unique
+
+  // Custom subdomain (e.g., "acme" -> acme.collabtime.io)
+  subdomain      String?  @unique
+
+  // Privacy settings
+  isPrivate      Boolean  @default(false)
+  accessPassword String?  @db.VarChar(255)
+
+  // Ownership
+  ownerId        String
+  owner          User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([subdomain])
+  @@index([teamId])
+}
