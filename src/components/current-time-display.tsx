@@ -20,15 +20,11 @@ const useClientValue = <T,>(clientValue: () => T, serverValue: T): T =>
 // ============================================================================
 
 /**
- * Format the current time for a given timezone.
- * Uses tick timestamp to ensure Date calculation happens fresh on each tick.
+ * Format a timestamp for a given timezone.
  */
-const formatCurrentTime = (timezone: string, tick: number): string => {
-  // Use tick to create Date, ensuring fresh calculation each time
-  // (tick is a timestamp, but we create new Date() for locale formatting accuracy)
-  void tick;
-  const now = new Date();
-  return now.toLocaleTimeString("en-US", {
+const formatTime = (timestamp: number, timezone: string): string => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString("en-US", {
     timeZone: timezone,
     hour: "numeric",
     minute: "2-digit",
@@ -58,8 +54,8 @@ const CurrentTimeDisplay = () => {
     );
   }
 
-  // Format time using tick as cache-buster (tick changes trigger new Date() call)
-  const currentTime = formatCurrentTime(viewerTimezone, tick);
+  // Format time using tick timestamp directly
+  const currentTime = formatTime(tick, viewerTimezone);
   const timezoneAbbr = formatTimezoneAbbreviation(viewerTimezone);
 
   return (

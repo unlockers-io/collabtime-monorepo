@@ -23,7 +23,7 @@ import {
 
 import type { TeamGroup, TeamMember } from "@/types";
 import { convertHourToTimezone, getDayOffset, getUserTimezone } from "@/lib/timezones";
-import { useSecondTick } from "@/lib/use-tick";
+import { useHalfMinuteTick } from "@/lib/use-tick";
 import { formatHour } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -400,8 +400,8 @@ const TimezoneVisualizer = ({
 
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
 
-  // Tick timestamp that updates every second - used as a dependency to trigger recalculation
-  const tick = useSecondTick();
+  // Tick timestamp that updates every 30 seconds - triggers recalculation for timeline
+  const tick = useHalfMinuteTick();
 
   const nowPosition = useMemo(() => {
     if (!viewerTimezone) return null;

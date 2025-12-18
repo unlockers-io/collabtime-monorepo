@@ -22,4 +22,7 @@ const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60; // 60 days
 // TTL for teams with members (2 years)
 const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2; // 2 years
 
-export { redis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };
+// TTL for session tokens (7 days)
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+
+export { redis, SESSION_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS, TEAM_INITIAL_TTL_SECONDS };

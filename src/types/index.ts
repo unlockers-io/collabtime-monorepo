@@ -22,4 +22,18 @@ type Team = {
   groups: TeamGroup[];
 };
 
-export type { Team, TeamGroup, TeamMember };
+type TeamRecord = Team & {
+  // Stored server-side only; legacy teams may not have these set.
+  adminPasswordHash?: string;
+  memberPasswordHash?: string;
+};
+
+type ServerSession = {
+  teamId: string;
+  role: "admin" | "member";
+  createdAt: number;
+};
+
+type TeamRole = "admin" | "member";
+
+export type { ServerSession, Team, TeamGroup, TeamMember, TeamRecord, TeamRole };

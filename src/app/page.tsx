@@ -6,28 +6,74 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowRight, Globe, Users, X } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useVisitedTeams } from "@/hooks/use-visited-teams";
-import { createTeam } from "@/lib/actions";
+import { authenticateTeam, createTeam } from "@/lib/actions";
+import { writeTeamSession } from "@/lib/team-session";
+import { PasswordSchema } from "@/lib/validation";
 import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+const formSchema = z.object({
+  adminPassword: PasswordSchema,
+  memberPassword: PasswordSchema,
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 const Home = () => {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { visitedTeams, removeVisitedTeam, isHydrated } = useVisitedTeams();
 
-  const handleCreateTeam = async () => {
-    setIsCreating(true);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    mode: "onChange",
+    defaultValues: {
+      adminPassword: "",
+      memberPassword: "",
+    },
+  });
 
+  const handleCreateTeam = () => {
+    form.reset({ adminPassword: "", memberPassword: "" });
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleSubmitCreateTeam = async (values: FormValues) => {
+    setIsCreating(true);
     try {
-      const result = await createTeam();
-      if (result.success) {
-        router.push(`/${result.data}`);
-      } else {
-        toast.error(result.error);
-        setIsCreating(false);
+      const createResult = await createTeam(values.adminPassword, values.memberPassword);
+      if (!createResult.success) {
+        toast.error(createResult.error);
+        return;
       }
+
+      // Authenticate to get a session token
+      const authResult = await authenticateTeam(createResult.data, values.adminPassword);
+      if (!authResult.success) {
+        toast.error(authResult.error);
+        return;
+      }
+
+      await writeTeamSession(createResult.data, authResult.data.token);
+      router.push(`/${createResult.data}`);
     } catch {
       toast.error("Failed to create team. Please try again.");
+    } finally {
       setIsCreating(false);
     }
   };
@@ -170,6 +216,96 @@ const Home = () => {
           )}
         </AnimatePresence>
       </main>
+
+      <Dialog
+        open={isCreateDialogOpen}
+        onOpenChange={(open) => {
+          if (isCreating) return;
+          setIsCreateDialogOpen(open);
+          if (open) {
+            form.reset({ adminPassword: "", memberPassword: "" });
+          }
+        }}
+      >
+        <DialogContent className="max-w-md bg-white dark:bg-neutral-900">
+          <form onSubmit={form.handleSubmit(handleSubmitCreateTeam)} noValidate>
+              <DialogHeader>
+                <DialogTitle className="text-neutral-900 dark:text-neutral-100">
+                  Create a team workspace
+                </DialogTitle>
+                <DialogDescription>
+                  Set an admin password (full access) and a member password (view only).
+                  Passwords are stored securely and can&apos;t be recovered if lost.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="py-4">
+                <FieldGroup>
+                  <Controller
+                    control={form.control}
+                    name="adminPassword"
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="create-admin-password">Admin password</FieldLabel>
+                        <Input
+                          {...field}
+                          id="create-admin-password"
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder="At least 6 characters"
+                          disabled={isCreating}
+                          aria-invalid={fieldState.invalid}
+                        />
+                        <FieldError errors={[fieldState.error]} />
+                      </Field>
+                    )}
+                  />
+
+                  <Controller
+                    control={form.control}
+                    name="memberPassword"
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="create-member-password">Member password</FieldLabel>
+                        <Input
+                          {...field}
+                          id="create-member-password"
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder="At least 6 characters"
+                          disabled={isCreating}
+                          aria-invalid={fieldState.invalid}
+                        />
+                        <FieldError errors={[fieldState.error]} />
+                      </Field>
+                    )}
+                  />
+                </FieldGroup>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                  disabled={isCreating}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isCreating || !form.formState.isValid}>
+                  {isCreating ? (
+                    <>
+                      <Spinner className="mr-2" />
+                      Creating…
+                    </>
+                  ) : (
+                    "Create"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

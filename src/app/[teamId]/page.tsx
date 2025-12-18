@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { getTeam } from "@/lib/actions";
+import { validateTeam } from "@/lib/actions";
+import { readTeamSession } from "@/lib/team-session";
 import { TeamPageClient } from "./client";
 
 type TeamPageProps = {
@@ -8,13 +9,14 @@ type TeamPageProps = {
 
 const TeamPage = async ({ params }: TeamPageProps) => {
   const { teamId } = await params;
-  const team = await getTeam(teamId);
-
-  if (!team) {
+  const exists = await validateTeam(teamId);
+  if (!exists) {
     notFound();
   }
 
-  return <TeamPageClient team={team} />;
+  const initialToken = await readTeamSession(teamId);
+
+  return <TeamPageClient teamId={teamId} initialToken={initialToken} />;
 };
 
 export default TeamPage;

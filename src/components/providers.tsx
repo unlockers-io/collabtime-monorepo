@@ -2,6 +2,7 @@
 
 import { RealtimeProvider } from "@upstash/realtime/client";
 import { ThemeProvider } from "@/components/theme-provider";
+import { QueryProvider } from "@/providers/query-provider";
 
 type ProvidersProps = {
   children: React.ReactNode;
@@ -9,16 +10,18 @@ type ProvidersProps = {
 
 const Providers = ({ children }: ProvidersProps) => {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <RealtimeProvider api={{ url: "/api/realtime" }}>
-        {children}
-      </RealtimeProvider>
-    </ThemeProvider>
+    <QueryProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <RealtimeProvider api={{ url: "/api/realtime" }}>
+          {children}
+        </RealtimeProvider>
+      </ThemeProvider>
+    </QueryProvider>
   );
 };
 

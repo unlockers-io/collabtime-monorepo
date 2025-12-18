@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import type { TeamGroup } from "@/types";
 import {
   Select,
@@ -14,8 +15,7 @@ type GroupSelectorProps = {
   value: string | undefined;
   onValueChange: (value: string | undefined) => void;
   placeholder?: string;
-  id?: string;
-};
+} & Omit<React.ComponentPropsWithoutRef<typeof SelectTrigger>, "children">;
 
 const NO_GROUP_VALUE = "__no_group__";
 
@@ -24,7 +24,7 @@ const GroupSelector = ({
   value,
   onValueChange,
   placeholder = "Select group",
-  id,
+  ...triggerProps
 }: GroupSelectorProps) => {
   const handleChange = (newValue: string) => {
     onValueChange(newValue === NO_GROUP_VALUE ? undefined : newValue);
@@ -32,7 +32,7 @@ const GroupSelector = ({
 
   return (
     <Select value={value ?? NO_GROUP_VALUE} onValueChange={handleChange}>
-      <SelectTrigger id={id}>
+      <SelectTrigger {...triggerProps}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

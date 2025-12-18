@@ -1,16 +1,20 @@
 "use server";
 
 import { v4 as uuidv4 } from "uuid";
-import { redis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS } from "./redis";
+import { redis, SESSION_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS, TEAM_INITIAL_TTL_SECONDS } from "./redis";
 import { realtime } from "./realtime";
 import {
+  TeamAuthInputSchema,
+  TeamCreateInputSchema,
   TeamGroupInputSchema,
   TeamGroupUpdateSchema,
   TeamMemberInputSchema,
   TeamMemberUpdateSchema,
+  TeamPasswordUpdateSchema,
   UUIDSchema,
 } from "./validation";
-import type { Team, TeamGroup, TeamMember } from "@/types";
+import { hashPassword, verifyPassword } from "./crypto";
+import type { ServerSession, Team, TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
 import z from "zod";
 
 type ActionResult<T> = {
@@ -21,15 +25,102 @@ type ActionResult<T> = {
   error: string;
 };
 
-const createTeam = async (): Promise<ActionResult<string>> => {
+// ============================================================================
+// Session Token Management
+// ============================================================================
+
+const generateSessionToken = (): string => {
+  // Generate a cryptographically secure random token
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+};
+
+const createSession = async (
+  teamId: string,
+  role: TeamRole
+): Promise<string> => {
+  const token = generateSessionToken();
+  const session: ServerSession = {
+    teamId,
+    role,
+    createdAt: Date.now(),
+  };
+
+  await redis.set(`session:${token}`, JSON.stringify(session), {
+    ex: SESSION_TTL_SECONDS,
+  });
+
+  return token;
+};
+
+const getSession = async (token: string): Promise<ServerSession | null> => {
   try {
+    const data = await redis.get<string>(`session:${token}`);
+    if (!data) return null;
+    return typeof data === "string" ? JSON.parse(data) : data;
+  } catch {
+    return null;
+  }
+};
+
+const deleteSession = async (token: string): Promise<void> => {
+  await redis.del(`session:${token}`);
+};
+
+const verifySessionForTeam = async (
+  token: string,
+  teamId: string,
+  requireAdmin: boolean = false
+): Promise<ActionResult<{ role: TeamRole }>> => {
+  const session = await getSession(token);
+
+  if (!session) {
+    return { success: false, error: "Session expired" };
+  }
+
+  if (session.teamId !== teamId) {
+    return { success: false, error: "Invalid session" };
+  }
+
+  if (requireAdmin && session.role !== "admin") {
+    return { success: false, error: "Admin access required" };
+  }
+
+  return { success: true, data: { role: session.role } };
+};
+
+// ============================================================================
+// Team Management
+// ============================================================================
+
+const createTeam = async (
+  adminPassword: string,
+  memberPassword: string
+): Promise<ActionResult<string>> => {
+  try {
+    const inputResult = TeamCreateInputSchema.safeParse({
+      adminPassword,
+      memberPassword,
+    });
+    if (!inputResult.success) {
+      const errorMessage =
+        inputResult.error.issues[0]?.message ?? "Invalid password";
+      return { success: false, error: errorMessage };
+    }
+
     const teamId = uuidv4();
-    const team: Team = {
+    const adminPasswordHash = await hashPassword(adminPassword);
+    const memberPasswordHash = await hashPassword(memberPassword);
+
+    const team: TeamRecord = {
       id: teamId,
       name: "",
       createdAt: new Date().toISOString(),
       members: [],
       groups: [],
+      adminPasswordHash,
+      memberPasswordHash,
     };
 
     await redis.set(`team:${teamId}`, JSON.stringify(team), {
@@ -43,7 +134,128 @@ const createTeam = async (): Promise<ActionResult<string>> => {
   }
 };
 
-const getTeam = async (teamId: string): Promise<Team | null> => {
+const authenticateTeam = async (
+  teamId: string,
+  password: string
+): Promise<ActionResult<{ token: string; role: TeamRole }>> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    const authResult = TeamAuthInputSchema.safeParse({ password });
+    if (!authResult.success) {
+      const errorMessage =
+        authResult.error.issues[0]?.message ?? "Invalid password";
+      return { success: false, error: errorMessage };
+    }
+
+    if (!team.adminPasswordHash || !team.memberPasswordHash) {
+      return { success: false, error: "This team is not accessible" };
+    }
+
+    // Check admin password first
+    const isAdmin = await verifyPassword(password, team.adminPasswordHash);
+    if (isAdmin) {
+      const token = await createSession(teamId, "admin");
+      return { success: true, data: { token, role: "admin" } };
+    }
+
+    // Check member password
+    const isMember = await verifyPassword(password, team.memberPasswordHash);
+    if (isMember) {
+      const token = await createSession(teamId, "member");
+      return { success: true, data: { token, role: "member" } };
+    }
+
+    return { success: false, error: "Invalid password" };
+  } catch (error) {
+    console.error("Failed to authenticate team:", error);
+    return { success: false, error: "Failed to authenticate" };
+  }
+};
+
+const verifyAdminAccessByToken = async (
+  token: string,
+  teamId: string
+): Promise<ActionResult<boolean>> => {
+  const sessionResult = await verifySessionForTeam(token, teamId, true);
+  if (!sessionResult.success) {
+    return { success: false, error: sessionResult.error };
+  }
+  return { success: true, data: true };
+};
+
+const updateTeamPasswords = async (
+  teamId: string,
+  currentAdminPassword: string,
+  updates: { adminPassword?: string; memberPassword?: string }
+): Promise<ActionResult<void>> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    const updateResult = TeamPasswordUpdateSchema.safeParse({
+      currentAdminPassword,
+      ...updates,
+    });
+    if (!updateResult.success) {
+      const errorMessage =
+        updateResult.error.issues[0]?.message ?? "Invalid password data";
+      return { success: false, error: errorMessage };
+    }
+
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    // Verify current admin password
+    if (team.adminPasswordHash) {
+      const isAdmin = await verifyPassword(
+        currentAdminPassword,
+        team.adminPasswordHash
+      );
+      if (!isAdmin) {
+        return { success: false, error: "Invalid current admin password" };
+      }
+    }
+
+    // Update passwords
+    if (updates.adminPassword) {
+      team.adminPasswordHash = await hashPassword(updates.adminPassword);
+    }
+    if (updates.memberPassword) {
+      team.memberPasswordHash = await hashPassword(updates.memberPassword);
+    }
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error("Failed to update team passwords:", error);
+    return { success: false, error: "Failed to update passwords" };
+  }
+};
+
+const sanitizeTeam = (team: TeamRecord): Team => {
+  // Destructure to exclude password hashes from public team data
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { adminPasswordHash, memberPasswordHash, ...publicTeam } = team;
+  return publicTeam;
+};
+
+const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -62,6 +274,9 @@ const getTeam = async (teamId: string): Promise<Team | null> => {
     if (!team.groups) {
       team.groups = [];
     }
+    if (!team.members) {
+      team.members = [];
+    }
 
     return team;
   } catch (error) {
@@ -70,14 +285,38 @@ const getTeam = async (teamId: string): Promise<Team | null> => {
   }
 };
 
+const getTeamByToken = async (
+  token: string,
+  teamId: string
+): Promise<ActionResult<{ team: Team; role: TeamRole }>> => {
+  try {
+    const sessionResult = await verifySessionForTeam(token, teamId);
+    if (!sessionResult.success) {
+      return { success: false, error: sessionResult.error };
+    }
+
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    return { success: true, data: { team: sanitizeTeam(team), role: sessionResult.data.role } };
+  } catch (error) {
+    console.error("Failed to fetch team by token:", error);
+    return { success: false, error: "Failed to fetch team" };
+  }
+};
+
 const addMember = async (
   teamId: string,
+  token: string,
   member: Omit<TeamMember, "id">
 ): Promise<ActionResult<{ team: Team; member: TeamMember }>> => {
   try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
+    // Verify admin access first
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
     }
 
     const memberResult = TeamMemberInputSchema.safeParse(member);
@@ -86,7 +325,7 @@ const addMember = async (
       return { success: false, error: errorMessage };
     }
 
-    const team = await getTeam(teamId);
+    const team = await getTeamRecord(teamId);
 
     if (!team) {
       return { success: false, error: "Team not found" };
@@ -107,7 +346,7 @@ const addMember = async (
     // Emit realtime event to team channel
     await realtime.channel(`team-${teamId}`).emit("team.memberAdded", newMember);
 
-    return { success: true, data: { team, member: newMember } };
+    return { success: true, data: { team: sanitizeTeam(team), member: newMember } };
   } catch (error) {
     console.error("Failed to add member:", error);
     return { success: false, error: "Failed to add member" };
@@ -116,9 +355,15 @@ const addMember = async (
 
 const removeMember = async (
   teamId: string,
+  token: string,
   memberId: string
 ): Promise<ActionResult<Team>> => {
   try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const memberUuidResult = UUIDSchema.safeParse(memberId);
 
@@ -129,7 +374,7 @@ const removeMember = async (
       return { success: false, error: "Invalid member ID" };
     }
 
-    const team = await getTeam(teamId);
+    const team = await getTeamRecord(teamId);
 
     if (!team) {
       return { success: false, error: "Team not found" };
@@ -150,7 +395,7 @@ const removeMember = async (
     // Emit realtime event to team channel
     await realtime.channel(`team-${teamId}`).emit("team.memberRemoved", { memberId });
 
-    return { success: true, data: team };
+    return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
     console.error("Failed to remove member:", error);
     return { success: false, error: "Failed to remove member" };
@@ -159,10 +404,16 @@ const removeMember = async (
 
 const updateMember = async (
   teamId: string,
+  token: string,
   memberId: string,
   updates: Partial<Omit<TeamMember, "id">>
 ): Promise<ActionResult<Team>> => {
   try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const memberUuidResult = UUIDSchema.safeParse(memberId);
 
@@ -179,7 +430,7 @@ const updateMember = async (
       return { success: false, error: errorMessage };
     }
 
-    const team = await getTeam(teamId);
+    const team = await getTeamRecord(teamId);
 
     if (!team) {
       return { success: false, error: "Team not found" };
@@ -206,7 +457,7 @@ const updateMember = async (
     // Emit realtime event to team channel
     await realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember);
 
-    return { success: true, data: team };
+    return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
     console.error("Failed to update member:", error);
     return { success: false, error: "Failed to update member" };
@@ -215,9 +466,15 @@ const updateMember = async (
 
 const reorderMembers = async (
   teamId: string,
+  token: string,
   orderedIds: string[]
 ): Promise<ActionResult<Team>> => {
   try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     if (!teamUuidResult.success) {
       return { success: false, error: "Invalid team ID" };
@@ -228,7 +485,7 @@ const reorderMembers = async (
       return { success: false, error: "Invalid member IDs" };
     }
 
-    const team = await getTeam(teamId);
+    const team = await getTeamRecord(teamId);
     if (!team) {
       return { success: false, error: "Team not found" };
     }
@@ -257,7 +514,7 @@ const reorderMembers = async (
       order: orderedIds,
     });
 
-    return { success: true, data: team };
+    return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
     console.error("Failed to reorder members:", error);
     return { success: false, error: "Failed to reorder members" };
@@ -266,9 +523,15 @@ const reorderMembers = async (
 
 const updateTeamName = async (
   teamId: string,
+  token: string,
   name: string
 ): Promise<ActionResult<Team>> => {
   try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
       return { success: false, error: "Invalid team ID" };
@@ -276,7 +539,7 @@ const updateTeamName = async (
 
     const trimmedName = name.trim().slice(0, 100);
 
-    const team = await getTeam(teamId);
+    const team = await getTeamRecord(teamId);
     if (!team) {
       return { success: false, error: "Team not found" };
     }
@@ -291,7 +554,7 @@ const updateTeamName = async (
       name: trimmedName,
     });
 
-    return { success: true, data: team };
+    return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
     console.error("Failed to update team name:", error);
     return { success: false, error: "Failed to update team name" };
@@ -315,9 +578,15 @@ const validateTeam = async (teamId: string): Promise<boolean> => {
 
 const createGroup = async (
   teamId: string,
+  token: string,
   input: { name: string }
 ): Promise<ActionResult<{ team: Team; group: TeamGroup }>> => {
   try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
       return { success: false, error: "Invalid team ID" };
@@ -329,7 +598,7 @@ const createGroup = async (
       return { success: false, error: errorMessage };
     }
 
-    const team = await getTeam(teamId);
+    const team = await getTeamRecord(teamId);
     if (!team) {
       return { success: false, error: "Team not found" };
     }
@@ -348,7 +617,7 @@ const createGroup = async (
 
     await realtime.channel(`team-${teamId}`).emit("team.groupCreated", newGroup);
 
-    return { success: true, data: { team, group: newGroup } };
+    return { success: true, data: { team: sanitizeTeam(team), group: newGroup } };
   } catch (error) {
     console.error("Failed to create group:", error);
     return { success: false, error: "Failed to create group" };
@@ -357,10 +626,16 @@ const createGroup = async (
 
 const updateGroup = async (
   teamId: string,
+  token: string,
   groupId: string,
   updates: Partial<{ name: string }>
 ): Promise<ActionResult<Team>> => {
   try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const groupUuidResult = UUIDSchema.safeParse(groupId);
 
@@ -377,7 +652,7 @@ const updateGroup = async (
       return { success: false, error: errorMessage };
     }
 
-    const team = await getTeam(teamId);
+    const team = await getTeamRecord(teamId);
     if (!team) {
       return { success: false, error: "Team not found" };
     }
@@ -400,7 +675,7 @@ const updateGroup = async (
 
     await realtime.channel(`team-${teamId}`).emit("team.groupUpdated", updatedGroup);
 
-    return { success: true, data: team };
+    return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
     console.error("Failed to update group:", error);
     return { success: false, error: "Failed to update group" };
@@ -409,9 +684,15 @@ const updateGroup = async (
 
 const removeGroup = async (
   teamId: string,
+  token: string,
   groupId: string
 ): Promise<ActionResult<Team>> => {
   try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const groupUuidResult = UUIDSchema.safeParse(groupId);
 
@@ -422,7 +703,7 @@ const removeGroup = async (
       return { success: false, error: "Invalid group ID" };
     }
 
-    const team = await getTeam(teamId);
+    const team = await getTeamRecord(teamId);
     if (!team) {
       return { success: false, error: "Team not found" };
     }
@@ -449,7 +730,7 @@ const removeGroup = async (
 
     await realtime.channel(`team-${teamId}`).emit("team.groupRemoved", { groupId });
 
-    return { success: true, data: team };
+    return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
     console.error("Failed to remove group:", error);
     return { success: false, error: "Failed to remove group" };
@@ -458,9 +739,15 @@ const removeGroup = async (
 
 const reorderGroups = async (
   teamId: string,
+  token: string,
   orderedIds: string[]
 ): Promise<ActionResult<Team>> => {
   try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     if (!teamUuidResult.success) {
       return { success: false, error: "Invalid team ID" };
@@ -471,7 +758,7 @@ const reorderGroups = async (
       return { success: false, error: "Invalid group IDs" };
     }
 
-    const team = await getTeam(teamId);
+    const team = await getTeamRecord(teamId);
     if (!team) {
       return { success: false, error: "Team not found" };
     }
@@ -503,7 +790,7 @@ const reorderGroups = async (
       order: orderedIds,
     });
 
-    return { success: true, data: team };
+    return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
     console.error("Failed to reorder groups:", error);
     return { success: false, error: "Failed to reorder groups" };
@@ -511,10 +798,12 @@ const reorderGroups = async (
 };
 
 export {
+  addMember,
+  authenticateTeam,
   createGroup,
   createTeam,
-  getTeam,
-  addMember,
+  deleteSession,
+  getTeamByToken,
   removeGroup,
   removeMember,
   reorderGroups,
@@ -522,5 +811,6 @@ export {
   updateGroup,
   updateMember,
   updateTeamName,
+  updateTeamPasswords,
   validateTeam,
 };

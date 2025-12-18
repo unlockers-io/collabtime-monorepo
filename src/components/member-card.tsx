@@ -26,7 +26,9 @@ import {
 type MemberCardProps = {
   member: TeamMember;
   teamId: string;
+  token: string;
   groups: TeamGroup[];
+  canEdit: boolean;
   onMemberRemoved: (memberId: string) => void;
   onMemberUpdated: (member: TeamMember) => void;
 };
@@ -34,7 +36,9 @@ type MemberCardProps = {
 const MemberCard = ({
   member,
   teamId,
+  token,
   groups,
+  canEdit,
   onMemberRemoved,
   onMemberUpdated,
 }: MemberCardProps) => {
@@ -88,8 +92,9 @@ const MemberCard = ({
   }, [member.timezone, member.workingHoursStart, member.workingHoursEnd]);
 
   const handleRemove = () => {
+    if (!canEdit) return;
     startTransition(async () => {
-      const result = await removeMember(teamId, member.id);
+      const result = await removeMember(teamId, token, member.id);
       if (result.success) {
         onMemberRemoved(member.id);
       } else {
@@ -108,7 +113,7 @@ const MemberCard = ({
     endDrag();
   };
 
-  const isDraggable = !isTouchDevice;
+  const isDraggable = canEdit && !isTouchDevice;
 
   return (
     <>
@@ -136,27 +141,29 @@ const MemberCard = ({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setIsEditDialogOpen(true)}
-              className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-              aria-label={`Edit ${member.name}`}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleRemove}
-              disabled={isPending}
-              className="text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-              aria-label={`Remove ${member.name}`}
-            >
-              {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
-            </Button>
-          </div>
+          {canEdit && (
+            <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setIsEditDialogOpen(true)}
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                aria-label={`Edit ${member.name}`}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleRemove}
+                disabled={isPending}
+                className="text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                aria-label={`Remove ${member.name}`}
+              >
+                {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Info - stacked vertically */}
@@ -216,14 +223,17 @@ const MemberCard = ({
         </div>
       </div>
 
-      <EditMemberDialog
-        member={member}
-        teamId={teamId}
-        groups={groups}
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        onMemberUpdated={onMemberUpdated}
-      />
+      {canEdit && (
+        <EditMemberDialog
+          member={member}
+          teamId={teamId}
+          token={token}
+          groups={groups}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onMemberUpdated={onMemberUpdated}
+        />
+      )}
     </>
   );
 };

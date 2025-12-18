@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ import {
 import { formatHour } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -38,6 +38,7 @@ import { GroupSelector } from "@/components/group-selector";
 
 type AddMemberDialogProps = {
   teamId: string;
+  token: string;
   groups: TeamGroup[];
   onMemberAdded: (member: TeamMember) => void;
   isFirstMember: boolean;
@@ -69,15 +70,17 @@ const getRandomPlaceholder = () =>
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   title: z.string().optional(),
-  timezone: z.string(),
+  timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
   workingHoursStart: z.number().min(0).max(23),
   workingHoursEnd: z.number().min(0).max(23),
+  groupId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 type AddMemberFormProps = {
   teamId: string;
+  token: string;
   groups: TeamGroup[];
   isFirstMember: boolean;
   onOpenChange: (open: boolean) => void;
@@ -86,16 +89,14 @@ type AddMemberFormProps = {
 
 const AddMemberForm = ({
   teamId,
+  token,
   groups,
   isFirstMember,
   onOpenChange,
   onMemberAdded,
 }: AddMemberFormProps) => {
-  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(
-    undefined
-  );
   const [titlePlaceholder] = useState(getRandomPlaceholder);
-  const defaultTimezone = getUserTimezone();
+  const defaultTimezone = getUserTimezone() as FormValues["timezone"];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -106,16 +107,16 @@ const AddMemberForm = ({
       timezone: defaultTimezone,
       workingHoursStart: 9,
       workingHoursEnd: 17,
+      groupId: undefined,
     },
   });
 
-  const { handleSubmit, control, formState } = form;
+  const { handleSubmit, formState } = form;
 
   const onSubmit = async (data: FormValues) => {
-    const result = await addMember(teamId, {
+    const result = await addMember(teamId, token, {
       ...data,
       title: data.title ?? "",
-      groupId: selectedGroupId,
     });
 
     if (result.success) {
@@ -128,177 +129,191 @@ const AddMemberForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-3 text-neutral-900 dark:text-neutral-100">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 dark:bg-neutral-100">
-            <UserPlus className="h-5 w-5 text-white dark:text-neutral-900" />
-          </div>
-          Add Team Member
-        </DialogTitle>
-        <DialogDescription>
-          {isFirstMember
-            ? "Start by adding your own details."
-            : "Add a new member to your team."}
-        </DialogDescription>
-      </DialogHeader>
+    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3 text-neutral-900 dark:text-neutral-100">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 dark:bg-neutral-100">
+              <UserPlus className="h-5 w-5 text-white dark:text-neutral-900" />
+            </div>
+            Add Team Member
+          </DialogTitle>
+          <DialogDescription>
+            {isFirstMember
+              ? "Start by adding your own details."
+              : "Add a new member to your team."}
+          </DialogDescription>
+        </DialogHeader>
 
-      <div className="flex flex-col gap-4 py-4">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="member-name">Name *</Label>
+        <div className="flex flex-col gap-4 py-4">
           <Controller
-            control={control}
+            control={form.control}
             name="name"
-            render={({ field }) => (
-              <Input
-                {...field}
-                id="member-name"
-                placeholder="John Doe"
-                aria-invalid={formState.errors.name ? "true" : "false"}
-              />
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="member-name">Name *</FieldLabel>
+                <Input
+                  {...field}
+                  id="member-name"
+                  placeholder="John Doe"
+                  aria-invalid={fieldState.invalid}
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
             )}
           />
-          {formState.errors.name && (
-            <p className="text-xs text-red-500">
-              {formState.errors.name.message}
-            </p>
-          )}
-        </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="member-title">Title (optional)</Label>
           <Controller
-            control={control}
+            control={form.control}
             name="title"
-            render={({ field }) => (
-              <Input
-                {...field}
-                id="member-title"
-                placeholder={titlePlaceholder}
-              />
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="member-title">Title (optional)</FieldLabel>
+                <Input
+                  {...field}
+                  id="member-title"
+                  value={field.value ?? ""}
+                  placeholder={titlePlaceholder}
+                  aria-invalid={fieldState.invalid}
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
             )}
           />
-        </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="member-timezone">Timezone</Label>
           <Controller
-            control={control}
+            control={form.control}
             name="timezone"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="member-timezone">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {COMMON_TIMEZONES.map((tz) => (
-                    <SelectItem key={tz} value={tz}>
-                      {formatTimezoneLabel(tz, true)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="member-timezone">Timezone</FieldLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="member-timezone" aria-invalid={fieldState.invalid}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMMON_TIMEZONES.map((tz) => (
+                      <SelectItem key={tz} value={tz}>
+                        {formatTimezoneLabel(tz, true)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError errors={[fieldState.error]} />
+              </Field>
             )}
           />
-        </div>
 
-        {groups.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="member-group">Group (optional)</Label>
-            <GroupSelector
-              id="member-group"
-              groups={groups}
-              value={selectedGroupId}
-              onValueChange={setSelectedGroupId}
-              placeholder="No group"
-            />
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="member-work-start">Work Starts</Label>
+          {groups.length > 0 && (
             <Controller
-              control={control}
-              name="workingHoursStart"
-              render={({ field }) => (
-                <Select
-                  value={String(field.value)}
-                  onValueChange={(value) => field.onChange(Number(value))}
-                >
-                  <SelectTrigger id="member-work-start">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {HOURS.map((hour) => (
-                      <SelectItem key={hour} value={String(hour)}>
-                        {formatHour(hour)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              control={form.control}
+              name="groupId"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="member-group">Group (optional)</FieldLabel>
+                  <GroupSelector
+                    id="member-group"
+                    aria-invalid={fieldState.invalid}
+                    groups={groups}
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value)}
+                    placeholder="No group"
+                  />
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
               )}
             />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="member-work-end">Work Ends</Label>
-            <Controller
-              control={control}
-              name="workingHoursEnd"
-              render={({ field }) => (
-                <Select
-                  value={String(field.value)}
-                  onValueChange={(value) => field.onChange(Number(value))}
-                >
-                  <SelectTrigger id="member-work-end">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {HOURS.map((hour) => (
-                      <SelectItem key={hour} value={String(hour)}>
-                        {formatHour(hour)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-        </div>
-      </div>
-
-      <DialogFooter>
-        {!isFirstMember && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={formState.isSubmitting}
-          >
-            Cancel
-          </Button>
-        )}
-        <Button
-          type="submit"
-          disabled={formState.isSubmitting || !formState.isValid}
-        >
-          {formState.isSubmitting ? (
-            <>
-              <Spinner className="mr-2" />
-              Adding…
-            </>
-          ) : (
-            "Add Member"
           )}
-        </Button>
-      </DialogFooter>
-    </form>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Controller
+              control={form.control}
+              name="workingHoursStart"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="member-work-start">Work Starts</FieldLabel>
+                  <Select
+                    value={String(field.value)}
+                    onValueChange={(value) => field.onChange(Number(value))}
+                  >
+                    <SelectTrigger
+                      id="member-work-start"
+                      aria-invalid={fieldState.invalid}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HOURS.map((hour) => (
+                        <SelectItem key={hour} value={String(hour)}>
+                          {formatHour(hour)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
+
+            <Controller
+              control={form.control}
+              name="workingHoursEnd"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="member-work-end">Work Ends</FieldLabel>
+                  <Select
+                    value={String(field.value)}
+                    onValueChange={(value) => field.onChange(Number(value))}
+                  >
+                    <SelectTrigger id="member-work-end" aria-invalid={fieldState.invalid}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HOURS.map((hour) => (
+                        <SelectItem key={hour} value={String(hour)}>
+                          {formatHour(hour)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          {!isFirstMember && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={formState.isSubmitting}
+            >
+              Cancel
+            </Button>
+          )}
+          <Button
+            type="submit"
+            disabled={formState.isSubmitting || !formState.isValid}
+          >
+            {formState.isSubmitting ? (
+              <>
+                <Spinner className="mr-2" />
+                Adding…
+              </>
+            ) : (
+              "Add Member"
+            )}
+          </Button>
+        </DialogFooter>
+      </form>
   );
 };
 
 const AddMemberDialog = ({
   teamId,
+  token,
   groups,
   onMemberAdded,
   isFirstMember,
@@ -322,6 +337,7 @@ const AddMemberDialog = ({
         {open && (
           <AddMemberForm
             teamId={teamId}
+            token={token}
             groups={groups}
             isFirstMember={isFirstMember}
             onOpenChange={setOpen}

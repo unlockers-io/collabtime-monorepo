@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { createGroup } from "@/lib/actions";
 import type { TeamGroup } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import { Spinner } from "@/components/ui/spinner";
 
 type AddGroupDialogProps = {
   teamId: string;
+  token: string;
   onGroupAdded: (group: TeamGroup) => void;
 };
 
@@ -37,7 +38,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
+const AddGroupDialog = ({ teamId, token, onGroupAdded }: AddGroupDialogProps) => {
   const [open, setOpen] = useState(false);
 
   const form = useForm<FormValues>({
@@ -48,7 +49,7 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
     },
   });
 
-  const { handleSubmit, control, reset, formState } = form;
+  const { handleSubmit, reset, formState } = form;
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -58,7 +59,7 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
   }, [open, reset]);
 
   const onSubmit = async (data: FormValues) => {
-    const result = await createGroup(teamId, { name: data.name });
+    const result = await createGroup(teamId, token, { name: data.name });
 
     if (result.success) {
       setOpen(false);
@@ -82,64 +83,62 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-sm bg-white dark:bg-neutral-900">
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-neutral-900 dark:text-neutral-100">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 dark:bg-neutral-100">
-                <Users className="h-5 w-5 text-white dark:text-neutral-900" />
-              </div>
-              Add Group
-            </DialogTitle>
-            <DialogDescription>
-              Create a new group to organize your team members.
-            </DialogDescription>
-          </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-neutral-900 dark:text-neutral-100">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 dark:bg-neutral-100">
+                  <Users className="h-5 w-5 text-white dark:text-neutral-900" />
+                </div>
+                Add Group
+              </DialogTitle>
+              <DialogDescription>
+                Create a new group to organize your team members.
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="flex flex-col gap-2 py-4">
-            <Label htmlFor="group-name">Group Name</Label>
-            <Controller
-              control={control}
-              name="name"
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  id="group-name"
-                  placeholder="e.g., Engineering, Design, Marketing…"
-                  aria-invalid={formState.errors.name ? "true" : "false"}
-                />
-              )}
-            />
-            {formState.errors.name && (
-              <p className="text-xs text-red-500">
-                {formState.errors.name.message}
-              </p>
-            )}
-          </div>
+            <div className="py-4">
+              <Controller
+                control={form.control}
+                name="name"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="group-name">Group Name</FieldLabel>
+                    <Input
+                      {...field}
+                      id="group-name"
+                      placeholder="e.g., Engineering, Design, Marketing…"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
+            </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={formState.isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={formState.isSubmitting || !formState.isValid}
-            >
-              {formState.isSubmitting ? (
-                <>
-                  <Spinner className="mr-2" />
-                  Creating…
-                </>
-              ) : (
-                "Create Group"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={formState.isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={formState.isSubmitting || !formState.isValid}
+              >
+                {formState.isSubmitting ? (
+                  <>
+                    <Spinner className="mr-2" />
+                    Creating…
+                  </>
+                ) : (
+                  "Create Group"
+                  )}
+                </Button>
+              </DialogFooter>
+          </form>
       </DialogContent>
     </Dialog>
   );

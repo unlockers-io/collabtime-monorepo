@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
-import { ModeToggle } from "@/components/mode-toggle";
 import "@/styles/globals.css";
 import { Toaster } from "sonner";
 
