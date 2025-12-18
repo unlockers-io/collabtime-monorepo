@@ -21,10 +21,12 @@ import {
   X,
 } from "lucide-react";
 
-import type { TeamGroup, TeamMember } from "@/types";
+import type { TeamGroup, TeamMember, MeetingFinderResult } from "@/types";
 import { convertHourToTimezone, getDayOffset, getUserTimezone } from "@/lib/timezones";
 import { useSecondTick } from "@/lib/use-tick";
+import { findBestMeetingTimes } from "@/lib/meeting-finder";
 import { formatHour } from "@/lib/utils";
+import { MeetingResults } from "@/components/meeting-results";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -392,6 +394,7 @@ const TimezoneVisualizer = ({
   // ---- State ----
   const [isComparing, setIsComparing] = useState(false);
   const [compareSelections, setCompareSelections] = useState<Selection[]>([]);
+  const [allowFlexHours, setAllowFlexHours] = useState(true);
 
   // ---- Memoized Values ----
   const collapsedSet = useMemo(() => new Set(collapsedGroupIds), [collapsedGroupIds]);
@@ -566,6 +569,36 @@ const TimezoneVisualizer = ({
     if (hasFullOverlap) return "full";
     return "partial";
   }, [overlapHours, partialOverlapHours]);
+
+  const meetingResults = useMemo((): MeetingFinderResult => {
+    if (!canShowOverlap || !viewerTimezone) {
+      return { hasResults: false, slots: [] };
+    }
+
+    // Get all selected members
+    const selectedMembers: TeamMember[] = [];
+    for (const sel of validSelections) {
+      if (sel.type === "member") {
+        const member = members.find((m) => m.id === sel.id);
+        if (member) selectedMembers.push(member);
+      } else {
+        const groupMembers = members.filter((m) => m.groupId === sel.id);
+        selectedMembers.push(...groupMembers);
+      }
+    }
+
+    // Remove duplicates by id
+    const uniqueMembers = Array.from(
+      new Map(selectedMembers.map((m) => [m.id, m])).values()
+    );
+
+    return findBestMeetingTimes({
+      participants: uniqueMembers,
+      viewerTimezone,
+      allowFlexHours,
+      flexRange: 2,
+    });
+  }, [canShowOverlap, viewerTimezone, validSelections, members, allowFlexHours]);
 
   // ---- Callbacks ----
   const handleHourBlockClick = useCallback((hour: number) => {
@@ -1242,9 +1275,35 @@ const TimezoneVisualizer = ({
 
                   {canShowOverlap && (
                     <div className="flex flex-col gap-3 border-t border-neutral-100 pt-3 dark:border-neutral-800">
-                      <p className="text-right text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
-                        {renderOverlapSummary()}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
+                          {renderOverlapSummary()}
+                        </p>
+                        <label className="flex cursor-pointer items-center gap-2">
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                            Allow flex ±2h
+                          </span>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={allowFlexHours}
+                            aria-label="Allow flexible working hours (plus or minus 2 hours)"
+                            onClick={() => setAllowFlexHours(!allowFlexHours)}
+                            className={`relative h-5 w-9 rounded-full transition-colors ${
+                              allowFlexHours
+                                ? "bg-neutral-900 dark:bg-neutral-100"
+                                : "bg-neutral-200 dark:bg-neutral-700"
+                            }`}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform dark:bg-neutral-900 ${
+                                allowFlexHours ? "translate-x-4" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </label>
+                      </div>
 
                       <div className="flex items-stretch gap-2 sm:gap-3">
                         <div className="flex w-8 shrink-0 flex-col sm:w-24">
@@ -1283,6 +1342,15 @@ const TimezoneVisualizer = ({
                             );
                           })}
                         </div>
+                      </div>
+
+                      {/* Meeting time suggestions */}
+                      <div className="border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                        <MeetingResults
+                          results={meetingResults}
+                          allowFlexHours={allowFlexHours}
+                          onToggleFlex={() => setAllowFlexHours(true)}
+                        />
                       </div>
                     </div>
                   )}

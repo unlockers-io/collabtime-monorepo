@@ -9,6 +9,12 @@ const formatHour = (hour: number): string => {
   return `${hour.toString().padStart(2, "0")}:00`;
 };
 
+const formatHour12 = (hour: number): string => {
+  const h = hour % 12 || 12;
+  const ampm = hour < 12 ? "AM" : "PM";
+  return `${h}${ampm}`;
+};
+
 const debounce = <T extends (...args: Parameters<T>) => void>(
   fn: T,
   delay: number
@@ -20,4 +26,4 @@ const debounce = <T extends (...args: Parameters<T>) => void>(
   };
 };
 
-export { cn, formatHour, debounce };
+export { cn, formatHour, formatHour12, debounce };

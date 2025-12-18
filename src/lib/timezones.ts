@@ -202,6 +202,132 @@ const formatTimezoneAbbreviation = (timezone: string): string => {
   return parts[parts.length - 1] ?? timezone.split("/").pop() ?? timezone;
 };
 
+const getWorkingHoursInViewerTimezone = (
+  memberTimezone: string,
+  workingHoursStart: number,
+  workingHoursEnd: number,
+  viewerTimezone: string
+): number[] => {
+  const startInViewer = convertHourToTimezone(
+    workingHoursStart,
+    memberTimezone,
+    viewerTimezone
+  );
+  const endInViewer = convertHourToTimezone(
+    workingHoursEnd,
+    memberTimezone,
+    viewerTimezone
+  );
+
+  const hours: number[] = [];
+
+  if (startInViewer < endInViewer) {
+    for (let h = startInViewer; h < endInViewer; h++) {
+      hours.push(h);
+    }
+  } else {
+    // Overnight case: hours wrap around midnight
+    for (let h = startInViewer; h < 24; h++) {
+      hours.push(h);
+    }
+    for (let h = 0; h < endInViewer; h++) {
+      hours.push(h);
+    }
+  }
+
+  return hours;
+};
+
+const getFlexHoursEarly = (
+  memberTimezone: string,
+  workingHoursStart: number,
+  viewerTimezone: string,
+  flexRange: number
+): number[] => {
+  const normalStart = convertHourToTimezone(
+    workingHoursStart,
+    memberTimezone,
+    viewerTimezone
+  );
+
+  const flexHours: number[] = [];
+  for (let i = 1; i <= flexRange; i++) {
+    const flexHour = (normalStart - i + 24) % 24;
+    flexHours.push(flexHour);
+  }
+  return flexHours;
+};
+
+const getFlexHoursLate = (
+  memberTimezone: string,
+  workingHoursEnd: number,
+  viewerTimezone: string,
+  flexRange: number
+): number[] => {
+  const normalEnd = convertHourToTimezone(
+    workingHoursEnd,
+    memberTimezone,
+    viewerTimezone
+  );
+
+  const flexHours: number[] = [];
+  for (let i = 0; i < flexRange; i++) {
+    const flexHour = (normalEnd + i) % 24;
+    flexHours.push(flexHour);
+  }
+  return flexHours;
+};
+
+const isHourInWorkingRange = (
+  hour: number,
+  memberTimezone: string,
+  workingHoursStart: number,
+  workingHoursEnd: number,
+  viewerTimezone: string
+): boolean => {
+  const workingHours = getWorkingHoursInViewerTimezone(
+    memberTimezone,
+    workingHoursStart,
+    workingHoursEnd,
+    viewerTimezone
+  );
+  return workingHours.includes(hour);
+};
+
+const isHourInFlexRange = (
+  hour: number,
+  memberTimezone: string,
+  workingHoursStart: number,
+  workingHoursEnd: number,
+  viewerTimezone: string,
+  flexRange: number
+): { canFlex: boolean; direction: "early" | "late" | null; hoursNeeded: number } => {
+  const earlyFlex = getFlexHoursEarly(
+    memberTimezone,
+    workingHoursStart,
+    viewerTimezone,
+    flexRange
+  );
+  const lateFlex = getFlexHoursLate(
+    memberTimezone,
+    workingHoursEnd,
+    viewerTimezone,
+    flexRange
+  );
+
+  const earlyIndex = earlyFlex.indexOf(hour);
+  if (earlyIndex !== -1) {
+    return { canFlex: true, direction: "early", hoursNeeded: earlyIndex + 1 };
+  }
+
+  const lateIndex = lateFlex.indexOf(hour);
+  if (lateIndex !== -1) {
+    return { canFlex: true, direction: "late", hoursNeeded: lateIndex + 1 };
+  }
+
+  return { canFlex: false, direction: null, hoursNeeded: 0 };
+};
+
 export {
   COMMON_TIMEZONES,
   getTimezoneOffset,
@@ -213,4 +339,9 @@ export {
   getMinutesUntilAvailable,
   formatTimeUntilAvailable,
   formatTimezoneAbbreviation,
+  getWorkingHoursInViewerTimezone,
+  getFlexHoursEarly,
+  getFlexHoursLate,
+  isHourInWorkingRange,
+  isHourInFlexRange,
 };

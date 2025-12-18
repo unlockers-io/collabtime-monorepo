@@ -22,4 +22,51 @@ type Team = {
   groups: TeamGroup[];
 };
 
-export type { Team, TeamGroup, TeamMember };
+type FlexDirection = "early" | "late";
+
+type FlexMember = {
+  member: TeamMember;
+  direction: FlexDirection;
+  hours: number; // How many hours they need to flex (1 or 2)
+};
+
+type MeetingQuality = "excellent" | "good" | "fair" | "poor";
+
+type MeetingSlot = {
+  id: string;
+  startHour: number; // 0-23 in viewer timezone
+  endHour: number; // 0-23 in viewer timezone
+  duration: number; // hours
+  score: number; // 0-100
+  quality: MeetingQuality;
+  availableMembers: TeamMember[];
+  flexingMembers: FlexMember[];
+  unavailableMembers: TeamMember[];
+};
+
+type MeetingFinderOptions = {
+  participants: TeamMember[];
+  viewerTimezone: string;
+  minDuration?: number;
+  maxDuration?: number;
+  allowFlexHours?: boolean;
+  flexRange?: number;
+};
+
+type MeetingFinderResult = {
+  hasResults: boolean;
+  slots: MeetingSlot[];
+  suggestion?: string;
+};
+
+export type {
+  Team,
+  TeamGroup,
+  TeamMember,
+  FlexDirection,
+  FlexMember,
+  MeetingQuality,
+  MeetingSlot,
+  MeetingFinderOptions,
+  MeetingFinderResult,
+};
