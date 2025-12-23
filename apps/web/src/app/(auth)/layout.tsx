@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Globe } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 type AuthLayoutProps = {
   children: React.ReactNode;
 };

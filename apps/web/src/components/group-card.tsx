@@ -5,14 +5,15 @@ import { toast } from "sonner";
 import { Pencil, Trash2, Users } from "lucide-react";
 import type { TeamGroup } from "@/types";
 import { removeGroup, updateGroup } from "@/lib/actions";
-import { Button, Input, Spinner } from "@repo/ui";
-import { cn } from "@/lib/utils";
+import { Button } from "@repo/ui";
+import { Input } from "@repo/ui";
+import { Spinner } from "@repo/ui";
+import { cn } from "@repo/ui";
 import { useDrag } from "@/contexts/drag-context";
 
 type GroupHeaderProps = {
   group: TeamGroup;
   teamId: string;
-  token: string;
   memberCount: number;
   canEdit: boolean;
   onGroupUpdated: (group: TeamGroup) => void;
@@ -23,7 +24,6 @@ type GroupHeaderProps = {
 const GroupCard = ({
   group,
   teamId,
-  token,
   memberCount,
   canEdit,
   onGroupUpdated,
@@ -54,7 +54,7 @@ const GroupCard = ({
 
     setIsEditing(false);
     startTransition(async () => {
-      const result = await updateGroup(teamId, token, group.id, {
+      const result = await updateGroup(teamId, group.id, {
         name: trimmedName,
       });
       if (result.success) {
@@ -63,7 +63,7 @@ const GroupCard = ({
         toast.error(result.error);
       }
     });
-  }, [canEdit, editingName, group, teamId, token, onGroupUpdated]);
+  }, [canEdit, editingName, group, teamId, onGroupUpdated]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -76,7 +76,7 @@ const GroupCard = ({
   const handleRemove = () => {
     if (!canEdit) return;
     startTransition(async () => {
-      const result = await removeGroup(teamId, token, group.id);
+      const result = await removeGroup(teamId, group.id);
       if (result.success) {
         onGroupRemoved(group.id);
         toast.success(`Group "${group.name}" removed`);

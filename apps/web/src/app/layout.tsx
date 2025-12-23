@@ -4,6 +4,8 @@ import { Providers } from "@/components/providers";
 import "@/styles/globals.css";
 import { Toaster } from "sonner";
 
+export const dynamic = "force-dynamic";
+
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
