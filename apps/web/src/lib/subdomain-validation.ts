@@ -105,7 +105,6 @@ const RESERVED_SUBDOMAINS = new Set([
   "spaces",
 
   // Offensive/problematic
-  "admin",
   "root",
   "superuser",
   "moderator",

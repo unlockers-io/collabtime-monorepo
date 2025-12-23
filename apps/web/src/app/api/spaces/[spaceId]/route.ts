@@ -223,6 +223,11 @@ export const DELETE = async (_request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Invalidate cache if space had a subdomain
+    if (space.subdomain) {
+      await invalidateSpaceCache(space.subdomain);
+    }
+
     await prisma.space.delete({
       where: { id: spaceId },
     });
