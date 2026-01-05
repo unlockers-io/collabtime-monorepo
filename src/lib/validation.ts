@@ -52,24 +52,6 @@ const TeamAuthInputSchema = z.object({
   password: PasswordSchema,
 });
 
-const TeamPasswordUpdateSchema = z
-  .object({
-    currentAdminPassword: PasswordSchema,
-    adminPassword: PasswordSchema.optional(),
-    memberPassword: PasswordSchema.optional(),
-  })
-  .refine((data) => data.adminPassword || data.memberPassword, {
-    message: "At least one password must be provided",
-  });
-
-type TeamMemberInput = z.infer<typeof TeamMemberInputSchema>;
-type TeamMemberUpdate = z.infer<typeof TeamMemberUpdateSchema>;
-type TeamGroupInput = z.infer<typeof TeamGroupInputSchema>;
-type TeamGroupUpdate = z.infer<typeof TeamGroupUpdateSchema>;
-type TeamCreateInput = z.infer<typeof TeamCreateInputSchema>;
-type TeamAuthInput = z.infer<typeof TeamAuthInputSchema>;
-type TeamPasswordUpdate = z.infer<typeof TeamPasswordUpdateSchema>;
-
 export {
   PasswordSchema,
   TeamAuthInputSchema,
@@ -78,13 +60,5 @@ export {
   TeamGroupUpdateSchema,
   TeamMemberInputSchema,
   TeamMemberUpdateSchema,
-  TeamPasswordUpdateSchema,
   UUIDSchema,
-  type TeamAuthInput,
-  type TeamCreateInput,
-  type TeamGroupInput,
-  type TeamGroupUpdate,
-  type TeamMemberInput,
-  type TeamMemberUpdate,
-  type TeamPasswordUpdate,
 };

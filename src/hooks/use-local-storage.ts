@@ -328,4 +328,3 @@ const useLocalStorage = <T>(
 };
 
 export { useLocalStorage };
-export type { UseLocalStorageOptions };

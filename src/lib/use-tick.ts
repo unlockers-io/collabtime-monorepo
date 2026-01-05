@@ -90,4 +90,4 @@ const useHalfMinuteTick = (): number =>
     halfMinuteTickStore.getServerSnapshot
   );
 
-export { createTickStore, useHalfMinuteTick, useSecondTick };
+export { useHalfMinuteTick, useSecondTick };

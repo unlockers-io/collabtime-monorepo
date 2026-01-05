@@ -111,4 +111,3 @@ const useVisitedTeams = () => {
 };
 
 export { useVisitedTeams };
-export type { VisitedTeam };

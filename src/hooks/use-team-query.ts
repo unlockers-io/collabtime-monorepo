@@ -60,5 +60,4 @@ const useUpdateTeamCache = () => {
   };
 };
 
-export { teamQueryKeys, useInvalidateTeam, useTeamQuery, useUpdateTeamCache };
-export type { TeamQueryData };
+export { useTeamQuery, useUpdateTeamCache };

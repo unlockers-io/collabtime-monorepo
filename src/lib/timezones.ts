@@ -204,7 +204,6 @@ const formatTimezoneAbbreviation = (timezone: string): string => {
 
 export {
   COMMON_TIMEZONES,
-  getTimezoneOffset,
   formatTimezoneLabel,
   getUserTimezone,
   convertHourToTimezone,

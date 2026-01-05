@@ -15,7 +15,6 @@ import {
   TeamGroupUpdateSchema,
   TeamMemberInputSchema,
   TeamMemberUpdateSchema,
-  TeamPasswordUpdateSchema,
   UUIDSchema,
 } from "./validation";
 import { hashPassword, verifyPassword } from "./crypto";
@@ -27,7 +26,6 @@ import type {
   TeamRecord,
   TeamRole,
 } from "@/types";
-import z from "zod";
 
 type ActionResult<T> =
   | {
@@ -204,62 +202,6 @@ const verifyAdminAccessByToken = async (
     return { success: false, error: sessionResult.error };
   }
   return { success: true, data: true };
-};
-
-const updateTeamPasswords = async (
-  teamId: string,
-  currentAdminPassword: string,
-  updates: { adminPassword?: string; memberPassword?: string },
-): Promise<ActionResult<void>> => {
-  try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
-    }
-
-    const updateResult = TeamPasswordUpdateSchema.safeParse({
-      currentAdminPassword,
-      ...updates,
-    });
-    if (!updateResult.success) {
-      const errorMessage =
-        updateResult.error.issues[0]?.message ?? "Invalid password data";
-      return { success: false, error: errorMessage };
-    }
-
-    const team = await getTeamRecord(teamId);
-    if (!team) {
-      return { success: false, error: "Team not found" };
-    }
-
-    // Verify current admin password
-    if (team.adminPasswordHash) {
-      const isAdmin = await verifyPassword(
-        currentAdminPassword,
-        team.adminPasswordHash,
-      );
-      if (!isAdmin) {
-        return { success: false, error: "Invalid current admin password" };
-      }
-    }
-
-    // Update passwords
-    if (updates.adminPassword) {
-      team.adminPasswordHash = await hashPassword(updates.adminPassword);
-    }
-    if (updates.memberPassword) {
-      team.memberPasswordHash = await hashPassword(updates.memberPassword);
-    }
-
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    return { success: true, data: undefined };
-  } catch (error) {
-    console.error("Failed to update team passwords:", error);
-    return { success: false, error: "Failed to update passwords" };
-  }
 };
 
 const sanitizeTeam = (team: TeamRecord): Team => {
@@ -489,63 +431,6 @@ const updateMember = async (
   } catch (error) {
     console.error("Failed to update member:", error);
     return { success: false, error: "Failed to update member" };
-  }
-};
-
-const reorderMembers = async (
-  teamId: string,
-  token: string,
-  orderedIds: string[],
-): Promise<ActionResult<Team>> => {
-  try {
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
-    }
-
-    const teamUuidResult = UUIDSchema.safeParse(teamId);
-    if (!teamUuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
-    }
-
-    const idsResult = z.array(UUIDSchema).safeParse(orderedIds);
-    if (!idsResult.success) {
-      return { success: false, error: "Invalid member IDs" };
-    }
-
-    const team = await getTeamRecord(teamId);
-    if (!team) {
-      return { success: false, error: "Team not found" };
-    }
-
-    // Ensure provided IDs match the existing member set
-    const existingIds = new Set(team.members.map((m) => m.id));
-    const providedIds = new Set(orderedIds);
-    if (existingIds.size !== providedIds.size) {
-      return { success: false, error: "Member list mismatch" };
-    }
-    for (const id of existingIds) {
-      if (!providedIds.has(id)) {
-        return { success: false, error: "Member list mismatch" };
-      }
-    }
-
-    // Reorder members to match the provided order
-    const memberMap = new Map(team.members.map((m) => [m.id, m]));
-    team.members = orderedIds.map((id) => memberMap.get(id)!);
-
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.membersReordered", {
-      order: orderedIds,
-    });
-
-    return { success: true, data: sanitizeTeam(team) };
-  } catch (error) {
-    console.error("Failed to reorder members:", error);
-    return { success: false, error: "Failed to reorder members" };
   }
 };
 
@@ -795,66 +680,6 @@ const removeGroup = async (
   }
 };
 
-const reorderGroups = async (
-  teamId: string,
-  token: string,
-  orderedIds: string[],
-): Promise<ActionResult<Team>> => {
-  try {
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
-    }
-
-    const teamUuidResult = UUIDSchema.safeParse(teamId);
-    if (!teamUuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
-    }
-
-    const idsResult = z.array(UUIDSchema).safeParse(orderedIds);
-    if (!idsResult.success) {
-      return { success: false, error: "Invalid group IDs" };
-    }
-
-    const team = await getTeamRecord(teamId);
-    if (!team) {
-      return { success: false, error: "Team not found" };
-    }
-
-    // Ensure provided IDs match the existing group set
-    const existingIds = new Set(team.groups.map((g) => g.id));
-    const providedIds = new Set(orderedIds);
-    if (existingIds.size !== providedIds.size) {
-      return { success: false, error: "Group list mismatch" };
-    }
-    for (const id of existingIds) {
-      if (!providedIds.has(id)) {
-        return { success: false, error: "Group list mismatch" };
-      }
-    }
-
-    // Reorder groups to match the provided order and update order values
-    const groupMap = new Map(team.groups.map((g) => [g.id, g]));
-    team.groups = orderedIds.map((id, index) => ({
-      ...groupMap.get(id)!,
-      order: index,
-    }));
-
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.groupsReordered", {
-      order: orderedIds,
-    });
-
-    return { success: true, data: sanitizeTeam(team) };
-  } catch (error) {
-    console.error("Failed to reorder groups:", error);
-    return { success: false, error: "Failed to reorder groups" };
-  }
-};
-
 export {
   addMember,
   authenticateTeam,
@@ -864,12 +689,9 @@ export {
   getTeamByToken,
   removeGroup,
   removeMember,
-  reorderGroups,
-  reorderMembers,
   updateGroup,
   updateMember,
   updateTeamName,
-  updateTeamPasswords,
   getTeamName,
   validateTeam,
 };
