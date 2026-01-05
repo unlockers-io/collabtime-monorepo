@@ -57,7 +57,8 @@ const LoginPage = () => {
       toast.success("Welcome back!");
       router.push("/");
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("[Login] Unexpected error:", err);
       toast.error("An unexpected error occurred");
       setIsLoading(false);
     }

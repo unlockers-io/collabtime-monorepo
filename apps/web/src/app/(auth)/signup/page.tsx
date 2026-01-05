@@ -63,7 +63,8 @@ const SignupPage = () => {
       toast.success("Account created successfully!");
       router.push("/");
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("[Signup] Unexpected error:", err);
       toast.error("An unexpected error occurred");
       setIsLoading(false);
     }

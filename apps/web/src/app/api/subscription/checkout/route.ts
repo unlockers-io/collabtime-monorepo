@@ -2,38 +2,13 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth-server";
+import { redirectUrlSchema } from "@/lib/redirect-validation";
 import { prisma } from "@repo/db";
 import Stripe from "stripe";
 
-// Allowed origins for redirect URLs to prevent open redirect attacks
-const ALLOWED_ORIGINS = [
-  "http://localhost:3000",
-  "https://collabtime.io",
-  "https://www.collabtime.io",
-];
-
-/**
- * Validate that a URL is safe to redirect to.
- * Only allows URLs from our allowed origins.
- */
-const isValidRedirectUrl = (url: string): boolean => {
-  try {
-    const parsed = new URL(url);
-    return ALLOWED_ORIGINS.some(
-      (origin) => parsed.origin === origin || parsed.origin === new URL(origin).origin
-    );
-  } catch {
-    return false;
-  }
-};
-
 const checkoutSchema = z.object({
-  successUrl: z.string().url().refine(isValidRedirectUrl, {
-    message: "Invalid redirect URL",
-  }),
-  cancelUrl: z.string().url().refine(isValidRedirectUrl, {
-    message: "Invalid redirect URL",
-  }),
+  successUrl: redirectUrlSchema,
+  cancelUrl: redirectUrlSchema,
 });
 
 const getStripeClient = (): Stripe => {
@@ -44,6 +19,14 @@ const getStripeClient = (): Stripe => {
   return new Stripe(secretKey, {
     apiVersion: "2025-02-24.acacia",
   });
+};
+
+const getProPriceId = (): string => {
+  const priceId = process.env.STRIPE_PRO_PRICE_ID;
+  if (!priceId) {
+    throw new Error("STRIPE_PRO_PRICE_ID environment variable is not set");
+  }
+  return priceId;
 };
 
 export const POST = async (request: Request) => {
@@ -94,7 +77,7 @@ export const POST = async (request: Request) => {
       mode: "subscription",
       line_items: [
         {
-          price: process.env.STRIPE_PRO_PRICE_ID,
+          price: getProPriceId(),
           quantity: 1,
         },
       ],

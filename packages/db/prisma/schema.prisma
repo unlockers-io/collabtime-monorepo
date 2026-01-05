@@ -137,9 +137,6 @@ model Space {
   // Link to Redis team data (team:{teamId})
   teamId         String   @unique
 
-  // Custom subdomain (e.g., "acme" -> acme.collabtime.io)
-  subdomain      String?  @unique
-
   // Privacy settings
   isPrivate      Boolean  @default(false)
   accessPassword String?  @db.VarChar(255)
@@ -152,6 +149,5 @@ model Space {
   updatedAt      DateTime @updatedAt
 
   @@index([ownerId])
-  @@index([subdomain])
   @@index([teamId])
 }

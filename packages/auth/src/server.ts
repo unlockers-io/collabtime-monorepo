@@ -23,6 +23,16 @@ type AuthConfig = {
   };
 };
 
+/**
+ * Trusted origins for the auth system.
+ * Includes localhost for development and the main production domains.
+ */
+const TRUSTED_ORIGINS = [
+  "http://localhost:3000",
+  "https://collabtime.io",
+  "https://www.collabtime.io",
+];
+
 const createAuth = (
   prisma: PrismaClient,
   config: AuthConfig
@@ -156,9 +166,6 @@ const createAuth = (
         sameSite: "lax" as const,
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
-        // Note: Domain restriction removed to support custom domains in the future
-        // If you only need *.collabtime.io, you can re-add:
-        // domain: process.env.NODE_ENV === "production" ? ".collabtime.io" : undefined,
       },
     },
 
@@ -178,11 +185,7 @@ const createAuth = (
     secret: betterAuthConfig.secret,
     baseURL: betterAuthConfig.url,
     basePath: "/api/auth",
-    trustedOrigins: [
-      "http://localhost:3000",
-      "https://collabtime.io",
-      "https://www.collabtime.io",
-    ],
+    trustedOrigins: TRUSTED_ORIGINS,
   });
 };
 

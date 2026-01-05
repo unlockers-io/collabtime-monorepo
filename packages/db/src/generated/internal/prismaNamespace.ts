@@ -931,7 +931,6 @@ export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[k
 export const SpaceScalarFieldEnum = {
   id: 'id',
   teamId: 'teamId',
-  subdomain: 'subdomain',
   isPrivate: 'isPrivate',
   accessPassword: 'accessPassword',
   ownerId: 'ownerId',
@@ -1018,7 +1017,6 @@ export type SubscriptionOrderByRelevanceFieldEnum = (typeof SubscriptionOrderByR
 export const SpaceOrderByRelevanceFieldEnum = {
   id: 'id',
   teamId: 'teamId',
-  subdomain: 'subdomain',
   accessPassword: 'accessPassword',
   ownerId: 'ownerId'
 } as const

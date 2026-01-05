@@ -4,11 +4,8 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth-server";
 import { prisma, SubscriptionPlan } from "@repo/db";
-import { subdomainSchema } from "@/lib/subdomain-validation";
-import { invalidateSpaceCache, setSpaceCache } from "@/lib/subdomain-cache";
 
 const updateSpaceSchema = z.object({
-  subdomain: subdomainSchema.optional().nullable(),
   isPrivate: z.boolean().optional(),
   // Use separate flag to indicate password update intent
   updatePassword: z.boolean().optional(),
@@ -95,13 +92,6 @@ export const PATCH = async (request: Request, { params }: Params) => {
     const isPro = user?.subscriptionPlan === SubscriptionPlan.PRO;
 
     // Validate PRO features
-    if (updates.subdomain !== undefined && updates.subdomain !== null && !isPro) {
-      return NextResponse.json(
-        { error: "Custom subdomain requires PRO subscription" },
-        { status: 402 }
-      );
-    }
-
     if (updates.isPrivate && !isPro) {
       return NextResponse.json(
         { error: "Private spaces require PRO subscription" },
@@ -109,32 +99,11 @@ export const PATCH = async (request: Request, { params }: Params) => {
       );
     }
 
-    // Check subdomain availability
-    if (updates.subdomain) {
-      const existingSubdomain = await prisma.space.findUnique({
-        where: { subdomain: updates.subdomain },
-      });
-
-      if (existingSubdomain && existingSubdomain.id !== spaceId) {
-        return NextResponse.json(
-          { error: "This subdomain is already taken" },
-          { status: 409 }
-        );
-      }
-    }
-
     // Build update data
     const updateData: {
-      subdomain?: string | null;
       isPrivate?: boolean;
       accessPassword?: string | null;
     } = {};
-
-    // Handle subdomain update
-    const oldSubdomain = space.subdomain;
-    if (updates.subdomain !== undefined) {
-      updateData.subdomain = updates.subdomain;
-    }
 
     // Handle privacy setting
     if (updates.isPrivate !== undefined) {
@@ -160,21 +129,6 @@ export const PATCH = async (request: Request, { params }: Params) => {
       where: { id: spaceId },
       data: updateData,
     });
-
-    // Invalidate old subdomain cache if changed
-    if (oldSubdomain && oldSubdomain !== updatedSpace.subdomain) {
-      await invalidateSpaceCache(oldSubdomain);
-    }
-
-    // Update cache with new subdomain if set
-    if (updatedSpace.subdomain) {
-      await setSpaceCache(updatedSpace.subdomain, {
-        id: updatedSpace.id,
-        teamId: updatedSpace.teamId,
-        subdomain: updatedSpace.subdomain,
-        isPrivate: updatedSpace.isPrivate,
-      });
-    }
 
     return NextResponse.json({
       space: {
@@ -221,11 +175,6 @@ export const DELETE = async (_request: Request, { params }: Params) => {
 
     if (space.ownerId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Invalidate cache if space had a subdomain
-    if (space.subdomain) {
-      await invalidateSpaceCache(space.subdomain);
     }
 
     await prisma.space.delete({

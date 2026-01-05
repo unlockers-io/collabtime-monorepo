@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { User, CreditCard, Crown, Check, Loader2 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 import {
   Button,
   Card,
@@ -26,13 +28,13 @@ type SettingsClientProps = {
 };
 
 const PRO_FEATURES = [
-  "Custom subdomain (acme.collabtime.io)",
   "Password protection for spaces",
   "Priority support",
   "Custom branding (coming soon)",
 ];
 
 const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
+  const router = useRouter();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isManaging, setIsManaging] = useState(false);
   const [name, setName] = useState(user.name);
@@ -101,25 +103,26 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
   };
 
   const handleSaveName = async () => {
-    if (name.trim() === user.name) return;
+    const trimmedName = name.trim();
+    if (trimmedName === user.name) return;
 
     setIsSaving(true);
 
     try {
-      const response = await fetch("/api/auth/update-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() }),
+      const { error } = await authClient.updateUser({
+        name: trimmedName,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        toast.error(data.error ?? "Failed to update name");
+      if (error) {
+        console.error("[Settings] Failed to update name:", error);
+        toast.error(error.message ?? "Failed to update name");
         return;
       }
 
       toast.success("Name updated successfully");
-    } catch {
+      router.refresh();
+    } catch (err) {
+      console.error("[Settings] Unexpected error updating name:", err);
       toast.error("Failed to update name");
     } finally {
       setIsSaving(false);

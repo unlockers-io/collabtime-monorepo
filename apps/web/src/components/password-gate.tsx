@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +30,14 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Detect desktop to enable autofocus only on non-touch devices
+  // This prevents layout shift from keyboard popup on mobile
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(pointer: fine)");
+    setIsDesktop(mediaQuery.matches);
+  }, []);
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
@@ -61,7 +69,8 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
 
       toast.success("Access granted!");
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("[PasswordGate] Failed to verify password:", err);
       toast.error("Failed to verify password");
       setIsLoading(false);
     }
@@ -99,7 +108,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter the access password"
                     className="pr-10"
-                    autoFocus
+                    autoFocus={isDesktop}
                   />
                 )}
               />

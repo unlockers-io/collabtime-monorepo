@@ -27,7 +27,6 @@ export type AggregateSpace = {
 export type SpaceMinAggregateOutputType = {
   id: string | null
   teamId: string | null
-  subdomain: string | null
   isPrivate: boolean | null
   accessPassword: string | null
   ownerId: string | null
@@ -38,7 +37,6 @@ export type SpaceMinAggregateOutputType = {
 export type SpaceMaxAggregateOutputType = {
   id: string | null
   teamId: string | null
-  subdomain: string | null
   isPrivate: boolean | null
   accessPassword: string | null
   ownerId: string | null
@@ -49,7 +47,6 @@ export type SpaceMaxAggregateOutputType = {
 export type SpaceCountAggregateOutputType = {
   id: number
   teamId: number
-  subdomain: number
   isPrivate: number
   accessPassword: number
   ownerId: number
@@ -62,7 +59,6 @@ export type SpaceCountAggregateOutputType = {
 export type SpaceMinAggregateInputType = {
   id?: true
   teamId?: true
-  subdomain?: true
   isPrivate?: true
   accessPassword?: true
   ownerId?: true
@@ -73,7 +69,6 @@ export type SpaceMinAggregateInputType = {
 export type SpaceMaxAggregateInputType = {
   id?: true
   teamId?: true
-  subdomain?: true
   isPrivate?: true
   accessPassword?: true
   ownerId?: true
@@ -84,7 +79,6 @@ export type SpaceMaxAggregateInputType = {
 export type SpaceCountAggregateInputType = {
   id?: true
   teamId?: true
-  subdomain?: true
   isPrivate?: true
   accessPassword?: true
   ownerId?: true
@@ -168,7 +162,6 @@ export type SpaceGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 export type SpaceGroupByOutputType = {
   id: string
   teamId: string
-  subdomain: string | null
   isPrivate: boolean
   accessPassword: string | null
   ownerId: string
@@ -200,7 +193,6 @@ export type SpaceWhereInput = {
   NOT?: Prisma.SpaceWhereInput | Prisma.SpaceWhereInput[]
   id?: Prisma.StringFilter<"Space"> | string
   teamId?: Prisma.StringFilter<"Space"> | string
-  subdomain?: Prisma.StringNullableFilter<"Space"> | string | null
   isPrivate?: Prisma.BoolFilter<"Space"> | boolean
   accessPassword?: Prisma.StringNullableFilter<"Space"> | string | null
   ownerId?: Prisma.StringFilter<"Space"> | string
@@ -212,7 +204,6 @@ export type SpaceWhereInput = {
 export type SpaceOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
-  subdomain?: Prisma.SortOrderInput | Prisma.SortOrder
   isPrivate?: Prisma.SortOrder
   accessPassword?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -225,7 +216,6 @@ export type SpaceOrderByWithRelationInput = {
 export type SpaceWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   teamId?: string
-  subdomain?: string
   AND?: Prisma.SpaceWhereInput | Prisma.SpaceWhereInput[]
   OR?: Prisma.SpaceWhereInput[]
   NOT?: Prisma.SpaceWhereInput | Prisma.SpaceWhereInput[]
@@ -235,12 +225,11 @@ export type SpaceWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Space"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Space"> | Date | string
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-}, "id" | "teamId" | "subdomain">
+}, "id" | "teamId">
 
 export type SpaceOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
-  subdomain?: Prisma.SortOrderInput | Prisma.SortOrder
   isPrivate?: Prisma.SortOrder
   accessPassword?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -257,7 +246,6 @@ export type SpaceScalarWhereWithAggregatesInput = {
   NOT?: Prisma.SpaceScalarWhereWithAggregatesInput | Prisma.SpaceScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Space"> | string
   teamId?: Prisma.StringWithAggregatesFilter<"Space"> | string
-  subdomain?: Prisma.StringNullableWithAggregatesFilter<"Space"> | string | null
   isPrivate?: Prisma.BoolWithAggregatesFilter<"Space"> | boolean
   accessPassword?: Prisma.StringNullableWithAggregatesFilter<"Space"> | string | null
   ownerId?: Prisma.StringWithAggregatesFilter<"Space"> | string
@@ -268,7 +256,6 @@ export type SpaceScalarWhereWithAggregatesInput = {
 export type SpaceCreateInput = {
   id?: string
   teamId: string
-  subdomain?: string | null
   isPrivate?: boolean
   accessPassword?: string | null
   createdAt?: Date | string
@@ -279,7 +266,6 @@ export type SpaceCreateInput = {
 export type SpaceUncheckedCreateInput = {
   id?: string
   teamId: string
-  subdomain?: string | null
   isPrivate?: boolean
   accessPassword?: string | null
   ownerId: string
@@ -290,7 +276,6 @@ export type SpaceUncheckedCreateInput = {
 export type SpaceUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   teamId?: Prisma.StringFieldUpdateOperationsInput | string
-  subdomain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrivate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   accessPassword?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -301,7 +286,6 @@ export type SpaceUpdateInput = {
 export type SpaceUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   teamId?: Prisma.StringFieldUpdateOperationsInput | string
-  subdomain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrivate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   accessPassword?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -312,7 +296,6 @@ export type SpaceUncheckedUpdateInput = {
 export type SpaceCreateManyInput = {
   id?: string
   teamId: string
-  subdomain?: string | null
   isPrivate?: boolean
   accessPassword?: string | null
   ownerId: string
@@ -323,7 +306,6 @@ export type SpaceCreateManyInput = {
 export type SpaceUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   teamId?: Prisma.StringFieldUpdateOperationsInput | string
-  subdomain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrivate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   accessPassword?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -333,7 +315,6 @@ export type SpaceUpdateManyMutationInput = {
 export type SpaceUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   teamId?: Prisma.StringFieldUpdateOperationsInput | string
-  subdomain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrivate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   accessPassword?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -360,7 +341,6 @@ export type SpaceOrderByRelevanceInput = {
 export type SpaceCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
-  subdomain?: Prisma.SortOrder
   isPrivate?: Prisma.SortOrder
   accessPassword?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -371,7 +351,6 @@ export type SpaceCountOrderByAggregateInput = {
 export type SpaceMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
-  subdomain?: Prisma.SortOrder
   isPrivate?: Prisma.SortOrder
   accessPassword?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -382,7 +361,6 @@ export type SpaceMaxOrderByAggregateInput = {
 export type SpaceMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
-  subdomain?: Prisma.SortOrder
   isPrivate?: Prisma.SortOrder
   accessPassword?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -435,7 +413,6 @@ export type SpaceUncheckedUpdateManyWithoutOwnerNestedInput = {
 export type SpaceCreateWithoutOwnerInput = {
   id?: string
   teamId: string
-  subdomain?: string | null
   isPrivate?: boolean
   accessPassword?: string | null
   createdAt?: Date | string
@@ -445,7 +422,6 @@ export type SpaceCreateWithoutOwnerInput = {
 export type SpaceUncheckedCreateWithoutOwnerInput = {
   id?: string
   teamId: string
-  subdomain?: string | null
   isPrivate?: boolean
   accessPassword?: string | null
   createdAt?: Date | string
@@ -484,7 +460,6 @@ export type SpaceScalarWhereInput = {
   NOT?: Prisma.SpaceScalarWhereInput | Prisma.SpaceScalarWhereInput[]
   id?: Prisma.StringFilter<"Space"> | string
   teamId?: Prisma.StringFilter<"Space"> | string
-  subdomain?: Prisma.StringNullableFilter<"Space"> | string | null
   isPrivate?: Prisma.BoolFilter<"Space"> | boolean
   accessPassword?: Prisma.StringNullableFilter<"Space"> | string | null
   ownerId?: Prisma.StringFilter<"Space"> | string
@@ -495,7 +470,6 @@ export type SpaceScalarWhereInput = {
 export type SpaceCreateManyOwnerInput = {
   id?: string
   teamId: string
-  subdomain?: string | null
   isPrivate?: boolean
   accessPassword?: string | null
   createdAt?: Date | string
@@ -505,7 +479,6 @@ export type SpaceCreateManyOwnerInput = {
 export type SpaceUpdateWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   teamId?: Prisma.StringFieldUpdateOperationsInput | string
-  subdomain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrivate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   accessPassword?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -515,7 +488,6 @@ export type SpaceUpdateWithoutOwnerInput = {
 export type SpaceUncheckedUpdateWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   teamId?: Prisma.StringFieldUpdateOperationsInput | string
-  subdomain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrivate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   accessPassword?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -525,7 +497,6 @@ export type SpaceUncheckedUpdateWithoutOwnerInput = {
 export type SpaceUncheckedUpdateManyWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   teamId?: Prisma.StringFieldUpdateOperationsInput | string
-  subdomain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrivate?: Prisma.BoolFieldUpdateOperationsInput | boolean
   accessPassword?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -537,7 +508,6 @@ export type SpaceUncheckedUpdateManyWithoutOwnerInput = {
 export type SpaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   teamId?: boolean
-  subdomain?: boolean
   isPrivate?: boolean
   accessPassword?: boolean
   ownerId?: boolean
@@ -551,7 +521,6 @@ export type SpaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type SpaceSelectScalar = {
   id?: boolean
   teamId?: boolean
-  subdomain?: boolean
   isPrivate?: boolean
   accessPassword?: boolean
   ownerId?: boolean
@@ -559,7 +528,7 @@ export type SpaceSelectScalar = {
   updatedAt?: boolean
 }
 
-export type SpaceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "teamId" | "subdomain" | "isPrivate" | "accessPassword" | "ownerId" | "createdAt" | "updatedAt", ExtArgs["result"]["space"]>
+export type SpaceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "teamId" | "isPrivate" | "accessPassword" | "ownerId" | "createdAt" | "updatedAt", ExtArgs["result"]["space"]>
 export type SpaceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -572,7 +541,6 @@ export type $SpacePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     teamId: string
-    subdomain: string | null
     isPrivate: boolean
     accessPassword: string | null
     ownerId: string
@@ -950,7 +918,6 @@ export interface Prisma__SpaceClient<T, Null = never, ExtArgs extends runtime.Ty
 export interface SpaceFieldRefs {
   readonly id: Prisma.FieldRef<"Space", 'String'>
   readonly teamId: Prisma.FieldRef<"Space", 'String'>
-  readonly subdomain: Prisma.FieldRef<"Space", 'String'>
   readonly isPrivate: Prisma.FieldRef<"Space", 'Boolean'>
   readonly accessPassword: Prisma.FieldRef<"Space", 'String'>
   readonly ownerId: Prisma.FieldRef<"Space", 'String'>

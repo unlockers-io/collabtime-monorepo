@@ -3,35 +3,11 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth-server";
 import { getStripe } from "@/lib/stripe";
+import { redirectUrlSchema } from "@/lib/redirect-validation";
 import { prisma } from "@repo/db";
 
-// Allowed origins for redirect URLs to prevent open redirect attacks
-const ALLOWED_ORIGINS = [
-  "http://localhost:3000",
-  "https://collabtime.io",
-  "https://www.collabtime.io",
-];
-
-/**
- * Validate that a URL is safe to redirect to.
- * Only allows URLs from our allowed origins.
- */
-const isValidRedirectUrl = (url: string): boolean => {
-  try {
-    const parsed = new URL(url);
-    return ALLOWED_ORIGINS.some(
-      (origin) =>
-        parsed.origin === origin || parsed.origin === new URL(origin).origin
-    );
-  } catch {
-    return false;
-  }
-};
-
 const portalSchema = z.object({
-  returnUrl: z.string().url().refine(isValidRedirectUrl, {
-    message: "Invalid redirect URL",
-  }),
+  returnUrl: redirectUrlSchema,
 });
 
 export const POST = async (request: Request) => {
