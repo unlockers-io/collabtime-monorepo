@@ -108,12 +108,10 @@ const verifySessionForTeam = async (
 
 const createTeam = async (
   adminPassword: string,
-  memberPassword: string,
 ): Promise<ActionResult<string>> => {
   try {
     const inputResult = TeamCreateInputSchema.safeParse({
       adminPassword,
-      memberPassword,
     });
     if (!inputResult.success) {
       const errorMessage =
@@ -123,7 +121,6 @@ const createTeam = async (
 
     const teamId = uuidv4();
     const adminPasswordHash = await hashPassword(adminPassword);
-    const memberPasswordHash = await hashPassword(memberPassword);
 
     const team: TeamRecord = {
       id: teamId,
@@ -132,7 +129,6 @@ const createTeam = async (
       members: [],
       groups: [],
       adminPasswordHash,
-      memberPasswordHash,
     };
 
     await redis.set(`team:${teamId}`, JSON.stringify(team), {
@@ -168,22 +164,15 @@ const authenticateTeam = async (
       return { success: false, error: errorMessage };
     }
 
-    if (!team.adminPasswordHash || !team.memberPasswordHash) {
+    if (!team.adminPasswordHash) {
       return { success: false, error: "This team is not accessible" };
     }
 
-    // Check admin password first
+    // Check admin password
     const isAdmin = await verifyPassword(password, team.adminPasswordHash);
     if (isAdmin) {
       const token = await createSession(teamId, "admin");
       return { success: true, data: { token, role: "admin" } };
-    }
-
-    // Check member password
-    const isMember = await verifyPassword(password, team.memberPasswordHash);
-    if (isMember) {
-      const token = await createSession(teamId, "member");
-      return { success: true, data: { token, role: "member" } };
     }
 
     return { success: false, error: "Invalid password" };
@@ -205,9 +194,9 @@ const verifyAdminAccessByToken = async (
 };
 
 const sanitizeTeam = (team: TeamRecord): Team => {
-  // Destructure to exclude password hashes from public team data
+  // Destructure to exclude password hash from public team data
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { adminPasswordHash, memberPasswordHash, ...publicTeam } = team;
+  const { adminPasswordHash, ...publicTeam } = team;
   return publicTeam;
 };
 
@@ -262,6 +251,34 @@ const getTeamByToken = async (
     };
   } catch (error) {
     console.error("Failed to fetch team by token:", error);
+    return { success: false, error: "Failed to fetch team" };
+  }
+};
+
+/**
+ * Get a team for public (read-only) access.
+ * No authentication required - anyone with the link can view.
+ */
+const getPublicTeam = async (
+  teamId: string,
+): Promise<ActionResult<{ team: Team; role: TeamRole }>> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    return {
+      success: true,
+      data: { team: sanitizeTeam(team), role: "member" },
+    };
+  } catch (error) {
+    console.error("Failed to fetch public team:", error);
     return { success: false, error: "Failed to fetch team" };
   }
 };
@@ -686,12 +703,13 @@ export {
   createGroup,
   createTeam,
   deleteSession,
+  getPublicTeam,
   getTeamByToken,
+  getTeamName,
   removeGroup,
   removeMember,
   updateGroup,
   updateMember,
   updateTeamName,
-  getTeamName,
   validateTeam,
 };

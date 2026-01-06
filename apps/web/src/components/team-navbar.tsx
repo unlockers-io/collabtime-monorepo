@@ -34,7 +34,7 @@ type TeamNavbarProps = {
   teamName: string;
   isAdmin: boolean;
   isEditingName: boolean;
-  token: string;
+  token: string | null;
   onEditName: () => void;
   onNameChange: (name: string) => void;
   onSaveName: () => void;
@@ -79,6 +79,7 @@ const TeamNavbar = ({
   };
 
   const handleLogout = () => {
+    if (!token) return;
     startLogoutTransition(async () => {
       await logout(teamId, token);
       onLogout();

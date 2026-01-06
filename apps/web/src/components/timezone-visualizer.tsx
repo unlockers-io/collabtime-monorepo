@@ -600,7 +600,7 @@ const TimezoneVisualizer = ({
       selectionCoverage.push(selectionHours);
     }
 
-    for (const memberId of selectedMemberIds) {
+    for (const memberId of Array.from(selectedMemberIds)) {
       const row = memberRowById.get(memberId);
       if (row) allMemberHours.push(row.hours);
     }
@@ -928,7 +928,7 @@ const TimezoneVisualizer = ({
 
           const allAvailable: TeamMember[] = [];
           const allUnavailable: TeamMember[] = [];
-          for (const memberId of selectedMemberIds) {
+          for (const memberId of Array.from(selectedMemberIds)) {
             const row = memberRowById.get(memberId);
             if (!row) continue;
             if (row.hours[hour]) allAvailable.push(row.member);

@@ -27,7 +27,7 @@ import { EditMemberDialog } from "@/components/edit-member-dialog";
 type MemberCardProps = {
   member: TeamMember;
   teamId: string;
-  token: string;
+  token: string | null;
   groups: TeamGroup[];
   canEdit: boolean;
   onMemberRemoved: (memberId: string) => void;
@@ -93,7 +93,7 @@ const MemberCard = ({
   }, [member.timezone, member.workingHoursStart, member.workingHoursEnd]);
 
   const handleRemove = () => {
-    if (!canEdit) return;
+    if (!canEdit || !token) return;
     startTransition(async () => {
       const result = await removeMember(teamId, token, member.id);
       if (result.success) {
@@ -230,7 +230,7 @@ const MemberCard = ({
         </div>
       </div>
 
-      {canEdit && (
+      {canEdit && token && (
         <EditMemberDialog
           member={member}
           teamId={teamId}

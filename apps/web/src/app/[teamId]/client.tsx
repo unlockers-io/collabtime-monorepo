@@ -16,11 +16,11 @@ import { AddGroupDialog } from "@/components/add-group-dialog";
 import { AddMemberDialog } from "@/components/add-member-dialog";
 import { GroupCard } from "@/components/group-card";
 import { MemberCard } from "@/components/member-card";
-import { ScrollArea, Spinner } from "@repo/ui";
+import { Button, ScrollArea, Spinner } from "@repo/ui";
 import { TeamNavbar } from "@/components/team-navbar";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
-import { TeamAuthDialog } from "@/components/team-auth-dialog";
+import { AdminUnlockDialog } from "@/components/team-auth-dialog";
 import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { useVisitedTeams } from "@/hooks/use-visited-teams";
 import { useRealtime } from "@/lib/realtime-client";
@@ -38,6 +38,7 @@ const COLLAPSED_GROUPS_KEY = "collab-time-collapsed-groups";
 
 const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const [token, setToken] = useState<string | null>(initialToken);
+  const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     new Set(),
   );
@@ -544,29 +545,15 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
     [isAdmin, members, groups, teamId, token, updateTeamCache],
   );
 
-  const handleAuthenticated = useCallback(
+  const handleAdminUnlocked = useCallback(
     async (data: { token: string; role: "admin" | "member" }) => {
       setToken(data.token);
+      setIsUnlockDialogOpen(false);
       await writeTeamSession(teamId, data.token);
-
-      toast.success(
-        data.role === "admin"
-          ? "Admin access granted"
-          : "Member access granted",
-      );
+      toast.success("Admin access granted");
     },
     [teamId],
   );
-
-  if (!token) {
-    return (
-      <TeamAuthDialog
-        open
-        teamId={teamId}
-        onAuthenticated={handleAuthenticated}
-      />
-    );
-  }
 
   if (!team) {
     return (
@@ -688,7 +675,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                         teamId={teamId}
                         token={token}
                         groups={groups}
-                        canEdit={isAdmin}
+                        canEdit={isAdmin && Boolean(token)}
                         onMemberRemoved={handleMemberRemoved}
                         onMemberUpdated={handleMemberUpdated}
                       />
@@ -697,7 +684,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                 </ScrollArea>
               )}
 
-              {isAdmin ? (
+              {isAdmin && token ? (
                 <AddMemberDialog
                   teamId={teamId}
                   token={token}
@@ -706,10 +693,18 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                   isFirstMember={members.length === 0}
                 />
               ) : (
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  View-only access. Ask an admin for the admin password to make
-                  changes.
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    View-only access
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsUnlockDialogOpen(true)}
+                  >
+                    Unlock admin
+                  </Button>
+                </div>
               )}
             </section>
 
@@ -749,15 +744,17 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                           key={group.id}
                           group={group}
                           teamId={teamId}
-                          token={token}
+                          token={token ?? ""}
                           memberCount={
                             members.filter((m) => m.groupId === group.id).length
                           }
-                          canEdit={isAdmin}
+                          canEdit={isAdmin && Boolean(token)}
                           onGroupUpdated={handleGroupUpdated}
                           onGroupRemoved={handleGroupRemoved}
                           onMemberDropped={
-                            isAdmin ? handleMemberDroppedOnGroup : undefined
+                            isAdmin && token
+                              ? handleMemberDroppedOnGroup
+                              : undefined
                           }
                         />
                       ))}
@@ -765,7 +762,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                 </ScrollArea>
               )}
 
-              {isAdmin && (
+              {isAdmin && token && (
                 <AddGroupDialog
                   teamId={teamId}
                   token={token}
@@ -775,6 +772,14 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
             </section>
           </motion.div>
         </motion.main>
+
+        {/* Admin Unlock Dialog */}
+        <AdminUnlockDialog
+          open={isUnlockDialogOpen}
+          teamId={teamId}
+          onClose={() => setIsUnlockDialogOpen(false)}
+          onAuthenticated={handleAdminUnlocked}
+        />
       </div>
     </DragProvider>
   );

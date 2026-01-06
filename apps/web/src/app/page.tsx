@@ -28,7 +28,6 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/field";
 
 const formSchema = z.object({
   adminPassword: PasswordSchema,
-  memberPassword: PasswordSchema,
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -44,25 +43,24 @@ const Home = () => {
     mode: "onChange",
     defaultValues: {
       adminPassword: "",
-      memberPassword: "",
     },
   });
 
   const handleCreateTeam = () => {
-    form.reset({ adminPassword: "", memberPassword: "" });
+    form.reset({ adminPassword: "" });
     setIsCreateDialogOpen(true);
   };
 
   const handleSubmitCreateTeam = async (values: FormValues) => {
     setIsCreating(true);
     try {
-      const createResult = await createTeam(values.adminPassword, values.memberPassword);
+      const createResult = await createTeam(values.adminPassword);
       if (!createResult.success) {
         toast.error(createResult.error);
         return;
       }
 
-      // Authenticate to get a session token
+      // Authenticate to get admin session token
       const authResult = await authenticateTeam(createResult.data, values.adminPassword);
       if (!authResult.success) {
         toast.error(authResult.error);
@@ -223,7 +221,7 @@ const Home = () => {
           if (isCreating) return;
           setIsCreateDialogOpen(open);
           if (open) {
-            form.reset({ adminPassword: "", memberPassword: "" });
+            form.reset({ adminPassword: "" });
           }
         }}
       >
@@ -234,8 +232,8 @@ const Home = () => {
                   Create a team workspace
                 </DialogTitle>
                 <DialogDescription>
-                  Set an admin password (full access) and a member password (view only).
-                  Passwords are stored securely and can&apos;t be recovered if lost.
+                  Set an admin password to manage your team. Anyone with the link
+                  can view, but only admins can make changes.
                 </DialogDescription>
               </DialogHeader>
 
@@ -250,26 +248,6 @@ const Home = () => {
                         <Input
                           {...field}
                           id="create-admin-password"
-                          type="password"
-                          autoComplete="new-password"
-                          placeholder="At least 6 characters"
-                          disabled={isCreating}
-                          aria-invalid={fieldState.invalid}
-                        />
-                        <FieldError errors={[fieldState.error]} />
-                      </Field>
-                    )}
-                  />
-
-                  <Controller
-                    control={form.control}
-                    name="memberPassword"
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="create-member-password">Member password</FieldLabel>
-                        <Input
-                          {...field}
-                          id="create-member-password"
                           type="password"
                           autoComplete="new-password"
                           placeholder="At least 6 characters"

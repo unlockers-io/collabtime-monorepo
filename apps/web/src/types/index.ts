@@ -23,9 +23,8 @@ type Team = {
 };
 
 type TeamRecord = Team & {
-  // Stored server-side only; legacy teams may not have these set.
+  // Stored server-side only; legacy teams may not have this set.
   adminPasswordHash?: string;
-  memberPasswordHash?: string;
 };
 
 type ServerSession = {

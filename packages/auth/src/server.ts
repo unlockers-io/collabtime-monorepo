@@ -40,7 +40,7 @@ const createAuth = (
   const { stripe: stripeConfig, betterAuth: betterAuthConfig } = config;
 
   const stripeClient = new Stripe(stripeConfig.secretKey, {
-    apiVersion: "2025-02-24.acacia",
+    apiVersion: "2025-12-15.clover",
   });
 
   return betterAuth({

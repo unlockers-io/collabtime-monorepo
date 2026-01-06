@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTeamByToken } from "@/lib/actions";
+import { getPublicTeam, getTeamByToken } from "@/lib/actions";
 import type { Team, TeamRole } from "@/types";
 
 type UseTeamQueryOptions = {
@@ -23,9 +23,20 @@ const useTeamQuery = ({ teamId, token }: UseTeamQueryOptions) => {
   return useQuery<TeamQueryData | null>({
     queryKey: teamQueryKeys.team(teamId),
     queryFn: async () => {
-      if (!token) return null;
+      // If we have a token, use it to get admin access
+      if (token) {
+        const result = await getTeamByToken(token, teamId);
+        if (result.success) {
+          return {
+            team: result.data.team,
+            role: result.data.role,
+          };
+        }
+        // Token invalid/expired, fall through to public access
+      }
 
-      const result = await getTeamByToken(token, teamId);
+      // Public access (read-only)
+      const result = await getPublicTeam(teamId);
       if (!result.success) {
         throw new Error(result.error);
       }
@@ -35,27 +46,24 @@ const useTeamQuery = ({ teamId, token }: UseTeamQueryOptions) => {
         role: result.data.role,
       };
     },
-    enabled: Boolean(token),
+    // Always enabled since we can fetch publicly
+    enabled: true,
     // Refetch on window focus is handled by QueryProvider defaults
     // But we also want to refetch every 2 minutes as a fallback
     refetchInterval: 2 * 60 * 1000,
   });
 };
 
-const useInvalidateTeam = () => {
-  const queryClient = useQueryClient();
-
-  return (teamId: string) => {
-    queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
-  };
-};
-
 const useUpdateTeamCache = () => {
   const queryClient = useQueryClient();
 
-  return (teamId: string, updater: (data: TeamQueryData | null) => TeamQueryData | null) => {
-    queryClient.setQueryData<TeamQueryData | null>(teamQueryKeys.team(teamId), (prev) =>
-      updater(prev ?? null)
+  return (
+    teamId: string,
+    updater: (data: TeamQueryData | null) => TeamQueryData | null,
+  ) => {
+    queryClient.setQueryData<TeamQueryData | null>(
+      teamQueryKeys.team(teamId),
+      (prev) => updater(prev ?? null),
     );
   };
 };

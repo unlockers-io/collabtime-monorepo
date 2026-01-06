@@ -31,7 +31,7 @@ import { formatHour } from "@/lib/utils";
 type EditMemberDialogProps = {
   member: TeamMember;
   teamId: string;
-  token: string;
+  token: string | null;
   groups: TeamGroup[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -298,6 +298,9 @@ const EditMemberDialog = ({
   onOpenChange,
   onMemberUpdated,
 }: EditMemberDialogProps) => {
+  // Don't render if no token (can't edit without auth)
+  if (!token) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-white dark:bg-neutral-900">

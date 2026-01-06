@@ -45,7 +45,6 @@ const PasswordSchema = z
 
 const TeamCreateInputSchema = z.object({
   adminPassword: PasswordSchema,
-  memberPassword: PasswordSchema,
 });
 
 const TeamAuthInputSchema = z.object({
