@@ -24,6 +24,7 @@ import {
 import type { TeamGroup, TeamMember } from "@/types";
 import {
   convertHourToTimezone,
+  formatTimezoneAbbreviation,
   getDayOffset,
   getUserTimezone,
 } from "@/lib/timezones";
@@ -178,6 +179,8 @@ type HourBlockProps = {
   isDark: boolean;
   selectedBlockRef: React.RefObject<number | null>;
   onClickRef: React.RefObject<(hour: number) => void>;
+  memberTimezone: string;
+  viewerTimezone: string;
 };
 
 const HourBlock = memo(function HourBlock({
@@ -186,12 +189,24 @@ const HourBlock = memo(function HourBlock({
   isDark,
   selectedBlockRef,
   onClickRef,
+  memberTimezone,
+  viewerTimezone,
 }: HourBlockProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isAnimatingRef = useRef(false);
 
   const colors = isDark ? COLORS.dark : COLORS.light;
   const baseColor = isWorking ? colors.working : colors.notWorking;
+
+  // Convert the displayed hour (in viewer's timezone) back to member's local time
+  const memberHour = convertHourToTimezone(hour, viewerTimezone, memberTimezone);
+  const memberNextHour = (memberHour + 1) % HOURS_IN_DAY;
+
+  // Get timezone abbreviation for the member
+  const memberTzAbbrev = useMemo(
+    () => formatTimezoneAbbreviation(memberTimezone),
+    [memberTimezone],
+  );
 
   useEffect(() => {
     let animationId: number;
@@ -247,9 +262,14 @@ const HourBlock = memo(function HourBlock({
         />
       </TooltipTrigger>
       <TooltipContent side="top">
-        <span className="font-medium tabular-nums">
-          {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className="font-medium tabular-nums">
+            {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
+          </span>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
+            {formatHour(memberHour)} – {formatHour(memberNextHour)} {memberTzAbbrev}
+          </span>
+        </div>
       </TooltipContent>
     </Tooltip>
   );
@@ -261,6 +281,8 @@ type MemberTimelineRowProps = {
   isDark: boolean;
   selectedBlockRef: React.RefObject<number | null>;
   onClickRef: React.RefObject<(hour: number) => void>;
+  memberTimezone: string;
+  viewerTimezone: string;
 };
 
 const MemberTimelineRow = memo(function MemberTimelineRow({
@@ -269,6 +291,8 @@ const MemberTimelineRow = memo(function MemberTimelineRow({
   isDark,
   selectedBlockRef,
   onClickRef,
+  memberTimezone,
+  viewerTimezone,
 }: MemberTimelineRowProps) {
   return (
     <div
@@ -283,6 +307,8 @@ const MemberTimelineRow = memo(function MemberTimelineRow({
           isDark={isDark}
           selectedBlockRef={selectedBlockRef}
           onClickRef={onClickRef}
+          memberTimezone={memberTimezone}
+          viewerTimezone={viewerTimezone}
         />
       ))}
     </div>
@@ -1147,6 +1173,8 @@ const TimezoneVisualizer = ({
                               isDark={isDark}
                               selectedBlockRef={selectedBlockRef}
                               onClickRef={handleHourBlockClickRef}
+                              memberTimezone={member.timezone}
+                              viewerTimezone={viewerTimezone}
                             />
                           ))}
                         </div>
