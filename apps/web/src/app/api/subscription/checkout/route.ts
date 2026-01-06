@@ -2,24 +2,14 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth-server";
+import { getStripe } from "@/lib/stripe";
 import { redirectUrlSchema } from "@/lib/redirect-validation";
 import { prisma } from "@repo/db";
-import Stripe from "stripe";
 
 const checkoutSchema = z.object({
   successUrl: redirectUrlSchema,
   cancelUrl: redirectUrlSchema,
 });
-
-const getStripeClient = (): Stripe => {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
-    throw new Error("STRIPE_SECRET_KEY environment variable is not set");
-  }
-  return new Stripe(secretKey, {
-    apiVersion: "2025-12-15.clover",
-  });
-};
 
 const getProPriceId = (): string => {
   const priceId = process.env.STRIPE_PRO_PRICE_ID;
@@ -50,7 +40,7 @@ export const POST = async (request: Request) => {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const stripe = getStripeClient();
+    const stripe = getStripe();
 
     // Get or create Stripe customer
     let customerId = user.stripeCustomerId;

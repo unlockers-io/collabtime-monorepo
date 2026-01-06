@@ -5,10 +5,7 @@ import { toast } from "sonner";
 import { Pencil, Trash2, Users } from "lucide-react";
 import type { TeamGroup } from "@/types";
 import { removeGroup, updateGroup } from "@/lib/actions";
-import { Button } from "@repo/ui";
-import { Input } from "@repo/ui";
-import { Spinner } from "@repo/ui";
-import { cn } from "@repo/ui";
+import { Button, Input, Spinner, cn } from "@repo/ui";
 import { useDrag } from "@/contexts/drag-context";
 
 type GroupHeaderProps = {

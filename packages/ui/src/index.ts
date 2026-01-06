@@ -62,3 +62,16 @@ export {
 } from "./components/dropdown-menu";
 
 export { ScrollArea, ScrollBar } from "./components/scroll-area";
+
+export {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+  FieldTitle,
+} from "./components/field";

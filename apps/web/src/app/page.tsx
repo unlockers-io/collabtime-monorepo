@@ -21,10 +21,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
   Input,
   Spinner,
 } from "@repo/ui";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/field";
 
 const formSchema = z.object({
   adminPassword: PasswordSchema,

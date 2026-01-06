@@ -17,10 +17,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  Field,
+  FieldError,
+  FieldLabel,
   Input,
   Spinner,
 } from "@repo/ui";
-import { Field, FieldError, FieldLabel } from "@/components/field";
 
 type AddGroupDialogProps = {
   teamId: string;

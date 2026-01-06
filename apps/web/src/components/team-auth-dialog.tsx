@@ -17,10 +17,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Field,
+  FieldError,
+  FieldLabel,
   Input,
   Spinner,
 } from "@repo/ui";
-import { Field, FieldError, FieldLabel } from "@/components/field";
 
 type AdminUnlockDialogProps = {
   open: boolean;

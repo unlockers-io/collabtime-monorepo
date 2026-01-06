@@ -5,7 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Settings, Globe, Lock, Crown, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Settings, Globe, Lock, Crown, Eye, EyeOff } from "lucide-react";
 import {
   Button,
   Input,
@@ -23,9 +23,8 @@ import {
 type Space = {
   id: string;
   teamId: string;
-  subdomain: string | null;
   isPrivate: boolean;
-  accessPassword: string | null;
+  hasPassword: boolean;
 };
 
 type SpaceSettingsDialogProps = {
@@ -36,16 +35,8 @@ type SpaceSettingsDialogProps = {
 };
 
 const spaceSettingsSchema = z.object({
-  subdomain: z
-    .string()
-    .min(3, "Subdomain must be at least 3 characters")
-    .max(63, "Subdomain must be at most 63 characters")
-    .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/, {
-      message: "Subdomain must be lowercase, start and end with alphanumeric characters",
-    })
-    .optional()
-    .or(z.literal("")),
   isPrivate: z.boolean(),
+  changePassword: z.boolean(),
   accessPassword: z
     .string()
     .min(4, "Password must be at least 4 characters")
@@ -70,24 +61,26 @@ const SpaceSettingsDialog = ({
     resolver: zodResolver(spaceSettingsSchema),
     mode: "onChange",
     defaultValues: {
-      subdomain: space?.subdomain ?? "",
       isPrivate: space?.isPrivate ?? false,
+      changePassword: false,
       accessPassword: "",
     },
   });
 
-  const { handleSubmit, control, formState, watch, reset } = form;
+  const { handleSubmit, control, formState, watch, reset, setValue } = form;
 
   const isPrivate = watch("isPrivate");
+  const changePassword = watch("changePassword");
 
   // Reset form when space changes or dialog opens
   useEffect(() => {
     if (open) {
       reset({
-        subdomain: space?.subdomain ?? "",
         isPrivate: space?.isPrivate ?? false,
+        changePassword: false,
         accessPassword: "",
       });
+      setShowPassword(false);
     }
   }, [open, space, reset]);
 
@@ -125,18 +118,19 @@ const SpaceSettingsDialog = ({
     try {
       const updates: Record<string, unknown> = {};
 
-      if (data.subdomain !== (space.subdomain ?? "")) {
-        updates.subdomain = data.subdomain || null;
-      }
-
       if (data.isPrivate !== space.isPrivate) {
         updates.isPrivate = data.isPrivate;
       }
 
-      if (data.accessPassword && data.accessPassword !== "********") {
-        updates.accessPassword = data.accessPassword;
-      } else if (!data.isPrivate && space.accessPassword) {
-        updates.accessPassword = null;
+      // Only update password if explicitly requested
+      if (data.changePassword) {
+        updates.updatePassword = true;
+        if (data.accessPassword) {
+          updates.accessPassword = data.accessPassword;
+        } else {
+          // Clear password
+          updates.accessPassword = null;
+        }
       }
 
       if (Object.keys(updates).length === 0) {
@@ -171,10 +165,6 @@ const SpaceSettingsDialog = ({
     }
   };
 
-  const subdomainUrl = space?.subdomain
-    ? `https://${space.subdomain}.collabtime.io`
-    : null;
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -192,7 +182,7 @@ const SpaceSettingsDialog = ({
             Space Settings
           </DialogTitle>
           <DialogDescription>
-            Configure custom domain and privacy settings for this team.
+            Configure privacy settings for this team.
           </DialogDescription>
         </DialogHeader>
 
@@ -206,7 +196,7 @@ const SpaceSettingsDialog = ({
                 Claim this team
               </h3>
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                Claim ownership to configure custom domain and privacy settings.
+                Claim ownership to configure privacy settings.
               </p>
             </div>
             <Button onClick={handleClaimSpace} disabled={isClaiming}>
@@ -223,54 +213,6 @@ const SpaceSettingsDialog = ({
         ) : (
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="flex flex-col gap-4 py-4">
-              {/* Subdomain */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="subdomain" className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Custom Subdomain
-                  {!isPro && (
-                    <span className="flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                      <Crown className="h-3 w-3" />
-                      PRO
-                    </span>
-                  )}
-                </Label>
-                <div className="flex items-center gap-1">
-                  <Controller
-                    control={control}
-                    name="subdomain"
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        id="subdomain"
-                        placeholder="acme"
-                        disabled={!isPro}
-                        className="flex-1"
-                      />
-                    )}
-                  />
-                  <span className="whitespace-nowrap text-sm text-neutral-500 dark:text-neutral-400">
-                    .collabtime.io
-                  </span>
-                </div>
-                {formState.errors.subdomain && (
-                  <p className="text-xs text-red-500">
-                    {formState.errors.subdomain.message}
-                  </p>
-                )}
-                {subdomainUrl && (
-                  <a
-                    href={subdomainUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    {subdomainUrl}
-                  </a>
-                )}
-              </div>
-
               {/* Privacy Toggle */}
               <div className="flex flex-col gap-2">
                 <Label className="flex items-center gap-2">
@@ -322,42 +264,74 @@ const SpaceSettingsDialog = ({
 
               {/* Access Password */}
               {isPrivate && (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="accessPassword">Access Password</Label>
-                  <div className="relative">
-                    <Controller
-                      control={control}
-                      name="accessPassword"
-                      render={({ field }) => (
-                        <Input
-                          {...field}
-                          id="accessPassword"
-                          type={showPassword ? "text" : "password"}
-                          placeholder={space.accessPassword ? "••••••••" : "Set a password"}
-                          className="pr-10"
-                        />
-                      )}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="accessPassword">Access Password</Label>
+                    {space.hasPassword && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setValue("changePassword", !changePassword);
+                          if (!changePassword) {
+                            setValue("accessPassword", "");
+                          }
+                        }}
+                        className="text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                      >
+                        {changePassword ? "Cancel" : "Change password"}
+                      </button>
+                    )}
                   </div>
-                  {formState.errors.accessPassword && (
-                    <p className="text-xs text-red-500">
-                      {formState.errors.accessPassword.message}
-                    </p>
+
+                  {(!space.hasPassword || changePassword) && (
+                    <>
+                      <div className="relative">
+                        <Controller
+                          control={control}
+                          name="accessPassword"
+                          render={({ field }) => (
+                            <Input
+                              {...field}
+                              id="accessPassword"
+                              type={showPassword ? "text" : "password"}
+                              placeholder={
+                                space.hasPassword
+                                  ? "Enter new password"
+                                  : "Set a password"
+                              }
+                              className="pr-10"
+                            />
+                          )}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      {formState.errors.accessPassword && (
+                        <p className="text-xs text-red-500">
+                          {formState.errors.accessPassword.message}
+                        </p>
+                      )}
+                      {space.hasPassword && changePassword && (
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          Leave blank to remove password protection
+                        </p>
+                      )}
+                    </>
                   )}
-                  {space.accessPassword && (
+
+                  {space.hasPassword && !changePassword && (
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Leave blank to keep the current password
+                      Password is set. Click &quot;Change password&quot; to
+                      update.
                     </p>
                   )}
                 </div>

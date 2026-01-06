@@ -3,7 +3,7 @@
 import * as React from "react";
 import type { FieldError as ReactHookFormFieldError } from "react-hook-form";
 import { cn } from "../lib/utils";
-import { Label } from "@/components/ui/label";
+import { Label } from "./label";
 
 type FieldProps = React.HTMLAttributes<HTMLDivElement> & {
   orientation?: "vertical" | "horizontal" | "responsive";

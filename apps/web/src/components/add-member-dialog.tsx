@@ -23,6 +23,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  Field,
+  FieldError,
+  FieldLabel,
   Input,
   Select,
   SelectContent,
@@ -31,7 +34,6 @@ import {
   SelectValue,
   Spinner,
 } from "@repo/ui";
-import { Field, FieldError, FieldLabel } from "@/components/field";
 import { GroupSelector } from "@/components/group-selector";
 
 type AddMemberDialogProps = {

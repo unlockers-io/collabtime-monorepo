@@ -15,6 +15,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Field,
+  FieldError,
+  FieldLabel,
   Input,
   Select,
   SelectContent,
@@ -23,7 +26,6 @@ import {
   SelectValue,
   Spinner,
 } from "@repo/ui";
-import { Field, FieldError, FieldLabel } from "@/components/field";
 import { GroupSelector } from "@/components/group-selector";
 import { COMMON_TIMEZONES, formatTimezoneLabel } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
