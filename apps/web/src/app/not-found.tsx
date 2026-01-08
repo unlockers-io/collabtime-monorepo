@@ -19,7 +19,7 @@ const NotFound = () => {
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                  This team doesn't exist
+                  This team doesn&apos;t exist
                 </h1>
               </div>
             </div>
@@ -43,7 +43,7 @@ const NotFound = () => {
               </div>
               <ul className="list-disc space-y-1 pl-4">
                 <li>Double-check the team ID in the address bar.</li>
-                <li>Ask an admin for a fresh link if you're locked out.</li>
+                <li>Ask an admin for a fresh link if you&apos;re locked out.</li>
                 <li>Start a new team from the home page.</li>
               </ul>
             </div>

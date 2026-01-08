@@ -90,7 +90,7 @@ const RootLayout = ({
                 © {new Date().getFullYear()} Collab Time. All rights reserved.
               </span>
               <a
-                href="https://github.com/pedroapfilho/collab-time"
+                href="https://github.com/unlockers-io/collabtime-monorepo"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
@@ -117,10 +117,8 @@ const RootLayout = ({
                 description: "text-sm text-muted-foreground",
                 actionButton:
                   "bg-primary text-primary-foreground hover:bg-primary/90",
-                cancelButton:
-                  "text-muted-foreground hover:bg-accent",
-                closeButton:
-                  "text-muted-foreground hover:text-foreground",
+                cancelButton: "text-muted-foreground hover:bg-accent",
+                closeButton: "text-muted-foreground hover:text-foreground",
                 success:
                   "border border-amber-400/40 bg-popover text-popover-foreground shadow-lg dark:border-amber-300/30",
                 error:

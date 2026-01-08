@@ -24,7 +24,6 @@ import { AdminUnlockDialog } from "@/components/team-auth-dialog";
 import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { useVisitedTeams } from "@/hooks/use-visited-teams";
 import { useRealtime } from "@/lib/realtime-client";
-import { useSession } from "@/lib/auth-client";
 import { updateTeamName, updateMember } from "@/lib/actions";
 import { clearTeamSession, writeTeamSession } from "@/lib/team-session";
 import { DragProvider } from "@/contexts/drag-context";
@@ -36,29 +35,21 @@ type TeamPageClientProps = {
   initialToken: string | null;
 };
 
-const COLLAPSED_GROUPS_KEY = "collab-time-collapsed-groups";
+const COLLAPSED_GROUPS_KEY = "collabtime-collapsed-groups";
 
 const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
-  const { data: session } = useSession();
   const [token, setToken] = useState<string | null>(initialToken);
   const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
-    new Set(),
-  );
-
-  // Load collapsed groups from localStorage after hydration
-  useEffect(() => {
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
     const stored = localStorage.getItem(COLLAPSED_GROUPS_KEY);
-    if (stored) {
-      setCollapsedGroups(new Set(JSON.parse(stored)));
-    }
-  }, []);
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
   const [, startTransition] = useTransition();
   const [isEditingName, setIsEditingName] = useState(false);
   const { saveVisitedTeam } = useVisitedTeams();
-  const [teamName, setTeamName] = useState("");
+  const [editingTeamName, setEditingTeamName] = useState("");
   const lastRemovalRef = useRef<{ id: string; ts: number }>({ id: "", ts: 0 });
-  const previousNameRef = useRef("");
 
   // Fetch team data with TanStack Query
   const {
@@ -76,9 +67,8 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   useEffect(() => {
     if (teamError) {
       clearTeamSession(teamId).catch(() => {});
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setToken(null);
-      setTeamName("");
-      previousNameRef.current = "";
       toast.error(teamError.message);
     }
   }, [teamError, teamId]);
@@ -92,13 +82,11 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
     [teamData?.team?.groups],
   );
 
-  // Sync team data to local state when query data changes
-  useEffect(() => {
-    if (teamData?.team) {
-      setTeamName(teamData?.team.name);
-      previousNameRef.current = teamData?.team.name;
-    }
-  }, [teamData?.team]);
+  // Derive team name from query data
+  const teamName = teamData?.team?.name ?? "";
+
+  // Use editing state or current value
+  const displayName = isEditingName ? editingTeamName : teamName;
 
   const isAdmin = useMemo(() => teamData?.role === "admin", [teamData]);
 
@@ -241,8 +229,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
             team: { ...prev.team, name },
           };
         });
-        setTeamName(name);
-        previousNameRef.current = name;
+        // teamName is derived from query data, no need to set state
       } else if (event === "team.groupCreated") {
         const newGroup = data as TeamGroup;
         updateTeamCache(teamId, (prev) => {
@@ -315,17 +302,21 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
     saveVisitedTeam(teamId, members.length, teamName);
   }, [teamData?.team, teamId, members.length, teamName, saveVisitedTeam]);
 
+  const handleStartEditName = useCallback(() => {
+    setEditingTeamName(teamName);
+    setIsEditingName(true);
+  }, [teamName]);
+
   const handleSaveName = () => {
     if (!isAdmin || !token) return;
 
-    const trimmedName = teamName.trim();
+    const trimmedName = editingTeamName.trim();
     setIsEditingName(false);
 
-    if (trimmedName === previousNameRef.current) {
+    if (trimmedName === teamName) {
       return;
     }
 
-    previousNameRef.current = trimmedName;
     startTransition(async () => {
       const result = await updateTeamName(teamId, token, trimmedName);
       if (!result.success) {
@@ -335,7 +326,6 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   };
 
   const handleCancelEditName = useCallback(() => {
-    setTeamName(previousNameRef.current);
     setIsEditingName(false);
   }, []);
 
@@ -576,11 +566,11 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
           {/* Header */}
           <Nav
             variant="team"
-            teamName={teamName}
+            teamName={displayName}
             isAdmin={isAdmin}
             isEditingName={isEditingName}
-            onEditName={() => setIsEditingName(true)}
-            onNameChange={setTeamName}
+            onEditName={handleStartEditName}
+            onNameChange={setEditingTeamName}
             onSaveName={handleSaveName}
             onCancelEdit={handleCancelEditName}
           />

@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable react/prop-types */
 import * as React from "react";
 import type { FieldError as ReactHookFormFieldError } from "react-hook-form";
 import { cn } from "../lib/utils";

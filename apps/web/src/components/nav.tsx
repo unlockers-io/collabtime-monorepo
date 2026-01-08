@@ -9,6 +9,7 @@ import {
   Copy,
   Globe,
   LogIn,
+  LogOut,
   Menu,
   Pencil,
   Settings,
@@ -220,6 +221,13 @@ const UserMenu = ({
                 Settings
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleSignOut}
+              className="flex cursor-pointer items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>
@@ -362,6 +370,7 @@ const Nav = (props: NavProps) => {
 
   // Team variant - with team name and editing
   if (variant === "team") {
+    if (props.variant !== "team") return null;
     const {
       teamName,
       isAdmin,
