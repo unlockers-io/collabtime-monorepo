@@ -80,11 +80,11 @@ const RootLayout = ({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistMono.variable} font-(family-name:--font-geist-mono) antialiased bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 selection:bg-neutral-200 selection:text-neutral-900 min-h-screen flex flex-col`}
+        className={`${geistMono.variable} font-(family-name:--font-geist-mono) antialiased bg-background text-foreground selection:bg-accent selection:text-accent-foreground min-h-screen flex flex-col`}
       >
         <Providers>
           <div className="flex-1 flex flex-col">{children}</div>
-          <footer className="border-t border-neutral-200 px-4 py-6 text-sm text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
+          <footer className="border-t border-border px-4 py-6 text-sm text-muted-foreground">
             <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3">
               <span>
                 © {new Date().getFullYear()} Collab Time. All rights reserved.
@@ -93,7 +93,7 @@ const RootLayout = ({
                 href="https://github.com/pedroapfilho/collab-time"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+                className="inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
                 aria-label="View on GitHub"
               >
                 <svg
@@ -112,22 +112,22 @@ const RootLayout = ({
             toastOptions={{
               classNames: {
                 toast:
-                  "border border-neutral-200/80 bg-white text-neutral-900 shadow-lg dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50",
+                  "border border-border bg-popover text-popover-foreground shadow-lg",
                 title: "font-semibold",
-                description: "text-sm text-neutral-600 dark:text-neutral-300",
+                description: "text-sm text-muted-foreground",
                 actionButton:
-                  "bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200",
+                  "bg-primary text-primary-foreground hover:bg-primary/90",
                 cancelButton:
-                  "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800",
+                  "text-muted-foreground hover:bg-accent",
                 closeButton:
-                  "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100",
+                  "text-muted-foreground hover:text-foreground",
                 success:
-                  "border border-amber-400/40 bg-neutral-50 text-neutral-900 shadow-lg dark:border-amber-300/30 dark:bg-neutral-900 dark:text-neutral-50",
+                  "border border-amber-400/40 bg-popover text-popover-foreground shadow-lg dark:border-amber-300/30",
                 error:
-                  "border border-red-400/50 bg-neutral-50 text-neutral-900 shadow-lg dark:border-red-400/40 dark:bg-neutral-900 dark:text-neutral-50",
-                info: "border border-sky-400/40 bg-neutral-50 text-neutral-900 shadow-lg dark:border-sky-300/30 dark:bg-neutral-900 dark:text-neutral-50",
+                  "border border-red-400/50 bg-popover text-popover-foreground shadow-lg dark:border-red-400/40",
+                info: "border border-sky-400/40 bg-popover text-popover-foreground shadow-lg dark:border-sky-300/30",
                 warning:
-                  "border border-amber-400/50 bg-neutral-50 text-neutral-900 shadow-lg dark:border-amber-300/40 dark:bg-neutral-900 dark:text-neutral-50",
+                  "border border-amber-400/50 bg-popover text-popover-foreground shadow-lg dark:border-amber-300/40",
               },
             }}
           />

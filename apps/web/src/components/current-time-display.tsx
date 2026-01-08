@@ -33,10 +33,6 @@ const formatTime = (timestamp: number, timezone: string): string => {
   });
 };
 
-// ============================================================================
-// Component
-// ============================================================================
-
 const CurrentTimeDisplay = () => {
   // useClientValue returns "" on server, actual timezone on client - handles hydration
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
@@ -47,7 +43,7 @@ const CurrentTimeDisplay = () => {
   // Show placeholder during SSR (viewerTimezone is empty string on server)
   if (!viewerTimezone) {
     return (
-      <div className="flex h-10 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+      <div className="flex h-9 py-2 px-3 items-center gap-2 rounded-lg shadow-xs border border-border bg-white font-medium text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
         <Clock className="h-4 w-4 text-neutral-500" />
         <span className="tabular-nums">--:--:-- --</span>
       </div>
@@ -59,10 +55,12 @@ const CurrentTimeDisplay = () => {
   const timezoneAbbr = formatTimezoneAbbreviation(viewerTimezone);
 
   return (
-    <div className="flex h-10 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+    <div className="flex h-9 py-2 px-3 items-center gap-2 rounded-lg shadow-xs border border-border  bg-white font-medium text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 ">
       <Clock className="h-4 w-4 text-neutral-500" />
-      <span className="tabular-nums">{currentTime}</span>
-      <span className="text-xs text-neutral-500 dark:text-neutral-400">{timezoneAbbr}</span>
+      <span className="tabular-nums text-sm">{currentTime}</span>
+      <span className="text-xs text-neutral-500 dark:text-neutral-400">
+        {timezoneAbbr}
+      </span>
     </div>
   );
 };

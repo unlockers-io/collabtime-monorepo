@@ -8,19 +8,18 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900",
+          "border-transparent bg-primary text-primary-foreground",
         secondary:
-          "border-transparent bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100",
-        destructive:
-          "border-transparent bg-red-500 text-white dark:bg-red-600",
+          "border-transparent bg-secondary text-secondary-foreground",
+        destructive: "border-transparent bg-destructive text-destructive-foreground",
         outline:
-          "text-neutral-900 border-neutral-200 dark:text-neutral-100 dark:border-neutral-700",
+          "text-foreground border-border",
       },
     },
     defaultVariants: {
       variant: "default",
     },
-  }
+  },
 );
 
 type BadgeProps = React.ComponentProps<"span"> &

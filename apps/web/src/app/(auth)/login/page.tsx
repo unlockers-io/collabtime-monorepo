@@ -66,20 +66,21 @@ const LoginPage = () => {
 
   return (
     <Card className="w-full max-w-md p-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-          Welcome back
-        </h1>
-        <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-          Sign in to your account to continue
-        </p>
-      </div>
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-2 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Welcome back
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Sign in to your account to continue
+          </p>
+        </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Controller
               control={control}
               name="email"
@@ -97,7 +98,7 @@ const LoginPage = () => {
             />
           </div>
           {formState.errors.email && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-destructive">
               {formState.errors.email.message}
             </p>
           )}
@@ -106,7 +107,7 @@ const LoginPage = () => {
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">Password</Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Controller
               control={control}
               name="password"
@@ -124,7 +125,7 @@ const LoginPage = () => {
             />
           </div>
           {formState.errors.password && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-destructive">
               {formState.errors.password.message}
             </p>
           )}
@@ -133,31 +134,32 @@ const LoginPage = () => {
         <Button
           type="submit"
           disabled={isLoading || !formState.isValid}
-          className="mt-2 w-full"
+          className="w-full"
         >
           {isLoading ? (
-            <>
-              <Spinner className="mr-2" />
+            <span className="flex items-center gap-2">
+              <Spinner />
               Signing in...
-            </>
+            </span>
           ) : (
-            <>
+            <span className="flex items-center gap-2">
               Sign in
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </>
+              <ArrowRight className="h-4 w-4" />
+            </span>
           )}
         </Button>
       </form>
 
-      <div className="mt-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
+      <div className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link
           href="/signup"
-          className="font-medium text-neutral-900 hover:underline dark:text-neutral-100"
+          className="font-medium text-foreground hover:underline"
         >
           Sign up
         </Link>
       </div>
+    </div>
     </Card>
   );
 };

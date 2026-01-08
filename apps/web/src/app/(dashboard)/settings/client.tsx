@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { User, CreditCard, Crown, Check, Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import {
-  Button,
-  Card,
-  Input,
-  Label,
-  Spinner,
-} from "@repo/ui";
+import { Button, Card, Input, Label, Spinner } from "@repo/ui";
 
 type SettingsClientProps = {
   user: {
@@ -41,7 +35,8 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
   const [isSaving, setIsSaving] = useState(false);
 
   const isPro = user.subscriptionPlan === "PRO";
-  const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+  const isActive =
+    subscription?.status === "active" || subscription?.status === "trialing";
 
   const handleUpgrade = async () => {
     setIsUpgrading(true);
@@ -140,27 +135,28 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-          Settings
-        </h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Manage your account and subscription
-        </p>
-      </div>
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Settings
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your account and subscription
+          </p>
+        </div>
 
-      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
         {/* Profile Section */}
-        <Card className="p-6">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
-              <User className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+        <Card className="flex flex-col gap-6 p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+              <User className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">
+              <h2 className="font-semibold text-foreground">
                 Profile
               </h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-muted-foreground">
                 Your account information
               </p>
             </div>
@@ -192,9 +188,9 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
                 id="email"
                 value={user.email}
                 disabled
-                className="bg-neutral-50 dark:bg-neutral-900"
+                className="bg-secondary"
               />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="text-xs text-muted-foreground">
                 Email cannot be changed
               </p>
             </div>
@@ -202,16 +198,16 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
         </Card>
 
         {/* Subscription Section */}
-        <Card className="p-6">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
-              <CreditCard className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+        <Card className="flex flex-col gap-6 p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">
+              <h2 className="font-semibold text-foreground">
                 Subscription
               </h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-muted-foreground">
                 Manage your plan
               </p>
             </div>
@@ -227,7 +223,7 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
               </div>
 
               {subscription?.periodEnd && (
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <p className="text-sm text-muted-foreground">
                   {subscription.cancelAtPeriodEnd
                     ? `Your subscription will end on ${formatDate(subscription.periodEnd)}`
                     : `Next billing date: ${formatDate(subscription.periodEnd)}`}
@@ -240,10 +236,10 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
                 variant="outline"
               >
                 {isManaging ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Loading...
-                  </>
+                  </span>
                 ) : (
                   "Manage Subscription"
                 )}
@@ -251,26 +247,26 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              <div className="rounded-xl border border-neutral-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 dark:border-neutral-700 dark:from-amber-900/20 dark:to-orange-900/20">
-                <div className="mb-4 flex items-center gap-2">
+              <div className="flex flex-col gap-6 rounded-xl border border-border bg-linear-to-br from-amber-50 to-orange-50 p-6 dark:from-amber-900/20 dark:to-orange-900/20">
+                <div className="flex items-center gap-2">
                   <Crown className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                  <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+                  <h3 className="text-lg font-bold text-foreground">
                     Upgrade to PRO
                   </h3>
                 </div>
 
-                <p className="mb-4 text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                <p className="text-2xl font-bold text-foreground">
                   $10
-                  <span className="text-base font-normal text-neutral-500 dark:text-neutral-400">
+                  <span className="text-base font-normal text-muted-foreground">
                     /year
                   </span>
                 </p>
 
-                <ul className="mb-6 flex flex-col gap-2">
+                <ul className="flex flex-col gap-2">
                   {PRO_FEATURES.map((feature) => (
                     <li
                       key={feature}
-                      className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300"
+                      className="flex items-center gap-2 text-sm text-foreground"
                     >
                       <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                       {feature}
@@ -284,25 +280,26 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
                   className="w-full bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
                 >
                   {isUpgrading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       Redirecting to checkout...
-                    </>
+                    </span>
                   ) : (
-                    <>
-                      <Crown className="mr-2 h-4 w-4" />
+                    <span className="flex items-center gap-2">
+                      <Crown className="h-4 w-4" />
                       Upgrade to PRO
-                    </>
+                    </span>
                   )}
                 </Button>
               </div>
 
-              <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="text-center text-xs text-muted-foreground">
                 Secure checkout powered by Stripe. Cancel anytime.
               </p>
             </div>
           )}
         </Card>
+      </div>
       </div>
     </div>
   );

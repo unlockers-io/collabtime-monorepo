@@ -144,20 +144,20 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-5">
-      <div className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-        <Users className="h-4 w-4 text-neutral-500" />
+    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <Users className="h-4 w-4 text-muted-foreground" />
         Team Status
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Online Now */}
-        <div className="flex flex-col gap-2.5 rounded-xl bg-neutral-50 p-3.5 dark:bg-neutral-800/50">
+        <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
               <Circle className="h-2.5 w-2.5 fill-green-500 text-green-500" />
             </div>
-            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+            <span className="text-xs font-medium text-muted-foreground">
               Online Now
             </span>
             <span className="ml-auto rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-green-700 dark:bg-green-900/40 dark:text-green-400">
@@ -172,7 +172,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
                   return (
                     <Badge
                       key={member.id}
-                      className="cursor-help bg-white shadow-sm text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200"
+                      className="cursor-help bg-background shadow-sm text-foreground"
                       title={
                         groupName
                           ? `${member.name} (${groupName})`
@@ -187,19 +187,19 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
               </div>
             </ScrollArea>
           ) : (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-muted-foreground">
               No one is currently working
             </p>
           )}
         </div>
 
         {/* Coming Soon */}
-        <div className="flex flex-col gap-2.5 rounded-xl bg-neutral-50 p-3.5 dark:bg-neutral-800/50">
+        <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
               <Sunrise className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
-            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+            <span className="text-xs font-medium text-muted-foreground">
               Starting Soon
             </span>
             <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
@@ -215,14 +215,14 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
                   return (
                     <Badge
                       key={member.id}
-                      className="cursor-help bg-white shadow-sm dark:bg-neutral-700"
+                      className="cursor-help bg-background shadow-sm"
                       title={
                         groupName
                           ? `${member.name} (${groupName})`
                           : member.name
                       }
                     >
-                      <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
+                      <span className="text-xs font-medium text-foreground">
                         {member.name}
                       </span>
                       <span className="text-xs tabular-nums text-amber-600 dark:text-amber-400">
@@ -234,19 +234,19 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
               </div>
             </ScrollArea>
           ) : (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-muted-foreground">
               No one starting in the next {SOON_THRESHOLD_HOURS} hours
             </p>
           )}
         </div>
 
         {/* Leaving Soon */}
-        <div className="flex flex-col gap-2.5 rounded-xl bg-neutral-50 p-3.5 dark:bg-neutral-800/50 sm:col-span-2 lg:col-span-1">
+        <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
               <Clock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
             </div>
-            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+            <span className="text-xs font-medium text-muted-foreground">
               Wrapping Up
             </span>
             <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
@@ -262,14 +262,14 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
                   return (
                     <Badge
                       key={member.id}
-                      className="cursor-help bg-white shadow-sm dark:bg-neutral-700"
+                      className="cursor-help bg-background shadow-sm"
                       title={
                         groupName
                           ? `${member.name} (${groupName})`
                           : member.name
                       }
                     >
-                      <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
+                      <span className="text-xs font-medium text-foreground">
                         {member.name}
                       </span>
                       <span className="text-xs tabular-nums text-blue-600 dark:text-blue-400">
@@ -281,7 +281,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
               </div>
             </ScrollArea>
           ) : (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-muted-foreground">
               No one ending in the next {SOON_THRESHOLD_HOURS} hours
             </p>
           )}

@@ -173,11 +173,11 @@ const SpaceSettingsDialog = ({
           <span className="hidden sm:inline">Space Settings</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md bg-white dark:bg-neutral-900">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-neutral-900 dark:text-neutral-100">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 dark:bg-neutral-100">
-              <Settings className="h-5 w-5 text-white dark:text-neutral-900" />
+          <DialogTitle className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+              <Settings className="h-5 w-5 text-primary-foreground" />
             </div>
             Space Settings
           </DialogTitle>
@@ -188,23 +188,23 @@ const SpaceSettingsDialog = ({
 
         {!space ? (
           <div className="flex flex-col items-center gap-4 py-6 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-              <Globe className="h-8 w-8 text-neutral-400" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+              <Globe className="h-8 w-8 text-muted-foreground" />
             </div>
-            <div>
-              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
+            <div className="flex flex-col gap-1">
+              <h3 className="font-semibold text-foreground">
                 Claim this team
               </h3>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-muted-foreground">
                 Claim ownership to configure privacy settings.
               </p>
             </div>
             <Button onClick={handleClaimSpace} disabled={isClaiming}>
               {isClaiming ? (
-                <>
-                  <Spinner className="mr-2" />
+                <span className="flex items-center gap-2">
+                  <Spinner />
                   Claiming...
-                </>
+                </span>
               ) : (
                 "Claim Space"
               )}
@@ -238,8 +238,10 @@ const SpaceSettingsDialog = ({
                         disabled={!isPro && !space.isPrivate}
                         className="flex-1"
                       >
-                        <Globe className="mr-2 h-4 w-4" />
-                        Public
+                        <span className="flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          Public
+                        </span>
                       </Button>
                       <Button
                         type="button"
@@ -249,13 +251,15 @@ const SpaceSettingsDialog = ({
                         disabled={!isPro}
                         className="flex-1"
                       >
-                        <Lock className="mr-2 h-4 w-4" />
-                        Private
+                        <span className="flex items-center gap-2">
+                          <Lock className="h-4 w-4" />
+                          Private
+                        </span>
                       </Button>
                     </div>
                   )}
                 />
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="text-xs text-muted-foreground">
                   {isPrivate
                     ? "Only people with the password can access this team."
                     : "Anyone with the link can view this team."}
@@ -276,7 +280,7 @@ const SpaceSettingsDialog = ({
                             setValue("accessPassword", "");
                           }
                         }}
-                        className="text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                        className="text-xs text-muted-foreground hover:text-foreground"
                       >
                         {changePassword ? "Cancel" : "Change password"}
                       </button>
@@ -306,7 +310,7 @@ const SpaceSettingsDialog = ({
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         >
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -321,7 +325,7 @@ const SpaceSettingsDialog = ({
                         </p>
                       )}
                       {space.hasPassword && changePassword && (
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        <p className="text-xs text-muted-foreground">
                           Leave blank to remove password protection
                         </p>
                       )}
@@ -329,7 +333,7 @@ const SpaceSettingsDialog = ({
                   )}
 
                   {space.hasPassword && !changePassword && (
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <p className="text-xs text-muted-foreground">
                       Password is set. Click &quot;Change password&quot; to
                       update.
                     </p>
@@ -349,10 +353,10 @@ const SpaceSettingsDialog = ({
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? (
-                  <>
-                    <Spinner className="mr-2" />
+                  <span className="flex items-center gap-2">
+                    <Spinner />
                     Saving...
-                  </>
+                  </span>
                 ) : (
                   "Save Changes"
                 )}

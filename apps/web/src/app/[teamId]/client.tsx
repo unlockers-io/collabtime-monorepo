@@ -16,18 +16,20 @@ import { AddGroupDialog } from "@/components/add-group-dialog";
 import { AddMemberDialog } from "@/components/add-member-dialog";
 import { GroupCard } from "@/components/group-card";
 import { MemberCard } from "@/components/member-card";
-import { Button, ScrollArea, Spinner } from "@repo/ui";
-import { TeamNavbar } from "@/components/team-navbar";
+import { Button, ScrollArea } from "@repo/ui";
+import { Nav } from "@/components/nav";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { AdminUnlockDialog } from "@/components/team-auth-dialog";
 import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { useVisitedTeams } from "@/hooks/use-visited-teams";
 import { useRealtime } from "@/lib/realtime-client";
-import { updateTeamName as updateTeamNameAction } from "@/lib/actions";
+import { useSession } from "@/lib/auth-client";
+import { updateTeamName, updateMember } from "@/lib/actions";
 import { clearTeamSession, writeTeamSession } from "@/lib/team-session";
 import { DragProvider } from "@/contexts/drag-context";
 import { isCurrentlyWorking, getMinutesUntilAvailable } from "@/lib/timezones";
+import Loading from "./loading";
 
 type TeamPageClientProps = {
   teamId: string;
@@ -37,6 +39,7 @@ type TeamPageClientProps = {
 const COLLAPSED_GROUPS_KEY = "collab-time-collapsed-groups";
 
 const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
+  const { data: session } = useSession();
   const [token, setToken] = useState<string | null>(initialToken);
   const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
@@ -58,7 +61,11 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const previousNameRef = useRef("");
 
   // Fetch team data with TanStack Query
-  const { data: teamData, error: teamError } = useTeamQuery({
+  const {
+    data: teamData,
+    error: teamError,
+    refetch: refetchTeam,
+  } = useTeamQuery({
     teamId,
     token,
   });
@@ -76,21 +83,25 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
     }
   }, [teamError, teamId]);
 
-  // Derived values from query - memoized for stable references
-  const team = teamData?.team ?? null;
-  const members = useMemo(() => team?.members ?? [], [team?.members]);
-  const groups = useMemo(() => team?.groups ?? [], [team?.groups]);
+  const members = useMemo(
+    () => teamData?.team?.members ?? [],
+    [teamData?.team?.members],
+  );
+  const groups = useMemo(
+    () => teamData?.team?.groups ?? [],
+    [teamData?.team?.groups],
+  );
 
   // Sync team data to local state when query data changes
   useEffect(() => {
-    if (team) {
-      setTeamName(team.name);
-      previousNameRef.current = team.name;
+    if (teamData?.team) {
+      setTeamName(teamData?.team.name);
+      previousNameRef.current = teamData?.team.name;
     }
-  }, [team]);
-  const isAdmin = teamData?.role === "admin";
+  }, [teamData?.team]);
 
-  // Persist collapsed groups to localStorage
+  const isAdmin = useMemo(() => teamData?.role === "admin", [teamData]);
+
   useEffect(() => {
     localStorage.setItem(
       COLLAPSED_GROUPS_KEY,
@@ -300,9 +311,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
 
   // Save team to visited teams on mount and when members/name change
   useEffect(() => {
-    if (!team) return;
+    if (!teamData?.team) return;
     saveVisitedTeam(teamId, members.length, teamName);
-  }, [team, teamId, members.length, teamName, saveVisitedTeam]);
+  }, [teamData?.team, teamId, members.length, teamName, saveVisitedTeam]);
 
   const handleSaveName = () => {
     if (!isAdmin || !token) return;
@@ -316,7 +327,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
 
     previousNameRef.current = trimmedName;
     startTransition(async () => {
-      const result = await updateTeamNameAction(teamId, token, trimmedName);
+      const result = await updateTeamName(teamId, token, trimmedName);
       if (!result.success) {
         toast.error(result.error);
       }
@@ -326,12 +337,6 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleCancelEditName = useCallback(() => {
     setTeamName(previousNameRef.current);
     setIsEditingName(false);
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    setToken(null);
-    setTeamName("");
-    previousNameRef.current = "";
   }, []);
 
   // Sort members: available first, then by time until available
@@ -519,7 +524,6 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       });
 
       // Import dynamically to avoid issues
-      const { updateMember } = await import("@/lib/actions");
       const result = await updateMember(teamId, token, memberId, { groupId });
 
       if (result.success) {
@@ -550,17 +554,14 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       setToken(data.token);
       setIsUnlockDialogOpen(false);
       await writeTeamSession(teamId, data.token);
+      refetchTeam();
       toast.success("Admin access granted");
     },
-    [teamId],
+    [teamId, refetchTeam],
   );
 
-  if (!team) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner className="h-5 w-5" />
-      </div>
-    );
+  if (!teamData?.team) {
+    return <Loading />;
   }
 
   return (
@@ -573,17 +574,15 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
           className="mx-auto flex w-full max-w-450 flex-col gap-6"
         >
           {/* Header */}
-          <TeamNavbar
-            teamId={teamId}
+          <Nav
+            variant="team"
             teamName={teamName}
             isAdmin={isAdmin}
             isEditingName={isEditingName}
-            token={token}
             onEditName={() => setIsEditingName(true)}
             onNameChange={setTeamName}
             onSaveName={handleSaveName}
             onCancelEdit={handleCancelEditName}
-            onLogout={handleLogout}
           />
 
           {/* Team Insights */}
@@ -611,14 +610,14 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                 delay: 0.1,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
             >
-              <div className="border-b border-neutral-100 px-4 py-3 dark:border-neutral-800 sm:px-6 sm:py-4">
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                  <Clock className="h-4 w-4 text-neutral-500" />
+              <div className="flex flex-col gap-0.5 border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                   Working Hours Overview
                 </h2>
-                <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="text-xs text-muted-foreground">
                   Times shown in your local timezone
                 </p>
               </div>
@@ -644,26 +643,28 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
             <section className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-lg font-semibold">
-                  <Users className="h-5 w-5 text-neutral-500" />
+                  <Users className="h-5 w-5 text-muted-foreground" />
                   Team Members
                 </h2>
-                <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
                   {members.length}
                 </span>
               </div>
 
               {members.length === 0 ? (
-                <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900/50">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-                    <Users className="h-6 w-6 text-neutral-500" />
+                <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border bg-muted/50 px-6 py-12 text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+                    <Users className="h-6 w-6 text-muted-foreground" />
                   </div>
-                  <h3 className="mt-4 font-semibold text-neutral-900 dark:text-neutral-100">
-                    Build your team
-                  </h3>
-                  <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
-                    Add team members to see their working hours and find the
-                    best times to collaborate across timezones.
-                  </p>
+                  <div className="flex flex-col gap-1">
+                    <h3 className="font-semibold text-foreground">
+                      Build your team
+                    </h3>
+                    <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+                      Add team members to see their working hours and find the
+                      best times to collaborate across timezones.
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <ScrollArea className="max-h-150">
@@ -694,7 +695,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                 />
               ) : (
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <p className="text-sm text-muted-foreground">
                     View-only access
                   </p>
                   <Button
@@ -712,27 +713,29 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
             <section className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-lg font-semibold">
-                  <FolderKanban className="h-5 w-5 text-neutral-500" />
+                  <FolderKanban className="h-5 w-5 text-muted-foreground" />
                   Groups
                 </h2>
-                <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium tabular-nums text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
                   {groups.length}
                 </span>
               </div>
 
               {groups.length === 0 ? (
-                <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900/50">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-                    <FolderKanban className="h-6 w-6 text-neutral-500" />
+                <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border bg-muted/50 px-6 py-12 text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+                    <FolderKanban className="h-6 w-6 text-muted-foreground" />
                   </div>
-                  <h3 className="mt-4 font-semibold text-neutral-900 dark:text-neutral-100">
-                    Organize with groups
-                  </h3>
-                  <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
-                    Create groups to organize team members by department,
-                    project, or location. Drag and drop members into groups to
-                    categorize them.
-                  </p>
+                  <div className="flex flex-col gap-1">
+                    <h3 className="font-semibold text-foreground">
+                      Organize with groups
+                    </h3>
+                    <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+                      Create groups to organize team members by department,
+                      project, or location. Drag and drop members into groups to
+                      categorize them.
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <ScrollArea className="max-h-150">

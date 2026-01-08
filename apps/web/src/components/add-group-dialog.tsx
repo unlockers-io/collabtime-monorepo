@@ -40,7 +40,11 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const AddGroupDialog = ({ teamId, token, onGroupAdded }: AddGroupDialogProps) => {
+const AddGroupDialog = ({
+  teamId,
+  token,
+  onGroupAdded,
+}: AddGroupDialogProps) => {
   const [open, setOpen] = useState(false);
 
   const form = useForm<FormValues>({
@@ -78,69 +82,69 @@ const AddGroupDialog = ({ teamId, token, onGroupAdded }: AddGroupDialogProps) =>
         <Button
           variant="outline"
           type="button"
-          className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-neutral-200 bg-neutral-50/50 text-neutral-600 hover:border-neutral-400 hover:bg-neutral-100/50 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/50"
+          className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
         >
           <Users className="h-5 w-5 transition-transform group-hover:scale-110" />
           <span className="font-medium">Add Group</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-sm bg-white dark:bg-neutral-900">
+      <DialogContent className="max-w-sm">
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3 text-neutral-900 dark:text-neutral-100">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 dark:bg-neutral-100">
-                  <Users className="h-5 w-5 text-white dark:text-neutral-900" />
-                </div>
-                Add Group
-              </DialogTitle>
-              <DialogDescription>
-                Create a new group to organize your team members.
-              </DialogDescription>
-            </DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+                <Users className="h-5 w-5 text-primary-foreground" />
+              </div>
+              Add Group
+            </DialogTitle>
+            <DialogDescription>
+              Create a new group to organize your team members.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="py-4">
-              <Controller
-                control={form.control}
-                name="name"
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="group-name">Group Name</FieldLabel>
-                    <Input
-                      {...field}
-                      id="group-name"
-                      placeholder="e.g., Engineering, Design, Marketing…"
-                      aria-invalid={fieldState.invalid}
-                    />
-                    <FieldError errors={[fieldState.error]} />
-                  </Field>
-                )}
-              />
-            </div>
+          <div className="py-4">
+            <Controller
+              control={form.control}
+              name="name"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="group-name">Group Name</FieldLabel>
+                  <Input
+                    {...field}
+                    id="group-name"
+                    placeholder="e.g., Engineering, Design, Marketing…"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
+          </div>
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                disabled={formState.isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={formState.isSubmitting || !formState.isValid}
-              >
-                {formState.isSubmitting ? (
-                  <>
-                    <Spinner className="mr-2" />
-                    Creating…
-                  </>
-                ) : (
-                  "Create Group"
-                  )}
-                </Button>
-              </DialogFooter>
-          </form>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={formState.isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={formState.isSubmitting || !formState.isValid}
+            >
+              {formState.isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <Spinner />
+                  Creating…
+                </span>
+              ) : (
+                "Create Group"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

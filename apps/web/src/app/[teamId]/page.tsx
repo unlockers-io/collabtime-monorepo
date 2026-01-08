@@ -22,7 +22,7 @@ export const generateMetadata = async ({
   const teamName = await getTeamName(teamId);
 
   return {
-    title: `${teamName}`,
+    title: teamName ?? "Team Workspace",
     description: `Working hours and overlap view for ${teamName}.`,
   };
 };

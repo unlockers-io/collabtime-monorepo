@@ -1,15 +1,15 @@
+import "dotenv/config";
 import { PrismaClient } from "./generated/client";
+import { PrismaPlanetScale } from "@prisma/adapter-planetscale";
+import { fetch as undiciFetch } from "undici";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+const adapter = new PrismaPlanetScale({
+  url: process.env.DATABASE_URL,
+  fetch: undiciFetch,
+});
+const prisma = new PrismaClient({ adapter });
 
 export { prisma };
+
 export type { PrismaClient };
 export * from "./generated/client";

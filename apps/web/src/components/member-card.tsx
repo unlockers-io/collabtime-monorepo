@@ -120,7 +120,7 @@ const MemberCard = ({
     <>
       <div
         className={cn(
-          "group flex h-full min-h-45 flex-col rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-all hover:border-neutral-300 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700",
+          "group flex h-full min-h-45 flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-input hover:shadow-md",
           isDraggable && (isDragging ? "cursor-grabbing" : "cursor-grab"),
         )}
         draggable={isDraggable}
@@ -131,11 +131,11 @@ const MemberCard = ({
         <div className="flex items-start justify-between">
           {/* Avatar with status */}
           <div className="relative">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900 text-base font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground">
               {member.name.charAt(0).toUpperCase()}
             </div>
             {isAvailable && (
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-green-500 dark:border-neutral-900">
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-green-500">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
               </span>
             )}
@@ -148,7 +148,7 @@ const MemberCard = ({
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setIsEditDialogOpen(true)}
-                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                className="text-muted-foreground hover:text-foreground"
                 aria-label={`Edit ${member.name}`}
               >
                 <Pencil className="h-4 w-4" />
@@ -158,7 +158,7 @@ const MemberCard = ({
                 size="icon-sm"
                 onClick={handleRemove}
                 disabled={isPending}
-                className="text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                className="text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                 aria-label={`Remove ${member.name}`}
               >
                 {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
@@ -168,20 +168,20 @@ const MemberCard = ({
         </div>
 
         {/* Info - stacked vertically */}
-        <div className="mt-3 flex flex-1 flex-col gap-1.5">
+        <div className="flex flex-1 flex-col gap-1.5">
           <div className="flex flex-col gap-0.5">
-            <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+            <span className="font-semibold text-foreground">
               {member.name}
             </span>
             {member.title && (
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+              <span className="text-sm text-muted-foreground">
                 {member.title}
               </span>
             )}
           </div>
 
           {/* Timezone and hours */}
-          <div className="mt-auto flex flex-col gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <div className="mt-auto flex flex-col gap-1 text-xs text-muted-foreground">
             <span className="truncate">
               {formatTimezoneLabel(member.timezone)}
             </span>
@@ -192,7 +192,7 @@ const MemberCard = ({
           </div>
 
           {/* Status badges */}
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             {isAvailable ? (
               <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
@@ -221,7 +221,7 @@ const MemberCard = ({
             {member.groupId && groups.find((g) => g.id === member.groupId) && (
               <Badge
                 variant="secondary"
-                className="border-transparent bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                className="border-transparent"
               >
                 {groups.find((g) => g.id === member.groupId)?.name}
               </Badge>

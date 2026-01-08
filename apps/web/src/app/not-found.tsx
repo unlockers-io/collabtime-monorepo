@@ -7,7 +7,7 @@ import { Button } from "@repo/ui";
 export const metadata = {
   title: "404",
   description:
-    "This page doesn’t exist (or this team ID can’t be found). Head back home and create a new team.",
+    "This page doesn't exist (or this team ID can't be found). Head back home and create a new team.",
 };
 
 const NotFound = () => {
@@ -18,13 +18,13 @@ const NotFound = () => {
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 sm:text-2xl">
-                  This team doesn’t exist
+                <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                  This team doesn't exist
                 </h1>
               </div>
             </div>
 
-            <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+            <p className="text-xs leading-relaxed text-muted-foreground">
               If you were trying to open a team, the ID might be wrong (or the
               link expired). If you typed a URL, it may have drifted into a
               parallel timezone.
@@ -37,13 +37,13 @@ const NotFound = () => {
               </Button>
             </Link>
 
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-xs text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950/40 dark:text-neutral-400">
-              <div className="font-medium text-neutral-800 dark:text-neutral-200">
+            <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-4 text-xs text-muted-foreground">
+              <div className="font-medium text-foreground">
                 Quick checks
               </div>
-              <ul className="mt-2 list-disc space-y-1 pl-4">
+              <ul className="list-disc space-y-1 pl-4">
                 <li>Double-check the team ID in the address bar.</li>
-                <li>Ask an admin for a fresh link if you’re locked out.</li>
+                <li>Ask an admin for a fresh link if you're locked out.</li>
                 <li>Start a new team from the home page.</li>
               </ul>
             </div>

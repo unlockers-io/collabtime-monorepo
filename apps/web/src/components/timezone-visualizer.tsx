@@ -29,7 +29,7 @@ import {
   getUserTimezone,
 } from "@/lib/timezones";
 import { useHalfMinuteTick } from "@/lib/use-tick";
-import { formatHour } from "@/lib/utils";
+import { cn, formatHour } from "@/lib/utils";
 import {
   Badge,
   Button,
@@ -47,10 +47,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@repo/ui";
-
-// ============================================================================
-// Types
-// ============================================================================
 
 type TimezoneVisualizerProps = {
   members: TeamMember[];
@@ -84,10 +80,6 @@ type OverlapData = {
   overlapCounts: number[];
 };
 
-// ============================================================================
-// Constants
-// ============================================================================
-
 const HOURS_IN_DAY = 24;
 const TIME_AXIS_HOURS = [0, 6, 12, 18, 24];
 const HOVER_HIDE_DELAY_MS = 800;
@@ -102,24 +94,6 @@ const EMPTY_OVERLAP_DATA: OverlapData = {
   crossTeamOverlapHours: EMPTY_HOURS,
   overlapCounts: EMPTY_COUNTS,
 };
-
-// Theme-aware color tokens (hex values for direct DOM manipulation)
-const COLORS = {
-  light: {
-    working: "#171717",
-    notWorking: "#d4d4d4",
-    highlight: "#10b981",
-  },
-  dark: {
-    working: "#fafafa",
-    notWorking: "#404040",
-    highlight: "#34d399",
-  },
-} as const;
-
-// ============================================================================
-// Utilities
-// ============================================================================
 
 const getCurrentTimePosition = (timezone: string): number => {
   const now = new Date();
@@ -158,25 +132,15 @@ const getRoundedCornerClass = (hour: number): string => {
   return "";
 };
 
-// ============================================================================
-// Hooks
-// ============================================================================
-
 const emptySubscribe = () => () => {};
 
 const useClientValue = <T,>(clientValue: () => T, serverValue: T): T =>
   useSyncExternalStore(emptySubscribe, clientValue, () => serverValue);
 
-// ============================================================================
-// Memoized Sub-Components
-// ============================================================================
-
 type HourBlockProps = {
   hour: number;
   isWorking: boolean;
   isDark: boolean;
-  selectedBlockRef: React.RefObject<number | null>;
-  onClickRef: React.RefObject<(hour: number) => void>;
   memberTimezone: string;
   viewerTimezone: string;
 };
@@ -184,20 +148,15 @@ type HourBlockProps = {
 const HourBlock = memo(function HourBlock({
   hour,
   isWorking,
-  isDark,
-  selectedBlockRef,
-  onClickRef,
   memberTimezone,
   viewerTimezone,
 }: HourBlockProps) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const isAnimatingRef = useRef(false);
-
-  const colors = isDark ? COLORS.dark : COLORS.light;
-  const baseColor = isWorking ? colors.working : colors.notWorking;
-
   // Convert the displayed hour (in viewer's timezone) back to member's local time
-  const memberHour = convertHourToTimezone(hour, viewerTimezone, memberTimezone);
+  const memberHour = convertHourToTimezone(
+    hour,
+    viewerTimezone,
+    memberTimezone,
+  );
   const memberNextHour = (memberHour + 1) % HOURS_IN_DAY;
 
   // Get timezone abbreviation for the member
@@ -206,57 +165,17 @@ const HourBlock = memo(function HourBlock({
     [memberTimezone],
   );
 
-  useEffect(() => {
-    let animationId: number;
-    let lastSelected: number | null = null;
-
-    const checkSelection = () => {
-      const currentSelected = selectedBlockRef.current;
-
-      if (currentSelected !== lastSelected) {
-        lastSelected = currentSelected;
-
-        const shouldAnimate =
-          currentSelected === hour && isWorking && !isAnimatingRef.current;
-
-        if (shouldAnimate && buttonRef.current) {
-          isAnimatingRef.current = true;
-          animate(
-            buttonRef.current,
-            { backgroundColor: [baseColor, colors.highlight, baseColor] },
-            {
-              duration: PULSE_DURATION_MS / 1000,
-              ease: ["easeOut", "easeIn"],
-              times: [0, 0.3, 1],
-            },
-          ).then(() => {
-            isAnimatingRef.current = false;
-          });
-        }
-      }
-
-      animationId = requestAnimationFrame(checkSelection);
-    };
-
-    animationId = requestAnimationFrame(checkSelection);
-    return () => cancelAnimationFrame(animationId);
-  }, [hour, isWorking, baseColor, colors.highlight, selectedBlockRef]);
-
-  const handleClick = useCallback(() => {
-    if (isWorking) {
-      onClickRef.current?.(hour);
-    }
-  }, [hour, isWorking, onClickRef]);
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          ref={buttonRef}
           type="button"
-          onClick={handleClick}
-          className={`h-full flex-1 cursor-[inherit] ${getRoundedCornerClass(hour)}`}
-          style={{ backgroundColor: baseColor }}
+          className={cn(
+            `h-full flex-1 cursor-[inherit] ${getRoundedCornerClass(hour)}`,
+            isWorking
+              ? "bg-accent-foreground"
+              : "bg-accent transition-colors hover:bg-muted",
+          )}
         />
       </TooltipTrigger>
       <TooltipContent side="top">
@@ -264,8 +183,9 @@ const HourBlock = memo(function HourBlock({
           <span className="font-medium tabular-nums">
             {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
           </span>
-          <span className="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
-            {formatHour(memberHour)} – {formatHour(memberNextHour)} {memberTzAbbrev}
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {formatHour(memberHour)} – {formatHour(memberNextHour)}{" "}
+            {memberTzAbbrev}
           </span>
         </div>
       </TooltipContent>
@@ -278,7 +198,6 @@ type MemberTimelineRowProps = {
   hours: boolean[];
   isDark: boolean;
   selectedBlockRef: React.RefObject<number | null>;
-  onClickRef: React.RefObject<(hour: number) => void>;
   memberTimezone: string;
   viewerTimezone: string;
 };
@@ -287,15 +206,13 @@ const MemberTimelineRow = memo(function MemberTimelineRow({
   memberId,
   hours,
   isDark,
-  selectedBlockRef,
-  onClickRef,
   memberTimezone,
   viewerTimezone,
 }: MemberTimelineRowProps) {
   return (
     <div
       key={memberId}
-      className="flex h-8 gap-px overflow-hidden rounded-lg bg-neutral-200 p-1 dark:bg-neutral-900"
+      className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1"
     >
       {hours.map((isWorking, hour) => (
         <HourBlock
@@ -303,8 +220,6 @@ const MemberTimelineRow = memo(function MemberTimelineRow({
           hour={hour}
           isWorking={isWorking}
           isDark={isDark}
-          selectedBlockRef={selectedBlockRef}
-          onClickRef={onClickRef}
           memberTimezone={memberTimezone}
           viewerTimezone={viewerTimezone}
         />
@@ -330,13 +245,13 @@ const GroupHeader = memo(function GroupHeader({
     <button
       type="button"
       onClick={onToggle}
-      className="-ml-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-xs font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+      className="-ml-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
     >
       <ChevronRight
         className={`h-3 w-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
       />
       <span>{group.name}</span>
-      <span className="text-neutral-500 dark:text-neutral-400">
+      <span className="text-muted-foreground">
         ({rowCount})
       </span>
     </button>
@@ -396,7 +311,7 @@ const FindMeetingTimeButton = memo(function FindMeetingTimeButton({
     <Button
       variant="outline"
       type="button"
-      className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-neutral-200 bg-neutral-50/50 text-neutral-600 hover:border-neutral-400 hover:bg-neutral-100/50 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/50"
+      className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
       onClick={onClick}
     >
       <Clock className="h-5 w-5 transition-transform group-hover:scale-110" />
@@ -404,10 +319,6 @@ const FindMeetingTimeButton = memo(function FindMeetingTimeButton({
     </Button>
   );
 });
-
-// ============================================================================
-// Main Component
-// ============================================================================
 
 const TimezoneVisualizer = ({
   members,
@@ -418,7 +329,6 @@ const TimezoneVisualizer = ({
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
-  // ---- Refs ----
   const sectionsContainerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const lineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -428,15 +338,12 @@ const TimezoneVisualizer = ({
     typeof setTimeout
   > | null>(null);
 
-  // ---- Motion Values (for off-thread animations) ----
   const lineX = useMotionValue(0);
   const lineOpacity = useMotionValue(0);
 
-  // ---- State ----
   const [isComparing, setIsComparing] = useState(false);
   const [compareSelections, setCompareSelections] = useState<Selection[]>([]);
 
-  // ---- Memoized Values ----
   const collapsedSet = useMemo(
     () => new Set(collapsedGroupIds),
     [collapsedGroupIds],
@@ -448,9 +355,9 @@ const TimezoneVisualizer = ({
   const tick = useHalfMinuteTick();
 
   const nowPosition = useMemo(() => {
+    if (!tick) return null;
     if (!viewerTimezone) return null;
     return getCurrentTimePosition(viewerTimezone);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- tick triggers recalculation every second
   }, [viewerTimezone, tick]);
 
   const memberRows = useMemo((): MemberRow[] => {
@@ -762,7 +669,6 @@ const TimezoneVisualizer = ({
     setIsComparing(true);
   }, []);
 
-  // ---- Effects ----
   useEffect(() => {
     return () => {
       if (lineDebounceRef.current) {
@@ -771,12 +677,10 @@ const TimezoneVisualizer = ({
     };
   }, []);
 
-  // ---- Early Returns ----
   if (members.length === 0 || !viewerTimezone) {
     return null;
   }
 
-  // ---- Render Helpers ----
   const renderTimeAxis = () => (
     <div className="flex gap-2 sm:gap-3">
       <div className="w-8 shrink-0 sm:w-24" />
@@ -797,10 +701,12 @@ const TimezoneVisualizer = ({
                     : "center",
               }}
             >
-              <span className="whitespace-nowrap text-[10px] tabular-nums text-neutral-600 dark:text-neutral-400 sm:text-xs">
-                {formatHour(hour % HOURS_IN_DAY)}
-              </span>
-              <div className="mt-1 h-1.5 w-px bg-neutral-300 dark:bg-neutral-600" />
+              <div className="flex flex-col items-center gap-1">
+                <span className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground sm:text-xs">
+                  {formatHour(hour % HOURS_IN_DAY)}
+                </span>
+                <div className="h-1.5 w-px bg-border" />
+              </div>
             </div>
           );
         })}
@@ -813,7 +719,6 @@ const TimezoneVisualizer = ({
 
     return (
       <>
-        {/* Mobile */}
         <div
           className="pointer-events-none absolute bottom-0 top-0 z-20 w-0.5 rounded-full bg-red-500 shadow-sm sm:hidden"
           style={{
@@ -848,13 +753,13 @@ const TimezoneVisualizer = ({
       >
         <div className="relative">
           <div
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900 sm:h-7 sm:w-7 sm:text-xs"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground sm:h-7 sm:w-7 sm:text-xs"
             title={member.name}
           >
             {member.name.charAt(0).toUpperCase()}
           </div>
           {isSelected && members.length > 1 && (
-            <div className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-neutral-50 bg-neutral-900 dark:border-neutral-900 dark:bg-neutral-50 sm:h-3 sm:w-3" />
+            <div className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-foreground sm:h-3 sm:w-3" />
           )}
           {dayOffset !== 0 && (
             <div className="absolute -bottom-0.5 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-amber-950 dark:bg-amber-500 dark:text-amber-950 sm:h-4 sm:w-4 sm:text-[9px]">
@@ -863,7 +768,7 @@ const TimezoneVisualizer = ({
           )}
         </div>
         <span
-          className="hidden truncate text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:block"
+          className="hidden truncate text-sm font-medium text-foreground sm:block"
           title={member.name}
         >
           {member.name}
@@ -887,7 +792,7 @@ const TimezoneVisualizer = ({
 
   const renderOverlapBar = () => {
     return (
-      <div className="flex h-8 gap-px overflow-hidden rounded-lg bg-neutral-200 p-1 dark:bg-neutral-900">
+      <div className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1">
         {Array.from({ length: HOURS_IN_DAY }, (_, hour) => {
           const isFullOverlap = overlapHours[hour];
           const isCrossTeamOverlap = crossTeamOverlapHours[hour];
@@ -901,14 +806,14 @@ const TimezoneVisualizer = ({
               ? "bg-sky-500 dark:bg-sky-400"
               : isPartialOverlap
                 ? "bg-amber-500 dark:bg-amber-400"
-                : "bg-neutral-300 dark:bg-neutral-700";
+                : "bg-muted";
 
           if (!hasAnyOverlap) {
             return (
               <Tooltip key={hour}>
                 <TooltipTrigger asChild>
                   <div
-                    className={`h-6 flex-1 bg-neutral-300 dark:bg-neutral-700 ${getRoundedCornerClass(hour)}`}
+                    className={`h-6 flex-1 bg-muted ${getRoundedCornerClass(hour)}`}
                   />
                 </TooltipTrigger>
                 <TooltipContent side="top">
@@ -968,14 +873,17 @@ const TimezoneVisualizer = ({
                 />
               </TooltipTrigger>
               <TooltipContent side="top">
-                <div className="font-medium tabular-nums text-neutral-900 dark:text-neutral-50">
-                  {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
-                </div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                  {overlapLabel}
-                </div>
-                {availableByTeam.size > 0 && (
-                  <div className="mt-1.5 mb-3 flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-0.5">
+                    <div className="font-medium tabular-nums text-foreground">
+                      {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {overlapLabel}
+                    </div>
+                  </div>
+                  {availableByTeam.size > 0 && (
+                    <div className="flex flex-col gap-2">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
                       Available by team
                     </span>
@@ -985,7 +893,7 @@ const TimezoneVisualizer = ({
                           key={`${teamName}-available`}
                           className="flex items-center justify-between gap-4 text-xs"
                         >
-                          <span className="font-medium text-neutral-800 dark:text-neutral-200 truncate">
+                          <span className="font-medium text-foreground truncate">
                             {teamName}
                           </span>
                           <span className="text-emerald-600 dark:text-emerald-400 truncate">
@@ -994,10 +902,10 @@ const TimezoneVisualizer = ({
                         </div>
                       ),
                     )}
-                  </div>
-                )}
-                {!isFullOverlap && unavailableByTeam.size > 0 && (
-                  <div className="mt-3 flex flex-col gap-2">
+                    </div>
+                  )}
+                  {!isFullOverlap && unavailableByTeam.size > 0 && (
+                    <div className="flex flex-col gap-2">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-red-600 dark:text-red-400">
                       Unavailable
                     </span>
@@ -1005,7 +913,7 @@ const TimezoneVisualizer = ({
                     {fullyUnavailableTeams.map((teamName) => (
                       <div
                         key={`${teamName}-fully-unavailable`}
-                        className="flex items-center justify-between gap-4 text-xs text-neutral-400 dark:text-neutral-500"
+                        className="flex items-center justify-between gap-4 text-xs text-muted-foreground opacity-60"
                       >
                         <span className="font-medium line-through truncate">
                           {teamName}
@@ -1019,16 +927,17 @@ const TimezoneVisualizer = ({
                     {partiallyUnavailableTeams.map(([teamName, names]) => (
                       <div
                         key={`${teamName}-unavailable`}
-                        className="flex items-center justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400"
+                        className="flex items-center justify-between gap-4 text-xs text-muted-foreground"
                       >
-                        <span className="font-medium text-neutral-700 dark:text-neutral-300 truncate">
+                        <span className="font-medium text-foreground truncate">
                           {teamName}
                         </span>
                         <span className="truncate">{names.join(", ")}</span>
                       </div>
                     ))}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </TooltipContent>
             </Tooltip>
           );
@@ -1065,9 +974,9 @@ const TimezoneVisualizer = ({
     const hasCrossTeamOverlap = crossTeamOverlapHours.some(Boolean);
 
     return (
-      <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+      <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-neutral-900 dark:bg-neutral-100" />
+          <div className="h-3 w-3 rounded bg-accent-foreground" />
           <span>Working hours</span>
         </div>
         {isComparing && canShowOverlap && (
@@ -1101,7 +1010,6 @@ const TimezoneVisualizer = ({
     );
   };
 
-  // ---- Main Render ----
   return (
     <TooltipProvider delayDuration={120}>
       <div className="flex flex-col gap-6">
@@ -1109,7 +1017,7 @@ const TimezoneVisualizer = ({
 
         <ScrollArea
           ref={sectionsContainerRef}
-          className="relative flex flex-col gap-4 max-h-96"
+          className="relative flex flex-col gap-4 max-h-80"
         >
           {renderCurrentTimeIndicator()}
 
@@ -1134,7 +1042,7 @@ const TimezoneVisualizer = ({
                 )}
 
                 {!section.group && groups.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                     <span>Ungrouped</span>
                     <span>({section.rows.length})</span>
                   </div>
@@ -1143,7 +1051,6 @@ const TimezoneVisualizer = ({
                 {visibleRows.length > 0 && (
                   <div
                     key={`section-${section.group?.id ?? "ungrouped"}`}
-                    className="mb-4"
                   >
                     <div className="flex items-stretch gap-2 sm:gap-3">
                       <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
@@ -1170,7 +1077,6 @@ const TimezoneVisualizer = ({
                               hours={hours}
                               isDark={isDark}
                               selectedBlockRef={selectedBlockRef}
-                              onClickRef={handleHourBlockClickRef}
                               memberTimezone={member.timezone}
                               viewerTimezone={viewerTimezone}
                             />
@@ -1208,14 +1114,14 @@ const TimezoneVisualizer = ({
                 <Card className="flex flex-col gap-4 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-900 dark:bg-neutral-100">
-                        <Clock className="h-4 w-4 text-white dark:text-neutral-900" />
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+                        <Clock className="h-4 w-4 text-primary-foreground" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                        <h3 className="text-sm font-semibold text-foreground">
                           Find Best Meeting Time
                         </h3>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        <p className="text-xs text-muted-foreground">
                           Select people or groups to compare
                         </p>
                       </div>
@@ -1224,7 +1130,7 @@ const TimezoneVisualizer = ({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                       onClick={closeComparePanel}
                     >
                       <X className="h-4 w-4" />
@@ -1243,7 +1149,7 @@ const TimezoneVisualizer = ({
                         <button
                           type="button"
                           onClick={() => removeSelection(sel)}
-                          className="ml-0.5 rounded-full p-0.5 hover:bg-neutral-300 dark:hover:bg-neutral-600"
+                          className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -1328,8 +1234,8 @@ const TimezoneVisualizer = ({
                   </div>
 
                   {canShowOverlap && (
-                    <div className="flex flex-col gap-3 border-t border-neutral-100 pt-3 dark:border-neutral-800">
-                      <p className="text-right text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
+                    <div className="flex flex-col gap-3 border-t border-border pt-3">
+                      <p className="text-right text-xs tabular-nums text-muted-foreground">
                         {renderOverlapSummary()}
                       </p>
 
@@ -1337,7 +1243,7 @@ const TimezoneVisualizer = ({
                         <div className="flex w-8 shrink-0 flex-col sm:w-24">
                           <div className="flex h-8 items-center justify-center sm:justify-start sm:gap-2">
                             <OverlapStatusIcon status={overlapStatus} />
-                            <span className="hidden truncate text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:block">
+                            <span className="hidden truncate text-sm font-medium text-foreground sm:block">
                               {overlapStatus === "none"
                                 ? "No overlap"
                                 : "Overlap"}
@@ -1359,7 +1265,7 @@ const TimezoneVisualizer = ({
                             return (
                               <div
                                 key={hour}
-                                className="flex flex-col"
+                                className="flex flex-col gap-1"
                                 style={{
                                   alignItems: isFirst
                                     ? "flex-start"
@@ -1368,8 +1274,8 @@ const TimezoneVisualizer = ({
                                       : "center",
                                 }}
                               >
-                                <div className="mb-1 h-1.5 w-px bg-neutral-300 dark:bg-neutral-600" />
-                                <span className="whitespace-nowrap text-[10px] tabular-nums text-neutral-600 dark:text-neutral-400 sm:text-xs">
+                                <div className="h-1.5 w-px bg-border" />
+                                <span className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground sm:text-xs">
                                   {formatHour(hour % HOURS_IN_DAY)}
                                 </span>
                               </div>
@@ -1381,7 +1287,7 @@ const TimezoneVisualizer = ({
                   )}
 
                   {!canShowOverlap && (
-                    <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+                    <p className="text-center text-sm text-muted-foreground">
                       Select at least 2 people to find overlapping times
                     </p>
                   )}

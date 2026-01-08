@@ -79,13 +79,13 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 pb-16">
       <div className="mb-8 flex flex-col items-center text-center">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-900 dark:bg-neutral-100">
-          <Globe className="h-8 w-8 text-white dark:text-neutral-900" />
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
+          <Globe className="h-8 w-8 text-primary-foreground" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
           {teamName ?? "Protected Team"}
         </h1>
-        <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           This team is password protected
         </p>
       </div>
@@ -115,7 +115,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" />
@@ -150,7 +150,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-neutral-500 dark:text-neutral-400">
+        <p className="mt-4 text-center text-xs text-muted-foreground">
           Contact the team owner if you don&apos;t have the password.
         </p>
       </Card>

@@ -58,8 +58,8 @@ const FieldLabel = React.forwardRef<
       ref={ref}
       data-slot="field-label"
       className={cn(
-        "group/field-label flex w-fit items-center gap-2 text-sm font-medium leading-snug text-neutral-900 dark:text-neutral-100",
-        "group-data-[invalid=true]/field:text-red-600 dark:group-data-[invalid=true]/field:text-red-400",
+        "group/field-label flex w-fit items-center gap-2 text-sm font-medium leading-snug text-foreground",
+        "group-data-[invalid=true]/field:text-destructive",
         "group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50",
         className
       )}
@@ -89,7 +89,7 @@ const FieldDescription = React.forwardRef<
     <p
       ref={ref}
       data-slot="field-description"
-      className={cn("text-xs text-neutral-500 dark:text-neutral-400", className)}
+      className={cn("text-xs text-muted-foreground", className)}
       {...props}
     />
   );
@@ -116,7 +116,7 @@ const FieldError = React.forwardRef<HTMLParagraphElement, FieldErrorProps>(
       <p
         ref={ref}
         data-slot="field-error"
-        className={cn("text-xs font-medium text-red-600 dark:text-red-400", className)}
+        className={cn("text-xs font-medium text-destructive", className)}
         {...props}
       >
         {message}
@@ -146,7 +146,7 @@ const FieldLegend = React.forwardRef<
   <legend
     ref={ref}
     data-slot="field-legend"
-    className={cn("text-sm font-semibold text-neutral-900 dark:text-neutral-100", className)}
+    className={cn("text-sm font-semibold text-foreground", className)}
     {...props}
   />
 ));
@@ -157,7 +157,7 @@ const FieldTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<H
     <p
       ref={ref}
       data-slot="field-title"
-      className={cn("text-sm font-medium text-neutral-900 dark:text-neutral-100", className)}
+      className={cn("text-sm font-medium text-foreground", className)}
       {...props}
     />
   )
@@ -169,7 +169,7 @@ const FieldSeparator = React.forwardRef<HTMLHRElement, React.HTMLAttributes<HTML
     <hr
       ref={ref}
       data-slot="field-separator"
-      className={cn("border-neutral-200 dark:border-neutral-800", className)}
+      className={cn("border-border", className)}
       {...props}
     />
   )

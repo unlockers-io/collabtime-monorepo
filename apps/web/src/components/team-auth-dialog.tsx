@@ -78,14 +78,14 @@ const AdminUnlockDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-sm bg-white dark:bg-neutral-900">
+      <DialogContent className="max-w-sm">
         <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 dark:bg-neutral-100">
-                <Lock className="h-5 w-5 text-white dark:text-neutral-900" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+                <Lock className="h-5 w-5 text-primary-foreground" />
               </div>
-              <DialogTitle className="text-neutral-900 dark:text-neutral-100">
+              <DialogTitle>
                 Unlock admin access
               </DialogTitle>
             </div>
@@ -100,7 +100,9 @@ const AdminUnlockDialog = ({
               name="password"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="admin-password">Admin password</FieldLabel>
+                  <FieldLabel htmlFor="admin-password">
+                    Admin password
+                  </FieldLabel>
                   <Input
                     {...field}
                     id="admin-password"
@@ -125,12 +127,15 @@ const AdminUnlockDialog = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending || !form.formState.isValid}>
+            <Button
+              type="submit"
+              disabled={isPending || !form.formState.isValid}
+            >
               {isPending ? (
-                <>
-                  <Spinner className="mr-2" />
+                <span className="flex items-center gap-2">
+                  <Spinner />
                   Checking…
-                </>
+                </span>
               ) : (
                 "Unlock"
               )}
