@@ -16,6 +16,14 @@ const getProPriceId = (): string => {
   if (!priceId) {
     throw new Error("STRIPE_PRO_PRICE_ID environment variable is not set");
   }
+
+  // Validate price ID format
+  if (!priceId.startsWith("price_")) {
+    throw new Error(
+      `Invalid STRIPE_PRO_PRICE_ID format: "${priceId}". Must start with "price_"`
+    );
+  }
+
   return priceId;
 };
 
@@ -91,7 +99,26 @@ export const POST = async (request: Request) => {
         { status: 400 }
       );
     }
+
+    // Enhanced logging for Stripe errors
     console.error("[Checkout] Error:", error);
+
+    // Check if it's a Stripe error
+    if (error && typeof error === "object" && "type" in error) {
+      const stripeError = error as {
+        type: string;
+        code?: string;
+        param?: string;
+      };
+      console.error("[Checkout] Stripe Error Details:", {
+        type: stripeError.type,
+        code: stripeError.code,
+        param: stripeError.param,
+        priceId: process.env.STRIPE_PRO_PRICE_ID,
+        stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 8),
+      });
+    }
+
     return NextResponse.json(
       { error: "Failed to create checkout session" },
       { status: 500 }
