@@ -35,7 +35,7 @@ const TRUSTED_ORIGINS = [
 
 const createAuth = (
   prisma: PrismaClient,
-  config: AuthConfig
+  config: AuthConfig,
 ): ReturnType<typeof betterAuth> => {
   const { stripe: stripeConfig, betterAuth: betterAuthConfig } = config;
 
@@ -45,7 +45,7 @@ const createAuth = (
 
   return betterAuth({
     database: prismaAdapter(prisma, {
-      provider: "mysql",
+      provider: "postgresql",
     }),
 
     emailAndPassword: {
@@ -81,7 +81,7 @@ const createAuth = (
             if (!userId) {
               console.error(
                 "[Stripe] Subscription missing referenceId:",
-                subscription.id
+                subscription.id,
               );
               return;
             }
@@ -101,7 +101,7 @@ const createAuth = (
             if (!userId) {
               console.error(
                 "[Stripe] Subscription missing referenceId:",
-                subscription.id
+                subscription.id,
               );
               return;
             }
@@ -119,7 +119,7 @@ const createAuth = (
             if (!subscription.referenceId) {
               console.error(
                 "[Stripe] Subscription update missing referenceId:",
-                subscription.id
+                subscription.id,
               );
               return;
             }
@@ -131,7 +131,7 @@ const createAuth = (
             if (!user) {
               console.error(
                 "[Stripe] User not found for subscription:",
-                subscription.id
+                subscription.id,
               );
               return;
             }

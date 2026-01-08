@@ -210,7 +210,6 @@ export type SpaceOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   owner?: Prisma.UserOrderByWithRelationInput
-  _relevance?: Prisma.SpaceOrderByRelevanceInput
 }
 
 export type SpaceWhereUniqueInput = Prisma.AtLeast<{
@@ -330,12 +329,6 @@ export type SpaceListRelationFilter = {
 
 export type SpaceOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
-}
-
-export type SpaceOrderByRelevanceInput = {
-  fields: Prisma.SpaceOrderByRelevanceFieldEnum | Prisma.SpaceOrderByRelevanceFieldEnum[]
-  sort: Prisma.SortOrder
-  search: string
 }
 
 export type SpaceCountOrderByAggregateInput = {
@@ -516,7 +509,27 @@ export type SpaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["space"]>
 
+export type SpaceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  id?: boolean
+  teamId?: boolean
+  isPrivate?: boolean
+  accessPassword?: boolean
+  ownerId?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
+  owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+}, ExtArgs["result"]["space"]>
 
+export type SpaceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  id?: boolean
+  teamId?: boolean
+  isPrivate?: boolean
+  accessPassword?: boolean
+  ownerId?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
+  owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+}, ExtArgs["result"]["space"]>
 
 export type SpaceSelectScalar = {
   id?: boolean
@@ -530,6 +543,12 @@ export type SpaceSelectScalar = {
 
 export type SpaceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "teamId" | "isPrivate" | "accessPassword" | "ownerId" | "createdAt" | "updatedAt", ExtArgs["result"]["space"]>
 export type SpaceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+}
+export type SpaceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+}
+export type SpaceIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
@@ -664,6 +683,30 @@ export interface SpaceDelegate<ExtArgs extends runtime.Types.Extensions.Internal
   createMany<T extends SpaceCreateManyArgs>(args?: Prisma.SelectSubset<T, SpaceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>
 
   /**
+   * Create many Spaces and returns the data saved in the database.
+   * @param {SpaceCreateManyAndReturnArgs} args - Arguments to create many Spaces.
+   * @example
+   * // Create many Spaces
+   * const space = await prisma.space.createManyAndReturn({
+   *   data: [
+   *     // ... provide data here
+   *   ]
+   * })
+   * 
+   * // Create many Spaces and only return the `id`
+   * const spaceWithIdOnly = await prisma.space.createManyAndReturn({
+   *   select: { id: true },
+   *   data: [
+   *     // ... provide data here
+   *   ]
+   * })
+   * Note, that providing `undefined` is treated as the value not being there.
+   * Read more here: https://pris.ly/d/null-undefined
+   * 
+   */
+  createManyAndReturn<T extends SpaceCreateManyAndReturnArgs>(args?: Prisma.SelectSubset<T, SpaceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpacePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+  /**
    * Delete a Space.
    * @param {SpaceDeleteArgs} args - Arguments to delete one Space.
    * @example
@@ -726,6 +769,36 @@ export interface SpaceDelegate<ExtArgs extends runtime.Types.Extensions.Internal
    * 
    */
   updateMany<T extends SpaceUpdateManyArgs>(args: Prisma.SelectSubset<T, SpaceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>
+
+  /**
+   * Update zero or more Spaces and returns the data updated in the database.
+   * @param {SpaceUpdateManyAndReturnArgs} args - Arguments to update many Spaces.
+   * @example
+   * // Update many Spaces
+   * const space = await prisma.space.updateManyAndReturn({
+   *   where: {
+   *     // ... provide filter here
+   *   },
+   *   data: [
+   *     // ... provide data here
+   *   ]
+   * })
+   * 
+   * // Update zero or more Spaces and only return the `id`
+   * const spaceWithIdOnly = await prisma.space.updateManyAndReturn({
+   *   select: { id: true },
+   *   where: {
+   *     // ... provide filter here
+   *   },
+   *   data: [
+   *     // ... provide data here
+   *   ]
+   * })
+   * Note, that providing `undefined` is treated as the value not being there.
+   * Read more here: https://pris.ly/d/null-undefined
+   * 
+   */
+  updateManyAndReturn<T extends SpaceUpdateManyAndReturnArgs>(args: Prisma.SelectSubset<T, SpaceUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpacePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
   /**
    * Create or update one Space.
@@ -1156,6 +1229,29 @@ export type SpaceCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
 }
 
 /**
+ * Space createManyAndReturn
+ */
+export type SpaceCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Space
+   */
+  select?: Prisma.SpaceSelectCreateManyAndReturn<ExtArgs> | null
+  /**
+   * Omit specific fields from the Space
+   */
+  omit?: Prisma.SpaceOmit<ExtArgs> | null
+  /**
+   * The data used to create many Spaces.
+   */
+  data: Prisma.SpaceCreateManyInput | Prisma.SpaceCreateManyInput[]
+  skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SpaceIncludeCreateManyAndReturn<ExtArgs> | null
+}
+
+/**
  * Space update
  */
 export type SpaceUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1197,6 +1293,36 @@ export type SpaceUpdateManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Limit how many Spaces to update.
    */
   limit?: number
+}
+
+/**
+ * Space updateManyAndReturn
+ */
+export type SpaceUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Space
+   */
+  select?: Prisma.SpaceSelectUpdateManyAndReturn<ExtArgs> | null
+  /**
+   * Omit specific fields from the Space
+   */
+  omit?: Prisma.SpaceOmit<ExtArgs> | null
+  /**
+   * The data used to update Spaces.
+   */
+  data: Prisma.XOR<Prisma.SpaceUpdateManyMutationInput, Prisma.SpaceUncheckedUpdateManyInput>
+  /**
+   * Filter which Spaces to update
+   */
+  where?: Prisma.SpaceWhereInput
+  /**
+   * Limit how many Spaces to update.
+   */
+  limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SpaceIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**

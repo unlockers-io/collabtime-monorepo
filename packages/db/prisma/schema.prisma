@@ -4,8 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider     = "mysql"
-  relationMode = "prisma"
+  provider = "postgresql"
 }
 
 enum SubscriptionPlan {

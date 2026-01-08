@@ -1,19 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Lock, ArrowRight, Eye, EyeOff, Globe } from "lucide-react";
-import {
-  Button,
-  Input,
-  Label,
-  Card,
-  Spinner,
-} from "@repo/ui";
+import { Button, Input, Label, Card, Spinner } from "@repo/ui";
 
 type PasswordGateProps = {
   spaceId: string;
@@ -30,14 +24,13 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
 
   // Detect desktop to enable autofocus only on non-touch devices
   // This prevents layout shift from keyboard popup on mobile
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(pointer: fine)");
-    setIsDesktop(mediaQuery.matches);
-  }, []);
+  const [isDesktop] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(pointer: fine)").matches;
+  });
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),

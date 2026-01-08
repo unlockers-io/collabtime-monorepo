@@ -199,7 +199,6 @@ export type VerificationOrderByWithRelationInput = {
   expiresAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  _relevance?: Prisma.VerificationOrderByRelevanceInput
 }
 
 export type VerificationWhereUniqueInput = Prisma.AtLeast<{
@@ -302,12 +301,6 @@ export type VerificationUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type VerificationOrderByRelevanceInput = {
-  fields: Prisma.VerificationOrderByRelevanceFieldEnum | Prisma.VerificationOrderByRelevanceFieldEnum[]
-  sort: Prisma.SortOrder
-  search: string
-}
-
 export type VerificationIdentifierValueCompoundUniqueInput = {
   identifier: string
   value: string
@@ -351,7 +344,23 @@ export type VerificationSelect<ExtArgs extends runtime.Types.Extensions.Internal
   updatedAt?: boolean
 }, ExtArgs["result"]["verification"]>
 
+export type VerificationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  id?: boolean
+  identifier?: boolean
+  value?: boolean
+  expiresAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
+}, ExtArgs["result"]["verification"]>
 
+export type VerificationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  id?: boolean
+  identifier?: boolean
+  value?: boolean
+  expiresAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
+}, ExtArgs["result"]["verification"]>
 
 export type VerificationSelectScalar = {
   id?: boolean
@@ -492,6 +501,30 @@ export interface VerificationDelegate<ExtArgs extends runtime.Types.Extensions.I
   createMany<T extends VerificationCreateManyArgs>(args?: Prisma.SelectSubset<T, VerificationCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>
 
   /**
+   * Create many Verifications and returns the data saved in the database.
+   * @param {VerificationCreateManyAndReturnArgs} args - Arguments to create many Verifications.
+   * @example
+   * // Create many Verifications
+   * const verification = await prisma.verification.createManyAndReturn({
+   *   data: [
+   *     // ... provide data here
+   *   ]
+   * })
+   * 
+   * // Create many Verifications and only return the `id`
+   * const verificationWithIdOnly = await prisma.verification.createManyAndReturn({
+   *   select: { id: true },
+   *   data: [
+   *     // ... provide data here
+   *   ]
+   * })
+   * Note, that providing `undefined` is treated as the value not being there.
+   * Read more here: https://pris.ly/d/null-undefined
+   * 
+   */
+  createManyAndReturn<T extends VerificationCreateManyAndReturnArgs>(args?: Prisma.SelectSubset<T, VerificationCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VerificationPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+  /**
    * Delete a Verification.
    * @param {VerificationDeleteArgs} args - Arguments to delete one Verification.
    * @example
@@ -554,6 +587,36 @@ export interface VerificationDelegate<ExtArgs extends runtime.Types.Extensions.I
    * 
    */
   updateMany<T extends VerificationUpdateManyArgs>(args: Prisma.SelectSubset<T, VerificationUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>
+
+  /**
+   * Update zero or more Verifications and returns the data updated in the database.
+   * @param {VerificationUpdateManyAndReturnArgs} args - Arguments to update many Verifications.
+   * @example
+   * // Update many Verifications
+   * const verification = await prisma.verification.updateManyAndReturn({
+   *   where: {
+   *     // ... provide filter here
+   *   },
+   *   data: [
+   *     // ... provide data here
+   *   ]
+   * })
+   * 
+   * // Update zero or more Verifications and only return the `id`
+   * const verificationWithIdOnly = await prisma.verification.updateManyAndReturn({
+   *   select: { id: true },
+   *   where: {
+   *     // ... provide filter here
+   *   },
+   *   data: [
+   *     // ... provide data here
+   *   ]
+   * })
+   * Note, that providing `undefined` is treated as the value not being there.
+   * Read more here: https://pris.ly/d/null-undefined
+   * 
+   */
+  updateManyAndReturn<T extends VerificationUpdateManyAndReturnArgs>(args: Prisma.SelectSubset<T, VerificationUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VerificationPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
   /**
    * Create or update one Verification.
@@ -958,6 +1021,25 @@ export type VerificationCreateManyArgs<ExtArgs extends runtime.Types.Extensions.
 }
 
 /**
+ * Verification createManyAndReturn
+ */
+export type VerificationCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Verification
+   */
+  select?: Prisma.VerificationSelectCreateManyAndReturn<ExtArgs> | null
+  /**
+   * Omit specific fields from the Verification
+   */
+  omit?: Prisma.VerificationOmit<ExtArgs> | null
+  /**
+   * The data used to create many Verifications.
+   */
+  data: Prisma.VerificationCreateManyInput | Prisma.VerificationCreateManyInput[]
+  skipDuplicates?: boolean
+}
+
+/**
  * Verification update
  */
 export type VerificationUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -983,6 +1065,32 @@ export type VerificationUpdateArgs<ExtArgs extends runtime.Types.Extensions.Inte
  * Verification updateMany
  */
 export type VerificationUpdateManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * The data used to update Verifications.
+   */
+  data: Prisma.XOR<Prisma.VerificationUpdateManyMutationInput, Prisma.VerificationUncheckedUpdateManyInput>
+  /**
+   * Filter which Verifications to update
+   */
+  where?: Prisma.VerificationWhereInput
+  /**
+   * Limit how many Verifications to update.
+   */
+  limit?: number
+}
+
+/**
+ * Verification updateManyAndReturn
+ */
+export type VerificationUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Verification
+   */
+  select?: Prisma.VerificationSelectUpdateManyAndReturn<ExtArgs> | null
+  /**
+   * Omit specific fields from the Verification
+   */
+  omit?: Prisma.VerificationOmit<ExtArgs> | null
   /**
    * The data used to update Verifications.
    */
