@@ -362,7 +362,7 @@ const Nav = (props: NavProps) => {
   // Centered variant - simple logo only
   if (variant === "centered") {
     return (
-      <header className="flex items-center justify-center py-8">
+      <header className="flex items-center justify-center px-4 py-8 sm:px-6">
         <NavLogo />
       </header>
     );
@@ -437,7 +437,7 @@ const Nav = (props: NavProps) => {
 
   // Default variant - simple nav with logo and auth
   return (
-    <header className="flex items-center justify-between py-6">
+    <header className="flex items-center justify-between px-4 py-6 sm:px-6">
       <NavLogo />
       <div className="flex items-center gap-2">
         <ModeToggle />
