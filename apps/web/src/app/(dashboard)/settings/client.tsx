@@ -24,6 +24,7 @@ type SettingsClientProps = {
 const PRO_FEATURES = [
   "Password protection for spaces",
   "Export team data (CSV/JSON)",
+  "Meeting time suggestions",
   "Priority support",
   "Custom branding (coming soon)",
 ];

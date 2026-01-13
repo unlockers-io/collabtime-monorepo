@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Crown, Lock, Shield, Zap, Check, ArrowRight, Download } from "lucide-react";
+import { Crown, Lock, Shield, Zap, Check, ArrowRight, Download, Calendar } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,12 @@ const proFeatures: ProFeature[] = [
     title: "Export Team Data",
     description:
       "Download your team's timezone data as CSV or JSON. Perfect for backups, integrations, or sharing with other tools.",
+  },
+  {
+    icon: <Calendar className="h-5 w-5" />,
+    title: "Meeting Suggestions",
+    description:
+      "Get smart suggestions for the best meeting times based on everyone's working hours and timezone overlap.",
   },
   {
     icon: <Shield className="h-5 w-5" />,
