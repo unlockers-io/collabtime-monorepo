@@ -130,8 +130,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   );
 
   // Subscribe to realtime events for this team - updates TanStack Query cache
+  // All users (viewers and admins) receive realtime updates
   useRealtime({
-    channels: token ? [`team-${teamId}`] : [],
+    channels: [`team-${teamId}`],
     events: [
       "team.memberAdded",
       "team.memberRemoved",
