@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Crown, Lock, Shield, Zap, Check, ArrowRight } from "lucide-react";
+import { Crown, Lock, Shield, Zap, Check, ArrowRight, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,12 @@ const proFeatures: ProFeature[] = [
     title: "Private Spaces",
     description:
       "Protect your team workspaces with password authentication. Only authorized members can view your team's timezone data.",
+  },
+  {
+    icon: <Download className="h-5 w-5" />,
+    title: "Export Team Data",
+    description:
+      "Download your team's timezone data as CSV or JSON. Perfect for backups, integrations, or sharing with other tools.",
   },
   {
     icon: <Shield className="h-5 w-5" />,

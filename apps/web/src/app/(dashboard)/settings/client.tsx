@@ -23,6 +23,7 @@ type SettingsClientProps = {
 
 const PRO_FEATURES = [
   "Password protection for spaces",
+  "Export team data (CSV/JSON)",
   "Priority support",
   "Custom branding (coming soon)",
 ];
