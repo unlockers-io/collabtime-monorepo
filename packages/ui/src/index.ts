@@ -1,3 +1,5 @@
+"use client";
+
 // Utils
 export { cn } from "./lib/utils";
 
