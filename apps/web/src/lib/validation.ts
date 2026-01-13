@@ -51,9 +51,19 @@ const TeamAuthInputSchema = z.object({
   password: PasswordSchema,
 });
 
+const TeamChangePasswordInputSchema = z.object({
+  currentPassword: PasswordSchema,
+  newPassword: PasswordSchema,
+  confirmPassword: PasswordSchema,
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 export {
   PasswordSchema,
   TeamAuthInputSchema,
+  TeamChangePasswordInputSchema,
   TeamCreateInputSchema,
   TeamGroupInputSchema,
   TeamGroupUpdateSchema,

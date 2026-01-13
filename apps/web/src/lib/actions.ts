@@ -10,6 +10,7 @@ import {
 import { realtime } from "./realtime";
 import {
   TeamAuthInputSchema,
+  TeamChangePasswordInputSchema,
   TeamCreateInputSchema,
   TeamGroupInputSchema,
   TeamGroupUpdateSchema,
@@ -697,9 +698,73 @@ const removeGroup = async (
   }
 };
 
+const changeTeamPassword = async (
+  teamId: string,
+  token: string,
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<ActionResult<{ newToken: string }>> => {
+  try {
+    // Verify admin access
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
+    // Validate input
+    const inputResult = TeamChangePasswordInputSchema.safeParse({
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
+    if (!inputResult.success) {
+      const errorMessage =
+        inputResult.error.issues[0]?.message ?? "Invalid password data";
+      return { success: false, error: errorMessage };
+    }
+
+    // Get team and verify current password
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    if (!team.adminPasswordHash) {
+      return { success: false, error: "Team password not configured" };
+    }
+
+    const isCurrentValid = await verifyPassword(
+      currentPassword,
+      team.adminPasswordHash,
+    );
+    if (!isCurrentValid) {
+      return { success: false, error: "Current password is incorrect" };
+    }
+
+    // Hash new password and update team
+    const newPasswordHash = await hashPassword(newPassword);
+    team.adminPasswordHash = newPasswordHash;
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    // Invalidate current session and create new one for security
+    await deleteSession(token);
+    const newToken = await createSession(teamId, "admin");
+
+    return { success: true, data: { newToken } };
+  } catch (error) {
+    console.error("Failed to change team password:", error);
+    return { success: false, error: "Failed to change password" };
+  }
+};
+
 export {
   addMember,
   authenticateTeam,
+  changeTeamPassword,
   createGroup,
   createTeam,
   deleteSession,

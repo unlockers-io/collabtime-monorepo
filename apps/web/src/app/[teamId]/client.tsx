@@ -14,6 +14,7 @@ import { Clock, FolderKanban, Users } from "lucide-react";
 import type { TeamGroup, TeamMember } from "@/types";
 import { AddGroupDialog } from "@/components/add-group-dialog";
 import { AddMemberDialog } from "@/components/add-member-dialog";
+import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import { GroupCard } from "@/components/group-card";
 import { MemberCard } from "@/components/member-card";
 import { Button, ScrollArea } from "@repo/ui";
@@ -677,13 +678,24 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
               )}
 
               {isAdmin && token ? (
-                <AddMemberDialog
-                  teamId={teamId}
-                  token={token}
-                  groups={groups}
-                  onMemberAdded={handleMemberAdded}
-                  isFirstMember={members.length === 0}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <AddMemberDialog
+                    teamId={teamId}
+                    token={token}
+                    groups={groups}
+                    onMemberAdded={handleMemberAdded}
+                    isFirstMember={members.length === 0}
+                  />
+                  <ChangePasswordDialog
+                    teamId={teamId}
+                    token={token}
+                    onPasswordChanged={(newToken) => {
+                      setToken(newToken);
+                      writeTeamSession(teamId, newToken);
+                      toast.success("Session updated with new credentials");
+                    }}
+                  />
+                </div>
               ) : (
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
