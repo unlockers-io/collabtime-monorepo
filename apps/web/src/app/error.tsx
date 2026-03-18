@@ -21,12 +21,8 @@ const Error = ({ error, reset }: ErrorProps) => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-foreground">
-            Something went wrong
-          </h1>
-          <p className="text-muted-foreground">
-            An unexpected error occurred. Please try again.
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">Something went wrong</h1>
+          <p className="text-muted-foreground">An unexpected error occurred. Please try again.</p>
         </div>
 
         <button

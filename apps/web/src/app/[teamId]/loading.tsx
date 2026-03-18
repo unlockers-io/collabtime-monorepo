@@ -44,10 +44,7 @@ const Loading = () => {
               <div className="w-28" />
               <div className="flex flex-1 justify-between">
                 {[0, 1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="h-3 w-12 animate-pulse rounded bg-muted"
-                  />
+                  <div key={i} className="h-3 w-12 animate-pulse rounded bg-muted" />
                 ))}
               </div>
             </div>
@@ -108,10 +105,7 @@ const Loading = () => {
             </div>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
               {[0, 1].map((i) => (
-                <div
-                  key={i}
-                  className="flex h-45 flex-col gap-3 rounded-2xl bg-secondary p-4"
-                >
+                <div key={i} className="flex h-45 flex-col gap-3 rounded-2xl bg-secondary p-4">
                   <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
                   <div className="flex flex-1 flex-col gap-2">
                     <div className="h-5 w-24 animate-pulse rounded bg-muted" />

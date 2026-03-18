@@ -21,17 +21,17 @@ import {
 } from "@repo/ui";
 
 type Space = {
-  id: string;
-  teamId: string;
-  isPrivate: boolean;
   hasPassword: boolean;
+  id: string;
+  isPrivate: boolean;
+  teamId: string;
 };
 
 type SpaceSettingsDialogProps = {
-  teamId: string;
   isPro: boolean;
-  space: Space | null;
   onSpaceUpdated: (space: Space) => void;
+  space: Space | null;
+  teamId: string;
 };
 
 const spaceSettingsSchema = z.object({
@@ -111,7 +111,7 @@ const SpaceSettingsDialog = ({
   };
 
   const onSubmit = async (data: SpaceSettingsFormValues) => {
-    if (!space) return;
+    if (!space) {return;}
 
     setIsLoading(true);
 
@@ -181,9 +181,7 @@ const SpaceSettingsDialog = ({
             </div>
             Space Settings
           </DialogTitle>
-          <DialogDescription>
-            Configure privacy settings for this team.
-          </DialogDescription>
+          <DialogDescription>Configure privacy settings for this team.</DialogDescription>
         </DialogHeader>
 
         {!space ? (
@@ -192,9 +190,7 @@ const SpaceSettingsDialog = ({
               <Globe className="h-8 w-8 text-muted-foreground" />
             </div>
             <div className="flex flex-col gap-1">
-              <h3 className="font-semibold text-foreground">
-                Claim this team
-              </h3>
+              <h3 className="font-semibold text-foreground">Claim this team</h3>
               <p className="text-sm text-muted-foreground">
                 Claim ownership to configure privacy settings.
               </p>
@@ -299,9 +295,7 @@ const SpaceSettingsDialog = ({
                               id="accessPassword"
                               type={showPassword ? "text" : "password"}
                               placeholder={
-                                space.hasPassword
-                                  ? "Enter new password"
-                                  : "Set a password"
+                                space.hasPassword ? "Enter new password" : "Set a password"
                               }
                               className="pr-10"
                             />
@@ -334,8 +328,7 @@ const SpaceSettingsDialog = ({
 
                   {space.hasPassword && !changePassword && (
                     <p className="text-xs text-muted-foreground">
-                      Password is set. Click &quot;Change password&quot; to
-                      update.
+                      Password is set. Click &quot;Change password&quot; to update.
                     </p>
                   )}
                 </div>

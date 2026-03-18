@@ -31,24 +31,24 @@ import { COMMON_TIMEZONES, formatTimezoneLabel } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 
 type EditMemberDialogProps = {
+  groups: Array<TeamGroup>;
   member: TeamMember;
+  onMemberUpdated: (member: TeamMember) => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
   teamId: string;
   token: string | null;
-  groups: TeamGroup[];
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onMemberUpdated: (member: TeamMember) => void;
 };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 type EditMemberFormProps = {
+  groups: Array<TeamGroup>;
   member: TeamMember;
+  onMemberUpdated: (member: TeamMember) => void;
+  onOpenChange: (open: boolean) => void;
   teamId: string;
   token: string;
-  groups: TeamGroup[];
-  onOpenChange: (open: boolean) => void;
-  onMemberUpdated: (member: TeamMember) => void;
 };
 
 const formSchema = z.object({
@@ -119,12 +119,8 @@ const EditMemberForm = ({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>
-          Edit Member
-        </DialogTitle>
-        <DialogDescription>
-          Update {member.name}&apos;s profile information.
-        </DialogDescription>
+        <DialogTitle>Edit Member</DialogTitle>
+        <DialogDescription>Update {member.name}&apos;s profile information.</DialogDescription>
       </DialogHeader>
 
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
@@ -171,10 +167,7 @@ const EditMemberForm = ({
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor="edit-timezone">Timezone</FieldLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger
-                    id="edit-timezone"
-                    aria-invalid={fieldState.invalid}
-                  >
+                  <SelectTrigger id="edit-timezone" aria-invalid={fieldState.invalid}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -222,10 +215,7 @@ const EditMemberForm = ({
                     value={String(field.value)}
                     onValueChange={(value) => field.onChange(Number(value))}
                   >
-                    <SelectTrigger
-                      id="edit-work-start"
-                      aria-invalid={fieldState.invalid}
-                    >
+                    <SelectTrigger id="edit-work-start" aria-invalid={fieldState.invalid}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -251,10 +241,7 @@ const EditMemberForm = ({
                     value={String(field.value)}
                     onValueChange={(value) => field.onChange(Number(value))}
                   >
-                    <SelectTrigger
-                      id="edit-work-end"
-                      aria-invalid={fieldState.invalid}
-                    >
+                    <SelectTrigger id="edit-work-end" aria-invalid={fieldState.invalid}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -307,7 +294,7 @@ const EditMemberDialog = ({
   onMemberUpdated,
 }: EditMemberDialogProps) => {
   // Don't render if no token (can't edit without auth)
-  if (!token) return null;
+  if (!token) {return null;}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

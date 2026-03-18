@@ -19,9 +19,7 @@ const getProPriceId = (): string => {
 
   // Validate price ID format
   if (!priceId.startsWith("price_")) {
-    throw new Error(
-      `Invalid STRIPE_PRO_PRICE_ID format: "${priceId}". Must start with "price_"`
-    );
+    throw new Error(`Invalid STRIPE_PRO_PRICE_ID format: "${priceId}". Must start with "price_"`);
   }
 
   return priceId;
@@ -96,7 +94,7 @@ export const POST = async (request: Request) => {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message ?? "Invalid input" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -106,22 +104,19 @@ export const POST = async (request: Request) => {
     // Check if it's a Stripe error
     if (error && typeof error === "object" && "type" in error) {
       const stripeError = error as {
-        type: string;
         code?: string;
         param?: string;
+        type: string;
       };
       console.error("[Checkout] Stripe Error Details:", {
         type: stripeError.type,
         code: stripeError.code,
         param: stripeError.param,
         priceId: process.env.STRIPE_PRO_PRICE_ID,
-        stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 8),
+        stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.slice(0, 8),
       });
     }
 
-    return NextResponse.json(
-      { error: "Failed to create checkout session" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 };

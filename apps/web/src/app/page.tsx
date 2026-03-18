@@ -38,6 +38,21 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const formatRelativeTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60_000);
+  const diffHours = Math.floor(diffMs / 3_600_000);
+  const diffDays = Math.floor(diffMs / 86_400_000);
+
+  if (diffMins < 1) { return "Just now"; }
+  if (diffMins < 60) { return `${diffMins}m ago`; }
+  if (diffHours < 24) { return `${diffHours}h ago`; }
+  if (diffDays < 7) { return `${diffDays}d ago`; }
+  return date.toLocaleDateString();
+};
+
 const Home = () => {
   const router = useRouter();
   const { data: session } = useSession();
@@ -70,10 +85,7 @@ const Home = () => {
       }
 
       // Authenticate to get admin session token
-      const authResult = await authenticateTeam(
-        createResult.data,
-        values.adminPassword,
-      );
+      const authResult = await authenticateTeam(createResult.data, values.adminPassword);
       if (!authResult.success) {
         toast.error(authResult.error);
         return;
@@ -92,20 +104,7 @@ const Home = () => {
     removeVisitedTeam(teamId);
   };
 
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
 
   return (
     <div className="flex flex-1 flex-col">
@@ -114,12 +113,10 @@ const Home = () => {
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-4 py-8 sm:gap-12 sm:px-6">
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex flex-col gap-2 sm:gap-3">
-            <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
-              Collab Time
-            </h1>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">Collab Time</h1>
             <p className="max-w-sm text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Visualize your team&apos;s working hours across timezones. Find
-              the perfect moment to connect.
+              Visualize your team&apos;s working hours across timezones. Find the perfect moment to
+              connect.
             </p>
           </div>
         </div>
@@ -157,9 +154,7 @@ const Home = () => {
                   >
                     or sign in for more features
                   </Link>
-                  <span className="text-border">
-                    &middot;
-                  </span>
+                  <span className="text-border">&middot;</span>
                 </>
               )}
               <ProFeaturesDialog isAuthenticated={isAuthenticated}>
@@ -187,9 +182,7 @@ const Home = () => {
               className="flex w-full flex-col gap-3"
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-medium text-muted-foreground">
-                  Recent Workspaces
-                </h2>
+                <h2 className="text-sm font-medium text-muted-foreground">Recent Workspaces</h2>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -204,10 +197,7 @@ const Home = () => {
                       transition={{ duration: 0.2 }}
                       className="group flex items-center justify-between rounded-xl border border-border bg-card p-3 transition-colors hover:border-input"
                     >
-                      <Link
-                        href={`/${team.id}`}
-                        className="flex flex-1 items-center gap-3"
-                      >
+                      <Link href={`/${team.id}`} className="flex flex-1 items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
                           <Users className="h-4 w-4 text-muted-foreground" />
                         </div>
@@ -243,7 +233,7 @@ const Home = () => {
       <Dialog
         open={isCreateDialogOpen}
         onOpenChange={(open) => {
-          if (isCreating) return;
+          if (isCreating) {return;}
           setIsCreateDialogOpen(open);
           if (open) {
             form.reset({ adminPassword: "" });
@@ -253,12 +243,10 @@ const Home = () => {
         <DialogContent className="max-w-md bg-popover">
           <form onSubmit={form.handleSubmit(handleSubmitCreateTeam)} noValidate>
             <DialogHeader>
-              <DialogTitle className="text-popover-foreground">
-                Create a team workspace
-              </DialogTitle>
+              <DialogTitle className="text-popover-foreground">Create a team workspace</DialogTitle>
               <DialogDescription>
-                Set an admin password to manage your team. Anyone with the link
-                can view, but only admins can make changes.
+                Set an admin password to manage your team. Anyone with the link can view, but only
+                admins can make changes.
               </DialogDescription>
             </DialogHeader>
 
@@ -269,9 +257,7 @@ const Home = () => {
                   name="adminPassword"
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="create-admin-password">
-                        Admin password
-                      </FieldLabel>
+                      <FieldLabel htmlFor="create-admin-password">Admin password</FieldLabel>
                       <Input
                         {...field}
                         id="create-admin-password"
@@ -297,10 +283,7 @@ const Home = () => {
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isCreating || !form.formState.isValid}
-              >
+              <Button type="submit" disabled={isCreating || !form.formState.isValid}>
                 {isCreating ? (
                   <span className="flex items-center gap-2">
                     <Spinner />

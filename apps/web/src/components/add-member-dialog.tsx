@@ -8,11 +8,7 @@ import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
 import { addMember } from "@/lib/actions";
 import type { TeamGroup, TeamMember } from "@/types";
-import {
-  COMMON_TIMEZONES,
-  formatTimezoneLabel,
-  getUserTimezone,
-} from "@/lib/timezones";
+import { COMMON_TIMEZONES, formatTimezoneLabel, getUserTimezone } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 import {
   Button,
@@ -37,11 +33,11 @@ import {
 import { GroupSelector } from "@/components/group-selector";
 
 type AddMemberDialogProps = {
+  groups: Array<TeamGroup>;
+  isFirstMember: boolean;
+  onMemberAdded: (member: TeamMember) => void;
   teamId: string;
   token: string;
-  groups: TeamGroup[];
-  onMemberAdded: (member: TeamMember) => void;
-  isFirstMember: boolean;
 };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -79,12 +75,12 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 type AddMemberFormProps = {
+  groups: Array<TeamGroup>;
+  isFirstMember: boolean;
+  onMemberAdded: (member: TeamMember) => void;
+  onOpenChange: (open: boolean) => void;
   teamId: string;
   token: string;
-  groups: TeamGroup[];
-  isFirstMember: boolean;
-  onOpenChange: (open: boolean) => void;
-  onMemberAdded: (member: TeamMember) => void;
 };
 
 const AddMemberForm = ({
@@ -138,9 +134,7 @@ const AddMemberForm = ({
           Add Team Member
         </DialogTitle>
         <DialogDescription>
-          {isFirstMember
-            ? "Start by adding your own details."
-            : "Add a new member to your team."}
+          {isFirstMember ? "Start by adding your own details." : "Add a new member to your team."}
         </DialogDescription>
       </DialogHeader>
 
@@ -187,10 +181,7 @@ const AddMemberForm = ({
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor="member-timezone">Timezone</FieldLabel>
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger
-                  id="member-timezone"
-                  aria-invalid={fieldState.invalid}
-                >
+                <SelectTrigger id="member-timezone" aria-invalid={fieldState.invalid}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -238,10 +229,7 @@ const AddMemberForm = ({
                   value={String(field.value)}
                   onValueChange={(value) => field.onChange(Number(value))}
                 >
-                  <SelectTrigger
-                    id="member-work-start"
-                    aria-invalid={fieldState.invalid}
-                  >
+                  <SelectTrigger id="member-work-start" aria-invalid={fieldState.invalid}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -267,10 +255,7 @@ const AddMemberForm = ({
                   value={String(field.value)}
                   onValueChange={(value) => field.onChange(Number(value))}
                 >
-                  <SelectTrigger
-                    id="member-work-end"
-                    aria-invalid={fieldState.invalid}
-                  >
+                  <SelectTrigger id="member-work-end" aria-invalid={fieldState.invalid}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -299,10 +284,7 @@ const AddMemberForm = ({
             Cancel
           </Button>
         )}
-        <Button
-          type="submit"
-          disabled={formState.isSubmitting || !formState.isValid}
-        >
+        <Button type="submit" disabled={formState.isSubmitting || !formState.isValid}>
           {formState.isSubmitting ? (
             <span className="flex items-center gap-2">
               <Spinner />

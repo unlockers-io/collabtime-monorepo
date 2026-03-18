@@ -25,13 +25,13 @@ import { useDrag } from "@/contexts/drag-context";
 import { EditMemberDialog } from "@/components/edit-member-dialog";
 
 type MemberCardProps = {
-  member: TeamMember;
-  teamId: string;
-  token: string | null;
-  groups: TeamGroup[];
   canEdit: boolean;
+  groups: Array<TeamGroup>;
+  member: TeamMember;
   onMemberRemoved: (memberId: string) => void;
   onMemberUpdated: (member: TeamMember) => void;
+  teamId: string;
+  token: string | null;
 };
 
 const MemberCard = ({
@@ -88,12 +88,12 @@ const MemberCard = ({
     };
 
     checkAvailability();
-    const interval = setInterval(checkAvailability, 60000);
+    const interval = setInterval(checkAvailability, 60_000);
     return () => clearInterval(interval);
   }, [member.timezone, member.workingHoursStart, member.workingHoursEnd]);
 
   const handleRemove = () => {
-    if (!canEdit || !token) return;
+    if (!canEdit || !token) {return;}
     startTransition(async () => {
       const result = await removeMember(teamId, token, member.id);
       if (result.success) {
@@ -170,24 +170,15 @@ const MemberCard = ({
         {/* Info - stacked vertically */}
         <div className="flex flex-1 flex-col gap-1.5">
           <div className="flex flex-col gap-0.5">
-            <span className="font-semibold text-foreground">
-              {member.name}
-            </span>
-            {member.title && (
-              <span className="text-sm text-muted-foreground">
-                {member.title}
-              </span>
-            )}
+            <span className="font-semibold text-foreground">{member.name}</span>
+            {member.title && <span className="text-sm text-muted-foreground">{member.title}</span>}
           </div>
 
           {/* Timezone and hours */}
           <div className="mt-auto flex flex-col gap-1 text-xs text-muted-foreground">
-            <span className="truncate">
-              {formatTimezoneLabel(member.timezone)}
-            </span>
+            <span className="truncate">{formatTimezoneLabel(member.timezone)}</span>
             <span>
-              {formatHour(member.workingHoursStart)} –{" "}
-              {formatHour(member.workingHoursEnd)}
+              {formatHour(member.workingHoursStart)} – {formatHour(member.workingHoursEnd)}
             </span>
           </div>
 
@@ -210,19 +201,13 @@ const MemberCard = ({
                     </span>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>
-                      Available{" "}
-                      {formatTimeUntilAvailable(minutesUntilAvailable)}
-                    </p>
+                    <p>Available {formatTimeUntilAvailable(minutesUntilAvailable)}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
             {member.groupId && groups.find((g) => g.id === member.groupId) && (
-              <Badge
-                variant="secondary"
-                className="border-transparent"
-              >
+              <Badge variant="secondary" className="border-transparent">
                 {groups.find((g) => g.id === member.groupId)?.name}
               </Badge>
             )}

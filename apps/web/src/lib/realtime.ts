@@ -67,7 +67,7 @@ const realtime = new Proxy({} as RealtimeInstance, {
     const instance = getRealtime();
     const value = instance[prop as keyof RealtimeInstance];
     if (typeof value === "function") {
-      return (value as (...args: unknown[]) => unknown).bind(instance);
+      return (value as (...args: Array<unknown>) => unknown).bind(instance);
     }
     return value;
   },

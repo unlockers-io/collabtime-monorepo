@@ -19,9 +19,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
           Back to home
         </Link>
       </header>
-      <main className="flex flex-1 items-center justify-center px-4 pb-16">
-        {children}
-      </main>
+      <main className="flex flex-1 items-center justify-center px-4 pb-16">{children}</main>
     </div>
   );
 };

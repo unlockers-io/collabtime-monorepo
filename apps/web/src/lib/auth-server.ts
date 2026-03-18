@@ -37,7 +37,7 @@ const auth = new Proxy({} as Auth, {
     const instance = getAuth();
     const value = instance[prop as keyof Auth];
     if (typeof value === "function") {
-      return (value as (...args: unknown[]) => unknown).bind(instance);
+      return (value as (...args: Array<unknown>) => unknown).bind(instance);
     }
     return value;
   },

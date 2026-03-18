@@ -7,24 +7,24 @@ import type { BetterAuthPlugin } from "better-auth/types";
 import Stripe from "stripe";
 
 type AuthConfig = {
-  stripe: {
-    secretKey: string;
-    webhookSecret: string;
-    proPriceId: string;
-  };
   betterAuth: {
     secret: string;
     url: string;
     webAppUrl: string;
   };
+  // Inject framework-specific plugins (e.g. nextCookies()) at the call site;
+  // must be last in the plugins array
+  extraPlugins?: Array<BetterAuthPlugin>;
   resend?: {
     apiKey: string;
     fromEmail: string;
     replyTo?: string;
   };
-  // Inject framework-specific plugins (e.g. nextCookies()) at the call site;
-  // must be last in the plugins array
-  extraPlugins?: Array<BetterAuthPlugin>;
+  stripe: {
+    proPriceId: string;
+    secretKey: string;
+    webhookSecret: string;
+  };
 };
 
 /**
@@ -37,143 +37,14 @@ const TRUSTED_ORIGINS = [
   "https://www.collabtime.io",
 ];
 
-const createAuth = (
-  prisma: PrismaClient,
-  config: AuthConfig,
-): ReturnType<typeof betterAuth> => {
-  const { stripe: stripeConfig, betterAuth: betterAuthConfig } = config;
+const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
+  const { betterAuth: betterAuthConfig, stripe: stripeConfig } = config;
 
   const stripeClient = new Stripe(stripeConfig.secretKey, {
-    apiVersion: "2025-12-15.clover",
+    apiVersion: "2026-02-25.clover",
   });
 
   return betterAuth({
-    database: prismaAdapter(prisma, {
-      provider: "postgresql",
-    }),
-
-    emailAndPassword: {
-      enabled: true,
-      requireEmailVerification: false, // Can enable later with Resend
-      minPasswordLength: 8,
-      maxPasswordLength: 128,
-    },
-
-    plugins: [
-      stripe({
-        stripeClient,
-        stripeWebhookSecret: stripeConfig.webhookSecret,
-        createCustomerOnSignUp: true,
-        subscription: {
-          enabled: true,
-          plans: [
-            {
-              name: "PRO",
-              priceId: stripeConfig.proPriceId,
-              limits: {
-                customDomain: 1,
-                privateSpaces: 10,
-              },
-            },
-          ],
-          onSubscriptionComplete: async (params) => {
-            const { subscription } = params;
-            console.log("[Stripe] Subscription completed:", subscription.id);
-
-            const userId = subscription.referenceId;
-
-            if (!userId) {
-              console.error(
-                "[Stripe] Subscription missing referenceId:",
-                subscription.id,
-              );
-              return;
-            }
-
-            // Update user subscription plan
-            await prisma.user.update({
-              where: { id: userId },
-              data: { subscriptionPlan: SubscriptionPlan.PRO },
-            });
-          },
-          onSubscriptionCancel: async (params) => {
-            const { subscription } = params;
-            console.log("[Stripe] Subscription canceled:", subscription.id);
-
-            const userId = subscription.referenceId;
-
-            if (!userId) {
-              console.error(
-                "[Stripe] Subscription missing referenceId:",
-                subscription.id,
-              );
-              return;
-            }
-
-            // Downgrade user
-            await prisma.user.update({
-              where: { id: userId },
-              data: { subscriptionPlan: SubscriptionPlan.FREE },
-            });
-          },
-          onSubscriptionUpdate: async ({ subscription }) => {
-            console.log("[Stripe] Subscription updated:", subscription.id);
-
-            // Guard against missing referenceId
-            if (!subscription.referenceId) {
-              console.error(
-                "[Stripe] Subscription update missing referenceId:",
-                subscription.id,
-              );
-              return;
-            }
-
-            const user = await prisma.user.findUnique({
-              where: { id: subscription.referenceId },
-            });
-
-            if (!user) {
-              console.error(
-                "[Stripe] User not found for subscription:",
-                subscription.id,
-              );
-              return;
-            }
-
-            const plan =
-              subscription.status === "active" ||
-              subscription.status === "trialing"
-                ? SubscriptionPlan.PRO
-                : SubscriptionPlan.FREE;
-
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { subscriptionPlan: plan },
-            });
-          },
-        },
-      }),
-      ...(config.extraPlugins ?? []),
-    ],
-
-    session: {
-      expiresIn: 60 * 60 * 24 * 7, // 7 days
-      updateAge: 60 * 60 * 24, // Update session if older than 1 day
-      cookieCache: {
-        enabled: true,
-        maxAge: 5 * 60, // 5 minutes
-      },
-    },
-
-    advanced: {
-      cookiePrefix: "collabtime",
-      defaultCookieAttributes: {
-        sameSite: "lax" as const,
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: true,
-      },
-    },
-
     account: {
       accountLinking: {
         enabled: true,
@@ -181,16 +52,112 @@ const createAuth = (
       },
     },
 
+    advanced: {
+      cookiePrefix: "collabtime",
+      defaultCookieAttributes: {
+        httpOnly: true,
+        sameSite: "lax" as const,
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+
+    basePath: "/api/auth",
+    baseURL: betterAuthConfig.url,
+
+    database: prismaAdapter(prisma, {
+      provider: "postgresql",
+    }),
+
+    emailAndPassword: {
+      enabled: true,
+      maxPasswordLength: 128,
+      minPasswordLength: 8,
+      requireEmailVerification: false, // Can enable later with Resend
+    },
+
+    plugins: [
+      stripe({
+        createCustomerOnSignUp: true,
+        stripeClient,
+        stripeWebhookSecret: stripeConfig.webhookSecret,
+        subscription: {
+          enabled: true,
+          onSubscriptionCancel: async (params) => {
+            const { subscription } = params;
+            const userId = subscription.referenceId;
+
+            if (!userId) { return; }
+
+            // Downgrade user
+            await prisma.user.update({
+              data: { subscriptionPlan: SubscriptionPlan.FREE },
+              where: { id: userId },
+            });
+          },
+          onSubscriptionComplete: async (params) => {
+            const { subscription } = params;
+            const userId = subscription.referenceId;
+
+            if (!userId) { return; }
+
+            // Update user subscription plan
+            await prisma.user.update({
+              data: { subscriptionPlan: SubscriptionPlan.PRO },
+              where: { id: userId },
+            });
+          },
+          onSubscriptionUpdate: async ({ subscription }) => {
+            if (!subscription.referenceId) { return; }
+
+            const user = await prisma.user.findUnique({
+              where: { id: subscription.referenceId },
+            });
+
+            if (!user) { return; }
+
+            const plan =
+              subscription.status === "active" || subscription.status === "trialing"
+                ? SubscriptionPlan.PRO
+                : SubscriptionPlan.FREE;
+
+            await prisma.user.update({
+              data: { subscriptionPlan: plan },
+              where: { id: user.id },
+            });
+          },
+          plans: [
+            {
+              limits: {
+                customDomain: 1,
+                privateSpaces: 10,
+              },
+              name: "PRO",
+              priceId: stripeConfig.proPriceId,
+            },
+          ],
+        },
+      }),
+      ...(config.extraPlugins ?? []),
+    ],
+
     rateLimit: {
       enabled: true,
-      window: 60, // 1 minute
       max: 100,
       storage: "database",
+      window: 60, // 1 minute
     },
 
     secret: betterAuthConfig.secret,
-    baseURL: betterAuthConfig.url,
-    basePath: "/api/auth",
+
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 5 * 60, // 5 minutes
+      },
+      expiresIn: 60 * 60 * 24 * 7, // 7 days
+      updateAge: 60 * 60 * 24, // Update session if older than 1 day
+    },
+
     trustedOrigins: TRUSTED_ORIGINS,
   });
 };

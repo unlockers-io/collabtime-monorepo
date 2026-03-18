@@ -8,9 +8,7 @@ type TeamPageProps = {
   params: Promise<{ teamId: string }>;
 };
 
-export const generateMetadata = async ({
-  params,
-}: TeamPageProps): Promise<Metadata> => {
+export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metadata> => {
   const { teamId } = await params;
 
   const exists = await validateTeam(teamId);

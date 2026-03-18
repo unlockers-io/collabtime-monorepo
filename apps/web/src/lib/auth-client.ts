@@ -7,19 +7,6 @@ const authClient = createBetterAuthClient({
   plugins: [stripeClient()],
 });
 
-const {
-  signIn,
-  signUp,
-  signOut,
-  useSession,
-  getSession,
-} = authClient;
+const { signIn, signUp, signOut, useSession, getSession } = authClient;
 
-export {
-  authClient,
-  signIn,
-  signUp,
-  signOut,
-  useSession,
-  getSession,
-};
+export { authClient, signIn, signUp, signOut, useSession, getSession };

@@ -113,10 +113,4 @@ const getClientIp = (request: Request): string => {
   return "unknown";
 };
 
-export {
-  passwordVerificationLimiter,
-  loginLimiter,
-  signupLimiter,
-  apiLimiter,
-  getClientIp,
-};
+export { passwordVerificationLimiter, loginLimiter, signupLimiter, apiLimiter, getClientIp };

@@ -3,21 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Crown, Lock, Shield, Zap, Check, ArrowRight } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@repo/ui";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@repo/ui";
 
 type ProFeature = {
+  description: string;
   icon: React.ReactNode;
   title: string;
-  description: string;
 };
 
-const proFeatures: ProFeature[] = [
+const proFeatures: Array<ProFeature> = [
   {
     icon: <Lock className="h-5 w-5" />,
     title: "Private Spaces",
@@ -43,10 +37,7 @@ type ProFeaturesDialogProps = {
   isAuthenticated?: boolean;
 };
 
-const ProFeaturesDialog = ({
-  children,
-  isAuthenticated = false,
-}: ProFeaturesDialogProps) => {
+const ProFeaturesDialog = ({ children, isAuthenticated = false }: ProFeaturesDialogProps) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -69,12 +60,9 @@ const ProFeaturesDialog = ({
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-amber-400 to-amber-600">
             <Crown className="h-6 w-6 text-white" />
           </div>
-          <DialogTitle className="text-center text-xl text-foreground">
-            Upgrade to PRO
-          </DialogTitle>
+          <DialogTitle className="text-center text-xl text-foreground">Upgrade to PRO</DialogTitle>
           <DialogDescription className="text-center">
-            Unlock powerful features to keep your team&apo;s data secure and
-            organized.
+            Unlock powerful features to keep your team&apo;s data secure and organized.
           </DialogDescription>
         </DialogHeader>
 
@@ -88,12 +76,8 @@ const ProFeaturesDialog = ({
                 {feature.icon}
               </div>
               <div className="flex flex-col gap-1">
-                <h3 className="font-semibold text-foreground">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {feature.description}
-                </p>
+                <h3 className="font-semibold text-foreground">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>
             </div>
           ))}
@@ -127,10 +111,7 @@ const ProFeaturesDialog = ({
               </Link>
               <p className="text-center text-xs text-muted-foreground">
                 Already have an account?{" "}
-                <Link
-                  href="/login"
-                  className="font-medium text-foreground hover:underline"
-                >
+                <Link href="/login" className="font-medium text-foreground hover:underline">
                   Sign in
                 </Link>
               </p>

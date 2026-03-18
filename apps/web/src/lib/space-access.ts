@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 const SPACE_ACCESS_COOKIE_PREFIX = "space-access-";
 const TOKEN_EXPIRY_DAYS = 7;
@@ -30,10 +30,7 @@ const verifySignature = (data: string, signature: string, secret: string): boole
   const expectedSignature = createSignature(data, secret);
   // Use timing-safe comparison to prevent timing attacks
   try {
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
   } catch {
     // Buffers of different lengths will throw
     return false;
@@ -41,9 +38,9 @@ const verifySignature = (data: string, signature: string, secret: string): boole
 };
 
 type TokenPayload = {
-  spaceId: string;
   clientIp: string;
   expiresAt: number;
+  spaceId: string;
   version: string;
 };
 
@@ -51,10 +48,7 @@ type TokenPayload = {
  * Create a signed access token for a space.
  * Token format: base64(payload).signature
  */
-const createSpaceAccessToken = async (
-  spaceId: string,
-  clientIp: string
-): Promise<string> => {
+const createSpaceAccessToken = async (spaceId: string, clientIp: string): Promise<string> => {
   const secret = getSigningSecret();
   const expiresAt = Date.now() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
@@ -71,9 +65,7 @@ const createSpaceAccessToken = async (
   return `${payloadStr}.${signature}`;
 };
 
-type VerificationResult =
-  | { valid: true; payload: TokenPayload }
-  | { valid: false; reason: string };
+type VerificationResult = { payload: TokenPayload; valid: true; } | { reason: string; valid: false; };
 
 /**
  * Verify a space access token.
@@ -82,7 +74,7 @@ type VerificationResult =
 const verifySpaceAccessToken = async (
   token: string,
   expectedSpaceId: string,
-  clientIp?: string
+  clientIp?: string,
 ): Promise<VerificationResult> => {
   try {
     const secret = getSigningSecret();
@@ -104,7 +96,7 @@ const verifySpaceAccessToken = async (
     }
 
     // Decode and parse payload
-    const payloadJson = Buffer.from(payloadStr, "base64url").toString("utf-8");
+    const payloadJson = Buffer.from(payloadStr, "base64url").toString("utf8");
     const payload = JSON.parse(payloadJson) as TokenPayload;
 
     // Verify version
@@ -142,24 +134,24 @@ const verifySpaceAccessToken = async (
 const hasSpaceAccess = async (
   request: Request,
   spaceId: string,
-  strictIpCheck = false
+  strictIpCheck = false,
 ): Promise<boolean> => {
   const cookieHeader = request.headers.get("cookie");
-  if (!cookieHeader) return false;
+  if (!cookieHeader) {return false;}
 
   const cookieName = `${SPACE_ACCESS_COOKIE_PREFIX}${spaceId}`;
   const cookies = cookieHeader.split(";").map((c) => c.trim());
   const accessCookie = cookies.find((c) => c.startsWith(`${cookieName}=`));
 
-  if (!accessCookie) return false;
+  if (!accessCookie) {return false;}
 
   const token = accessCookie.split("=")[1];
-  if (!token) return false;
+  if (!token) {return false;}
 
   const clientIp = strictIpCheck
-    ? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    ? (request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
       request.headers.get("x-real-ip") ??
-      undefined
+      undefined)
     : undefined;
 
   const result = await verifySpaceAccessToken(token, spaceId, clientIp);

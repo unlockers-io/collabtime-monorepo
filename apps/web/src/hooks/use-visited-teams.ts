@@ -7,16 +7,13 @@ const MAX_VISITED_TEAMS = 10;
 
 type VisitedTeam = {
   id: string;
-  name: string;
-  memberCount: number;
   lastVisited: string;
+  memberCount: number;
+  name: string;
 };
 
 const useVisitedTeams = () => {
-  const [visitedTeams, setVisitedTeams] = useLocalStorage<VisitedTeam[]>(
-    STORAGE_KEY,
-    [],
-  );
+  const [visitedTeams, setVisitedTeams] = useLocalStorage<Array<VisitedTeam>>(STORAGE_KEY, []);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -25,7 +22,7 @@ const useVisitedTeams = () => {
   }, []);
 
   useEffect(() => {
-    if (!isHydrated || visitedTeams.length === 0) return;
+    if (!isHydrated || visitedTeams.length === 0) {return;}
 
     let cancelled = false;
     const runValidation = async () => {
@@ -37,12 +34,10 @@ const useVisitedTeams = () => {
           }),
         );
 
-        if (cancelled) return;
+        if (cancelled) {return;}
         const invalidIds = results.filter((r) => !r.exists).map((r) => r.id);
         if (invalidIds.length > 0) {
-          setVisitedTeams((teams) =>
-            teams.filter((t) => !invalidIds.includes(t.id)),
-          );
+          setVisitedTeams((teams) => teams.filter((t) => !invalidIds.includes(t.id)));
         }
       } catch {
         // ignore validation failures; keep current list
@@ -81,9 +76,7 @@ const useVisitedTeams = () => {
 
   const updateTeamName = useCallback(
     (teamId: string, name: string) => {
-      setVisitedTeams((teams) =>
-        teams.map((t) => (t.id === teamId ? { ...t, name } : t)),
-      );
+      setVisitedTeams((teams) => teams.map((t) => (t.id === teamId ? { ...t, name } : t)));
     },
     [setVisitedTeams],
   );

@@ -25,9 +25,8 @@ const NotFound = () => {
             </div>
 
             <p className="text-xs leading-relaxed text-muted-foreground">
-              If you were trying to open a team, the ID might be wrong (or the
-              link expired). If you typed a URL, it may have drifted into a
-              parallel timezone.
+              If you were trying to open a team, the ID might be wrong (or the link expired). If you
+              typed a URL, it may have drifted into a parallel timezone.
             </p>
 
             <Link href="/" className="w-full">
@@ -38,9 +37,7 @@ const NotFound = () => {
             </Link>
 
             <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-4 text-xs text-muted-foreground">
-              <div className="font-medium text-foreground">
-                Quick checks
-              </div>
+              <div className="font-medium text-foreground">Quick checks</div>
               <ul className="list-disc space-y-1 pl-4">
                 <li>Double-check the team ID in the address bar.</li>
                 <li>Ask an admin for a fresh link if you&apos;re locked out.</li>

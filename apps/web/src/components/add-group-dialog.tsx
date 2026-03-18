@@ -25,9 +25,9 @@ import {
 } from "@repo/ui";
 
 type AddGroupDialogProps = {
+  onGroupAdded: (group: TeamGroup) => void;
   teamId: string;
   token: string;
-  onGroupAdded: (group: TeamGroup) => void;
 };
 
 const formSchema = z.object({
@@ -40,11 +40,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const AddGroupDialog = ({
-  teamId,
-  token,
-  onGroupAdded,
-}: AddGroupDialogProps) => {
+const AddGroupDialog = ({ teamId, token, onGroupAdded }: AddGroupDialogProps) => {
   const [open, setOpen] = useState(false);
 
   const form = useForm<FormValues>({
@@ -97,9 +93,7 @@ const AddGroupDialog = ({
               </div>
               Add Group
             </DialogTitle>
-            <DialogDescription>
-              Create a new group to organize your team members.
-            </DialogDescription>
+            <DialogDescription>Create a new group to organize your team members.</DialogDescription>
           </DialogHeader>
 
           <div className="py-4">
@@ -130,10 +124,7 @@ const AddGroupDialog = ({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={formState.isSubmitting || !formState.isValid}
-            >
+            <Button type="submit" disabled={formState.isSubmitting || !formState.isValid}>
               {formState.isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <Spinner />

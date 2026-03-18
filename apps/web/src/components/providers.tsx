@@ -13,8 +13,8 @@ type ProvidersProps = { children: ReactNode };
 // bundle entirely.
 const RealtimeMount = ({ children }: { children: ReactNode }) => {
   const [Provider, setProvider] = useState<React.ComponentType<{
-    children: ReactNode;
     api: { url: string };
+    children: ReactNode;
   }> | null>(null);
 
   useEffect(() => {
@@ -22,25 +22,20 @@ const RealtimeMount = ({ children }: { children: ReactNode }) => {
       setProvider(
         () =>
           m.RealtimeProvider as React.ComponentType<{
-            children: ReactNode;
             api: { url: string };
+            children: ReactNode;
           }>,
       );
     });
   }, []);
 
-  if (!Provider) return <>{children}</>;
+  if (!Provider) {return <>{children}</>;}
   return <Provider api={{ url: "/api/realtime" }}>{children}</Provider>;
 };
 
 const Providers = ({ children }: ProvidersProps) => (
   <QueryProvider>
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <RealtimeMount>{children}</RealtimeMount>
     </ThemeProvider>
   </QueryProvider>

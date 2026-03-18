@@ -28,10 +28,7 @@ export const POST = async (request: Request) => {
     });
 
     if (!user || !user.stripeCustomerId) {
-      return NextResponse.json(
-        { error: "No subscription found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "No subscription found" }, { status: 404 });
     }
 
     // Create billing portal session
@@ -46,13 +43,10 @@ export const POST = async (request: Request) => {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message ?? "Invalid input" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     console.error("[Portal] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to create portal session" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create portal session" }, { status: 500 });
   }
 };

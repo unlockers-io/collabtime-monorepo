@@ -10,8 +10,8 @@ type UseTeamQueryOptions = {
 };
 
 type TeamQueryData = {
-  team: Team;
   role: TeamRole;
+  team: Team;
 };
 
 const teamQueryKeys = {
@@ -57,13 +57,9 @@ const useTeamQuery = ({ teamId, token }: UseTeamQueryOptions) => {
 const useUpdateTeamCache = () => {
   const queryClient = useQueryClient();
 
-  return (
-    teamId: string,
-    updater: (data: TeamQueryData | null) => TeamQueryData | null,
-  ) => {
-    queryClient.setQueryData<TeamQueryData | null>(
-      teamQueryKeys.team(teamId),
-      (prev) => updater(prev ?? null),
+  return (teamId: string, updater: (data: TeamQueryData | null) => TeamQueryData | null) => {
+    queryClient.setQueryData<TeamQueryData | null>(teamQueryKeys.team(teamId), (prev) =>
+      updater(prev ?? null),
     );
   };
 };

@@ -8,9 +8,9 @@ declare global {
 }
 
 type UseLocalStorageOptions<T> = {
-  serializer?: (value: T) => string;
   deserializer?: (value: string) => T;
   initializeWithValue?: boolean;
+  serializer?: (value: T) => string;
 };
 
 const IS_SERVER = typeof window === "undefined";
@@ -18,7 +18,7 @@ const IS_SERVER = typeof window === "undefined";
 const useLocalStorage = <T>(
   key: string,
   initialValue: T | (() => T),
-  options: UseLocalStorageOptions<T> = {}
+  options: UseLocalStorageOptions<T> = {},
 ): [T, Dispatch<SetStateAction<T>>, () => void] => {
   const serializer = options.serializer;
   const customDeserializer = options.deserializer;
@@ -54,7 +54,7 @@ const useLocalStorage = <T>(
 
       return parsed as T;
     },
-    [customDeserializer, getInitialValue]
+    [customDeserializer, getInitialValue],
   );
 
   const readValue = useCallback((): T => {
@@ -73,7 +73,7 @@ const useLocalStorage = <T>(
       // Validate that the raw value is a string and not empty
       if (typeof raw !== "string" || raw.trim() === "") {
         console.warn(
-          `Invalid localStorage value for key "${key}": expected string, got ${typeof raw}`
+          `Invalid localStorage value for key "${key}": expected string, got ${typeof raw}`,
         );
         return initialValueToUse;
       }
@@ -81,28 +81,15 @@ const useLocalStorage = <T>(
       return deserializer(raw);
     } catch (error) {
       // More specific error handling
-      if (
-        error instanceof DOMException &&
-        error.name === "QuotaExceededError"
-      ) {
-        console.error(
-          `localStorage quota exceeded for key "${key}". Clearing storage.`
-        );
+      if (error instanceof DOMException && error.name === "QuotaExceededError") {
+        console.error(`localStorage quota exceeded for key "${key}". Clearing storage.`);
         try {
           window.localStorage.removeItem(key);
         } catch (clearError) {
-          console.error(
-            `Failed to clear localStorage key "${key}":`,
-            clearError
-          );
+          console.error(`Failed to clear localStorage key "${key}":`, clearError);
         }
-      } else if (
-        error instanceof DOMException &&
-        error.name === "SecurityError"
-      ) {
-        console.error(
-          `localStorage access denied for key "${key}" (private browsing mode?)`
-        );
+      } else if (error instanceof DOMException && error.name === "SecurityError") {
+        console.error(`localStorage access denied for key "${key}" (private browsing mode?)`);
       } else {
         console.warn(`Error reading localStorage key "${key}":`, error);
       }
@@ -122,7 +109,7 @@ const useLocalStorage = <T>(
     (value) => {
       if (IS_SERVER) {
         console.warn(
-          `Tried setting localStorage key "${key}" even though environment is not a client`
+          `Tried setting localStorage key "${key}" even though environment is not a client`,
         );
         return;
       }
@@ -138,13 +125,11 @@ const useLocalStorage = <T>(
             currentSerialized = serializer
               ? serializer(currentValue)
               : JSON.stringify(currentValue);
-            newSerialized = serializer
-              ? serializer(newValue)
-              : JSON.stringify(newValue);
+            newSerialized = serializer ? serializer(newValue) : JSON.stringify(newValue);
           } catch (serializationError) {
             console.error(
               `Error serializing value for localStorage key "${key}":`,
-              serializationError
+              serializationError,
             );
             return currentValue;
           }
@@ -156,7 +141,7 @@ const useLocalStorage = <T>(
           const estimatedSize = new Blob([newSerialized]).size;
           if (estimatedSize > 4 * 1024 * 1024) {
             console.warn(
-              `Large localStorage value detected (${Math.round(estimatedSize / 1024)}KB) for key "${key}". This may cause storage issues.`
+              `Large localStorage value detected (${Math.round(estimatedSize / 1024)}KB) for key "${key}". This may cause storage issues.`,
             );
           }
 
@@ -168,11 +153,11 @@ const useLocalStorage = <T>(
               storageError.name === "QuotaExceededError"
             ) {
               console.error(
-                `localStorage quota exceeded when setting key "${key}". Attempting cleanup...`
+                `localStorage quota exceeded when setting key "${key}". Attempting cleanup...`,
               );
 
               try {
-                const keysToRemove: string[] = [];
+                const keysToRemove: Array<string> = [];
                 for (let i = 0; i < window.localStorage.length; i++) {
                   const existingKey = window.localStorage.key(i);
                   if (
@@ -190,15 +175,12 @@ const useLocalStorage = <T>(
               } catch (retryError) {
                 console.error(
                   `Failed to set localStorage after cleanup for key "${key}":`,
-                  retryError
+                  retryError,
                 );
                 return currentValue;
               }
             } else {
-              console.error(
-                `Error setting localStorage key "${key}":`,
-                storageError
-              );
+              console.error(`Error setting localStorage key "${key}":`, storageError);
               return currentValue;
             }
           }
@@ -208,41 +190,32 @@ const useLocalStorage = <T>(
               new StorageEvent("storage", {
                 key,
                 newValue: newSerialized,
-              })
+              }),
             );
 
-            window.dispatchEvent(
-              new CustomEvent("local-storage", { detail: { key } })
-            );
+            window.dispatchEvent(new CustomEvent("local-storage", { detail: { key } }));
           } catch (eventError) {
-            console.warn(
-              `Error dispatching storage events for key "${key}":`,
-              eventError
-            );
+            console.warn(`Error dispatching storage events for key "${key}":`, eventError);
           }
 
           return newValue;
         });
       } catch (error) {
-        console.error(
-          `Unexpected error setting localStorage key "${key}":`,
-          error
-        );
+        console.error(`Unexpected error setting localStorage key "${key}":`, error);
       }
     },
-    [key, serializer]
+    [key, serializer],
   );
 
   const removeValue = useCallback(() => {
     if (IS_SERVER) {
       console.warn(
-        `Tried removing localStorage key "${key}" even though environment is not a client`
+        `Tried removing localStorage key "${key}" even though environment is not a client`,
       );
       return;
     }
 
-    const defaultValue =
-      initialValue instanceof Function ? initialValue() : initialValue;
+    const defaultValue = initialValue instanceof Function ? initialValue() : initialValue;
 
     try {
       window.localStorage.removeItem(key);
@@ -253,23 +226,18 @@ const useLocalStorage = <T>(
           new StorageEvent("storage", {
             key,
             newValue: null,
-          })
+          }),
         );
 
-        window.dispatchEvent(
-          new CustomEvent("local-storage", { detail: { key } })
-        );
+        window.dispatchEvent(new CustomEvent("local-storage", { detail: { key } }));
       } catch (eventError) {
         // Non-critical error - value was removed successfully
-        console.warn(
-          `Error dispatching storage events for key "${key}":`,
-          eventError
-        );
+        console.warn(`Error dispatching storage events for key "${key}":`, eventError);
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "SecurityError") {
         console.error(
-          `localStorage access denied when removing key "${key}" (private browsing mode?)`
+          `localStorage access denied when removing key "${key}" (private browsing mode?)`,
         );
       } else {
         console.error(`Error removing localStorage key "${key}":`, error);
@@ -285,19 +253,14 @@ const useLocalStorage = <T>(
     const handleStorageChange = (e: StorageEvent | CustomEvent) => {
       try {
         const eventKey =
-          e instanceof StorageEvent
-            ? e.key
-            : (e as CustomEvent<{ key: string }>).detail.key;
+          e instanceof StorageEvent ? e.key : (e as CustomEvent<{ key: string }>).detail.key;
 
         if (eventKey === key) {
           const newValue = readValue();
           setStoredValue(newValue);
         }
       } catch (error) {
-        console.warn(
-          `Error handling storage change event for key "${key}":`,
-          error
-        );
+        console.warn(`Error handling storage change event for key "${key}":`, error);
       }
     };
 
@@ -305,10 +268,7 @@ const useLocalStorage = <T>(
       window.addEventListener("storage", handleStorageChange);
       window.addEventListener("local-storage", handleStorageChange);
     } catch (error) {
-      console.warn(
-        `Error adding storage event listeners for key "${key}":`,
-        error
-      );
+      console.warn(`Error adding storage event listeners for key "${key}":`, error);
     }
 
     return () => {
@@ -316,10 +276,7 @@ const useLocalStorage = <T>(
         window.removeEventListener("storage", handleStorageChange);
         window.removeEventListener("local-storage", handleStorageChange);
       } catch (error) {
-        console.warn(
-          `Error removing storage event listeners for key "${key}":`,
-          error
-        );
+        console.warn(`Error removing storage event listeners for key "${key}":`, error);
       }
     };
   }, [key, readValue]);

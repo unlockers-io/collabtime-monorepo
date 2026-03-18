@@ -15,9 +15,7 @@ const readTeamSession = async (teamId: string): Promise<string | null> => {
 
 const writeTeamSession = async (teamId: string, token: string) => {
   if (typeof token !== "string") {
-    throw new Error(
-      `writeTeamSession expects a string token, got: ${typeof token}`,
-    );
+    throw new Error(`writeTeamSession expects a string token, got: ${typeof token}`);
   }
   const cookieStore = await cookies();
   cookieStore.set(getTeamSessionKey(teamId), token, {

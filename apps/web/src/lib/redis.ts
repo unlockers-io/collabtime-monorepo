@@ -17,7 +17,7 @@ const getRedis = (): Redis => {
   if (!url || !token) {
     throw new Error(
       "Missing required environment variables: UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN. " +
-        "Please check your .env.local file."
+        "Please check your .env.local file.",
     );
   }
 
@@ -53,10 +53,4 @@ const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2; // 2 years
 // TTL for sessions (24 hours)
 const SESSION_TTL_SECONDS = 60 * 60 * 24;
 
-export {
-  redis,
-  getRedis,
-  TEAM_INITIAL_TTL_SECONDS,
-  TEAM_ACTIVE_TTL_SECONDS,
-  SESSION_TTL_SECONDS,
-};
+export { redis, getRedis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS, SESSION_TTL_SECONDS };

@@ -27,10 +27,7 @@ export const GET = async () => {
     return NextResponse.json({ spaces });
   } catch (error) {
     console.error("[Spaces API] Error fetching spaces:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch spaces" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch spaces" }, { status: 500 });
   }
 };
 
@@ -59,7 +56,7 @@ export const POST = async (request: Request) => {
       }
       return NextResponse.json(
         { error: "This team is already claimed by another user" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -76,13 +73,10 @@ export const POST = async (request: Request) => {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message ?? "Invalid input" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     console.error("[Spaces API] Error creating space:", error);
-    return NextResponse.json(
-      { error: "Failed to create space" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create space" }, { status: 500 });
   }
 };

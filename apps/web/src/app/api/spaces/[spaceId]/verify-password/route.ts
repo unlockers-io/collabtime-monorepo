@@ -3,10 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@repo/db";
 import { passwordVerificationLimiter, getClientIp } from "@/lib/rate-limit";
-import {
-  createSpaceAccessToken,
-  SPACE_ACCESS_COOKIE_PREFIX,
-} from "@/lib/space-access";
+import { createSpaceAccessToken, SPACE_ACCESS_COOKIE_PREFIX } from "@/lib/space-access";
 
 const verifyPasswordSchema = z.object({
   password: z.string().min(1, "Password is required"),
@@ -40,7 +37,7 @@ export const POST = async (request: Request, { params }: Params) => {
             "X-RateLimit-Remaining": "0",
             "X-RateLimit-Reset": String(reset),
           },
-        }
+        },
       );
     }
 
@@ -64,9 +61,7 @@ export const POST = async (request: Request, { params }: Params) => {
     // Always perform password comparison if space has a password set
     // This prevents timing attacks that could reveal whether a space is private
     const hasPassword = Boolean(space.accessPassword);
-    const isValid = hasPassword
-      ? await bcrypt.compare(password, space.accessPassword!)
-      : false;
+    const isValid = hasPassword ? await bcrypt.compare(password, space.accessPassword!) : false;
 
     // If not private or no password, allow access regardless of comparison result
     if (!space.isPrivate || !hasPassword) {
@@ -81,7 +76,7 @@ export const POST = async (request: Request, { params }: Params) => {
           headers: {
             "X-RateLimit-Remaining": String(remaining),
           },
-        }
+        },
       );
     }
 
@@ -95,29 +90,22 @@ export const POST = async (request: Request, { params }: Params) => {
     });
 
     // Set a signed cookie to remember access for 7 days
-    response.cookies.set(
-      `${SPACE_ACCESS_COOKIE_PREFIX}${spaceId}`,
-      accessToken,
-      {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      }
-    );
+    response.cookies.set(`${SPACE_ACCESS_COOKIE_PREFIX}${spaceId}`, accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
 
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message ?? "Invalid input" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     console.error("[Verify Password] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to verify password" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to verify password" }, { status: 500 });
   }
 };

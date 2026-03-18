@@ -8,17 +8,17 @@ import { authClient } from "@/lib/auth-client";
 import { Button, Card, Input, Label, Spinner } from "@repo/ui";
 
 type SettingsClientProps = {
+  subscription: {
+    cancelAtPeriodEnd: boolean;
+    periodEnd: string | null;
+    status: string;
+  } | null;
   user: {
+    email: string;
     id: string;
     name: string;
-    email: string;
     subscriptionPlan: string;
   };
-  subscription: {
-    status: string;
-    periodEnd: string | null;
-    cancelAtPeriodEnd: boolean;
-  } | null;
 };
 
 const PRO_FEATURES = [
@@ -26,6 +26,15 @@ const PRO_FEATURES = [
   "Priority support",
   "Custom branding (coming soon)",
 ];
+
+const formatDate = (dateString: string | null) => {
+  if (!dateString) { return null; }
+  return new Date(dateString).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
 
 const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
   const router = useRouter();
@@ -35,8 +44,7 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
   const [isSaving, setIsSaving] = useState(false);
 
   const isPro = user.subscriptionPlan === "PRO";
-  const isActive =
-    subscription?.status === "active" || subscription?.status === "trialing";
+  const isActive = subscription?.status === "active" || subscription?.status === "trialing";
 
   const handleUpgrade = async () => {
     setIsUpgrading(true);
@@ -99,7 +107,7 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
 
   const handleSaveName = async () => {
     const trimmedName = name.trim();
-    if (trimmedName === user.name) return;
+    if (trimmedName === user.name) {return;}
 
     setIsSaving(true);
 
@@ -116,190 +124,153 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
 
       toast.success("Name updated successfully");
       router.refresh();
-    } catch (err) {
-      console.error("[Settings] Unexpected error updating name:", err);
+    } catch (error) {
+      console.error("[Settings] Unexpected error updating name:", error);
       toast.error("Failed to update name");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Settings
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your account and subscription
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
+          <p className="text-sm text-muted-foreground">Manage your account and subscription</p>
         </div>
 
         <div className="flex flex-col gap-6">
-        {/* Profile Section */}
-        <Card className="flex flex-col gap-6 p-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-              <User className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-foreground">
-                Profile
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Your account information
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Name</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
-                />
-                <Button
-                  onClick={handleSaveName}
-                  disabled={isSaving || name.trim() === user.name}
-                  variant="outline"
-                >
-                  {isSaving ? <Spinner /> : "Save"}
-                </Button>
+          {/* Profile Section */}
+          <Card className="flex flex-col gap-6 p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+                <User className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">Profile</h2>
+                <p className="text-sm text-muted-foreground">Your account information</p>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                value={user.email}
-                disabled
-                className="bg-secondary"
-              />
-              <p className="text-xs text-muted-foreground">
-                Email cannot be changed
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Subscription Section */}
-        <Card className="flex flex-col gap-6 p-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-              <CreditCard className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-foreground">
-                Subscription
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Manage your plan
-              </p>
-            </div>
-          </div>
-
-          {isPro && isActive ? (
             <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 dark:bg-amber-900/20">
-                <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                <span className="font-medium text-amber-700 dark:text-amber-300">
-                  PRO Plan Active
-                </span>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="name">Name</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                  />
+                  <Button
+                    onClick={handleSaveName}
+                    disabled={isSaving || name.trim() === user.name}
+                    variant="outline"
+                  >
+                    {isSaving ? <Spinner /> : "Save"}
+                  </Button>
+                </div>
               </div>
 
-              {subscription?.periodEnd && (
-                <p className="text-sm text-muted-foreground">
-                  {subscription.cancelAtPeriodEnd
-                    ? `Your subscription will end on ${formatDate(subscription.periodEnd)}`
-                    : `Next billing date: ${formatDate(subscription.periodEnd)}`}
-                </p>
-              )}
-
-              <Button
-                onClick={handleManageSubscription}
-                disabled={isManaging}
-                variant="outline"
-              >
-                {isManaging ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading...
-                  </span>
-                ) : (
-                  "Manage Subscription"
-                )}
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" value={user.email} disabled className="bg-secondary" />
+                <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+              </div>
             </div>
-          ) : (
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-6 rounded-xl border border-border bg-linear-to-br from-amber-50 to-orange-50 p-6 dark:from-amber-900/20 dark:to-orange-900/20">
-                <div className="flex items-center gap-2">
-                  <Crown className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                  <h3 className="text-lg font-bold text-foreground">
-                    Upgrade to PRO
-                  </h3>
+          </Card>
+
+          {/* Subscription Section */}
+          <Card className="flex flex-col gap-6 p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+                <CreditCard className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">Subscription</h2>
+                <p className="text-sm text-muted-foreground">Manage your plan</p>
+              </div>
+            </div>
+
+            {isPro && isActive ? (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 dark:bg-amber-900/20">
+                  <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <span className="font-medium text-amber-700 dark:text-amber-300">
+                    PRO Plan Active
+                  </span>
                 </div>
 
-                <p className="text-2xl font-bold text-foreground">
-                  $10
-                  <span className="text-base font-normal text-muted-foreground">
-                    /year
-                  </span>
-                </p>
+                {subscription?.periodEnd && (
+                  <p className="text-sm text-muted-foreground">
+                    {subscription.cancelAtPeriodEnd
+                      ? `Your subscription will end on ${formatDate(subscription.periodEnd)}`
+                      : `Next billing date: ${formatDate(subscription.periodEnd)}`}
+                  </p>
+                )}
 
-                <ul className="flex flex-col gap-2">
-                  {PRO_FEATURES.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-center gap-2 text-sm text-foreground"
-                    >
-                      <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  onClick={handleUpgrade}
-                  disabled={isUpgrading}
-                  className="w-full bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
-                >
-                  {isUpgrading ? (
+                <Button onClick={handleManageSubscription} disabled={isManaging} variant="outline">
+                  {isManaging ? (
                     <span className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Redirecting to checkout...
+                      Loading...
                     </span>
                   ) : (
-                    <span className="flex items-center gap-2">
-                      <Crown className="h-4 w-4" />
-                      Upgrade to PRO
-                    </span>
+                    "Manage Subscription"
                   )}
                 </Button>
               </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-6 rounded-xl border border-border bg-linear-to-br from-amber-50 to-orange-50 p-6 dark:from-amber-900/20 dark:to-orange-900/20">
+                  <div className="flex items-center gap-2">
+                    <Crown className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    <h3 className="text-lg font-bold text-foreground">Upgrade to PRO</h3>
+                  </div>
 
-              <p className="text-center text-xs text-muted-foreground">
-                Secure checkout powered by Stripe. Cancel anytime.
-              </p>
-            </div>
-          )}
-        </Card>
-      </div>
+                  <p className="text-2xl font-bold text-foreground">
+                    $10
+                    <span className="text-base font-normal text-muted-foreground">/year</span>
+                  </p>
+
+                  <ul className="flex flex-col gap-2">
+                    {PRO_FEATURES.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-foreground">
+                        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Button
+                    onClick={handleUpgrade}
+                    disabled={isUpgrading}
+                    className="w-full bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
+                  >
+                    {isUpgrading ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Redirecting to checkout...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Crown className="h-4 w-4" />
+                        Upgrade to PRO
+                      </span>
+                    )}
+                  </Button>
+                </div>
+
+                <p className="text-center text-xs text-muted-foreground">
+                  Secure checkout powered by Stripe. Cancel anytime.
+                </p>
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
     </div>
   );

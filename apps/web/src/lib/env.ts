@@ -10,18 +10,14 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
 
   // Better Auth
-  BETTER_AUTH_SECRET: z
-    .string()
-    .min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
+  BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
   BETTER_AUTH_URL: z.string().url("BETTER_AUTH_URL must be a valid URL"),
 
   // Web App URL (for redirects, etc.)
   WEB_APP_URL: z.string().url("WEB_APP_URL must be a valid URL").optional(),
 
   // Stripe
-  STRIPE_SECRET_KEY: z
-    .string()
-    .startsWith("sk_", "STRIPE_SECRET_KEY must start with 'sk_'"),
+  STRIPE_SECRET_KEY: z.string().startsWith("sk_", "STRIPE_SECRET_KEY must start with 'sk_'"),
   STRIPE_WEBHOOK_SECRET: z
     .string()
     .startsWith("whsec_", "STRIPE_WEBHOOK_SECRET must start with 'whsec_'"),
@@ -30,12 +26,8 @@ const envSchema = z.object({
     .startsWith("price_", "STRIPE_PRO_PRICE_ID must start with 'price_'"),
 
   // Upstash Redis
-  UPSTASH_REDIS_REST_URL: z
-    .string()
-    .url("UPSTASH_REDIS_REST_URL must be a valid URL"),
-  UPSTASH_REDIS_REST_TOKEN: z
-    .string()
-    .min(1, "UPSTASH_REDIS_REST_TOKEN is required"),
+  UPSTASH_REDIS_REST_URL: z.string().url("UPSTASH_REDIS_REST_URL must be a valid URL"),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1, "UPSTASH_REDIS_REST_TOKEN is required"),
 
   // Optional: Space access signing (falls back to BETTER_AUTH_SECRET)
   SPACE_ACCESS_SECRET: z.string().min(32).optional(),

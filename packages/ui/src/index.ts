@@ -36,12 +36,7 @@ export {
   SelectScrollDownButton,
 } from "./components/select";
 
-export {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "./components/tooltip";
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./components/tooltip";
 
 export {
   DropdownMenu,
