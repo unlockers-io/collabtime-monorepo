@@ -41,21 +41,19 @@ const NavLogo = ({ showTitle = true }: { showTitle?: boolean }) => (
     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
       <Globe className="h-5 w-5 text-primary-foreground" />
     </div>
-    {showTitle && (
-      <span className="text-xl font-bold tracking-tight">Collab Time</span>
-    )}
+    {showTitle && <span className="text-xl font-bold tracking-tight">Collab Time</span>}
   </Link>
 );
 
 // Team title with optional editing
 type TeamTitleProps = {
-  teamName: string;
   isAdmin: boolean;
   isEditing: boolean;
-  onEdit: () => void;
-  onChange: (name: string) => void;
-  onSave: () => void;
   onCancel: () => void;
+  onChange: (name: string) => void;
+  onEdit: () => void;
+  onSave: () => void;
+  teamName: string;
 };
 
 const TeamTitle = ({
@@ -132,24 +130,14 @@ const CopyLinkButton = ({
     }}
   >
     <span className="flex items-center gap-2">
-      {hasCopied ? (
-        <Check className="h-4 w-4 text-green-600" />
-      ) : (
-        <Copy className="h-4 w-4" />
-      )}
+      {hasCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
       {hasCopied ? "Copied!" : "Copy Link"}
     </span>
   </Button>
 );
 
 // User menu dropdown
-const UserMenu = ({
-  isAdmin,
-  isAuthenticated,
-}: {
-  isAdmin: boolean;
-  isAuthenticated: boolean;
-}) => {
+const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthenticated: boolean }) => {
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -177,31 +165,20 @@ const UserMenu = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" aria-label="Account menu">
-          {isAdmin ? (
-            <Shield className="h-4 w-4" />
-          ) : (
-            <User className="h-4 w-4" />
-          )}
+          {isAdmin ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 bg-popover">
         <div className="px-2 py-1.5 text-sm">
-          <p className="font-medium text-popover-foreground">
-            {isAdmin ? "Admin" : "Member"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {isAdmin ? "Full access" : "View only"}
-          </p>
+          <p className="font-medium text-popover-foreground">{isAdmin ? "Admin" : "Member"}</p>
+          <p className="text-xs text-muted-foreground">{isAdmin ? "Full access" : "View only"}</p>
         </div>
         {!isAuthenticated && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Button variant="outline" asChild>
-                <Link
-                  href="/login"
-                  className="flex cursor-pointer items-center gap-2"
-                >
+                <Link href="/login" className="flex cursor-pointer items-center gap-2">
                   <LogIn className="h-4 w-4" />
                   Sign in
                 </Link>
@@ -213,10 +190,7 @@ const UserMenu = ({
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link
-                href="/settings"
-                className="flex cursor-pointer items-center gap-2"
-              >
+              <Link href="/settings" className="flex cursor-pointer items-center gap-2">
                 <Settings className="h-4 w-4" />
                 Settings
               </Link>
@@ -244,12 +218,12 @@ const MobileMenu = ({
   onCopy,
   onClose,
 }: {
-  isOpen: boolean;
+  hasCopied: boolean;
   isAdmin: boolean;
   isAuthenticated: boolean;
-  hasCopied: boolean;
-  onCopy: () => void;
+  isOpen: boolean;
   onClose: () => void;
+  onCopy: () => void;
 }) => (
   <AnimatePresence>
     {isOpen && (
@@ -269,9 +243,7 @@ const MobileMenu = ({
               <User className="h-4 w-4 text-muted-foreground" />
             )}
             <div>
-              <p className="text-sm font-medium text-foreground">
-                {isAdmin ? "Admin" : "Member"}
-              </p>
+              <p className="text-sm font-medium text-foreground">{isAdmin ? "Admin" : "Member"}</p>
               <p className="text-xs text-muted-foreground">
                 {isAdmin ? "Full access" : "View only"}
               </p>
@@ -330,14 +302,14 @@ const MobileMenu = ({
 type NavProps =
   | { variant?: "default" | "centered" }
   | {
-      variant: "team";
-      teamName: string;
       isAdmin: boolean;
       isEditingName: boolean;
+      onCancelEdit: () => void;
       onEditName: () => void;
       onNameChange: (name: string) => void;
       onSaveName: () => void;
-      onCancelEdit: () => void;
+      teamName: string;
+      variant: "team";
     };
 
 const Nav = (props: NavProps) => {
@@ -370,16 +342,9 @@ const Nav = (props: NavProps) => {
 
   // Team variant - with team name and editing
   if (variant === "team") {
-    if (props.variant !== "team") return null;
-    const {
-      teamName,
-      isAdmin,
-      isEditingName,
-      onEditName,
-      onNameChange,
-      onSaveName,
-      onCancelEdit,
-    } = props;
+    if (props.variant !== "team") {return null;}
+    const { teamName, isAdmin, isEditingName, onEditName, onNameChange, onSaveName, onCancelEdit } =
+      props;
 
     return (
       <header className="flex flex-col gap-4">
@@ -414,11 +379,7 @@ const Nav = (props: NavProps) => {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
-              {mobileMenuOpen ? (
-                <X className="h-4 w-4" />
-              ) : (
-                <Menu className="h-4 w-4" />
-              )}
+              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
           </div>
         </div>

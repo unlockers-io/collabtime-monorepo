@@ -7,14 +7,16 @@ import { useSyncExternalStore } from "react";
 // ============================================================================
 
 type TickStore = {
-  subscribe: (callback: () => void) => () => void;
-  getSnapshot: () => number;
   getServerSnapshot: () => number;
+  getSnapshot: () => number;
+  subscribe: (callback: () => void) => () => void;
 };
 
 // ============================================================================
 // Factory
 // ============================================================================
+
+const getServerSnapshot = () => 0;
 
 /**
  * Creates a tick store that updates at the specified interval.
@@ -45,9 +47,8 @@ const createTickStore = (intervalMs: number): TickStore => {
   };
 
   const getSnapshot = () => cachedTick;
-  const getServerSnapshot = () => 0;
 
-  return { subscribe, getSnapshot, getServerSnapshot };
+  return { getServerSnapshot, getSnapshot, subscribe };
 };
 
 // ============================================================================
@@ -55,7 +56,7 @@ const createTickStore = (intervalMs: number): TickStore => {
 // ============================================================================
 
 // 1-second tick for real-time displays (clock display)
-const secondTickStore = createTickStore(1_000);
+const secondTickStore = createTickStore(1000);
 
 // 30-second tick for timeline indicators (less frequent updates for performance)
 const halfMinuteTickStore = createTickStore(30_000);
@@ -74,7 +75,7 @@ const useSecondTick = (): number =>
   useSyncExternalStore(
     secondTickStore.subscribe,
     secondTickStore.getSnapshot,
-    secondTickStore.getServerSnapshot
+    secondTickStore.getServerSnapshot,
   );
 
 /**
@@ -87,7 +88,7 @@ const useHalfMinuteTick = (): number =>
   useSyncExternalStore(
     halfMinuteTickStore.subscribe,
     halfMinuteTickStore.getSnapshot,
-    halfMinuteTickStore.getServerSnapshot
+    halfMinuteTickStore.getServerSnapshot,
   );
 
 export { useHalfMinuteTick, useSecondTick };

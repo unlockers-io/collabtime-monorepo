@@ -22,8 +22,7 @@ const isValidRedirectUrl = (url: string): boolean => {
     const parsed = new URL(url);
 
     return ALLOWED_ORIGINS.some(
-      (origin) =>
-        parsed.origin === origin || parsed.origin === new URL(origin).origin
+      (origin) => parsed.origin === origin || parsed.origin === new URL(origin).origin,
     );
   } catch {
     return false;

@@ -1,36 +1,35 @@
 {
   "name": "@repo/db",
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
   "files": [
-    "dist/**"
+    "dist/**",
+    "src/**"
   ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
-    "build": "bunchee",
+    "build": "tsdown",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
-    "dev": "bunchee --watch",
-    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
+    "dev": "tsdown --watch",
+    "lint": "tsc --noEmit && oxlint src",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "postinstall": "pnpm run db:generate"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0",
-    "dotenv": "^17.2.3",
-    "pg": "^8.16.3"
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "dotenv": "^17.3.1",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/node": "^25.0.3",
-    "@types/pg": "^8.16.0",
-    "bunchee": "^6.9.3",
-    "eslint": "^9.39.2",
-    "prisma": "^7.2.0",
+    "@types/node": "^25.5.0",
+    "@types/pg": "^8.11.11",
+    "prisma": "^7.5.0",
+    "tsdown": "^0.21.4",
     "typescript": "^5.9.2"
   }
 }

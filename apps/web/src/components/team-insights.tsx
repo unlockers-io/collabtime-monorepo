@@ -3,19 +3,15 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
 import type { TeamGroup, TeamMember } from "@/types";
-import {
-  getUserTimezone,
-  isCurrentlyWorking,
-  convertHourToTimezone,
-} from "@/lib/timezones";
+import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
 import { ScrollArea, Badge } from "@repo/ui";
 
 const SOON_THRESHOLD_HOURS = 2;
 const SCROLL_AREA_MAX_HEIGHT = 120;
 
 type TeamInsightsProps = {
-  members: TeamMember[];
-  groups?: TeamGroup[];
+  groups?: Array<TeamGroup>;
+  members: Array<TeamMember>;
 };
 
 // No-op subscribe function for useSyncExternalStore when no subscriptions are needed
@@ -26,29 +22,25 @@ const useClientValue = <T,>(clientValue: () => T, serverValue: T): T => {
 };
 
 const tickSubscribe = (callback: () => void) => {
-  const interval = setInterval(callback, 30000);
+  const interval = setInterval(callback, 30_000);
   return () => clearInterval(interval);
 };
 const getTickSnapshot = () => Date.now();
 const getTickServerSnapshot = () => 0;
 
 type MemberStatus = {
-  member: TeamMember;
-  isWorking: boolean;
-  hoursUntilStart: number | null;
   hoursUntilEnd: number | null;
+  hoursUntilStart: number | null;
+  isWorking: boolean;
+  member: TeamMember;
 };
 
 const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
-  const tick = useSyncExternalStore(
-    tickSubscribe,
-    getTickSnapshot,
-    getTickServerSnapshot,
-  );
+  const tick = useSyncExternalStore(tickSubscribe, getTickSnapshot, getTickServerSnapshot);
 
-  const memberStatuses = useMemo((): MemberStatus[] => {
-    if (!viewerTimezone) return [];
+  const memberStatuses = useMemo((): Array<MemberStatus> => {
+    if (!viewerTimezone) {return [];}
     // Include tick in the dependency to trigger recalculation every 30 seconds
     void tick;
 
@@ -58,10 +50,8 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
       hour: "numeric",
       hour12: false,
     });
-    const hourPart = formatter
-      .formatToParts(now)
-      .find((p) => p.type === "hour");
-    const currentHourInViewer = hourPart ? parseInt(hourPart.value, 10) : 0;
+    const hourPart = formatter.formatToParts(now).find((p) => p.type === "hour");
+    const currentHourInViewer = hourPart ? Number.parseInt(hourPart.value, 10) : 0;
 
     return members.map((member) => {
       const working = isCurrentlyWorking(
@@ -86,11 +76,11 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
 
       if (!working) {
         let diff = startInViewer - currentHourInViewer;
-        if (diff < 0) diff += 24;
+        if (diff < 0) {diff += 24;}
         hoursUntilStart = diff;
       } else {
         let diff = endInViewer - currentHourInViewer;
-        if (diff < 0) diff += 24;
+        if (diff < 0) {diff += 24;}
         hoursUntilEnd = diff;
       }
 
@@ -103,19 +93,14 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
     });
   }, [members, viewerTimezone, tick]);
 
-  const onlineMembers = useMemo(
-    () => memberStatuses.filter((s) => s.isWorking),
-    [memberStatuses],
-  );
+  const onlineMembers = useMemo(() => memberStatuses.filter((s) => s.isWorking), [memberStatuses]);
 
   const comingSoonMembers = useMemo(
     () =>
       memberStatuses
         .filter(
           (s) =>
-            !s.isWorking &&
-            s.hoursUntilStart !== null &&
-            s.hoursUntilStart <= SOON_THRESHOLD_HOURS,
+            !s.isWorking && s.hoursUntilStart !== null && s.hoursUntilStart <= SOON_THRESHOLD_HOURS,
         )
         .sort((a, b) => (a.hoursUntilStart ?? 0) - (b.hoursUntilStart ?? 0)),
     [memberStatuses],
@@ -125,17 +110,14 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
     () =>
       memberStatuses
         .filter(
-          (s) =>
-            s.isWorking &&
-            s.hoursUntilEnd !== null &&
-            s.hoursUntilEnd <= SOON_THRESHOLD_HOURS,
+          (s) => s.isWorking && s.hoursUntilEnd !== null && s.hoursUntilEnd <= SOON_THRESHOLD_HOURS,
         )
         .sort((a, b) => (a.hoursUntilEnd ?? 0) - (b.hoursUntilEnd ?? 0)),
     [memberStatuses],
   );
 
   const getGroupName = (groupId?: string) => {
-    if (!groupId) return null;
+    if (!groupId) {return null;}
     return groups.find((g) => g.id === groupId)?.name ?? null;
   };
 
@@ -157,9 +139,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
               <Circle className="h-2.5 w-2.5 fill-green-500 text-green-500" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground">
-              Online Now
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">Online Now</span>
             <span className="ml-auto rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-green-700 dark:bg-green-900/40 dark:text-green-400">
               {onlineMembers.length}
             </span>
@@ -173,11 +153,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
                     <Badge
                       key={member.id}
                       className="cursor-help bg-background shadow-sm text-foreground"
-                      title={
-                        groupName
-                          ? `${member.name} (${groupName})`
-                          : member.name
-                      }
+                      title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
                       {member.name}
@@ -187,9 +163,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
               </div>
             </ScrollArea>
           ) : (
-            <p className="text-xs text-muted-foreground">
-              No one is currently working
-            </p>
+            <p className="text-xs text-muted-foreground">No one is currently working</p>
           )}
         </div>
 
@@ -199,9 +173,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
               <Sunrise className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground">
-              Starting Soon
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">Starting Soon</span>
             <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
               {comingSoonMembers.length}
             </span>
@@ -216,15 +188,9 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
                     <Badge
                       key={member.id}
                       className="cursor-help bg-background shadow-sm"
-                      title={
-                        groupName
-                          ? `${member.name} (${groupName})`
-                          : member.name
-                      }
+                      title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
-                      <span className="text-xs font-medium text-foreground">
-                        {member.name}
-                      </span>
+                      <span className="text-xs font-medium text-foreground">{member.name}</span>
                       <span className="text-xs tabular-nums text-amber-600 dark:text-amber-400">
                         in {hoursUntilStart}h
                       </span>
@@ -246,9 +212,7 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
               <Clock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground">
-              Wrapping Up
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">Wrapping Up</span>
             <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
               {leavingSoonMembers.length}
             </span>
@@ -263,15 +227,9 @@ const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
                     <Badge
                       key={member.id}
                       className="cursor-help bg-background shadow-sm"
-                      title={
-                        groupName
-                          ? `${member.name} (${groupName})`
-                          : member.name
-                      }
+                      title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
-                      <span className="text-xs font-medium text-foreground">
-                        {member.name}
-                      </span>
+                      <span className="text-xs font-medium text-foreground">{member.name}</span>
                       <span className="text-xs tabular-nums text-blue-600 dark:text-blue-400">
                         {hoursUntilEnd}h left
                       </span>

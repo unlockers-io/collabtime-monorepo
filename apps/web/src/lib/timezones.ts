@@ -39,10 +39,7 @@ const getCurrentTimeInTimezone = (timezone: string): string => {
   });
 };
 
-const formatTimezoneLabel = (
-  timezone: string,
-  includeCurrentTime = false
-): string => {
+const formatTimezoneLabel = (timezone: string, includeCurrentTime = false): string => {
   const offset = getTimezoneOffset(timezone);
   const sign = offset >= 0 ? "+" : "";
   const hours = Math.floor(Math.abs(offset));
@@ -52,7 +49,7 @@ const formatTimezoneLabel = (
       ? `${sign}${offset < 0 ? "-" : ""}${hours}:${minutes.toString().padStart(2, "0")}`
       : `${sign}${offset}`;
 
-  const cityName = timezone.split("/").pop()?.replace(/_/g, " ") ?? timezone;
+  const cityName = timezone.split("/").pop()?.replaceAll("_", " ") ?? timezone;
   const base = `${cityName} (UTC${offsetStr})`;
 
   if (includeCurrentTime) {
@@ -67,11 +64,7 @@ const getUserTimezone = (): string => {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 };
 
-const convertHourToTimezone = (
-  hour: number,
-  fromTimezone: string,
-  toTimezone: string
-): number => {
+const convertHourToTimezone = (hour: number, fromTimezone: string, toTimezone: string): number => {
   const fromOffset = getTimezoneOffset(fromTimezone);
   const toOffset = getTimezoneOffset(toTimezone);
   const diff = toOffset - fromOffset;
@@ -90,16 +83,16 @@ const convertHourToTimezone = (
 const isCurrentlyWorking = (
   timezone: string,
   workingHoursStart: number,
-  workingHoursEnd: number
+  workingHoursEnd: number,
 ): boolean => {
   const now = new Date();
-  const currentHour = parseInt(
+  const currentHour = Number.parseInt(
     now.toLocaleString("en-US", {
       timeZone: timezone,
       hour: "numeric",
       hour12: false,
     }),
-    10
+    10,
   );
 
   if (workingHoursStart <= workingHoursEnd) {
@@ -109,10 +102,7 @@ const isCurrentlyWorking = (
   return currentHour >= workingHoursStart || currentHour < workingHoursEnd;
 };
 
-const getDayOffset = (
-  memberTimezone: string,
-  viewerTimezone: string
-): number => {
+const getDayOffset = (memberTimezone: string, viewerTimezone: string): number => {
   const now = new Date();
 
   const viewerDate = now.toLocaleDateString("en-CA", { timeZone: viewerTimezone });
@@ -133,7 +123,7 @@ const getDayOffset = (
 const getMinutesUntilAvailable = (
   timezone: string,
   workingHoursStart: number,
-  workingHoursEnd: number
+  workingHoursEnd: number,
 ): number => {
   // If currently working, return 0
   if (isCurrentlyWorking(timezone, workingHoursStart, workingHoursEnd)) {
@@ -141,20 +131,20 @@ const getMinutesUntilAvailable = (
   }
 
   const now = new Date();
-  const currentHour = parseInt(
+  const currentHour = Number.parseInt(
     now.toLocaleString("en-US", {
       timeZone: timezone,
       hour: "numeric",
       hour12: false,
     }),
-    10
+    10,
   );
-  const currentMinute = parseInt(
+  const currentMinute = Number.parseInt(
     now.toLocaleString("en-US", {
       timeZone: timezone,
       minute: "numeric",
     }),
-    10
+    10,
   );
 
   const currentMinutesFromMidnight = currentHour * 60 + currentMinute;
@@ -175,7 +165,7 @@ const getMinutesUntilAvailable = (
 };
 
 const formatTimeUntilAvailable = (minutes: number): string => {
-  if (minutes === 0) return "Available now";
+  if (minutes === 0) {return "Available now";}
 
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
@@ -199,12 +189,52 @@ const formatTimezoneAbbreviation = (timezone: string): string => {
     })
     .split(" ");
   // The abbreviation is typically the last part
-  return parts[parts.length - 1] ?? timezone.split("/").pop() ?? timezone;
+  return parts.at(-1) ?? timezone.split("/").pop() ?? timezone;
+};
+
+/**
+ * Maps any IANA timezone string to the closest entry in COMMON_TIMEZONES.
+ * Returns null if the input is not a valid IANA timezone string.
+ */
+const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | null => {
+  const trimmed = input.trim();
+  if (!trimmed) {return null;}
+
+  // Exact match first
+  if (COMMON_TIMEZONES.includes(trimmed as (typeof COMMON_TIMEZONES)[number])) {
+    return trimmed as (typeof COMMON_TIMEZONES)[number];
+  }
+
+  // Validate the input is a real IANA timezone using the Intl API,
+  // then compute its UTC offset for closest-match lookup.
+  let inputOffset: number;
+  try {
+    // Intl.DateTimeFormat constructor throws RangeError for invalid timeZone values
+    new Intl.DateTimeFormat("en", { timeZone: trimmed });
+    inputOffset = getTimezoneOffset(trimmed);
+  } catch {
+    return null;
+  }
+
+  // Find the COMMON_TIMEZONE with the smallest offset difference
+  let best: (typeof COMMON_TIMEZONES)[number] | null = null;
+  let bestDiff = Infinity;
+
+  for (const tz of COMMON_TIMEZONES) {
+    const diff = Math.abs(getTimezoneOffset(tz) - inputOffset);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = tz;
+    }
+  }
+
+  return best;
 };
 
 export {
   COMMON_TIMEZONES,
   formatTimezoneLabel,
+  fuzzyMatchTimezone,
   getUserTimezone,
   convertHourToTimezone,
   isCurrentlyWorking,

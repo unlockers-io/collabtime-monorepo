@@ -18,23 +18,16 @@ import {
   UUIDSchema,
 } from "./validation";
 import { hashPassword, verifyPassword } from "./crypto";
-import type {
-  ServerSession,
-  Team,
-  TeamGroup,
-  TeamMember,
-  TeamRecord,
-  TeamRole,
-} from "@/types";
+import type { ServerSession, Team, TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
 
 type ActionResult<T> =
   | {
-      success: true;
       data: T;
+      success: true;
     }
   | {
-      success: false;
       error: string;
+      success: false;
     };
 
 // ============================================================================
@@ -48,10 +41,7 @@ const generateSessionToken = (): string => {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 };
 
-const createSession = async (
-  teamId: string,
-  role: TeamRole,
-): Promise<string> => {
+const createSession = async (teamId: string, role: TeamRole): Promise<string> => {
   const token = generateSessionToken();
   const session: ServerSession = {
     teamId,
@@ -69,7 +59,7 @@ const createSession = async (
 const getSession = async (token: string): Promise<ServerSession | null> => {
   try {
     const data = await redis.get<string>(`session:${token}`);
-    if (!data) return null;
+    if (!data) {return null;}
     return typeof data === "string" ? JSON.parse(data) : data;
   } catch {
     return null;
@@ -106,16 +96,13 @@ const verifySessionForTeam = async (
 // Team Management
 // ============================================================================
 
-const createTeam = async (
-  adminPassword: string,
-): Promise<ActionResult<string>> => {
+const createTeam = async (adminPassword: string): Promise<ActionResult<string>> => {
   try {
     const inputResult = TeamCreateInputSchema.safeParse({
       adminPassword,
     });
     if (!inputResult.success) {
-      const errorMessage =
-        inputResult.error.issues[0]?.message ?? "Invalid password";
+      const errorMessage = inputResult.error.issues[0]?.message ?? "Invalid password";
       return { success: false, error: errorMessage };
     }
 
@@ -145,7 +132,7 @@ const createTeam = async (
 const authenticateTeam = async (
   teamId: string,
   password: string,
-): Promise<ActionResult<{ token: string; role: TeamRole }>> => {
+): Promise<ActionResult<{ role: TeamRole; token: string; }>> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -159,8 +146,7 @@ const authenticateTeam = async (
 
     const authResult = TeamAuthInputSchema.safeParse({ password });
     if (!authResult.success) {
-      const errorMessage =
-        authResult.error.issues[0]?.message ?? "Invalid password";
+      const errorMessage = authResult.error.issues[0]?.message ?? "Invalid password";
       return { success: false, error: errorMessage };
     }
 
@@ -233,7 +219,7 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
 const getTeamByToken = async (
   token: string,
   teamId: string,
-): Promise<ActionResult<{ team: Team; role: TeamRole }>> => {
+): Promise<ActionResult<{ role: TeamRole; team: Team; }>> => {
   try {
     const sessionResult = await verifySessionForTeam(token, teamId);
     if (!sessionResult.success) {
@@ -261,7 +247,7 @@ const getTeamByToken = async (
  */
 const getPublicTeam = async (
   teamId: string,
-): Promise<ActionResult<{ team: Team; role: TeamRole }>> => {
+): Promise<ActionResult<{ role: TeamRole; team: Team; }>> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -287,7 +273,7 @@ const addMember = async (
   teamId: string,
   token: string,
   member: Omit<TeamMember, "id">,
-): Promise<ActionResult<{ team: Team; member: TeamMember }>> => {
+): Promise<ActionResult<{ member: TeamMember; team: Team; }>> => {
   try {
     // Verify admin access first
     const accessResult = await verifyAdminAccessByToken(token, teamId);
@@ -297,8 +283,7 @@ const addMember = async (
 
     const memberResult = TeamMemberInputSchema.safeParse(member);
     if (!memberResult.success) {
-      const errorMessage =
-        memberResult.error.issues[0]?.message ?? "Invalid member data";
+      const errorMessage = memberResult.error.issues[0]?.message ?? "Invalid member data";
       return { success: false, error: errorMessage };
     }
 
@@ -321,9 +306,7 @@ const addMember = async (
     });
 
     // Emit realtime event to team channel
-    await realtime
-      .channel(`team-${teamId}`)
-      .emit("team.memberAdded", newMember);
+    await realtime.channel(`team-${teamId}`).emit("team.memberAdded", newMember);
 
     return {
       success: true,
@@ -375,9 +358,7 @@ const removeMember = async (
     });
 
     // Emit realtime event to team channel
-    await realtime
-      .channel(`team-${teamId}`)
-      .emit("team.memberRemoved", { memberId });
+    await realtime.channel(`team-${teamId}`).emit("team.memberRemoved", { memberId });
 
     return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
@@ -410,8 +391,7 @@ const updateMember = async (
 
     const updateResult = TeamMemberUpdateSchema.safeParse(updates);
     if (!updateResult.success) {
-      const errorMessage =
-        updateResult.error.issues[0]?.message ?? "Invalid update data";
+      const errorMessage = updateResult.error.issues[0]?.message ?? "Invalid update data";
       return { success: false, error: errorMessage };
     }
 
@@ -440,9 +420,7 @@ const updateMember = async (
     });
 
     // Emit realtime event to team channel
-    await realtime
-      .channel(`team-${teamId}`)
-      .emit("team.memberUpdated", updatedMember);
+    await realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember);
 
     return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
@@ -514,7 +492,7 @@ const getTeamName = async (teamId: string): Promise<string | null> => {
     }
 
     const data = await redis.get<string>(`team:${teamId}`);
-    if (!data) return null;
+    if (!data) {return null;}
 
     const team = typeof data === "string" ? JSON.parse(data) : data;
     const name = typeof team?.name === "string" ? team.name.trim() : "";
@@ -529,7 +507,7 @@ const createGroup = async (
   teamId: string,
   token: string,
   input: { name: string },
-): Promise<ActionResult<{ team: Team; group: TeamGroup }>> => {
+): Promise<ActionResult<{ group: TeamGroup; team: Team; }>> => {
   try {
     const accessResult = await verifyAdminAccessByToken(token, teamId);
     if (!accessResult.success) {
@@ -543,8 +521,7 @@ const createGroup = async (
 
     const inputResult = TeamGroupInputSchema.safeParse(input);
     if (!inputResult.success) {
-      const errorMessage =
-        inputResult.error.issues[0]?.message ?? "Invalid group data";
+      const errorMessage = inputResult.error.issues[0]?.message ?? "Invalid group data";
       return { success: false, error: errorMessage };
     }
 
@@ -565,9 +542,7 @@ const createGroup = async (
       ex: TEAM_ACTIVE_TTL_SECONDS,
     });
 
-    await realtime
-      .channel(`team-${teamId}`)
-      .emit("team.groupCreated", newGroup);
+    await realtime.channel(`team-${teamId}`).emit("team.groupCreated", newGroup);
 
     return {
       success: true,
@@ -603,8 +578,7 @@ const updateGroup = async (
 
     const updateResult = TeamGroupUpdateSchema.safeParse(updates);
     if (!updateResult.success) {
-      const errorMessage =
-        updateResult.error.issues[0]?.message ?? "Invalid update data";
+      const errorMessage = updateResult.error.issues[0]?.message ?? "Invalid update data";
       return { success: false, error: errorMessage };
     }
 
@@ -629,9 +603,7 @@ const updateGroup = async (
       ex: TEAM_ACTIVE_TTL_SECONDS,
     });
 
-    await realtime
-      .channel(`team-${teamId}`)
-      .emit("team.groupUpdated", updatedGroup);
+    await realtime.channel(`team-${teamId}`).emit("team.groupUpdated", updatedGroup);
 
     return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
@@ -686,14 +658,64 @@ const removeGroup = async (
       ex: TEAM_ACTIVE_TTL_SECONDS,
     });
 
-    await realtime
-      .channel(`team-${teamId}`)
-      .emit("team.groupRemoved", { groupId });
+    await realtime.channel(`team-${teamId}`).emit("team.groupRemoved", { groupId });
 
     return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
     console.error("Failed to remove group:", error);
     return { success: false, error: "Failed to remove group" };
+  }
+};
+
+const importMembers = async (
+  teamId: string,
+  token: string,
+  members: Array<Omit<TeamMember, "id">>,
+): Promise<ActionResult<{ imported: number; members: TeamMember[]; team: Team }>> => {
+  try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
+    if (!Array.isArray(members) || members.length === 0) {
+      return { success: false, error: "No members to import" };
+    }
+
+    if (members.length > 100) {
+      return { success: false, error: "Cannot import more than 100 members at once" };
+    }
+
+    const validated: TeamMember[] = [];
+    for (const member of members) {
+      const result = TeamMemberInputSchema.safeParse(member);
+      if (!result.success) {
+        const msg = result.error.issues[0]?.message ?? "Invalid member data";
+        return { success: false, error: `Invalid member "${member.name}": ${msg}` };
+      }
+      validated.push({ ...result.data, id: uuidv4() });
+    }
+
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    team.members.push(...validated);
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.membersImported", validated);
+
+    return {
+      success: true,
+      data: { imported: validated.length, members: validated, team: sanitizeTeam(team) },
+    };
+  } catch (error) {
+    console.error("Failed to import members:", error);
+    return { success: false, error: "Failed to import members" };
   }
 };
 
@@ -706,6 +728,7 @@ export {
   getPublicTeam,
   getTeamByToken,
   getTeamName,
+  importMembers,
   removeGroup,
   removeMember,
   updateGroup,

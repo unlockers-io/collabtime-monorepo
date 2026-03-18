@@ -20,7 +20,7 @@ export const register = async () => {
         throw error;
       }
       console.warn(
-        "⚠️ Environment validation failed in development mode. Some features may not work."
+        "⚠️ Environment validation failed in development mode. Some features may not work.",
       );
     }
   }

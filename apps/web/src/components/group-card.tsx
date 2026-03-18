@@ -9,14 +9,14 @@ import { Button, Input, Spinner, cn } from "@repo/ui";
 import { useDrag } from "@/contexts/drag-context";
 
 type GroupHeaderProps = {
+  canEdit: boolean;
   group: TeamGroup;
+  memberCount: number;
+  onGroupRemoved: (groupId: string) => void;
+  onGroupUpdated: (group: TeamGroup) => void;
+  onMemberDropped?: (memberId: string, groupId: string) => void;
   teamId: string;
   token: string;
-  memberCount: number;
-  canEdit: boolean;
-  onGroupUpdated: (group: TeamGroup) => void;
-  onGroupRemoved: (groupId: string) => void;
-  onMemberDropped?: (memberId: string, groupId: string) => void;
 };
 
 const GroupCard = ({
@@ -44,7 +44,7 @@ const GroupCard = ({
   }, [group.name]);
 
   const handleSave = useCallback(() => {
-    if (!canEdit) return;
+    if (!canEdit) {return;}
     const trimmedName = editingName.trim();
     if (!trimmedName || trimmedName === group.name) {
       setIsEditing(false);
@@ -73,7 +73,7 @@ const GroupCard = ({
   };
 
   const handleRemove = () => {
-    if (!canEdit) return;
+    if (!canEdit) {return;}
     startTransition(async () => {
       const result = await removeGroup(teamId, token, group.id);
       if (result.success) {
@@ -86,7 +86,7 @@ const GroupCard = ({
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (!canEdit) return;
+    if (!canEdit) {return;}
     if (isCurrentGroup) {
       e.dataTransfer.dropEffect = "none";
       return;
@@ -101,7 +101,7 @@ const GroupCard = ({
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    if (!canEdit) return;
+    if (!canEdit) {return;}
     e.preventDefault();
     setIsDragOver(false);
     const memberId = e.dataTransfer.getData("text/plain");
@@ -165,16 +165,12 @@ const GroupCard = ({
             onClick={handleStartEditing}
             className="group/name flex items-center gap-1.5 text-left"
           >
-            <span className="font-semibold text-foreground">
-              {group.name}
-            </span>
+            <span className="font-semibold text-foreground">{group.name}</span>
             <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/name:opacity-100" />
           </button>
         ) : (
           <div className="flex items-center gap-1.5 text-left">
-            <span className="font-semibold text-foreground">
-              {group.name}
-            </span>
+            <span className="font-semibold text-foreground">{group.name}</span>
           </div>
         )}
 

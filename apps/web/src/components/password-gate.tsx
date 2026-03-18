@@ -28,7 +28,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
   // Detect desktop to enable autofocus only on non-touch devices
   // This prevents layout shift from keyboard popup on mobile
   const [isDesktop] = useState(() => {
-    if (typeof window === "undefined") return false;
+    if (typeof window === "undefined") {return false;}
     return window.matchMedia("(pointer: fine)").matches;
   });
 
@@ -62,8 +62,8 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
 
       toast.success("Access granted!");
       router.refresh();
-    } catch (err) {
-      console.error("[PasswordGate] Failed to verify password:", err);
+    } catch (error) {
+      console.error("[PasswordGate] Failed to verify password:", error);
       toast.error("Failed to verify password");
       setIsLoading(false);
     }
@@ -78,9 +78,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           {teamName ?? "Protected Team"}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This team is password protected
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">This team is password protected</p>
       </div>
 
       <Card className="w-full max-w-sm p-6">
@@ -110,25 +108,15 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {formState.errors.password && (
-              <p className="text-xs text-red-500">
-                {formState.errors.password.message}
-              </p>
+              <p className="text-xs text-red-500">{formState.errors.password.message}</p>
             )}
           </div>
 
-          <Button
-            type="submit"
-            disabled={isLoading || !formState.isValid}
-            className="w-full"
-          >
+          <Button type="submit" disabled={isLoading || !formState.isValid} className="w-full">
             {isLoading ? (
               <>
                 <Spinner className="mr-2" />

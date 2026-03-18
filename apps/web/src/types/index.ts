@@ -5,21 +5,21 @@ type TeamGroup = {
 };
 
 type TeamMember = {
+  groupId?: string; // Optional: undefined = ungrouped
   id: string;
   name: string;
-  title: string;
   timezone: string;
-  workingHoursStart: number; // 0-23 in their local timezone
+  title: string;
   workingHoursEnd: number; // 0-23 in their local timezone
-  groupId?: string; // Optional: undefined = ungrouped
+  workingHoursStart: number; // 0-23 in their local timezone
 };
 
 type Team = {
-  id: string;
-  name: string;
   createdAt: string;
-  members: TeamMember[];
-  groups: TeamGroup[];
+  groups: Array<TeamGroup>;
+  id: string;
+  members: Array<TeamMember>;
+  name: string;
 };
 
 type TeamRecord = Team & {
@@ -28,9 +28,9 @@ type TeamRecord = Team & {
 };
 
 type ServerSession = {
-  teamId: string;
-  role: "admin" | "member";
   createdAt: number;
+  role: "admin" | "member";
+  teamId: string;
 };
 
 type TeamRole = "admin" | "member";

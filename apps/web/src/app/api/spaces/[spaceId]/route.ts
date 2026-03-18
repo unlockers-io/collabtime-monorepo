@@ -50,10 +50,7 @@ export const GET = async (_request: Request, { params }: Params) => {
     });
   } catch (error) {
     console.error("[Spaces API] Error fetching space:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch space" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch space" }, { status: 500 });
   }
 };
 
@@ -95,14 +92,14 @@ export const PATCH = async (request: Request, { params }: Params) => {
     if (updates.isPrivate && !isPro) {
       return NextResponse.json(
         { error: "Private spaces require PRO subscription" },
-        { status: 402 }
+        { status: 402 },
       );
     }
 
     // Build update data
     const updateData: {
-      isPrivate?: boolean;
       accessPassword?: string | null;
+      isPrivate?: boolean;
     } = {};
 
     // Handle privacy setting
@@ -118,10 +115,7 @@ export const PATCH = async (request: Request, { params }: Params) => {
         updateData.accessPassword = null;
       } else if (updates.accessPassword) {
         // Setting new password
-        updateData.accessPassword = await bcrypt.hash(
-          updates.accessPassword,
-          10
-        );
+        updateData.accessPassword = await bcrypt.hash(updates.accessPassword, 10);
       }
     }
 
@@ -142,14 +136,11 @@ export const PATCH = async (request: Request, { params }: Params) => {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message ?? "Invalid input" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     console.error("[Spaces API] Error updating space:", error);
-    return NextResponse.json(
-      { error: "Failed to update space" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update space" }, { status: 500 });
   }
 };
 
@@ -184,9 +175,6 @@ export const DELETE = async (_request: Request, { params }: Params) => {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[Spaces API] Error deleting space:", error);
-    return NextResponse.json(
-      { error: "Failed to delete space" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to delete space" }, { status: 500 });
   }
 };

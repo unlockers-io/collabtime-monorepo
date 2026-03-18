@@ -9,7 +9,7 @@ const useIsTouchDevice = () => {
   const [isTouch, setIsTouch] = React.useState(false);
 
   React.useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
+    if (typeof window === "undefined" || !window.matchMedia) { return; }
     const mq = window.matchMedia("(pointer: coarse)");
     const handler = (event: MediaQueryListEvent | MediaQueryList) => {
       setIsTouch(event.matches);
@@ -45,7 +45,7 @@ const Tooltip = ({
 
   // Sync controlled open when provided
   React.useEffect(() => {
-    if (controlledOpen === undefined) return;
+    if (controlledOpen === undefined) { return; }
     setOpen(controlledOpen);
   }, [controlledOpen]);
 
@@ -102,7 +102,7 @@ const TooltipContent = React.forwardRef<
       "data-[state=delayed-open]:data-[side=bottom]:animate-in data-[state=delayed-open]:data-[side=bottom]:fade-in-0 data-[state=delayed-open]:data-[side=bottom]:zoom-in-95",
       "data-[state=delayed-open]:data-[side=left]:animate-in data-[state=delayed-open]:data-[side=left]:fade-in-0 data-[state=delayed-open]:data-[side=left]:zoom-in-95",
       "data-[state=delayed-open]:data-[side=right]:animate-in data-[state=delayed-open]:data-[side=right]:fade-in-0 data-[state=delayed-open]:data-[side=right]:zoom-in-95",
-      className
+      className,
     )}
     {...props}
   />
