@@ -24,6 +24,12 @@
     "lint": {
       "dependsOn": ["^build"]
     },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "format:check": {
+      "cache": false
+    },
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,
