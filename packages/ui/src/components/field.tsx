@@ -7,8 +7,8 @@ import { cn } from "../lib/utils";
 import { Label } from "./label";
 
 type FieldProps = React.HTMLAttributes<HTMLDivElement> & {
-  orientation?: "vertical" | "horizontal" | "responsive";
   "data-invalid"?: boolean;
+  orientation?: "vertical" | "horizontal" | "responsive";
 };
 
 const Field = React.forwardRef<HTMLDivElement, FieldProps>(
@@ -26,12 +26,12 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
           orientation === "horizontal" &&
             "flex-row items-center [&>[data-slot=field-label]]:flex-auto has-[>[data-slot=field-content]]:items-start",
           orientation === "responsive" && "flex-col sm:flex-row sm:items-center",
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 Field.displayName = "Field";
 
@@ -42,11 +42,11 @@ const FieldGroup = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
       data-slot="field-group"
       className={cn(
         "group/field-group flex w-full flex-col gap-7 [&>[data-slot=field-group]]:gap-4",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  ),
 );
 FieldGroup.displayName = "FieldGroup";
 
@@ -62,7 +62,7 @@ const FieldLabel = React.forwardRef<
         "group/field-label flex w-fit items-center gap-2 text-sm font-medium leading-snug text-foreground",
         "group-data-[invalid=true]/field:text-destructive",
         "group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50",
-        className
+        className,
       )}
       {...props}
     />
@@ -78,7 +78,7 @@ const FieldContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
       className={cn("flex flex-col gap-2", className)}
       {...props}
     />
-  )
+  ),
 );
 FieldContent.displayName = "FieldContent";
 
@@ -108,10 +108,10 @@ const FieldError = React.forwardRef<HTMLParagraphElement, FieldErrorProps>(
       errors
         ?.map((e) => e?.message)
         .filter(Boolean)
-        .map((m) => String(m))
+        .map(String)
         .at(0);
 
-    if (!message) return null;
+    if (!message) { return null; }
 
     return (
       <p
@@ -123,7 +123,7 @@ const FieldError = React.forwardRef<HTMLParagraphElement, FieldErrorProps>(
         {message}
       </p>
     );
-  }
+  },
 );
 FieldError.displayName = "FieldError";
 
@@ -140,29 +140,29 @@ const FieldSet = React.forwardRef<
 ));
 FieldSet.displayName = "FieldSet";
 
-const FieldLegend = React.forwardRef<
-  HTMLLegendElement,
-  React.HTMLAttributes<HTMLLegendElement>
+const FieldLegend = React.forwardRef<HTMLLegendElement, React.HTMLAttributes<HTMLLegendElement>>(
+  ({ className, ...props }, ref) => (
+    <legend
+      ref={ref}
+      data-slot="field-legend"
+      className={cn("text-sm font-semibold text-foreground", className)}
+      {...props}
+    />
+  ),
+);
+FieldLegend.displayName = "FieldLegend";
+
+const FieldTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <legend
+  <p
     ref={ref}
-    data-slot="field-legend"
-    className={cn("text-sm font-semibold text-foreground", className)}
+    data-slot="field-title"
+    className={cn("text-sm font-medium text-foreground", className)}
     {...props}
   />
 ));
-FieldLegend.displayName = "FieldLegend";
-
-const FieldTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
-  ({ className, ...props }, ref) => (
-    <p
-      ref={ref}
-      data-slot="field-title"
-      className={cn("text-sm font-medium text-foreground", className)}
-      {...props}
-    />
-  )
-);
 FieldTitle.displayName = "FieldTitle";
 
 const FieldSeparator = React.forwardRef<HTMLHRElement, React.HTMLAttributes<HTMLHRElement>>(
@@ -173,7 +173,7 @@ const FieldSeparator = React.forwardRef<HTMLHRElement, React.HTMLAttributes<HTML
       className={cn("border-border", className)}
       {...props}
     />
-  )
+  ),
 );
 FieldSeparator.displayName = "FieldSeparator";
 

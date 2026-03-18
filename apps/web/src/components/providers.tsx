@@ -1,28 +1,49 @@
 "use client";
 
-import { RealtimeProvider } from "@upstash/realtime/client";
+import { useEffect, useState, type ReactNode } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
-type ProvidersProps = {
-  children: React.ReactNode;
+type ProvidersProps = { children: ReactNode };
+
+// @upstash/realtime does not ship "use client" in its dist files. Next.js 16
+// + Turbopack resolves `react` via react-server exports for SSR bundles, which
+// lack createContext, causing a build crash. Breaking the static import with a
+// dynamic import() inside useEffect prevents the package from entering the SSR
+// bundle entirely.
+const RealtimeMount = ({ children }: { children: ReactNode }) => {
+  const [Provider, setProvider] = useState<React.ComponentType<{
+    children: ReactNode;
+    api: { url: string };
+  }> | null>(null);
+
+  useEffect(() => {
+    void import("@upstash/realtime/client").then((m) => {
+      setProvider(
+        () =>
+          m.RealtimeProvider as React.ComponentType<{
+            children: ReactNode;
+            api: { url: string };
+          }>,
+      );
+    });
+  }, []);
+
+  if (!Provider) return <>{children}</>;
+  return <Provider api={{ url: "/api/realtime" }}>{children}</Provider>;
 };
 
-const Providers = ({ children }: ProvidersProps) => {
-  return (
-    <QueryProvider>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <RealtimeProvider api={{ url: "/api/realtime" }}>
-          {children}
-        </RealtimeProvider>
-      </ThemeProvider>
-    </QueryProvider>
-  );
-};
+const Providers = ({ children }: ProvidersProps) => (
+  <QueryProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <RealtimeMount>{children}</RealtimeMount>
+    </ThemeProvider>
+  </QueryProvider>
+);
 
 export { Providers };

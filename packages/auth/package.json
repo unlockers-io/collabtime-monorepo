@@ -12,16 +12,16 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@better-auth/stripe": "1.5.0-beta.2",
+    "@better-auth/stripe": "1.5.5",
     "@repo/db": "workspace:*",
-    "better-auth": "beta",
-    "stripe": "^20.1.2"
+    "better-auth": "^1.5.5",
+    "stripe": "^20.4.1"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/node": "^25.0.3",
-    "eslint": "^9.39.2",
+    "@types/node": "^25.5.0",
+    "eslint": "^10.0.3",
     "typescript": "^5.9.2"
   }
 }
