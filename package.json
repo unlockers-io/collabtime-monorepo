@@ -1,11 +1,13 @@
 {
   "name": "collabtime",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "turbo run start",
     "dev": "turbo run dev --concurrency 16",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
     "build": "turbo run build",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "turbo run db:generate",
@@ -13,10 +15,15 @@
     "db:seed": "turbo run db:seed"
   },
   "devDependencies": {
-    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
-    "prettier": "^3.8.1",
-    "prettier-plugin-tailwindcss": "^0.7.2",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.50.0",
+    "oxlint-config-awesomeness": "^1.0.0",
     "turbo": "^2.8.17"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/pg": "8.11.11"
+    }
   },
   "packageManager": "pnpm@10.7.0"
 }
