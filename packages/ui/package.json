@@ -4,19 +4,15 @@
   "license": "MIT",
   "style": "./dist/index.css",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "type": "module",
   "sideEffects": [
     "**/*.css"
   ],
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
+    ".": "./src/index.ts",
     "./styles.css": "./dist/index.css"
   },
   "scripts": {
