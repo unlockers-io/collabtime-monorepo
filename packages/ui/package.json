@@ -22,10 +22,10 @@
   "scripts": {
     "build": "mkdir -p dist && pnpm run build:styles && pnpm run build:components",
     "build:styles": "tailwindcss -i ./src/styles/globals.css -o ./dist/index.css",
-    "build:components": "bunchee --no-clean",
-    "check-types": "bunchee --no-clean --no-emit",
+    "build:components": "tsdown",
+    "check-types": "tsc --noEmit",
     "dev:styles": "tailwindcss -i ./src/styles/globals.css -o ./dist/index.css --watch",
-    "dev:components": "bunchee --watch --no-clean",
+    "dev:components": "tsdown --watch",
     "lint": "eslint src --max-warnings 0",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
@@ -38,7 +38,7 @@
     "@repo/typescript-config": "workspace:*",
     "@tailwindcss/cli": "^4.1.12",
     "@types/react": "^19.1.12",
-    "bunchee": "^6.9.3",
+    "tsdown": "^0.21.4",
     "eslint": "^9.39.2",
     "tailwindcss": "^4.1.18",
     "tw-animate-css": "^1.3.7"

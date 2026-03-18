@@ -3,6 +3,7 @@ import type { PrismaClient } from "@repo/db";
 import { SubscriptionPlan } from "@repo/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import type { BetterAuthPlugin } from "better-auth/types";
 import Stripe from "stripe";
 
 type AuthConfig = {
@@ -21,6 +22,9 @@ type AuthConfig = {
     fromEmail: string;
     replyTo?: string;
   };
+  // Inject framework-specific plugins (e.g. nextCookies()) at the call site;
+  // must be last in the plugins array
+  extraPlugins?: Array<BetterAuthPlugin>;
 };
 
 /**
@@ -149,6 +153,7 @@ const createAuth = (
           },
         },
       }),
+      ...(config.extraPlugins ?? []),
     ],
 
     session: {
@@ -179,7 +184,8 @@ const createAuth = (
     rateLimit: {
       enabled: true,
       window: 60, // 1 minute
-      max: 100, // 100 requests per minute
+      max: 100,
+      storage: "database",
     },
 
     secret: betterAuthConfig.secret,
