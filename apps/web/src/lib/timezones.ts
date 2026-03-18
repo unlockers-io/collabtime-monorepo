@@ -192,9 +192,49 @@ const formatTimezoneAbbreviation = (timezone: string): string => {
   return parts.at(-1) ?? timezone.split("/").pop() ?? timezone;
 };
 
+/**
+ * Maps any IANA timezone string to the closest entry in COMMON_TIMEZONES.
+ * Returns null if the input is not a valid IANA timezone string.
+ */
+const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | null => {
+  const trimmed = input.trim();
+  if (!trimmed) {return null;}
+
+  // Exact match first
+  if (COMMON_TIMEZONES.includes(trimmed as (typeof COMMON_TIMEZONES)[number])) {
+    return trimmed as (typeof COMMON_TIMEZONES)[number];
+  }
+
+  // Validate the input is a real IANA timezone using the Intl API,
+  // then compute its UTC offset for closest-match lookup.
+  let inputOffset: number;
+  try {
+    // Intl.DateTimeFormat constructor throws RangeError for invalid timeZone values
+    new Intl.DateTimeFormat("en", { timeZone: trimmed });
+    inputOffset = getTimezoneOffset(trimmed);
+  } catch {
+    return null;
+  }
+
+  // Find the COMMON_TIMEZONE with the smallest offset difference
+  let best: (typeof COMMON_TIMEZONES)[number] | null = null;
+  let bestDiff = Infinity;
+
+  for (const tz of COMMON_TIMEZONES) {
+    const diff = Math.abs(getTimezoneOffset(tz) - inputOffset);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = tz;
+    }
+  }
+
+  return best;
+};
+
 export {
   COMMON_TIMEZONES,
   formatTimezoneLabel,
+  fuzzyMatchTimezone,
   getUserTimezone,
   convertHourToTimezone,
   isCurrentlyWorking,

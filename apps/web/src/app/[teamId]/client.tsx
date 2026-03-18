@@ -7,6 +7,7 @@ import { Clock, FolderKanban, Users } from "lucide-react";
 import type { TeamGroup, TeamMember } from "@/types";
 import { AddGroupDialog } from "@/components/add-group-dialog";
 import { AddMemberDialog } from "@/components/add-member-dialog";
+import { ImportMembersDialog } from "@/components/import-members-dialog";
 import { GroupCard } from "@/components/group-card";
 import { MemberCard } from "@/components/member-card";
 import { Button, ScrollArea } from "@repo/ui";
@@ -120,6 +121,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       "team.memberAdded",
       "team.memberRemoved",
       "team.memberUpdated",
+      "team.membersImported",
       "team.membersReordered",
       "team.nameUpdated",
       "team.groupCreated",
@@ -186,6 +188,21 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
               members: prev.team.members.map((m) =>
                 m.id === updatedMember.id ? updatedMember : m,
               ),
+            },
+          };
+        });
+      } else if (event === "team.membersImported") {
+        const newMembers = data as TeamMember[];
+        updateTeamCache(teamId, (prev) => {
+          if (!prev) {return prev;}
+          const existingIds = new Set(prev.team.members.map((m) => m.id));
+          const toAdd = newMembers.filter((m) => !existingIds.has(m.id));
+          if (toAdd.length === 0) {return prev;}
+          return {
+            ...prev,
+            team: {
+              ...prev.team,
+              members: [...prev.team.members, ...toAdd],
             },
           };
         });
@@ -635,13 +652,19 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
               )}
 
               {isAdmin && token ? (
-                <AddMemberDialog
-                  teamId={teamId}
-                  token={token}
-                  groups={groups}
-                  onMemberAdded={handleMemberAdded}
-                  isFirstMember={members.length === 0}
-                />
+                <div className="flex flex-col gap-2">
+                  <AddMemberDialog
+                    teamId={teamId}
+                    token={token}
+                    groups={groups}
+                    onMemberAdded={handleMemberAdded}
+                    isFirstMember={members.length === 0}
+                  />
+                  <ImportMembersDialog
+                    teamId={teamId}
+                    token={token}
+                  />
+                </div>
               ) : (
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">View-only access</p>

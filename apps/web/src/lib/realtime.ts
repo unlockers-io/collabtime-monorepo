@@ -25,6 +25,7 @@ const schema = {
     memberAdded: TeamMemberSchema,
     memberRemoved: z.object({ memberId: z.string() }),
     memberUpdated: TeamMemberSchema,
+    membersImported: z.array(TeamMemberSchema),
     membersReordered: z.object({ order: z.array(z.string()) }),
     nameUpdated: z.object({ name: z.string() }),
     groupCreated: TeamGroupSchema,

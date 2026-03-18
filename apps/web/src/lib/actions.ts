@@ -667,6 +667,58 @@ const removeGroup = async (
   }
 };
 
+const importMembers = async (
+  teamId: string,
+  token: string,
+  members: Array<Omit<TeamMember, "id">>,
+): Promise<ActionResult<{ imported: number; members: TeamMember[]; team: Team }>> => {
+  try {
+    const accessResult = await verifyAdminAccessByToken(token, teamId);
+    if (!accessResult.success) {
+      return { success: false, error: accessResult.error };
+    }
+
+    if (!Array.isArray(members) || members.length === 0) {
+      return { success: false, error: "No members to import" };
+    }
+
+    if (members.length > 100) {
+      return { success: false, error: "Cannot import more than 100 members at once" };
+    }
+
+    const validated: TeamMember[] = [];
+    for (const member of members) {
+      const result = TeamMemberInputSchema.safeParse(member);
+      if (!result.success) {
+        const msg = result.error.issues[0]?.message ?? "Invalid member data";
+        return { success: false, error: `Invalid member "${member.name}": ${msg}` };
+      }
+      validated.push({ ...result.data, id: uuidv4() });
+    }
+
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    team.members.push(...validated);
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.membersImported", validated);
+
+    return {
+      success: true,
+      data: { imported: validated.length, members: validated, team: sanitizeTeam(team) },
+    };
+  } catch (error) {
+    console.error("Failed to import members:", error);
+    return { success: false, error: "Failed to import members" };
+  }
+};
+
 export {
   addMember,
   authenticateTeam,
@@ -676,6 +728,7 @@ export {
   getPublicTeam,
   getTeamByToken,
   getTeamName,
+  importMembers,
   removeGroup,
   removeMember,
   updateGroup,
