@@ -8,6 +8,7 @@ import { ScrollArea, Badge } from "@repo/ui";
 
 const SOON_THRESHOLD_HOURS = 2;
 const SCROLL_AREA_MAX_HEIGHT = 120;
+const EMPTY_GROUPS: Array<TeamGroup> = [];
 
 type TeamInsightsProps = {
   groups?: Array<TeamGroup>;
@@ -35,7 +36,7 @@ type MemberStatus = {
   member: TeamMember;
 };
 
-const TeamInsights = ({ members, groups = [] }: TeamInsightsProps) => {
+const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => {
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
   const tick = useSyncExternalStore(tickSubscribe, getTickSnapshot, getTickServerSnapshot);
 

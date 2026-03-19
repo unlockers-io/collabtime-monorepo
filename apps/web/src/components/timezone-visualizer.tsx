@@ -74,6 +74,8 @@ type OverlapData = {
 
 const HOURS_IN_DAY = 24;
 const TIME_AXIS_HOURS = [0, 6, 12, 18, 24];
+const EMPTY_GROUPS: Array<TeamGroup> = [];
+const EMPTY_COLLAPSED_IDS: Array<string> = [];
 const HOVER_HIDE_DELAY_MS = 800;
 const PULSE_DURATION_MS = 500;
 
@@ -298,8 +300,8 @@ const FindMeetingTimeButton = memo(function FindMeetingTimeButton({
 
 const TimezoneVisualizer = ({
   members,
-  groups = [],
-  collapsedGroupIds = [],
+  groups = EMPTY_GROUPS,
+  collapsedGroupIds = EMPTY_COLLAPSED_IDS,
   onToggleGroupCollapse,
 }: TimezoneVisualizerProps) => {
   const { resolvedTheme } = useTheme();
@@ -434,9 +436,7 @@ const TimezoneVisualizer = ({
     return ids;
   }, [validSelections, members]);
 
-  const totalPeopleSelected = useMemo(() => {
-    return selectedMemberIds.size;
-  }, [selectedMemberIds]);
+  const totalPeopleSelected = selectedMemberIds.size;
 
   const canShowOverlap = totalPeopleSelected >= 2;
 

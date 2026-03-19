@@ -52,7 +52,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
         body: JSON.stringify({ password: data.password }),
       });
 
-      const result = await response.json();
+      const result = await response.json() as { error?: string };
 
       if (!response.ok) {
         toast.error(result.error ?? "Incorrect password");

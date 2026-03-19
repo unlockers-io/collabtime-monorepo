@@ -24,14 +24,14 @@ import {
 } from "@repo/ui";
 
 type ParsedRow = {
+  errors: Array<string>;
   index: number;
+  matchedTimezone: (typeof COMMON_TIMEZONES)[number] | null;
   name: string;
   rawTimezone: string;
-  matchedTimezone: (typeof COMMON_TIMEZONES)[number] | null;
   title: string;
-  workingHoursStart: number;
   workingHoursEnd: number;
-  errors: string[];
+  workingHoursStart: number;
 };
 
 type ImportMembersDialogProps = {
@@ -46,9 +46,9 @@ const TEMPLATE_CSV = [
   "Carol Kim,Asia/Tokyo,Designer,9,18",
 ].join("\n");
 
-const normalizeHeader = (h: string) => h.toLowerCase().replace(/[\s_\-]/g, "");
+const normalizeHeader = (h: string) => h.toLowerCase().replaceAll(/[\s_-]/g, "");
 
-const findColIndex = (headers: string[], ...names: string[]): number => {
+const findColIndex = (headers: Array<string>, ...names: Array<string>): number => {
   for (const name of names) {
     const idx = headers.indexOf(normalizeHeader(name));
     if (idx !== -1) {return idx;}
@@ -56,10 +56,10 @@ const findColIndex = (headers: string[], ...names: string[]): number => {
   return -1;
 };
 
-const parseCSVLine = (line: string, sep: string): string[] => {
+const parseCSVLine = (line: string, sep: string): Array<string> => {
   if (sep === "\t") {return line.split("\t").map((s) => s.trim());}
 
-  const cells: string[] = [];
+  const cells: Array<string> = [];
   let cur = "";
   let inQ = false;
 
@@ -83,7 +83,7 @@ const parseCSVLine = (line: string, sep: string): string[] => {
   return cells;
 };
 
-const parseCSV = (text: string): ParsedRow[] => {
+const parseCSV = (text: string): Array<ParsedRow> => {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length === 0) {return [];}
 
@@ -117,7 +117,7 @@ const parseCSV = (text: string): ParsedRow[] => {
     endIdx = findColIndex(firstCells, "workend", "workhourend", "workinghoursend", "end");
   }
 
-  const rows: ParsedRow[] = [];
+  const rows: Array<ParsedRow> = [];
 
   for (let i = startRow; i < lines.length; i++) {
     const cells = parseCSVLine(lines[i], sep);
@@ -133,7 +133,7 @@ const parseCSV = (text: string): ParsedRow[] => {
     const workStart = Number.parseInt(workStartRaw, 10);
     const workEnd = Number.parseInt(workEndRaw, 10);
 
-    const errors: string[] = [];
+    const errors: Array<string> = [];
     if (!name) {errors.push("Name is required");}
     if (name.length > 100) {errors.push("Name too long (max 100 chars)");}
     if (!rawTimezone) {errors.push("Timezone is required");}
@@ -166,7 +166,7 @@ const handleDownloadTemplate = () => {
   const a = document.createElement("a");
   a.href = url;
   a.download = "team-members-template.csv";
-  document.body.appendChild(a);
+  document.body.append(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
@@ -175,7 +175,7 @@ const handleDownloadTemplate = () => {
 const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
-  const [rows, setRows] = useState<ParsedRow[] | null>(null);
+  const [rows, setRows] = useState<Array<ParsedRow> | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);

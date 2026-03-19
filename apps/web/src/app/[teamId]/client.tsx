@@ -37,7 +37,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {return new Set();}
     const stored = localStorage.getItem(COLLAPSED_GROUPS_KEY);
-    return stored ? new Set(JSON.parse(stored)) : new Set();
+    return stored ? new Set(JSON.parse(stored) as Array<string>) : new Set();
   });
   const [, startTransition] = useTransition();
   const [isEditingName, setIsEditingName] = useState(false);
@@ -192,7 +192,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
           };
         });
       } else if (event === "team.membersImported") {
-        const newMembers = data as TeamMember[];
+        const newMembers = data as Array<TeamMember>;
         updateTeamCache(teamId, (prev) => {
           if (!prev) {return prev;}
           const existingIds = new Set(prev.team.members.map((m) => m.id));

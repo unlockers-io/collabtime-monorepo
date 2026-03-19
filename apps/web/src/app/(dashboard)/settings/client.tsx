@@ -59,7 +59,7 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json() as { error?: string; url?: string };
 
       if (!response.ok) {
         toast.error(data.error ?? "Failed to start checkout");
@@ -88,7 +88,7 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json() as { error?: string; url?: string };
 
       if (!response.ok) {
         toast.error(data.error ?? "Failed to open billing portal");

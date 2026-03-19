@@ -67,9 +67,9 @@ const ProFeaturesDialog = ({ children, isAuthenticated = false }: ProFeaturesDia
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          {proFeatures.map((feature, index) => (
+          {proFeatures.map((feature) => (
             <div
-              key={index}
+              key={feature.title}
               className="flex gap-4 rounded-lg border border-border bg-secondary p-4"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">

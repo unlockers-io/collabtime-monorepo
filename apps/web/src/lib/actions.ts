@@ -60,7 +60,7 @@ const getSession = async (token: string): Promise<ServerSession | null> => {
   try {
     const data = await redis.get<string>(`session:${token}`);
     if (!data) {return null;}
-    return typeof data === "string" ? JSON.parse(data) : data;
+    return (typeof data === "string" ? JSON.parse(data) : data) as ServerSession;
   } catch {
     return null;
   }
@@ -199,7 +199,7 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
       return null;
     }
 
-    const team = typeof data === "string" ? JSON.parse(data) : data;
+    const team = (typeof data === "string" ? JSON.parse(data) : data) as TeamRecord;
 
     // Ensure groups array exists for backward compatibility
     if (!team.groups) {
@@ -494,7 +494,7 @@ const getTeamName = async (teamId: string): Promise<string | null> => {
     const data = await redis.get<string>(`team:${teamId}`);
     if (!data) {return null;}
 
-    const team = typeof data === "string" ? JSON.parse(data) : data;
+    const team = (typeof data === "string" ? JSON.parse(data) : data) as { name?: string };
     const name = typeof team?.name === "string" ? team.name.trim() : "";
     return name.length > 0 ? name : null;
   } catch (error) {
@@ -671,7 +671,7 @@ const importMembers = async (
   teamId: string,
   token: string,
   members: Array<Omit<TeamMember, "id">>,
-): Promise<ActionResult<{ imported: number; members: TeamMember[]; team: Team }>> => {
+): Promise<ActionResult<{ imported: number; members: Array<TeamMember>; team: Team }>> => {
   try {
     const accessResult = await verifyAdminAccessByToken(token, teamId);
     if (!accessResult.success) {
@@ -686,7 +686,7 @@ const importMembers = async (
       return { success: false, error: "Cannot import more than 100 members at once" };
     }
 
-    const validated: TeamMember[] = [];
+    const validated: Array<TeamMember> = [];
     for (const member of members) {
       const result = TeamMemberInputSchema.safeParse(member);
       if (!result.success) {

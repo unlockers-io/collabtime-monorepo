@@ -94,14 +94,14 @@ const SpaceSettingsDialog = ({
         body: JSON.stringify({ teamId }),
       });
 
-      const data = await response.json();
+      const data = await response.json() as { error?: string; space?: Space };
 
       if (!response.ok) {
         toast.error(data.error ?? "Failed to claim space");
         return;
       }
 
-      onSpaceUpdated(data.space);
+      onSpaceUpdated(data.space!);
       toast.success("Space claimed successfully!");
     } catch {
       toast.error("Failed to claim space");
@@ -144,7 +144,7 @@ const SpaceSettingsDialog = ({
         body: JSON.stringify(updates),
       });
 
-      const result = await response.json();
+      const result = await response.json() as { error?: string; space?: Space };
 
       if (!response.ok) {
         if (response.status === 402) {
@@ -155,7 +155,7 @@ const SpaceSettingsDialog = ({
         return;
       }
 
-      onSpaceUpdated(result.space);
+      onSpaceUpdated(result.space!);
       toast.success("Space settings updated!");
       setOpen(false);
     } catch {
