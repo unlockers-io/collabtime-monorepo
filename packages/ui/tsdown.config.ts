@@ -7,5 +7,7 @@ export default defineConfig({
   // CSS is built separately by Tailwind CLI; don't wipe dist before component build
   clean: false,
   platform: "neutral",
-  external: ["react", "react-dom"],
+  deps: {
+    neverBundle: ["react", "react-dom"],
+  },
 });
