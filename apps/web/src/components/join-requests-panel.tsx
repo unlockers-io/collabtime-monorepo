@@ -1,8 +1,9 @@
 "use client";
 
 import { Badge, Button, ScrollArea, Spinner } from "@repo/ui";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, ChevronDown, ChevronUp, X } from "lucide-react";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { approveJoinRequest, denyJoinRequest, getPendingJoinRequests } from "@/lib/actions";
@@ -19,30 +20,28 @@ type JoinRequestsPanelProps = {
   teamId: string;
 };
 
+const joinRequestsQueryKey = (teamId: string) => ["join-requests", teamId] as const;
+
 const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
-  const [requests, setRequests] = useState<Array<JoinRequest>>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const queryClient = useQueryClient();
 
-  const fetchRequests = useCallback(async () => {
-    setIsLoading(true);
-    const result = await getPendingJoinRequests(teamId);
+  const { data: requests = [], isLoading } = useQuery({
+    queryKey: joinRequestsQueryKey(teamId),
+    queryFn: async () => {
+      const result = await getPendingJoinRequests(teamId);
+      if (!result.success) {
+        throw new Error(result.error ?? "Failed to load join requests");
+      }
+      return result.data as Array<JoinRequest>;
+    },
+  });
 
-    if (result.success) {
-      setRequests(result.data);
-    } else {
-      toast.error(result.error ?? "Failed to load join requests");
-    }
-
-    setIsLoading(false);
-  }, [teamId]);
-
-  useEffect(() => {
-    // oxlint-disable-next-line react-hooks-js/set-state-in-effect
-    fetchRequests();
-  }, [fetchRequests]);
+  const invalidateRequests = () => {
+    queryClient.invalidateQueries({ queryKey: joinRequestsQueryKey(teamId) });
+  };
 
   const handleApprove = (requestId: string) => {
     setPendingAction(requestId);
@@ -51,7 +50,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
 
       if (result.success) {
         toast.success("Request approved");
-        await fetchRequests();
+        invalidateRequests();
       } else {
         toast.error(result.error ?? "Failed to approve request");
       }
@@ -67,7 +66,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
 
       if (result.success) {
         toast.success("Request denied");
-        await fetchRequests();
+        invalidateRequests();
       } else {
         toast.error(result.error ?? "Failed to deny request");
       }
@@ -104,7 +103,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
       >
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
-            <Bell className="h-4 w-4" />
+            <Bell className="h-4 w-4" aria-hidden="true" />
           </div>
           <span className="text-sm font-medium text-foreground">Pending Join Requests</span>
           <Badge className="border-transparent bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
@@ -112,9 +111,9 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
           </Badge>
         </div>
         {isExpanded ? (
-          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          <ChevronUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         )}
       </button>
 

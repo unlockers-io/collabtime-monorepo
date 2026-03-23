@@ -1,11 +1,12 @@
 "use client";
 
 import { Button, Spinner } from "@repo/ui";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Shield, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Nav } from "@/components/nav";
@@ -23,35 +24,21 @@ const Home = () => {
   const router = useRouter();
   const { data: session } = useSession();
   const [isCreating, setIsCreating] = useState(false);
-  const [myTeams, setMyTeams] = useState<Array<MyTeam>>([]);
-  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
 
   const isAuthenticated = Boolean(session?.user);
 
-  // Fetch user's teams from DB
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setMyTeams([]);
-      return;
-    }
-
-    const fetchTeams = async () => {
-      setIsLoadingTeams(true);
-      try {
-        const response = await fetch("/api/teams");
-        if (response.ok) {
-          const data = (await response.json()) as { teams: Array<MyTeam> };
-          setMyTeams(data.teams);
-        }
-      } catch {
-        // Silently fail — teams list is non-critical
-      } finally {
-        setIsLoadingTeams(false);
+  const { data: myTeams = [], isLoading: isLoadingTeams } = useQuery({
+    queryKey: ["my-teams"],
+    queryFn: async () => {
+      const response = await fetch("/api/teams");
+      if (!response.ok) {
+        throw new Error("Failed to fetch teams");
       }
-    };
-
-    fetchTeams();
-  }, [isAuthenticated]);
+      const data = (await response.json()) as { teams: Array<MyTeam> };
+      return data.teams;
+    },
+    enabled: isAuthenticated,
+  });
 
   const handleCreateTeam = async () => {
     if (!isAuthenticated) {
@@ -173,7 +160,7 @@ const Home = () => {
                         </div>
                       </Link>
                       {team.role === "admin" && (
-                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        <Shield className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       )}
                     </motion.div>
                   ))}

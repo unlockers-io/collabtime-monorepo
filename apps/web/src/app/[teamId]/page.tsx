@@ -1,10 +1,12 @@
 import { prisma } from "@repo/db";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { getTeamName, validateTeam } from "@/lib/actions";
 import { auth } from "@/lib/auth-server";
+import { isTeamRole } from "@/types";
+import type { TeamStatus } from "@/types";
 
 import { TeamPageClient } from "./client";
 
@@ -29,15 +31,13 @@ export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metad
   };
 };
 
-type TeamStatus = "admin" | "member" | "pending" | "none";
-
 const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus> => {
   const membership = await prisma.membership.findUnique({
     where: { userId_teamId: { userId, teamId } },
   });
 
-  if (membership) {
-    return membership.role as TeamStatus;
+  if (membership && isTeamRole(membership.role)) {
+    return membership.role;
   }
 
   const joinRequest = await prisma.joinRequest.findUnique({
@@ -63,15 +63,23 @@ const TeamPage = async ({ params }: TeamPageProps) => {
     headers: await headers(),
   });
 
-  // Check if team is private and user is not authenticated
   const space = await prisma.space.findUnique({
     where: { teamId },
   });
 
-  if (space?.isPrivate && !session) {
-    // Redirect to login for private teams
-    const { redirect } = await import("next/navigation");
-    redirect(`/login?redirect=/${teamId}`);
+  if (space?.isPrivate) {
+    if (!session) {
+      redirect(`/login?redirect=/${teamId}`);
+    }
+
+    // Authenticated but not a member — block access to private teams
+    const membership = await prisma.membership.findUnique({
+      where: { userId_teamId: { userId: session.user.id, teamId } },
+    });
+
+    if (!membership) {
+      notFound();
+    }
   }
 
   const teamStatus: TeamStatus = session ? await getTeamStatus(session.user.id, teamId) : "none";

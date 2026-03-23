@@ -21,11 +21,9 @@ import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { updateTeamName, updateMember, requestToJoin } from "@/lib/actions";
 import { useRealtime } from "@/lib/realtime-client";
 import { isCurrentlyWorking, getMinutesUntilAvailable } from "@/lib/timezones";
-import type { TeamGroup, TeamMember } from "@/types";
+import type { TeamGroup, TeamMember, TeamStatus } from "@/types";
 
 import Loading from "./loading";
-
-type TeamStatus = "admin" | "member" | "pending" | "none";
 
 type TeamPageClientProps = {
   isAuthenticated: boolean;

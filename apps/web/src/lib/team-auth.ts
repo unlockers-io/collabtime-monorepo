@@ -4,6 +4,7 @@ import { prisma } from "@repo/db";
 import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth-server";
+import { isTeamRole } from "@/types";
 import type { TeamRole } from "@/types";
 
 type TeamAuthResult = {
@@ -37,9 +38,13 @@ const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
     return null;
   }
 
+  if (!isTeamRole(membership.role)) {
+    return null;
+  }
+
   return {
     userId: session.user.id,
-    role: membership.role as TeamRole,
+    role: membership.role,
   };
 };
 
