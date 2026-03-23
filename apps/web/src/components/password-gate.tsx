@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import { Lock, ArrowRight, Eye, EyeOff, Globe } from "lucide-react";
 import { Button, Input, Label, Card, Spinner } from "@repo/ui";
+import { Lock, ArrowRight, Eye, EyeOff, Globe } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 type PasswordGateProps = {
   spaceId: string;
@@ -28,7 +28,9 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
   // Detect desktop to enable autofocus only on non-touch devices
   // This prevents layout shift from keyboard popup on mobile
   const [isDesktop] = useState(() => {
-    if (typeof window === "undefined") {return false;}
+    if (typeof window === "undefined") {
+      return false;
+    }
     return window.matchMedia("(pointer: fine)").matches;
   });
 
@@ -52,7 +54,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
         body: JSON.stringify({ password: data.password }),
       });
 
-      const result = await response.json() as { error?: string };
+      const result = (await response.json()) as { error?: string };
 
       if (!response.ok) {
         toast.error(result.error ?? "Incorrect password");
@@ -106,7 +108,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>

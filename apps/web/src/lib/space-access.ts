@@ -65,7 +65,7 @@ const createSpaceAccessToken = async (spaceId: string, clientIp: string): Promis
   return `${payloadStr}.${signature}`;
 };
 
-type VerificationResult = { payload: TokenPayload; valid: true; } | { reason: string; valid: false; };
+type VerificationResult = { payload: TokenPayload; valid: true } | { reason: string; valid: false };
 
 /**
  * Verify a space access token.
@@ -137,16 +137,22 @@ const hasSpaceAccess = async (
   strictIpCheck = false,
 ): Promise<boolean> => {
   const cookieHeader = request.headers.get("cookie");
-  if (!cookieHeader) {return false;}
+  if (!cookieHeader) {
+    return false;
+  }
 
   const cookieName = `${SPACE_ACCESS_COOKIE_PREFIX}${spaceId}`;
   const cookies = cookieHeader.split(";").map((c) => c.trim());
   const accessCookie = cookies.find((c) => c.startsWith(`${cookieName}=`));
 
-  if (!accessCookie) {return false;}
+  if (!accessCookie) {
+    return false;
+  }
 
   const token = accessCookie.split("=")[1];
-  if (!token) {return false;}
+  if (!token) {
+    return false;
+  }
 
   const clientIp = strictIpCheck
     ? (request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??

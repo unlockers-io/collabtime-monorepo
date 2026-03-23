@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
-import type { TeamGroup } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
+import React from "react";
+
+import type { TeamGroup } from "@/types";
 
 type GroupSelectorProps = {
   groups: Array<TeamGroup>;

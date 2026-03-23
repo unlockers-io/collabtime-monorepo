@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import * as React from "react";
 
 import { cn } from "../lib/utils";
 
@@ -9,7 +9,9 @@ const useIsTouchDevice = () => {
   const [isTouch, setIsTouch] = React.useState(false);
 
   React.useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) { return; }
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
     const mq = window.matchMedia("(pointer: coarse)");
     const handler = (event: MediaQueryListEvent | MediaQueryList) => {
       setIsTouch(event.matches);
@@ -45,7 +47,9 @@ const Tooltip = ({
 
   // Sync controlled open when provided
   React.useEffect(() => {
-    if (controlledOpen === undefined) { return; }
+    if (controlledOpen === undefined) {
+      return;
+    }
     setOpen(controlledOpen);
   }, [controlledOpen]);
 

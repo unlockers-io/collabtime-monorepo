@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { useEffect } from "react";
 
 type ErrorProps = {
   error: Error & { digest?: string };
@@ -27,7 +27,7 @@ const Error = ({ error, reset }: ErrorProps) => {
 
         <button
           onClick={reset}
-          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 font-medium text-primary-foreground transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 font-medium text-primary-foreground transition-all hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           <RefreshCw className="h-4.5 w-4.5" />
           Try Again

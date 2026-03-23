@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { Clock } from "lucide-react";
+import { useSyncExternalStore } from "react";
 
 import { getUserTimezone, formatTimezoneAbbreviation } from "@/lib/timezones";
 import { useSecondTick } from "@/lib/use-tick";
@@ -43,7 +43,7 @@ const CurrentTimeDisplay = () => {
   // Show placeholder during SSR (viewerTimezone is empty string on server)
   if (!viewerTimezone) {
     return (
-      <div className="flex h-9 py-2 px-3 items-center gap-2 rounded-lg shadow-xs border border-border bg-white font-medium text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
+      <div className="flex h-9 items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 font-medium text-neutral-700 shadow-xs dark:bg-neutral-900 dark:text-neutral-300">
         <Clock className="h-4 w-4 text-neutral-500" />
         <span className="tabular-nums">--:--:-- --</span>
       </div>
@@ -55,9 +55,9 @@ const CurrentTimeDisplay = () => {
   const timezoneAbbr = formatTimezoneAbbreviation(viewerTimezone);
 
   return (
-    <div className="flex h-9 py-2 px-3 items-center gap-2 rounded-lg shadow-xs border border-border  bg-white font-medium text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 ">
+    <div className="flex h-9 items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 font-medium text-neutral-700 shadow-xs dark:bg-neutral-900 dark:text-neutral-300">
       <Clock className="h-4 w-4 text-neutral-500" />
-      <span className="tabular-nums text-sm">{currentTime}</span>
+      <span className="text-sm tabular-nums">{currentTime}</span>
       <span className="text-xs text-neutral-500 dark:text-neutral-400">{timezoneAbbr}</span>
     </div>
   );

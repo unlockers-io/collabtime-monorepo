@@ -3,7 +3,9 @@
 /* eslint-disable react/prop-types */
 import * as React from "react";
 import type { FieldError as ReactHookFormFieldError } from "react-hook-form";
+
 import { cn } from "../lib/utils";
+
 import { Label } from "./label";
 
 type FieldProps = React.HTMLAttributes<HTMLDivElement> & {
@@ -24,7 +26,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
           "data-[invalid=true]:text-red-600 dark:data-[invalid=true]:text-red-400",
           orientation === "vertical" && "flex-col",
           orientation === "horizontal" &&
-            "flex-row items-center [&>[data-slot=field-label]]:flex-auto has-[>[data-slot=field-content]]:items-start",
+            "flex-row items-center has-[>[data-slot=field-content]]:items-start [&>[data-slot=field-label]]:flex-auto",
           orientation === "responsive" && "flex-col sm:flex-row sm:items-center",
           className,
         )}
@@ -59,7 +61,7 @@ const FieldLabel = React.forwardRef<
       ref={ref}
       data-slot="field-label"
       className={cn(
-        "group/field-label flex w-fit items-center gap-2 text-sm font-medium leading-snug text-foreground",
+        "group/field-label flex w-fit items-center gap-2 text-sm leading-snug font-medium text-foreground",
         "group-data-[invalid=true]/field:text-destructive",
         "group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50",
         className,
@@ -111,7 +113,9 @@ const FieldError = React.forwardRef<HTMLParagraphElement, FieldErrorProps>(
         .map(String)
         .at(0);
 
-    if (!message) { return null; }
+    if (!message) {
+      return null;
+    }
 
     return (
       <p

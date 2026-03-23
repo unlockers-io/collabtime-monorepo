@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import { Mail, Lock, User, ArrowRight } from "lucide-react";
-import { signUp } from "@/lib/auth-client";
 import { Button, Input, Label, Card, Spinner } from "@repo/ui";
+import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { signUp } from "@/lib/auth-client";
 
 const signupSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
@@ -76,7 +77,7 @@ const SignupPage = () => {
           <div className="flex flex-col gap-2">
             <Label htmlFor="name">Name</Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Controller
                 control={control}
                 name="name"
@@ -101,7 +102,7 @@ const SignupPage = () => {
           <div className="flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Controller
                 control={control}
                 name="email"
@@ -126,7 +127,7 @@ const SignupPage = () => {
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Controller
                 control={control}
                 name="password"

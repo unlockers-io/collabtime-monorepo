@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
@@ -29,7 +30,9 @@ const RealtimeMount = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  if (!Provider) {return <>{children}</>;}
+  if (!Provider) {
+    return <>{children}</>;
+  }
   return <Provider api={{ url: "/api/realtime" }}>{children}</Provider>;
 };
 

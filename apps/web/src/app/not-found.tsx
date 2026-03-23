@@ -1,8 +1,7 @@
-import Link from "next/link";
-import { Home } from "lucide-react";
-
 import { Card } from "@repo/ui";
 import { Button } from "@repo/ui";
+import { Home } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
   title: "404",
