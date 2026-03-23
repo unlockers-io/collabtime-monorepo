@@ -1,10 +1,5 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { toast } from "sonner";
-import { Pencil, Trash2 } from "lucide-react";
-import type { TeamGroup, TeamMember } from "@/types";
-import { removeMember } from "@/lib/actions";
 import {
   Button,
   Spinner,
@@ -13,16 +8,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@repo/ui";
+import { Badge } from "@repo/ui";
+import { Pencil, Trash2 } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
+
+import { EditMemberDialog } from "@/components/edit-member-dialog";
+import { useDrag } from "@/contexts/drag-context";
+import { removeMember } from "@/lib/actions";
 import {
   formatTimezoneLabel,
   isCurrentlyWorking,
   getMinutesUntilAvailable,
   formatTimeUntilAvailable,
 } from "@/lib/timezones";
-import { Badge } from "@repo/ui";
 import { cn, formatHour } from "@/lib/utils";
-import { useDrag } from "@/contexts/drag-context";
-import { EditMemberDialog } from "@/components/edit-member-dialog";
+import type { TeamGroup, TeamMember } from "@/types";
 
 type MemberCardProps = {
   canEdit: boolean;
@@ -31,13 +32,11 @@ type MemberCardProps = {
   onMemberRemoved: (memberId: string) => void;
   onMemberUpdated: (member: TeamMember) => void;
   teamId: string;
-  token: string | null;
 };
 
 const MemberCard = ({
   member,
   teamId,
-  token,
   groups,
   canEdit,
   onMemberRemoved,
@@ -93,9 +92,11 @@ const MemberCard = ({
   }, [member.timezone, member.workingHoursStart, member.workingHoursEnd]);
 
   const handleRemove = () => {
-    if (!canEdit || !token) {return;}
+    if (!canEdit) {
+      return;
+    }
     startTransition(async () => {
-      const result = await removeMember(teamId, token, member.id);
+      const result = await removeMember(teamId, member.id);
       if (result.success) {
         onMemberRemoved(member.id);
       } else {
@@ -135,7 +136,7 @@ const MemberCard = ({
               {member.name.charAt(0).toUpperCase()}
             </div>
             {isAvailable && (
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-green-500">
+              <span className="absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-green-500">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
               </span>
             )}
@@ -215,11 +216,10 @@ const MemberCard = ({
         </div>
       </div>
 
-      {canEdit && token && (
+      {canEdit && (
         <EditMemberDialog
           member={member}
           teamId={teamId}
-          token={token}
           groups={groups}
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}

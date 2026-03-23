@@ -7,22 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum SubscriptionPlan {
-  FREE
-  PRO
-}
-
-enum SubscriptionStatus {
-  incomplete
-  incomplete_expired
-  trialing
-  active
-  past_due
-  canceled
-  unpaid
-  paused
-}
-
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
@@ -32,16 +16,13 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  subscriptionPlan SubscriptionPlan @default(FREE)
-  stripeCustomerId String?          @unique
-
   accounts      Account[]
   sessions      Session[]
-  subscriptions Subscription[]
   spaces        Space[]
+  memberships   Membership[]
+  joinRequests  JoinRequest[]
 
   @@index([email])
-  @@index([stripeCustomerId])
 }
 
 model Session {
@@ -91,24 +72,33 @@ model Verification {
   @@index([identifier])
 }
 
-model Subscription {
-  id                   String             @id @default(cuid())
-  plan                 SubscriptionPlan   @default(FREE)
-  referenceId          String             @unique
-  stripeCustomerId     String?
-  stripeSubscriptionId String?            @unique
-  status               SubscriptionStatus @default(incomplete)
-  periodStart          DateTime?
-  periodEnd            DateTime?
-  cancelAtPeriodEnd    Boolean            @default(false)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  userId               String
-  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+model Membership {
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  role      String   @default("member") // "admin" | "member"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
   @@index([userId])
-  @@index([stripeSubscriptionId])
-  @@index([status])
+  @@index([teamId])
+}
+
+model JoinRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  status    String   @default("pending") // "pending" | "approved" | "denied"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([teamId, status])
+  @@index([userId])
 }
 
 model Space {

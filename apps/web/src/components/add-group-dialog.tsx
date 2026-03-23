@@ -1,13 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import { Users } from "lucide-react";
-import { createGroup } from "@/lib/actions";
-import type { TeamGroup } from "@/types";
 import {
   Button,
   Dialog,
@@ -23,11 +16,18 @@ import {
   Input,
   Spinner,
 } from "@repo/ui";
+import { Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { createGroup } from "@/lib/actions";
+import type { TeamGroup } from "@/types";
 
 type AddGroupDialogProps = {
   onGroupAdded: (group: TeamGroup) => void;
   teamId: string;
-  token: string;
 };
 
 const formSchema = z.object({
@@ -40,7 +40,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const AddGroupDialog = ({ teamId, token, onGroupAdded }: AddGroupDialogProps) => {
+const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
   const [open, setOpen] = useState(false);
 
   const form = useForm<FormValues>({
@@ -61,7 +61,7 @@ const AddGroupDialog = ({ teamId, token, onGroupAdded }: AddGroupDialogProps) =>
   }, [open, reset]);
 
   const onSubmit = async (data: FormValues) => {
-    const result = await createGroup(teamId, token, { name: data.name });
+    const result = await createGroup(teamId, { name: data.name });
 
     if (result.success) {
       setOpen(false);

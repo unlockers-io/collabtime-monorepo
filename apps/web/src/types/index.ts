@@ -10,6 +10,7 @@ type TeamMember = {
   name: string;
   timezone: string;
   title: string;
+  userId?: string; // Links to authenticated user; undefined for manually-added members
   workingHoursEnd: number; // 0-23 in their local timezone
   workingHoursStart: number; // 0-23 in their local timezone
 };

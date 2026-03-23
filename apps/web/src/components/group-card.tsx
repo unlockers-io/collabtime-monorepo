@@ -1,12 +1,13 @@
 "use client";
 
+import { Button, Input, Spinner, cn } from "@repo/ui";
+import { Pencil, Trash2, Users } from "lucide-react";
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Pencil, Trash2, Users } from "lucide-react";
-import type { TeamGroup } from "@/types";
-import { removeGroup, updateGroup } from "@/lib/actions";
-import { Button, Input, Spinner, cn } from "@repo/ui";
+
 import { useDrag } from "@/contexts/drag-context";
+import { removeGroup, updateGroup } from "@/lib/actions";
+import type { TeamGroup } from "@/types";
 
 type GroupHeaderProps = {
   canEdit: boolean;
@@ -16,13 +17,11 @@ type GroupHeaderProps = {
   onGroupUpdated: (group: TeamGroup) => void;
   onMemberDropped?: (memberId: string, groupId: string) => void;
   teamId: string;
-  token: string;
 };
 
 const GroupCard = ({
   group,
   teamId,
-  token,
   memberCount,
   canEdit,
   onGroupUpdated,
@@ -44,7 +43,9 @@ const GroupCard = ({
   }, [group.name]);
 
   const handleSave = useCallback(() => {
-    if (!canEdit) {return;}
+    if (!canEdit) {
+      return;
+    }
     const trimmedName = editingName.trim();
     if (!trimmedName || trimmedName === group.name) {
       setIsEditing(false);
@@ -53,7 +54,7 @@ const GroupCard = ({
 
     setIsEditing(false);
     startTransition(async () => {
-      const result = await updateGroup(teamId, token, group.id, {
+      const result = await updateGroup(teamId, group.id, {
         name: trimmedName,
       });
       if (result.success) {
@@ -62,7 +63,7 @@ const GroupCard = ({
         toast.error(result.error);
       }
     });
-  }, [canEdit, editingName, group, teamId, token, onGroupUpdated]);
+  }, [canEdit, editingName, group, teamId, onGroupUpdated]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -73,9 +74,11 @@ const GroupCard = ({
   };
 
   const handleRemove = () => {
-    if (!canEdit) {return;}
+    if (!canEdit) {
+      return;
+    }
     startTransition(async () => {
-      const result = await removeGroup(teamId, token, group.id);
+      const result = await removeGroup(teamId, group.id);
       if (result.success) {
         onGroupRemoved(group.id);
         toast.success(`Group "${group.name}" removed`);
@@ -86,7 +89,9 @@ const GroupCard = ({
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (!canEdit) {return;}
+    if (!canEdit) {
+      return;
+    }
     if (isCurrentGroup) {
       e.dataTransfer.dropEffect = "none";
       return;
@@ -101,7 +106,9 @@ const GroupCard = ({
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    if (!canEdit) {return;}
+    if (!canEdit) {
+      return;
+    }
     e.preventDefault();
     setIsDragOver(false);
     const memberId = e.dataTransfer.getData("text/plain");
@@ -139,7 +146,7 @@ const GroupCard = ({
             size="icon-sm"
             onClick={handleRemove}
             disabled={isPending}
-            className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
             aria-label={`Remove group ${group.name}`}
           >
             {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
@@ -176,7 +183,7 @@ const GroupCard = ({
 
         {/* Member count badge */}
         <div className="mt-auto">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground tabular-nums">
             <Users className="h-3 w-3" />
             {memberCount} {memberCount === 1 ? "member" : "members"}
           </span>

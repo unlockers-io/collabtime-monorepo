@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { z } from "zod";
+import { prisma } from "@repo/db";
 import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
 import { auth } from "@/lib/auth-server";
-import { prisma, SubscriptionPlan } from "@repo/db";
 
 const updateSpaceSchema = z.object({
   isPrivate: z.boolean().optional(),
@@ -80,21 +81,6 @@ export const PATCH = async (request: Request, { params }: Params) => {
 
     const body = await request.json();
     const updates = updateSpaceSchema.parse(body);
-
-    // Check user subscription for PRO features
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    });
-
-    const isPro = user?.subscriptionPlan === SubscriptionPlan.PRO;
-
-    // Validate PRO features
-    if (updates.isPrivate && !isPro) {
-      return NextResponse.json(
-        { error: "Private spaces require PRO subscription" },
-        { status: 402 },
-      );
-    }
 
     // Build update data
     const updateData: {

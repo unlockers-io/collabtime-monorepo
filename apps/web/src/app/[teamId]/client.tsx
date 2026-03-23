@@ -1,82 +1,78 @@
 "use client";
 
+import { Button, ScrollArea, Spinner } from "@repo/ui";
+import { Clock, FolderKanban, LogIn, UserPlus, Users } from "lucide-react";
 import { motion } from "motion/react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Clock, FolderKanban, Users } from "lucide-react";
-import type { TeamGroup, TeamMember } from "@/types";
+
 import { AddGroupDialog } from "@/components/add-group-dialog";
 import { AddMemberDialog } from "@/components/add-member-dialog";
-import { ImportMembersDialog } from "@/components/import-members-dialog";
 import { GroupCard } from "@/components/group-card";
+import { ImportMembersDialog } from "@/components/import-members-dialog";
+import { JoinRequestsPanel } from "@/components/join-requests-panel";
 import { MemberCard } from "@/components/member-card";
-import { Button, ScrollArea } from "@repo/ui";
 import { Nav } from "@/components/nav";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
-import { AdminUnlockDialog } from "@/components/team-auth-dialog";
-import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
-import { useVisitedTeams } from "@/hooks/use-visited-teams";
-import { useRealtime } from "@/lib/realtime-client";
-import { updateTeamName, updateMember } from "@/lib/actions";
-import { clearTeamSession, writeTeamSession } from "@/lib/team-session";
 import { DragProvider } from "@/contexts/drag-context";
+import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
+import { updateTeamName, updateMember, requestToJoin } from "@/lib/actions";
+import { useRealtime } from "@/lib/realtime-client";
 import { isCurrentlyWorking, getMinutesUntilAvailable } from "@/lib/timezones";
+import type { TeamGroup, TeamMember } from "@/types";
+
 import Loading from "./loading";
 
+type TeamStatus = "admin" | "member" | "pending" | "none";
+
 type TeamPageClientProps = {
-  initialToken: string | null;
+  isAuthenticated: boolean;
   teamId: string;
+  teamStatus: TeamStatus;
 };
 
 const COLLAPSED_GROUPS_KEY = "collabtime-collapsed-groups";
 
-const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
-  const [token, setToken] = useState<string | null>(initialToken);
-  const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);
+const TeamPageClient = ({
+  teamId,
+  isAuthenticated,
+  teamStatus: initialStatus,
+}: TeamPageClientProps) => {
+  const [teamStatus, setTeamStatus] = useState<TeamStatus>(initialStatus);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") {return new Set();}
+    if (typeof window === "undefined") {
+      return new Set();
+    }
     const stored = localStorage.getItem(COLLAPSED_GROUPS_KEY);
     return stored ? new Set(JSON.parse(stored) as Array<string>) : new Set();
   });
   const [, startTransition] = useTransition();
   const [isEditingName, setIsEditingName] = useState(false);
-  const { saveVisitedTeam } = useVisitedTeams();
   const [editingTeamName, setEditingTeamName] = useState("");
+  const [isRequestingJoin, setIsRequestingJoin] = useState(false);
   const lastRemovalRef = useRef<{ id: string; ts: number }>({ id: "", ts: 0 });
 
+  const isAdmin = teamStatus === "admin";
+  const isMember = teamStatus === "admin" || teamStatus === "member";
+
   // Fetch team data with TanStack Query
-  const {
-    data: teamData,
-    error: teamError,
-    refetch: refetchTeam,
-  } = useTeamQuery({
-    teamId,
-    token,
-  });
+  const { data: teamData, error: teamError } = useTeamQuery({ teamId });
 
   const updateTeamCache = useUpdateTeamCache();
 
-  // Handle query error (e.g., session expired)
   useEffect(() => {
     if (teamError) {
-      clearTeamSession(teamId).catch(() => {});
-      // oxlint-disable-next-line react-hooks-js/set-state-in-effect
-      setToken(null);
       toast.error(teamError.message);
     }
-  }, [teamError, teamId]);
+  }, [teamError]);
 
   const members = useMemo(() => teamData?.team?.members ?? [], [teamData?.team?.members]);
   const groups = useMemo(() => teamData?.team?.groups ?? [], [teamData?.team?.groups]);
 
-  // Derive team name from query data
   const teamName = teamData?.team?.name ?? "";
-
-  // Use editing state or current value
   const displayName = isEditingName ? editingTeamName : teamName;
-
-  const isAdmin = useMemo(() => teamData?.role === "admin", [teamData]);
 
   useEffect(() => {
     localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify(Array.from(collapsedGroups)));
@@ -87,23 +83,17 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       setCollapsedGroups((prev) => {
         const next = new Set(prev);
         if (next.has(groupId)) {
-          // Expanding - always allowed
           next.delete(groupId);
         } else {
-          // Collapsing - check if this would leave at least one member visible
-          // Calculate how many members would be visible after this collapse
           const collapsedAfter = new Set([...Array.from(prev), groupId]);
-
-          // Count visible members: ungrouped + members in non-collapsed groups
           const ungroupedCount = members.filter((m) => !m.groupId).length;
           const visibleGroupedCount = members.filter((m) => {
-            if (!m.groupId) {return false;} // Ungrouped counted separately
+            if (!m.groupId) {
+              return false;
+            }
             return !collapsedAfter.has(m.groupId);
           }).length;
-
           const totalVisibleAfter = ungroupedCount + visibleGroupedCount;
-
-          // Only allow collapse if at least one member remains visible
           if (totalVisibleAfter > 0) {
             next.add(groupId);
           }
@@ -114,9 +104,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
     [members],
   );
 
-  // Subscribe to realtime events for this team - updates TanStack Query cache
+  // Subscribe to realtime events — all members can receive updates
   useRealtime({
-    channels: token ? [`team-${teamId}`] : [],
+    channels: isMember ? [`team-${teamId}`] : [],
     events: [
       "team.memberAdded",
       "team.memberRemoved",
@@ -133,8 +123,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       if (event === "team.memberAdded") {
         const newMember = data as TeamMember;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
-          // Avoid duplicates
+          if (!prev) {
+            return prev;
+          }
           if (prev.team.members.some((m) => m.id === newMember.id)) {
             return prev;
           }
@@ -151,17 +142,16 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
         });
       } else if (event === "team.memberRemoved") {
         const { memberId } = data as { memberId: string };
-
-        // Dedupe rapid double-deliveries of the same removal event
         if (
           lastRemovalRef.current.id === memberId &&
           Date.now() - lastRemovalRef.current.ts < 1500
         ) {
           return;
         }
-
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           const member = prev.team.members.find((m) => m.id === memberId);
           if (member) {
             lastRemovalRef.current = { id: memberId, ts: Date.now() };
@@ -180,7 +170,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.memberUpdated") {
         const updatedMember = data as TeamMember;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -194,10 +186,14 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.membersImported") {
         const newMembers = data as Array<TeamMember>;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           const existingIds = new Set(prev.team.members.map((m) => m.id));
           const toAdd = newMembers.filter((m) => !existingIds.has(m.id));
-          if (toAdd.length === 0) {return prev;}
+          if (toAdd.length === 0) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -209,7 +205,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.membersReordered") {
         const { order } = data as { order: Array<string> };
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           const map = new Map(prev.team.members.map((m) => [m.id, m]));
           return {
             ...prev,
@@ -222,17 +220,20 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.nameUpdated") {
         const { name } = data as { name: string };
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: { ...prev.team, name },
           };
         });
-        // teamName is derived from query data, no need to set state
       } else if (event === "team.groupCreated") {
         const newGroup = data as TeamGroup;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           if (prev.team.groups.some((g) => g.id === newGroup.id)) {
             return prev;
           }
@@ -247,7 +248,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.groupUpdated") {
         const updatedGroup = data as TeamGroup;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -259,7 +262,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.groupRemoved") {
         const { groupId } = data as { groupId: string };
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -274,7 +279,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.groupsReordered") {
         const { order } = data as { order: Array<string> };
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           const map = new Map(prev.team.groups.map((g) => [g.id, g]));
           return {
             ...prev,
@@ -293,19 +300,15 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
     },
   });
 
-  // Save team to visited teams on mount and when members/name change
-  useEffect(() => {
-    if (!teamData?.team) {return;}
-    saveVisitedTeam(teamId, members.length, teamName);
-  }, [teamData?.team, teamId, members.length, teamName, saveVisitedTeam]);
-
   const handleStartEditName = useCallback(() => {
     setEditingTeamName(teamName);
     setIsEditingName(true);
   }, [teamName]);
 
   const handleSaveName = () => {
-    if (!isAdmin || !token) {return;}
+    if (!isAdmin) {
+      return;
+    }
 
     const trimmedName = editingTeamName.trim();
     setIsEditingName(false);
@@ -315,7 +318,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
     }
 
     startTransition(async () => {
-      const result = await updateTeamName(teamId, token, trimmedName);
+      const result = await updateTeamName(teamId, trimmedName);
       if (!result.success) {
         toast.error(result.error);
       }
@@ -326,17 +329,36 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
     setIsEditingName(false);
   }, []);
 
+  const handleRequestJoin = async () => {
+    setIsRequestingJoin(true);
+    try {
+      const result = await requestToJoin(teamId);
+      if (result.success) {
+        setTeamStatus("pending");
+        toast.success("Join request sent! The team admin will review it.");
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Failed to send join request");
+    } finally {
+      setIsRequestingJoin(false);
+    }
+  };
+
   // Sort members: available first, then by time until available
   const orderedMembers = useMemo(() => {
     return [...members].sort((a, b) => {
       const aIsAvailable = isCurrentlyWorking(a.timezone, a.workingHoursStart, a.workingHoursEnd);
       const bIsAvailable = isCurrentlyWorking(b.timezone, b.workingHoursStart, b.workingHoursEnd);
 
-      // Available members come first
-      if (aIsAvailable && !bIsAvailable) {return -1;}
-      if (!aIsAvailable && bIsAvailable) {return 1;}
+      if (aIsAvailable && !bIsAvailable) {
+        return -1;
+      }
+      if (!aIsAvailable && bIsAvailable) {
+        return 1;
+      }
 
-      // If both unavailable, sort by time until available
       if (!aIsAvailable && !bIsAvailable) {
         const aMinutes = getMinutesUntilAvailable(
           a.timezone,
@@ -351,19 +373,19 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
         return aMinutes - bMinutes;
       }
 
-      // If both available, keep original order
       return 0;
     });
   }, [members]);
 
-  // Convert Set to array for stable prop reference
   const collapsedGroupIds = useMemo(() => Array.from(collapsedGroups), [collapsedGroups]);
 
   // Callbacks for local state updates (realtime handles cross-user sync)
   const handleMemberAdded = useCallback(
     (newMember: TeamMember) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         if (prev.team.members.some((m) => m.id === newMember.id)) {
           return prev;
         }
@@ -382,7 +404,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleMemberRemoved = useCallback(
     (memberId: string) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
@@ -398,7 +422,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleMemberUpdated = useCallback(
     (updatedMember: TeamMember) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
@@ -414,7 +440,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleGroupAdded = useCallback(
     (newGroup: TeamGroup) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         if (prev.team.groups.some((g) => g.id === newGroup.id)) {
           return prev;
         }
@@ -433,7 +461,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleGroupUpdated = useCallback(
     (updatedGroup: TeamGroup) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
@@ -449,13 +479,14 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleGroupRemoved = useCallback(
     (groupId: string) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
             ...prev.team,
             groups: prev.team.groups.filter((g) => g.id !== groupId),
-            // Unassign members from the removed group
             members: prev.team.members.map((m) =>
               m.groupId === groupId ? { ...m, groupId: undefined } : m,
             ),
@@ -468,22 +499,27 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
 
   const handleMemberDroppedOnGroup = useCallback(
     async (memberId: string, groupId: string) => {
-      if (!isAdmin || !token) {
+      if (!isAdmin) {
         toast.error("Admin access required");
         return;
       }
 
       const member = members.find((m) => m.id === memberId);
-      if (!member) {return;}
+      if (!member) {
+        return;
+      }
 
-      // Skip if already in this group
-      if (member.groupId === groupId) {return;}
+      if (member.groupId === groupId) {
+        return;
+      }
 
       const previousGroupId = member.groupId;
 
       // Optimistic update
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
@@ -493,8 +529,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
         };
       });
 
-      // Import dynamically to avoid issues
-      const result = await updateMember(teamId, token, memberId, { groupId });
+      const result = await updateMember(teamId, memberId, { groupId });
 
       if (result.success) {
         const group = groups.find((g) => g.id === groupId);
@@ -502,7 +537,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else {
         // Revert on failure
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -516,18 +553,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
         toast.error(result.error);
       }
     },
-    [isAdmin, members, groups, teamId, token, updateTeamCache],
-  );
-
-  const handleAdminUnlocked = useCallback(
-    async (data: { role: "admin" | "member"; token: string; }) => {
-      setToken(data.token);
-      setIsUnlockDialogOpen(false);
-      await writeTeamSession(teamId, data.token);
-      refetchTeam();
-      toast.success("Admin access granted");
-    },
-    [teamId, refetchTeam],
+    [isAdmin, members, groups, teamId, updateTeamCache],
   );
 
   if (!teamData?.team) {
@@ -600,7 +626,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
             </motion.section>
           )}
 
-          {/* Team Members & Groups - Two column layout on large screens */}
+          {/* Team Members & Groups */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -614,7 +640,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                   <Users className="h-5 w-5 text-muted-foreground" />
                   Team Members
                 </h2>
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
                   {members.length}
                 </span>
               </div>
@@ -640,9 +666,8 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                         key={member.id}
                         member={member}
                         teamId={teamId}
-                        token={token}
                         groups={groups}
-                        canEdit={isAdmin && Boolean(token)}
+                        canEdit={isAdmin}
                         onMemberRemoved={handleMemberRemoved}
                         onMemberUpdated={handleMemberUpdated}
                       />
@@ -651,27 +676,58 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                 </ScrollArea>
               )}
 
-              {isAdmin && token ? (
+              {isAdmin ? (
                 <div className="flex flex-col gap-2">
                   <AddMemberDialog
                     teamId={teamId}
-                    token={token}
                     groups={groups}
                     onMemberAdded={handleMemberAdded}
                     isFirstMember={members.length === 0}
                   />
-                  <ImportMembersDialog
-                    teamId={teamId}
-                    token={token}
-                  />
+                  <ImportMembersDialog teamId={teamId} />
+                  <JoinRequestsPanel teamId={teamId} />
+                </div>
+              ) : !isMember ? (
+                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/50 px-4 py-3">
+                  {!isAuthenticated ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">Sign in to request access</p>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/login?redirect=/${teamId}`}>
+                          <LogIn className="mr-2 h-4 w-4" />
+                          Sign in
+                        </Link>
+                      </Button>
+                    </>
+                  ) : teamStatus === "pending" ? (
+                    <p className="text-sm text-muted-foreground">
+                      Your join request is pending admin approval.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Request access to edit this team
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRequestJoin}
+                        disabled={isRequestingJoin}
+                      >
+                        {isRequestingJoin ? (
+                          <Spinner className="mr-2 h-4 w-4" />
+                        ) : (
+                          <UserPlus className="mr-2 h-4 w-4" />
+                        )}
+                        Request to Join
+                      </Button>
+                    </>
+                  )}
                 </div>
               ) : (
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">View-only access</p>
-                  <Button variant="outline" size="sm" onClick={() => setIsUnlockDialogOpen(true)}>
-                    Unlock admin
-                  </Button>
-                </div>
+                <p className="text-center text-sm text-muted-foreground">
+                  You are a member of this team
+                </p>
               )}
             </section>
 
@@ -682,7 +738,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                   <FolderKanban className="h-5 w-5 text-muted-foreground" />
                   Groups
                 </h2>
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
                   {groups.length}
                 </span>
               </div>
@@ -710,34 +766,21 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                           key={group.id}
                           group={group}
                           teamId={teamId}
-                          token={token ?? ""}
                           memberCount={members.filter((m) => m.groupId === group.id).length}
-                          canEdit={isAdmin && Boolean(token)}
+                          canEdit={isAdmin}
                           onGroupUpdated={handleGroupUpdated}
                           onGroupRemoved={handleGroupRemoved}
-                          onMemberDropped={
-                            isAdmin && token ? handleMemberDroppedOnGroup : undefined
-                          }
+                          onMemberDropped={isAdmin ? handleMemberDroppedOnGroup : undefined}
                         />
                       ))}
                   </div>
                 </ScrollArea>
               )}
 
-              {isAdmin && token && (
-                <AddGroupDialog teamId={teamId} token={token} onGroupAdded={handleGroupAdded} />
-              )}
+              {isAdmin && <AddGroupDialog teamId={teamId} onGroupAdded={handleGroupAdded} />}
             </section>
           </motion.div>
         </motion.main>
-
-        {/* Admin Unlock Dialog */}
-        <AdminUnlockDialog
-          open={isUnlockDialogOpen}
-          teamId={teamId}
-          onClose={() => setIsUnlockDialogOpen(false)}
-          onAuthenticated={handleAdminUnlocked}
-        />
       </div>
     </DragProvider>
   );

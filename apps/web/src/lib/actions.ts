@@ -1,24 +1,20 @@
 "use server";
 
+import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
-import {
-  redis,
-  SESSION_TTL_SECONDS,
-  TEAM_ACTIVE_TTL_SECONDS,
-  TEAM_INITIAL_TTL_SECONDS,
-} from "./redis";
+
+import { requireTeamAdmin, requireAuth, getTeamRole } from "@/lib/team-auth";
+import type { Team, TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
+
 import { realtime } from "./realtime";
+import { redis, TEAM_ACTIVE_TTL_SECONDS, TEAM_INITIAL_TTL_SECONDS } from "./redis";
 import {
-  TeamAuthInputSchema,
-  TeamCreateInputSchema,
   TeamGroupInputSchema,
   TeamGroupUpdateSchema,
   TeamMemberInputSchema,
   TeamMemberUpdateSchema,
   UUIDSchema,
 } from "./validation";
-import { hashPassword, verifyPassword } from "./crypto";
-import type { ServerSession, Team, TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
 
 type ActionResult<T> =
   | {
@@ -31,156 +27,10 @@ type ActionResult<T> =
     };
 
 // ============================================================================
-// Session Token Management
+// Internal Helpers
 // ============================================================================
-
-const generateSessionToken = (): string => {
-  // Generate a cryptographically secure random token
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-};
-
-const createSession = async (teamId: string, role: TeamRole): Promise<string> => {
-  const token = generateSessionToken();
-  const session: ServerSession = {
-    teamId,
-    role,
-    createdAt: Date.now(),
-  };
-
-  await redis.set(`session:${token}`, JSON.stringify(session), {
-    ex: SESSION_TTL_SECONDS,
-  });
-
-  return token;
-};
-
-const getSession = async (token: string): Promise<ServerSession | null> => {
-  try {
-    const data = await redis.get<string>(`session:${token}`);
-    if (!data) {return null;}
-    return (typeof data === "string" ? JSON.parse(data) : data) as ServerSession;
-  } catch {
-    return null;
-  }
-};
-
-const deleteSession = async (token: string): Promise<void> => {
-  await redis.del(`session:${token}`);
-};
-
-const verifySessionForTeam = async (
-  token: string,
-  teamId: string,
-  requireAdmin: boolean = false,
-): Promise<ActionResult<{ role: TeamRole }>> => {
-  const session = await getSession(token);
-
-  if (!session) {
-    return { success: false, error: "Session expired" };
-  }
-
-  if (session.teamId !== teamId) {
-    return { success: false, error: "Invalid session" };
-  }
-
-  if (requireAdmin && session.role !== "admin") {
-    return { success: false, error: "Admin access required" };
-  }
-
-  return { success: true, data: { role: session.role } };
-};
-
-// ============================================================================
-// Team Management
-// ============================================================================
-
-const createTeam = async (adminPassword: string): Promise<ActionResult<string>> => {
-  try {
-    const inputResult = TeamCreateInputSchema.safeParse({
-      adminPassword,
-    });
-    if (!inputResult.success) {
-      const errorMessage = inputResult.error.issues[0]?.message ?? "Invalid password";
-      return { success: false, error: errorMessage };
-    }
-
-    const teamId = uuidv4();
-    const adminPasswordHash = await hashPassword(adminPassword);
-
-    const team: TeamRecord = {
-      id: teamId,
-      name: "",
-      createdAt: new Date().toISOString(),
-      members: [],
-      groups: [],
-      adminPasswordHash,
-    };
-
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_INITIAL_TTL_SECONDS,
-    });
-
-    return { success: true, data: teamId };
-  } catch (error) {
-    console.error("Failed to create team:", error);
-    return { success: false, error: "Failed to create team" };
-  }
-};
-
-const authenticateTeam = async (
-  teamId: string,
-  password: string,
-): Promise<ActionResult<{ role: TeamRole; token: string; }>> => {
-  try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
-    }
-
-    const team = await getTeamRecord(teamId);
-    if (!team) {
-      return { success: false, error: "Team not found" };
-    }
-
-    const authResult = TeamAuthInputSchema.safeParse({ password });
-    if (!authResult.success) {
-      const errorMessage = authResult.error.issues[0]?.message ?? "Invalid password";
-      return { success: false, error: errorMessage };
-    }
-
-    if (!team.adminPasswordHash) {
-      return { success: false, error: "This team is not accessible" };
-    }
-
-    // Check admin password
-    const isAdmin = await verifyPassword(password, team.adminPasswordHash);
-    if (isAdmin) {
-      const token = await createSession(teamId, "admin");
-      return { success: true, data: { token, role: "admin" } };
-    }
-
-    return { success: false, error: "Invalid password" };
-  } catch (error) {
-    console.error("Failed to authenticate team:", error);
-    return { success: false, error: "Failed to authenticate" };
-  }
-};
-
-const verifyAdminAccessByToken = async (
-  token: string,
-  teamId: string,
-): Promise<ActionResult<boolean>> => {
-  const sessionResult = await verifySessionForTeam(token, teamId, true);
-  if (!sessionResult.success) {
-    return { success: false, error: sessionResult.error };
-  }
-  return { success: true, data: true };
-};
 
 const sanitizeTeam = (team: TeamRecord): Team => {
-  // Destructure to exclude password hash from public team data
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { adminPasswordHash, ...publicTeam } = team;
   return publicTeam;
@@ -201,7 +51,6 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
 
     const team = (typeof data === "string" ? JSON.parse(data) : data) as TeamRecord;
 
-    // Ensure groups array exists for backward compatibility
     if (!team.groups) {
       team.groups = [];
     }
@@ -216,30 +65,9 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
   }
 };
 
-const getTeamByToken = async (
-  token: string,
-  teamId: string,
-): Promise<ActionResult<{ role: TeamRole; team: Team; }>> => {
-  try {
-    const sessionResult = await verifySessionForTeam(token, teamId);
-    if (!sessionResult.success) {
-      return { success: false, error: sessionResult.error };
-    }
-
-    const team = await getTeamRecord(teamId);
-    if (!team) {
-      return { success: false, error: "Team not found" };
-    }
-
-    return {
-      success: true,
-      data: { team: sanitizeTeam(team), role: sessionResult.data.role },
-    };
-  } catch (error) {
-    console.error("Failed to fetch team by token:", error);
-    return { success: false, error: "Failed to fetch team" };
-  }
-};
+// ============================================================================
+// Team Read Operations (no auth required)
+// ============================================================================
 
 /**
  * Get a team for public (read-only) access.
@@ -247,7 +75,7 @@ const getTeamByToken = async (
  */
 const getPublicTeam = async (
   teamId: string,
-): Promise<ActionResult<{ role: TeamRole; team: Team; }>> => {
+): Promise<ActionResult<{ role: TeamRole; team: Team }>> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -269,17 +97,99 @@ const getPublicTeam = async (
   }
 };
 
+const validateTeam = async (teamId: string): Promise<boolean> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return false;
+    }
+
+    const exists = await redis.exists(`team:${teamId}`);
+    return exists === 1;
+  } catch (error) {
+    console.error("Failed to validate team:", error);
+    return false;
+  }
+};
+
+const getTeamName = async (teamId: string): Promise<string | null> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return null;
+    }
+
+    const data = await redis.get<string>(`team:${teamId}`);
+    if (!data) {
+      return null;
+    }
+
+    const team = (typeof data === "string" ? JSON.parse(data) : data) as { name?: string };
+    const name = typeof team?.name === "string" ? team.name.trim() : "";
+    return name.length > 0 ? name : null;
+  } catch (error) {
+    console.error("Failed to get team name:", error);
+    return null;
+  }
+};
+
+// ============================================================================
+// Team Creation (membership-based)
+// ============================================================================
+
+const createTeam = async (): Promise<ActionResult<string>> => {
+  try {
+    const session = await requireAuth();
+
+    const teamId = uuidv4();
+
+    const team: TeamRecord = {
+      id: teamId,
+      name: "",
+      createdAt: new Date().toISOString(),
+      members: [],
+      groups: [],
+    };
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_INITIAL_TTL_SECONDS,
+    });
+
+    // Create Space in Postgres
+    await prisma.space.create({
+      data: {
+        teamId,
+        isPrivate: false,
+        ownerId: session.user.id,
+      },
+    });
+
+    // Create Membership with admin role
+    await prisma.membership.create({
+      data: {
+        userId: session.user.id,
+        teamId,
+        role: "admin",
+      },
+    });
+
+    return { success: true, data: teamId };
+  } catch (error) {
+    console.error("Failed to create team:", error);
+    return { success: false, error: "Failed to create team" };
+  }
+};
+
+// ============================================================================
+// Admin-Only Member Actions
+// ============================================================================
+
 const addMember = async (
   teamId: string,
-  token: string,
   member: Omit<TeamMember, "id">,
-): Promise<ActionResult<{ member: TeamMember; team: Team; }>> => {
+): Promise<ActionResult<{ member: TeamMember; team: Team }>> => {
   try {
-    // Verify admin access first
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
-    }
+    await requireTeamAdmin(teamId);
 
     const memberResult = TeamMemberInputSchema.safeParse(member);
     if (!memberResult.success) {
@@ -300,12 +210,10 @@ const addMember = async (
 
     team.members.push(newMember);
 
-    // Use longer TTL when members are added (2 years)
     await redis.set(`team:${teamId}`, JSON.stringify(team), {
       ex: TEAM_ACTIVE_TTL_SECONDS,
     });
 
-    // Emit realtime event to team channel
     await realtime.channel(`team-${teamId}`).emit("team.memberAdded", newMember);
 
     return {
@@ -318,16 +226,9 @@ const addMember = async (
   }
 };
 
-const removeMember = async (
-  teamId: string,
-  token: string,
-  memberId: string,
-): Promise<ActionResult<Team>> => {
+const removeMember = async (teamId: string, memberId: string): Promise<ActionResult<Team>> => {
   try {
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
-    }
+    await requireTeamAdmin(teamId);
 
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const memberUuidResult = UUIDSchema.safeParse(memberId);
@@ -352,12 +253,10 @@ const removeMember = async (
 
     team.members = team.members.filter((m) => m.id !== memberId);
 
-    // Keep the active TTL since team has activity
     await redis.set(`team:${teamId}`, JSON.stringify(team), {
       ex: TEAM_ACTIVE_TTL_SECONDS,
     });
 
-    // Emit realtime event to team channel
     await realtime.channel(`team-${teamId}`).emit("team.memberRemoved", { memberId });
 
     return { success: true, data: sanitizeTeam(team) };
@@ -369,15 +268,11 @@ const removeMember = async (
 
 const updateMember = async (
   teamId: string,
-  token: string,
   memberId: string,
   updates: Partial<Omit<TeamMember, "id">>,
 ): Promise<ActionResult<Team>> => {
   try {
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
-    }
+    await requireTeamAdmin(teamId);
 
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const memberUuidResult = UUIDSchema.safeParse(memberId);
@@ -414,12 +309,10 @@ const updateMember = async (
 
     team.members[memberIndex] = updatedMember;
 
-    // Keep the active TTL since team has activity
     await redis.set(`team:${teamId}`, JSON.stringify(team), {
       ex: TEAM_ACTIVE_TTL_SECONDS,
     });
 
-    // Emit realtime event to team channel
     await realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember);
 
     return { success: true, data: sanitizeTeam(team) };
@@ -429,16 +322,9 @@ const updateMember = async (
   }
 };
 
-const updateTeamName = async (
-  teamId: string,
-  token: string,
-  name: string,
-): Promise<ActionResult<Team>> => {
+const updateTeamName = async (teamId: string, name: string): Promise<ActionResult<Team>> => {
   try {
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
-    }
+    await requireTeamAdmin(teamId);
 
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -469,50 +355,64 @@ const updateTeamName = async (
   }
 };
 
-const validateTeam = async (teamId: string): Promise<boolean> => {
+const importMembers = async (
+  teamId: string,
+  members: Array<Omit<TeamMember, "id">>,
+): Promise<ActionResult<{ imported: number; members: Array<TeamMember>; team: Team }>> => {
   try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return false;
+    await requireTeamAdmin(teamId);
+
+    if (!Array.isArray(members) || members.length === 0) {
+      return { success: false, error: "No members to import" };
     }
 
-    const exists = await redis.exists(`team:${teamId}`);
-    return exists === 1;
+    if (members.length > 100) {
+      return { success: false, error: "Cannot import more than 100 members at once" };
+    }
+
+    const validated: Array<TeamMember> = [];
+    for (const member of members) {
+      const result = TeamMemberInputSchema.safeParse(member);
+      if (!result.success) {
+        const msg = result.error.issues[0]?.message ?? "Invalid member data";
+        return { success: false, error: `Invalid member "${member.name}": ${msg}` };
+      }
+      validated.push({ ...result.data, id: uuidv4() });
+    }
+
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    team.members.push(...validated);
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.membersImported", validated);
+
+    return {
+      success: true,
+      data: { imported: validated.length, members: validated, team: sanitizeTeam(team) },
+    };
   } catch (error) {
-    console.error("Failed to validate team:", error);
-    return false;
+    console.error("Failed to import members:", error);
+    return { success: false, error: "Failed to import members" };
   }
 };
 
-const getTeamName = async (teamId: string): Promise<string | null> => {
-  try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return null;
-    }
-
-    const data = await redis.get<string>(`team:${teamId}`);
-    if (!data) {return null;}
-
-    const team = (typeof data === "string" ? JSON.parse(data) : data) as { name?: string };
-    const name = typeof team?.name === "string" ? team.name.trim() : "";
-    return name.length > 0 ? name : null;
-  } catch (error) {
-    console.error("Failed to get team name:", error);
-    return null;
-  }
-};
+// ============================================================================
+// Admin-Only Group Actions
+// ============================================================================
 
 const createGroup = async (
   teamId: string,
-  token: string,
   input: { name: string },
-): Promise<ActionResult<{ group: TeamGroup; team: Team; }>> => {
+): Promise<ActionResult<{ group: TeamGroup; team: Team }>> => {
   try {
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
-    }
+    await requireTeamAdmin(teamId);
 
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -556,15 +456,11 @@ const createGroup = async (
 
 const updateGroup = async (
   teamId: string,
-  token: string,
   groupId: string,
   updates: Partial<{ name: string }>,
 ): Promise<ActionResult<Team>> => {
   try {
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
-    }
+    await requireTeamAdmin(teamId);
 
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const groupUuidResult = UUIDSchema.safeParse(groupId);
@@ -612,16 +508,9 @@ const updateGroup = async (
   }
 };
 
-const removeGroup = async (
-  teamId: string,
-  token: string,
-  groupId: string,
-): Promise<ActionResult<Team>> => {
+const removeGroup = async (teamId: string, groupId: string): Promise<ActionResult<Team>> => {
   try {
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
-    }
+    await requireTeamAdmin(teamId);
 
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const groupUuidResult = UUIDSchema.safeParse(groupId);
@@ -643,7 +532,6 @@ const removeGroup = async (
       return { success: false, error: "Group not found" };
     }
 
-    // Remove the group
     team.groups = team.groups.filter((g) => g.id !== groupId);
 
     // Unassign all members from this group
@@ -667,72 +555,335 @@ const removeGroup = async (
   }
 };
 
-const importMembers = async (
+// ============================================================================
+// Self-Edit Action (authenticated users editing their own member record)
+// ============================================================================
+
+const updateOwnMember = async (
   teamId: string,
-  token: string,
-  members: Array<Omit<TeamMember, "id">>,
-): Promise<ActionResult<{ imported: number; members: Array<TeamMember>; team: Team }>> => {
+  updates: Partial<
+    Pick<TeamMember, "name" | "title" | "timezone" | "workingHoursStart" | "workingHoursEnd">
+  >,
+): Promise<ActionResult<Team>> => {
   try {
-    const accessResult = await verifyAdminAccessByToken(token, teamId);
-    if (!accessResult.success) {
-      return { success: false, error: accessResult.error };
+    const session = await requireAuth();
+
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
     }
 
-    if (!Array.isArray(members) || members.length === 0) {
-      return { success: false, error: "No members to import" };
+    const updateResult = TeamMemberUpdateSchema.safeParse(updates);
+    if (!updateResult.success) {
+      const errorMessage = updateResult.error.issues[0]?.message ?? "Invalid update data";
+      return { success: false, error: errorMessage };
     }
 
-    if (members.length > 100) {
-      return { success: false, error: "Cannot import more than 100 members at once" };
-    }
-
-    const validated: Array<TeamMember> = [];
-    for (const member of members) {
-      const result = TeamMemberInputSchema.safeParse(member);
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? "Invalid member data";
-        return { success: false, error: `Invalid member "${member.name}": ${msg}` };
-      }
-      validated.push({ ...result.data, id: uuidv4() });
-    }
+    // Strip groupId from updates to prevent self-assignment to groups
+    const { groupId: _stripGroupId, ...safeUpdates } = updateResult.data as Partial<TeamMember>;
 
     const team = await getTeamRecord(teamId);
     if (!team) {
       return { success: false, error: "Team not found" };
     }
 
-    team.members.push(...validated);
+    const memberIndex = team.members.findIndex((m) => m.userId === session.user.id);
+    if (memberIndex === -1) {
+      return { success: false, error: "You are not a member of this team" };
+    }
+
+    const updatedMember = {
+      ...team.members[memberIndex],
+      ...safeUpdates,
+    };
+
+    team.members[memberIndex] = updatedMember;
 
     await redis.set(`team:${teamId}`, JSON.stringify(team), {
       ex: TEAM_ACTIVE_TTL_SECONDS,
     });
 
-    await realtime.channel(`team-${teamId}`).emit("team.membersImported", validated);
+    await realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember);
 
-    return {
-      success: true,
-      data: { imported: validated.length, members: validated, team: sanitizeTeam(team) },
-    };
+    return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
-    console.error("Failed to import members:", error);
-    return { success: false, error: "Failed to import members" };
+    console.error("Failed to update own member:", error);
+    return { success: false, error: "Failed to update member" };
+  }
+};
+
+// ============================================================================
+// Join Request Actions
+// ============================================================================
+
+const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: string }>> => {
+  try {
+    const session = await requireAuth();
+
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    // Verify team exists in Redis
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    // Check for existing membership
+    const existingMembership = await prisma.membership.findUnique({
+      where: {
+        userId_teamId: {
+          userId: session.user.id,
+          teamId,
+        },
+      },
+    });
+
+    if (existingMembership) {
+      return { success: false, error: "You are already a member of this team" };
+    }
+
+    // Check for existing pending request
+    const existingRequest = await prisma.joinRequest.findUnique({
+      where: {
+        userId_teamId: {
+          userId: session.user.id,
+          teamId,
+        },
+      },
+    });
+
+    if (existingRequest && existingRequest.status === "pending") {
+      return { success: false, error: "You already have a pending request for this team" };
+    }
+
+    // Create or upsert the join request (handles re-requesting after denial)
+    const joinRequest = await prisma.joinRequest.upsert({
+      where: {
+        userId_teamId: {
+          userId: session.user.id,
+          teamId,
+        },
+      },
+      update: {
+        status: "pending",
+      },
+      create: {
+        userId: session.user.id,
+        teamId,
+        status: "pending",
+      },
+    });
+
+    return { success: true, data: { requestId: joinRequest.id } };
+  } catch (error) {
+    console.error("Failed to request to join:", error);
+    return { success: false, error: "Failed to submit join request" };
+  }
+};
+
+const approveJoinRequest = async (
+  requestId: string,
+): Promise<ActionResult<{ memberId: string }>> => {
+  try {
+    const joinRequest = await prisma.joinRequest.findUnique({
+      where: { id: requestId },
+      include: { user: true },
+    });
+
+    if (!joinRequest) {
+      return { success: false, error: "Join request not found" };
+    }
+
+    if (joinRequest.status !== "pending") {
+      return { success: false, error: "Join request is no longer pending" };
+    }
+
+    // Verify caller is admin of the team this request belongs to
+    await requireTeamAdmin(joinRequest.teamId);
+
+    // Update request status
+    await prisma.joinRequest.update({
+      where: { id: requestId },
+      data: { status: "approved" },
+    });
+
+    // Create membership
+    await prisma.membership.create({
+      data: {
+        userId: joinRequest.userId,
+        teamId: joinRequest.teamId,
+        role: "member",
+      },
+    });
+
+    // Add TeamMember to Redis
+    const team = await getTeamRecord(joinRequest.teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    const memberName = joinRequest.user.name || joinRequest.user.email.split("@")[0] || "Unknown";
+
+    const newMember: TeamMember = {
+      id: uuidv4(),
+      name: memberName,
+      title: "",
+      timezone: "America/New_York",
+      workingHoursStart: 9,
+      workingHoursEnd: 17,
+      userId: joinRequest.userId,
+    };
+
+    team.members.push(newMember);
+
+    await redis.set(`team:${joinRequest.teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${joinRequest.teamId}`).emit("team.memberAdded", newMember);
+
+    return { success: true, data: { memberId: newMember.id } };
+  } catch (error) {
+    console.error("Failed to approve join request:", error);
+    return { success: false, error: "Failed to approve join request" };
+  }
+};
+
+const denyJoinRequest = async (requestId: string): Promise<ActionResult<void>> => {
+  try {
+    const joinRequest = await prisma.joinRequest.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!joinRequest) {
+      return { success: false, error: "Join request not found" };
+    }
+
+    if (joinRequest.status !== "pending") {
+      return { success: false, error: "Join request is no longer pending" };
+    }
+
+    await requireTeamAdmin(joinRequest.teamId);
+
+    await prisma.joinRequest.update({
+      where: { id: requestId },
+      data: { status: "denied" },
+    });
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error("Failed to deny join request:", error);
+    return { success: false, error: "Failed to deny join request" };
+  }
+};
+
+const getPendingJoinRequests = async (
+  teamId: string,
+): Promise<
+  ActionResult<
+    Array<{ createdAt: Date; id: string; userEmail: string; userId: string; userName: string }>
+  >
+> => {
+  try {
+    await requireTeamAdmin(teamId);
+
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    const requests = await prisma.joinRequest.findMany({
+      where: {
+        teamId,
+        status: "pending",
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+
+    const data = requests.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      userName: r.user.name || r.user.email.split("@")[0] || "Unknown",
+      userEmail: r.user.email,
+      createdAt: r.createdAt,
+    }));
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Failed to get pending join requests:", error);
+    return { success: false, error: "Failed to get join requests" };
+  }
+};
+
+const getMyTeamStatus = async (
+  teamId: string,
+): Promise<ActionResult<{ status: "admin" | "member" | "pending" | "none" }>> => {
+  try {
+    const session = await requireAuth();
+
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    // Check membership first
+    const teamRole = await getTeamRole(teamId);
+    if (teamRole) {
+      return { success: true, data: { status: teamRole.role } };
+    }
+
+    // Check for pending join request
+    const pendingRequest = await prisma.joinRequest.findUnique({
+      where: {
+        userId_teamId: {
+          userId: session.user.id,
+          teamId,
+        },
+      },
+    });
+
+    if (pendingRequest && pendingRequest.status === "pending") {
+      return { success: true, data: { status: "pending" } };
+    }
+
+    return { success: true, data: { status: "none" } };
+  } catch (error) {
+    console.error("Failed to get team status:", error);
+    return { success: false, error: "Failed to get team status" };
   }
 };
 
 export {
   addMember,
-  authenticateTeam,
+  approveJoinRequest,
   createGroup,
   createTeam,
-  deleteSession,
+  denyJoinRequest,
+  getMyTeamStatus,
+  getPendingJoinRequests,
   getPublicTeam,
-  getTeamByToken,
   getTeamName,
   importMembers,
   removeGroup,
   removeMember,
+  requestToJoin,
   updateGroup,
   updateMember,
+  updateOwnMember,
   updateTeamName,
   validateTeam,
 };

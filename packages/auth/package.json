@@ -12,10 +12,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@better-auth/stripe": "1.5.5",
     "@repo/db": "workspace:*",
-    "better-auth": "^1.5.5",
-    "stripe": "^20.4.1"
+    "better-auth": "^1.5.5"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

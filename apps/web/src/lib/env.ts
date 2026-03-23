@@ -16,15 +16,6 @@ const envSchema = z.object({
   // Web App URL (for redirects, etc.)
   WEB_APP_URL: z.string().url("WEB_APP_URL must be a valid URL").optional(),
 
-  // Stripe
-  STRIPE_SECRET_KEY: z.string().startsWith("sk_", "STRIPE_SECRET_KEY must start with 'sk_'"),
-  STRIPE_WEBHOOK_SECRET: z
-    .string()
-    .startsWith("whsec_", "STRIPE_WEBHOOK_SECRET must start with 'whsec_'"),
-  STRIPE_PRO_PRICE_ID: z
-    .string()
-    .startsWith("price_", "STRIPE_PRO_PRICE_ID must start with 'price_'"),
-
   // Upstash Redis
   UPSTASH_REDIS_REST_URL: z.string().url("UPSTASH_REDIS_REST_URL must be a valid URL"),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1, "UPSTASH_REDIS_REST_TOKEN is required"),

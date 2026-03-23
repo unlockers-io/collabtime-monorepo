@@ -1,12 +1,6 @@
 "use client";
 
-import { useEffect, useTransition } from "react";
-import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import type { TeamGroup, TeamMember } from "@/types";
-import { updateMember } from "@/lib/actions";
 import {
   Button,
   Dialog,
@@ -26,9 +20,16 @@ import {
   SelectValue,
   Spinner,
 } from "@repo/ui";
+import { useEffect, useTransition } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
 import { GroupSelector } from "@/components/group-selector";
+import { updateMember } from "@/lib/actions";
 import { COMMON_TIMEZONES, formatTimezoneLabel } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
+import type { TeamGroup, TeamMember } from "@/types";
 
 type EditMemberDialogProps = {
   groups: Array<TeamGroup>;
@@ -37,7 +38,6 @@ type EditMemberDialogProps = {
   onOpenChange: (open: boolean) => void;
   open: boolean;
   teamId: string;
-  token: string | null;
 };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -48,7 +48,6 @@ type EditMemberFormProps = {
   onMemberUpdated: (member: TeamMember) => void;
   onOpenChange: (open: boolean) => void;
   teamId: string;
-  token: string;
 };
 
 const formSchema = z.object({
@@ -65,7 +64,6 @@ type FormValues = z.infer<typeof formSchema>;
 const EditMemberForm = ({
   member,
   teamId,
-  token,
   groups,
   onOpenChange,
   onMemberUpdated,
@@ -97,7 +95,7 @@ const EditMemberForm = ({
 
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
-      const result = await updateMember(teamId, token, member.id, {
+      const result = await updateMember(teamId, member.id, {
         ...data,
         title: data.title ?? "",
       });
@@ -287,15 +285,11 @@ const EditMemberForm = ({
 const EditMemberDialog = ({
   member,
   teamId,
-  token,
   groups,
   open,
   onOpenChange,
   onMemberUpdated,
 }: EditMemberDialogProps) => {
-  // Don't render if no token (can't edit without auth)
-  if (!token) {return null;}
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -304,7 +298,6 @@ const EditMemberDialog = ({
             key={member.id}
             member={member}
             teamId={teamId}
-            token={token}
             groups={groups}
             onOpenChange={onOpenChange}
             onMemberUpdated={onMemberUpdated}
