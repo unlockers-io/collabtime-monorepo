@@ -1,8 +1,9 @@
 import "server-only";
 
 import { Realtime, InferRealtimeEvents } from "@upstash/realtime";
-import { getRedis } from "./redis";
 import z from "zod/v4";
+
+import { getRedis } from "./redis";
 
 const TeamMemberSchema = z.object({
   id: z.string(),

@@ -165,7 +165,9 @@ const getMinutesUntilAvailable = (
 };
 
 const formatTimeUntilAvailable = (minutes: number): string => {
-  if (minutes === 0) {return "Available now";}
+  if (minutes === 0) {
+    return "Available now";
+  }
 
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
@@ -198,7 +200,9 @@ const formatTimezoneAbbreviation = (timezone: string): string => {
  */
 const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | null => {
   const trimmed = input.trim();
-  if (!trimmed) {return null;}
+  if (!trimmed) {
+    return null;
+  }
 
   // Exact match first
   if (COMMON_TIMEZONES.includes(trimmed as (typeof COMMON_TIMEZONES)[number])) {

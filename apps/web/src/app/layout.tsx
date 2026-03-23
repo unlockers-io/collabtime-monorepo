@@ -1,8 +1,10 @@
+import "@/styles/globals.css";
+
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
-import { Providers } from "@/components/providers";
-import "@/styles/globals.css";
 import { Toaster } from "sonner";
+
+import { Providers } from "@/components/providers";
 
 export const dynamic = "force-dynamic";
 
@@ -78,10 +80,10 @@ const RootLayout = ({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistMono.variable} font-(family-name:--font-geist-mono) antialiased bg-background text-foreground selection:bg-accent selection:text-accent-foreground min-h-screen flex flex-col`}
+        className={`${geistMono.variable} flex min-h-screen flex-col bg-background font-(family-name:--font-geist-mono) text-foreground antialiased selection:bg-accent selection:text-accent-foreground`}
       >
         <Providers>
-          <div className="flex-1 flex flex-col">{children}</div>
+          <div className="flex flex-1 flex-col">{children}</div>
           <footer className="border-t border-border px-4 py-6 text-sm text-muted-foreground">
             <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3">
               <span>© {new Date().getFullYear()} Collab Time. All rights reserved.</span>

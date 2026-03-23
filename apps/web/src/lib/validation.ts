@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { COMMON_TIMEZONES } from "./timezones";
 
 const UUIDSchema = z.uuid("Invalid ID format");

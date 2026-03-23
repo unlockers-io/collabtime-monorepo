@@ -1,14 +1,6 @@
 "use client";
 
-import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useTransition } from "react";
-import { Lock } from "lucide-react";
-import { toast } from "sonner";
-import type { TeamRole } from "@/types";
-import { authenticateTeam } from "@/lib/actions";
-import { PasswordSchema } from "@/lib/validation";
 import {
   Button,
   Dialog,
@@ -23,6 +15,15 @@ import {
   Input,
   Spinner,
 } from "@repo/ui";
+import { Lock } from "lucide-react";
+import { useTransition } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { authenticateTeam } from "@/lib/actions";
+import { PasswordSchema } from "@/lib/validation";
+import type { TeamRole } from "@/types";
 
 type AdminUnlockDialogProps = {
   onAuthenticated: (data: { role: TeamRole; token: string }) => void;

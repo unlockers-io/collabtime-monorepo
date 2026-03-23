@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { getPublicTeam, getTeamByToken } from "@/lib/actions";
 import type { Team, TeamRole } from "@/types";
 

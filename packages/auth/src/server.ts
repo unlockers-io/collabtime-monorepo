@@ -86,7 +86,9 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
             const { subscription } = params;
             const userId = subscription.referenceId;
 
-            if (!userId) { return; }
+            if (!userId) {
+              return;
+            }
 
             // Downgrade user
             await prisma.user.update({
@@ -98,7 +100,9 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
             const { subscription } = params;
             const userId = subscription.referenceId;
 
-            if (!userId) { return; }
+            if (!userId) {
+              return;
+            }
 
             // Update user subscription plan
             await prisma.user.update({
@@ -107,13 +111,17 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
             });
           },
           onSubscriptionUpdate: async ({ subscription }) => {
-            if (!subscription.referenceId) { return; }
+            if (!subscription.referenceId) {
+              return;
+            }
 
             const user = await prisma.user.findUnique({
               where: { id: subscription.referenceId },
             });
 
-            if (!user) { return; }
+            if (!user) {
+              return;
+            }
 
             const plan =
               subscription.status === "active" || subscription.status === "trialing"

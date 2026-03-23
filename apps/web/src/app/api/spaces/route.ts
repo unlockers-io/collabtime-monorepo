@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { z } from "zod";
-import { auth } from "@/lib/auth-server";
 import { prisma } from "@repo/db";
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
+import { auth } from "@/lib/auth-server";
 
 const createSpaceSchema = z.object({
   teamId: z.string().min(1, "Team ID is required"),

@@ -1,13 +1,17 @@
 "use server";
 
 import { v4 as uuidv4 } from "uuid";
+
+import type { ServerSession, Team, TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
+
+import { hashPassword, verifyPassword } from "./crypto";
+import { realtime } from "./realtime";
 import {
   redis,
   SESSION_TTL_SECONDS,
   TEAM_ACTIVE_TTL_SECONDS,
   TEAM_INITIAL_TTL_SECONDS,
 } from "./redis";
-import { realtime } from "./realtime";
 import {
   TeamAuthInputSchema,
   TeamCreateInputSchema,
@@ -17,8 +21,6 @@ import {
   TeamMemberUpdateSchema,
   UUIDSchema,
 } from "./validation";
-import { hashPassword, verifyPassword } from "./crypto";
-import type { ServerSession, Team, TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
 
 type ActionResult<T> =
   | {
@@ -59,7 +61,9 @@ const createSession = async (teamId: string, role: TeamRole): Promise<string> =>
 const getSession = async (token: string): Promise<ServerSession | null> => {
   try {
     const data = await redis.get<string>(`session:${token}`);
-    if (!data) {return null;}
+    if (!data) {
+      return null;
+    }
     return (typeof data === "string" ? JSON.parse(data) : data) as ServerSession;
   } catch {
     return null;
@@ -132,7 +136,7 @@ const createTeam = async (adminPassword: string): Promise<ActionResult<string>> 
 const authenticateTeam = async (
   teamId: string,
   password: string,
-): Promise<ActionResult<{ role: TeamRole; token: string; }>> => {
+): Promise<ActionResult<{ role: TeamRole; token: string }>> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -219,7 +223,7 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
 const getTeamByToken = async (
   token: string,
   teamId: string,
-): Promise<ActionResult<{ role: TeamRole; team: Team; }>> => {
+): Promise<ActionResult<{ role: TeamRole; team: Team }>> => {
   try {
     const sessionResult = await verifySessionForTeam(token, teamId);
     if (!sessionResult.success) {
@@ -247,7 +251,7 @@ const getTeamByToken = async (
  */
 const getPublicTeam = async (
   teamId: string,
-): Promise<ActionResult<{ role: TeamRole; team: Team; }>> => {
+): Promise<ActionResult<{ role: TeamRole; team: Team }>> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -273,7 +277,7 @@ const addMember = async (
   teamId: string,
   token: string,
   member: Omit<TeamMember, "id">,
-): Promise<ActionResult<{ member: TeamMember; team: Team; }>> => {
+): Promise<ActionResult<{ member: TeamMember; team: Team }>> => {
   try {
     // Verify admin access first
     const accessResult = await verifyAdminAccessByToken(token, teamId);
@@ -492,7 +496,9 @@ const getTeamName = async (teamId: string): Promise<string | null> => {
     }
 
     const data = await redis.get<string>(`team:${teamId}`);
-    if (!data) {return null;}
+    if (!data) {
+      return null;
+    }
 
     const team = (typeof data === "string" ? JSON.parse(data) : data) as { name?: string };
     const name = typeof team?.name === "string" ? team.name.trim() : "";
@@ -507,7 +513,7 @@ const createGroup = async (
   teamId: string,
   token: string,
   input: { name: string },
-): Promise<ActionResult<{ group: TeamGroup; team: Team; }>> => {
+): Promise<ActionResult<{ group: TeamGroup; team: Team }>> => {
   try {
     const accessResult = await verifyAdminAccessByToken(token, teamId);
     if (!accessResult.success) {

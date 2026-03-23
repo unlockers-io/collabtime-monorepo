@@ -1,7 +1,9 @@
+import { prisma } from "@repo/db";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+
 import { auth } from "@/lib/auth-server";
-import { prisma } from "@repo/db";
+
 import { SettingsClient } from "./client";
 
 const SettingsPage = async () => {

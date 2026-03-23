@@ -1,11 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import { Settings, Globe, Lock, Crown, Eye, EyeOff } from "lucide-react";
 import {
   Button,
   Input,
@@ -19,6 +14,11 @@ import {
   DialogTrigger,
   Spinner,
 } from "@repo/ui";
+import { Settings, Globe, Lock, Crown, Eye, EyeOff } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 type Space = {
   hasPassword: boolean;
@@ -94,7 +94,7 @@ const SpaceSettingsDialog = ({
         body: JSON.stringify({ teamId }),
       });
 
-      const data = await response.json() as { error?: string; space?: Space };
+      const data = (await response.json()) as { error?: string; space?: Space };
 
       if (!response.ok) {
         toast.error(data.error ?? "Failed to claim space");
@@ -111,7 +111,9 @@ const SpaceSettingsDialog = ({
   };
 
   const onSubmit = async (data: SpaceSettingsFormValues) => {
-    if (!space) {return;}
+    if (!space) {
+      return;
+    }
 
     setIsLoading(true);
 
@@ -144,7 +146,7 @@ const SpaceSettingsDialog = ({
         body: JSON.stringify(updates),
       });
 
-      const result = await response.json() as { error?: string; space?: Space };
+      const result = (await response.json()) as { error?: string; space?: Space };
 
       if (!response.ok) {
         if (response.status === 402) {
@@ -304,7 +306,7 @@ const SpaceSettingsDialog = ({
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         >
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />

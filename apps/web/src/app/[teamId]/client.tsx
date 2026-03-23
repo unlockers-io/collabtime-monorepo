@@ -1,27 +1,29 @@
 "use client";
 
+import { Button, ScrollArea } from "@repo/ui";
+import { Clock, FolderKanban, Users } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Clock, FolderKanban, Users } from "lucide-react";
-import type { TeamGroup, TeamMember } from "@/types";
+
 import { AddGroupDialog } from "@/components/add-group-dialog";
 import { AddMemberDialog } from "@/components/add-member-dialog";
-import { ImportMembersDialog } from "@/components/import-members-dialog";
 import { GroupCard } from "@/components/group-card";
+import { ImportMembersDialog } from "@/components/import-members-dialog";
 import { MemberCard } from "@/components/member-card";
-import { Button, ScrollArea } from "@repo/ui";
 import { Nav } from "@/components/nav";
+import { AdminUnlockDialog } from "@/components/team-auth-dialog";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
-import { AdminUnlockDialog } from "@/components/team-auth-dialog";
+import { DragProvider } from "@/contexts/drag-context";
 import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { useVisitedTeams } from "@/hooks/use-visited-teams";
-import { useRealtime } from "@/lib/realtime-client";
 import { updateTeamName, updateMember } from "@/lib/actions";
+import { useRealtime } from "@/lib/realtime-client";
 import { clearTeamSession, writeTeamSession } from "@/lib/team-session";
-import { DragProvider } from "@/contexts/drag-context";
 import { isCurrentlyWorking, getMinutesUntilAvailable } from "@/lib/timezones";
+import type { TeamGroup, TeamMember } from "@/types";
+
 import Loading from "./loading";
 
 type TeamPageClientProps = {
@@ -35,7 +37,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const [token, setToken] = useState<string | null>(initialToken);
   const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") {return new Set();}
+    if (typeof window === "undefined") {
+      return new Set();
+    }
     const stored = localStorage.getItem(COLLAPSED_GROUPS_KEY);
     return stored ? new Set(JSON.parse(stored) as Array<string>) : new Set();
   });
@@ -97,7 +101,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
           // Count visible members: ungrouped + members in non-collapsed groups
           const ungroupedCount = members.filter((m) => !m.groupId).length;
           const visibleGroupedCount = members.filter((m) => {
-            if (!m.groupId) {return false;} // Ungrouped counted separately
+            if (!m.groupId) {
+              return false;
+            } // Ungrouped counted separately
             return !collapsedAfter.has(m.groupId);
           }).length;
 
@@ -133,7 +139,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       if (event === "team.memberAdded") {
         const newMember = data as TeamMember;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           // Avoid duplicates
           if (prev.team.members.some((m) => m.id === newMember.id)) {
             return prev;
@@ -161,7 +169,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
         }
 
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           const member = prev.team.members.find((m) => m.id === memberId);
           if (member) {
             lastRemovalRef.current = { id: memberId, ts: Date.now() };
@@ -180,7 +190,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.memberUpdated") {
         const updatedMember = data as TeamMember;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -194,10 +206,14 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.membersImported") {
         const newMembers = data as Array<TeamMember>;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           const existingIds = new Set(prev.team.members.map((m) => m.id));
           const toAdd = newMembers.filter((m) => !existingIds.has(m.id));
-          if (toAdd.length === 0) {return prev;}
+          if (toAdd.length === 0) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -209,7 +225,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.membersReordered") {
         const { order } = data as { order: Array<string> };
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           const map = new Map(prev.team.members.map((m) => [m.id, m]));
           return {
             ...prev,
@@ -222,7 +240,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.nameUpdated") {
         const { name } = data as { name: string };
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: { ...prev.team, name },
@@ -232,7 +252,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.groupCreated") {
         const newGroup = data as TeamGroup;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           if (prev.team.groups.some((g) => g.id === newGroup.id)) {
             return prev;
           }
@@ -247,7 +269,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.groupUpdated") {
         const updatedGroup = data as TeamGroup;
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -259,7 +283,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.groupRemoved") {
         const { groupId } = data as { groupId: string };
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -274,7 +300,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else if (event === "team.groupsReordered") {
         const { order } = data as { order: Array<string> };
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           const map = new Map(prev.team.groups.map((g) => [g.id, g]));
           return {
             ...prev,
@@ -295,7 +323,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
 
   // Save team to visited teams on mount and when members/name change
   useEffect(() => {
-    if (!teamData?.team) {return;}
+    if (!teamData?.team) {
+      return;
+    }
     saveVisitedTeam(teamId, members.length, teamName);
   }, [teamData?.team, teamId, members.length, teamName, saveVisitedTeam]);
 
@@ -305,7 +335,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   }, [teamName]);
 
   const handleSaveName = () => {
-    if (!isAdmin || !token) {return;}
+    if (!isAdmin || !token) {
+      return;
+    }
 
     const trimmedName = editingTeamName.trim();
     setIsEditingName(false);
@@ -333,8 +365,12 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       const bIsAvailable = isCurrentlyWorking(b.timezone, b.workingHoursStart, b.workingHoursEnd);
 
       // Available members come first
-      if (aIsAvailable && !bIsAvailable) {return -1;}
-      if (!aIsAvailable && bIsAvailable) {return 1;}
+      if (aIsAvailable && !bIsAvailable) {
+        return -1;
+      }
+      if (!aIsAvailable && bIsAvailable) {
+        return 1;
+      }
 
       // If both unavailable, sort by time until available
       if (!aIsAvailable && !bIsAvailable) {
@@ -363,7 +399,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleMemberAdded = useCallback(
     (newMember: TeamMember) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         if (prev.team.members.some((m) => m.id === newMember.id)) {
           return prev;
         }
@@ -382,7 +420,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleMemberRemoved = useCallback(
     (memberId: string) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
@@ -398,7 +438,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleMemberUpdated = useCallback(
     (updatedMember: TeamMember) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
@@ -414,7 +456,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleGroupAdded = useCallback(
     (newGroup: TeamGroup) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         if (prev.team.groups.some((g) => g.id === newGroup.id)) {
           return prev;
         }
@@ -433,7 +477,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleGroupUpdated = useCallback(
     (updatedGroup: TeamGroup) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
@@ -449,7 +495,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   const handleGroupRemoved = useCallback(
     (groupId: string) => {
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
@@ -474,16 +522,22 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       }
 
       const member = members.find((m) => m.id === memberId);
-      if (!member) {return;}
+      if (!member) {
+        return;
+      }
 
       // Skip if already in this group
-      if (member.groupId === groupId) {return;}
+      if (member.groupId === groupId) {
+        return;
+      }
 
       const previousGroupId = member.groupId;
 
       // Optimistic update
       updateTeamCache(teamId, (prev) => {
-        if (!prev) {return prev;}
+        if (!prev) {
+          return prev;
+        }
         return {
           ...prev,
           team: {
@@ -502,7 +556,9 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
       } else {
         // Revert on failure
         updateTeamCache(teamId, (prev) => {
-          if (!prev) {return prev;}
+          if (!prev) {
+            return prev;
+          }
           return {
             ...prev,
             team: {
@@ -520,7 +576,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
   );
 
   const handleAdminUnlocked = useCallback(
-    async (data: { role: "admin" | "member"; token: string; }) => {
+    async (data: { role: "admin" | "member"; token: string }) => {
       setToken(data.token);
       setIsUnlockDialogOpen(false);
       await writeTeamSession(teamId, data.token);
@@ -614,7 +670,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                   <Users className="h-5 w-5 text-muted-foreground" />
                   Team Members
                 </h2>
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
                   {members.length}
                 </span>
               </div>
@@ -660,10 +716,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                     onMemberAdded={handleMemberAdded}
                     isFirstMember={members.length === 0}
                   />
-                  <ImportMembersDialog
-                    teamId={teamId}
-                    token={token}
-                  />
+                  <ImportMembersDialog teamId={teamId} token={token} />
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
@@ -682,7 +735,7 @@ const TeamPageClient = ({ teamId, initialToken }: TeamPageClientProps) => {
                   <FolderKanban className="h-5 w-5 text-muted-foreground" />
                   Groups
                 </h2>
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
                   {groups.length}
                 </span>
               </div>

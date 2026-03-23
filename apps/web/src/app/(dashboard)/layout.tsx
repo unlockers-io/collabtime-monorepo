@@ -1,7 +1,8 @@
-import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth-server";
+import { redirect } from "next/navigation";
+
 import { Nav } from "@/components/nav";
+import { auth } from "@/lib/auth-server";
 
 // Force dynamic rendering for all dashboard pages - they require authentication
 export const dynamic = "force-dynamic";

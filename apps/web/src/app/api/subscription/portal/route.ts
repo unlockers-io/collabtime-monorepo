@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { z } from "zod";
-import { auth } from "@/lib/auth-server";
-import { getStripe } from "@/lib/stripe";
-import { redirectUrlSchema } from "@/lib/redirect-validation";
 import { prisma } from "@repo/db";
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
+import { auth } from "@/lib/auth-server";
+import { redirectUrlSchema } from "@/lib/redirect-validation";
+import { getStripe } from "@/lib/stripe";
 
 const portalSchema = z.object({
   returnUrl: redirectUrlSchema,

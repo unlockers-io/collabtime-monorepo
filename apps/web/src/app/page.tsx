@@ -1,21 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
-import { ArrowRight, Crown, Users, X } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useVisitedTeams } from "@/hooks/use-visited-teams";
-import { authenticateTeam, createTeam } from "@/lib/actions";
-import { useSession } from "@/lib/auth-client";
-import { writeTeamSession } from "@/lib/team-session";
-import { PasswordSchema } from "@/lib/validation";
-import { ProFeaturesDialog } from "@/components/pro-features-dialog";
-import { Nav } from "@/components/nav";
 import {
   Button,
   Dialog,
@@ -31,6 +16,22 @@ import {
   Input,
   Spinner,
 } from "@repo/ui";
+import { ArrowRight, Crown, Users, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Nav } from "@/components/nav";
+import { ProFeaturesDialog } from "@/components/pro-features-dialog";
+import { useVisitedTeams } from "@/hooks/use-visited-teams";
+import { authenticateTeam, createTeam } from "@/lib/actions";
+import { useSession } from "@/lib/auth-client";
+import { writeTeamSession } from "@/lib/team-session";
+import { PasswordSchema } from "@/lib/validation";
 
 const formSchema = z.object({
   adminPassword: PasswordSchema,
@@ -46,10 +47,18 @@ const formatRelativeTime = (dateString: string) => {
   const diffHours = Math.floor(diffMs / 3_600_000);
   const diffDays = Math.floor(diffMs / 86_400_000);
 
-  if (diffMins < 1) { return "Just now"; }
-  if (diffMins < 60) { return `${diffMins}m ago`; }
-  if (diffHours < 24) { return `${diffHours}h ago`; }
-  if (diffDays < 7) { return `${diffDays}d ago`; }
+  if (diffMins < 1) {
+    return "Just now";
+  }
+  if (diffMins < 60) {
+    return `${diffMins}m ago`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
   return date.toLocaleDateString();
 };
 
@@ -104,8 +113,6 @@ const Home = () => {
     removeVisitedTeam(teamId);
   };
 
-
-
   return (
     <div className="flex flex-1 flex-col">
       <Nav />
@@ -126,7 +133,7 @@ const Home = () => {
           <button
             onClick={handleCreateTeam}
             disabled={isCreating}
-            className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg"
+            className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg"
           >
             {isCreating ? (
               <>
@@ -216,7 +223,7 @@ const Home = () => {
                       </Link>
                       <button
                         onClick={() => handleRemoveTeam(team.id)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-accent-foreground group-hover:opacity-100"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground"
                         aria-label="Remove from list"
                       >
                         <X className="h-3.5 w-3.5" />
@@ -233,7 +240,9 @@ const Home = () => {
       <Dialog
         open={isCreateDialogOpen}
         onOpenChange={(open) => {
-          if (isCreating) {return;}
+          if (isCreating) {
+            return;
+          }
           setIsCreateDialogOpen(open);
           if (open) {
             form.reset({ adminPassword: "" });

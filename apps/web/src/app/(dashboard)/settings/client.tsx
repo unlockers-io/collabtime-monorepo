@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { User, CreditCard, Crown, Check, Loader2 } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
 import { Button, Card, Input, Label, Spinner } from "@repo/ui";
+import { User, CreditCard, Crown, Check, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { authClient } from "@/lib/auth-client";
 
 type SettingsClientProps = {
   subscription: {
@@ -28,7 +29,9 @@ const PRO_FEATURES = [
 ];
 
 const formatDate = (dateString: string | null) => {
-  if (!dateString) { return null; }
+  if (!dateString) {
+    return null;
+  }
   return new Date(dateString).toLocaleDateString("en-US", {
     day: "numeric",
     month: "long",
@@ -59,7 +62,7 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
         }),
       });
 
-      const data = await response.json() as { error?: string; url?: string };
+      const data = (await response.json()) as { error?: string; url?: string };
 
       if (!response.ok) {
         toast.error(data.error ?? "Failed to start checkout");
@@ -88,7 +91,7 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
         }),
       });
 
-      const data = await response.json() as { error?: string; url?: string };
+      const data = (await response.json()) as { error?: string; url?: string };
 
       if (!response.ok) {
         toast.error(data.error ?? "Failed to open billing portal");
@@ -107,7 +110,9 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
 
   const handleSaveName = async () => {
     const trimmedName = name.trim();
-    if (trimmedName === user.name) {return;}
+    if (trimmedName === user.name) {
+      return;
+    }
 
     setIsSaving(true);
 
@@ -131,8 +136,6 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
       setIsSaving(false);
     }
   };
-
-
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">

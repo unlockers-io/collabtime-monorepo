@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
 import { getTeamName, validateTeam } from "@/lib/actions";
 import { readTeamSession } from "@/lib/team-session";
+
 import { TeamPageClient } from "./client";
 
 type TeamPageProps = {

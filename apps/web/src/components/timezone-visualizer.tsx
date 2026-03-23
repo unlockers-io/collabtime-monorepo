@@ -1,28 +1,6 @@
 "use client";
 
 import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
-import { AnimatePresence, motion, useMotionValue, animate } from "motion/react";
-import { useTheme } from "next-themes";
-import { Check, ChevronRight, Clock, Minus, Plus, Users, X } from "lucide-react";
-
-import type { TeamGroup, TeamMember } from "@/types";
-import {
-  convertHourToTimezone,
-  formatTimezoneAbbreviation,
-  getDayOffset,
-  getUserTimezone,
-} from "@/lib/timezones";
-import { useHalfMinuteTick } from "@/lib/use-tick";
-import { cn, formatHour } from "@/lib/utils";
-import {
   Badge,
   Button,
   Card,
@@ -39,6 +17,28 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@repo/ui";
+import { Check, ChevronRight, Clock, Minus, Plus, Users, X } from "lucide-react";
+import { AnimatePresence, motion, useMotionValue, animate } from "motion/react";
+import { useTheme } from "next-themes";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+
+import {
+  convertHourToTimezone,
+  formatTimezoneAbbreviation,
+  getDayOffset,
+  getUserTimezone,
+} from "@/lib/timezones";
+import { useHalfMinuteTick } from "@/lib/use-tick";
+import { cn, formatHour } from "@/lib/utils";
+import type { TeamGroup, TeamMember } from "@/types";
 
 type TimezoneVisualizerProps = {
   collapsedGroupIds?: Array<string>;
@@ -112,15 +112,21 @@ const deserializeSelection = (str: string): Selection | null => {
 };
 
 const formatDayOffset = (offset: number): string | null => {
-  if (offset === 0) {return null;}
+  if (offset === 0) {
+    return null;
+  }
   const absOffset = Math.abs(offset);
   const suffix = absOffset > 1 ? "days" : "day";
   return offset > 0 ? `${absOffset} ${suffix} ahead` : `${absOffset} ${suffix} behind`;
 };
 
 const getRoundedCornerClass = (hour: number): string => {
-  if (hour === 0) {return "rounded-l";}
-  if (hour === HOURS_IN_DAY - 1) {return "rounded-r";}
+  if (hour === 0) {
+    return "rounded-l";
+  }
+  if (hour === HOURS_IN_DAY - 1) {
+    return "rounded-r";
+  }
   return "";
 };
 
@@ -328,13 +334,19 @@ const TimezoneVisualizer = ({
   const tick = useHalfMinuteTick();
 
   const nowPosition = useMemo(() => {
-    if (!tick) {return null;}
-    if (!viewerTimezone) {return null;}
+    if (!tick) {
+      return null;
+    }
+    if (!viewerTimezone) {
+      return null;
+    }
     return getCurrentTimePosition(viewerTimezone);
   }, [viewerTimezone, tick]);
 
   const memberRows = useMemo((): Array<MemberRow> => {
-    if (!viewerTimezone) {return [];}
+    if (!viewerTimezone) {
+      return [];
+    }
 
     return members.map((member) => {
       const hours = [...EMPTY_HOURS];
@@ -389,7 +401,9 @@ const TimezoneVisualizer = ({
 
     for (const group of sortedGroups) {
       const groupMembers = members.filter((m) => m.groupId === group.id);
-      if (groupMembers.length === 0) {continue;}
+      if (groupMembers.length === 0) {
+        continue;
+      }
 
       const rows = groupMembers
         .map((m) => rowByMemberId.get(m.id))
@@ -429,7 +443,9 @@ const TimezoneVisualizer = ({
       }
 
       for (const member of members) {
-        if (member.groupId === sel.id) {ids.add(member.id);}
+        if (member.groupId === sel.id) {
+          ids.add(member.id);
+        }
       }
     }
 
@@ -442,7 +458,9 @@ const TimezoneVisualizer = ({
 
   const { overlapHours, partialOverlapHours, crossTeamOverlapHours, overlapCounts } =
     useMemo((): OverlapData => {
-      if (!canShowOverlap) {return EMPTY_OVERLAP_DATA;}
+      if (!canShowOverlap) {
+        return EMPTY_OVERLAP_DATA;
+      }
 
       const allMemberHours: Array<Array<boolean>> = [];
       const selectionCoverage: Array<Array<boolean>> = [];
@@ -454,7 +472,9 @@ const TimezoneVisualizer = ({
           const row = memberRowById.get(sel.id);
           if (row) {
             row.hours.forEach((isWorking, hour) => {
-              if (isWorking) {selectionHours[hour] = true;}
+              if (isWorking) {
+                selectionHours[hour] = true;
+              }
             });
           }
         } else {
@@ -463,7 +483,9 @@ const TimezoneVisualizer = ({
             const row = memberRowById.get(member.id);
             if (row) {
               row.hours.forEach((isWorking, hour) => {
-                if (isWorking) {selectionHours[hour] = true;}
+                if (isWorking) {
+                  selectionHours[hour] = true;
+                }
               });
             }
           }
@@ -474,10 +496,14 @@ const TimezoneVisualizer = ({
 
       for (const memberId of Array.from(selectedMemberIds)) {
         const row = memberRowById.get(memberId);
-        if (row) {allMemberHours.push(row.hours);}
+        if (row) {
+          allMemberHours.push(row.hours);
+        }
       }
 
-      if (allMemberHours.length < 2) {return EMPTY_OVERLAP_DATA;}
+      if (allMemberHours.length < 2) {
+        return EMPTY_OVERLAP_DATA;
+      }
 
       const totalPeople = allMemberHours.length;
       const counts = Array.from(
@@ -488,7 +514,9 @@ const TimezoneVisualizer = ({
       const full = counts.map((count) => count === totalPeople);
       const partial = counts.map((count, hour) => count >= 2 && !full[hour]);
       const crossTeam = counts.map((_, hour) => {
-        if (selectionCoverage.length < 2) {return false;}
+        if (selectionCoverage.length < 2) {
+          return false;
+        }
         return selectionCoverage.every((hours) => hours[hour]);
       });
 
@@ -504,9 +532,15 @@ const TimezoneVisualizer = ({
     const hasFullOverlap = overlapHours.some(Boolean);
     const hasPartialOverlap = partialOverlapHours.some(Boolean);
 
-    if (!hasFullOverlap && !hasPartialOverlap) {return "none";}
-    if (hasFullOverlap && hasPartialOverlap) {return "mixed";}
-    if (hasFullOverlap) {return "full";}
+    if (!hasFullOverlap && !hasPartialOverlap) {
+      return "none";
+    }
+    if (hasFullOverlap && hasPartialOverlap) {
+      return "mixed";
+    }
+    if (hasFullOverlap) {
+      return "full";
+    }
     return "partial";
   }, [overlapHours, partialOverlapHours]);
 
@@ -536,7 +570,9 @@ const TimezoneVisualizer = ({
   const addSelection = useCallback((sel: Selection) => {
     setCompareSelections((prev) => {
       const key = serializeSelection(sel);
-      if (prev.some((s) => serializeSelection(s) === key)) {return prev;}
+      if (prev.some((s) => serializeSelection(s) === key)) {
+        return prev;
+      }
       return [...prev, sel];
     });
   }, []);
@@ -568,13 +604,19 @@ const TimezoneVisualizer = ({
 
   const isMemberInCompare = useCallback(
     (memberId: string): boolean => {
-      if (!isComparing || validSelections.length === 0) {return false;}
+      if (!isComparing || validSelections.length === 0) {
+        return false;
+      }
 
       for (const sel of validSelections) {
-        if (sel.type === "member" && sel.id === memberId) {return true;}
+        if (sel.type === "member" && sel.id === memberId) {
+          return true;
+        }
         if (sel.type === "group") {
           const member = members.find((m) => m.id === memberId);
-          if (member?.groupId === sel.id) {return true;}
+          if (member?.groupId === sel.id) {
+            return true;
+          }
         }
       }
       return false;
@@ -584,7 +626,9 @@ const TimezoneVisualizer = ({
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!timelineRef.current || !sectionsContainerRef.current) {return;}
+      if (!timelineRef.current || !sectionsContainerRef.current) {
+        return;
+      }
 
       const containerRect = sectionsContainerRef.current.getBoundingClientRect();
       const relativeX = e.clientX - containerRect.left;
@@ -656,7 +700,7 @@ const TimezoneVisualizer = ({
               }}
             >
               <div className="flex flex-col items-center gap-1">
-                <span className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground sm:text-xs">
+                <span className="text-[10px] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
                   {formatHour(hour % HOURS_IN_DAY)}
                 </span>
                 <div className="h-1.5 w-px bg-border" />
@@ -669,12 +713,14 @@ const TimezoneVisualizer = ({
   );
 
   const renderCurrentTimeIndicator = () => {
-    if (nowPosition === null) {return null;}
+    if (nowPosition === null) {
+      return null;
+    }
 
     return (
       <>
         <div
-          className="pointer-events-none absolute bottom-0 top-0 z-20 w-0.5 rounded-full bg-red-500 shadow-sm sm:hidden"
+          className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 rounded-full bg-red-500 shadow-sm sm:hidden"
           style={{
             left: `calc(2.5rem + (100% - 2.5rem) * ${nowPosition / 100})`,
           }}
@@ -683,7 +729,7 @@ const TimezoneVisualizer = ({
         </div>
         {/* Desktop */}
         <div
-          className="pointer-events-none absolute bottom-0 top-0 z-20 hidden w-0.5 rounded-full bg-red-500 shadow-sm sm:block"
+          className="pointer-events-none absolute top-0 bottom-0 z-20 hidden w-0.5 rounded-full bg-red-500 shadow-sm sm:block"
           style={{
             left: `calc(6.75rem + (100% - 6.75rem) * ${nowPosition / 100})`,
           }}
@@ -709,10 +755,10 @@ const TimezoneVisualizer = ({
             {member.name.charAt(0).toUpperCase()}
           </div>
           {isSelected && members.length > 1 && (
-            <div className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-foreground sm:h-3 sm:w-3" />
+            <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-foreground sm:h-3 sm:w-3" />
           )}
           {dayOffset !== 0 && (
-            <div className="absolute -bottom-0.5 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-amber-950 dark:bg-amber-500 dark:text-amber-950 sm:h-4 sm:w-4 sm:text-[9px]">
+            <div className="absolute -right-1 -bottom-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-amber-950 sm:h-4 sm:w-4 sm:text-[9px] dark:bg-amber-500 dark:text-amber-950">
               {dayOffset > 0 ? `+${dayOffset}` : dayOffset}
             </div>
           )}
@@ -782,9 +828,14 @@ const TimezoneVisualizer = ({
           const allUnavailable: Array<TeamMember> = [];
           for (const memberId of Array.from(selectedMemberIds)) {
             const row = memberRowById.get(memberId);
-            if (!row) {continue;}
-            if (row.hours[hour]) {allAvailable.push(row.member);}
-            else {allUnavailable.push(row.member);}
+            if (!row) {
+              continue;
+            }
+            if (row.hours[hour]) {
+              allAvailable.push(row.member);
+            } else {
+              allUnavailable.push(row.member);
+            }
           }
 
           const bucketByTeam = (list: Array<TeamMember>) => {
@@ -820,14 +871,14 @@ const TimezoneVisualizer = ({
               <TooltipContent side="top">
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-0.5">
-                    <div className="font-medium tabular-nums text-foreground">
+                    <div className="font-medium text-foreground tabular-nums">
                       {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
                     </div>
                     <div className="text-xs text-muted-foreground">{overlapLabel}</div>
                   </div>
                   {availableByTeam.size > 0 && (
                     <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                      <span className="text-[10px] font-medium tracking-wide text-emerald-600 uppercase dark:text-emerald-400">
                         Available by team
                       </span>
                       {Array.from(availableByTeam.entries()).map(([teamName, names]) => (
@@ -835,8 +886,8 @@ const TimezoneVisualizer = ({
                           key={`${teamName}-available`}
                           className="flex items-center justify-between gap-4 text-xs"
                         >
-                          <span className="font-medium text-foreground truncate">{teamName}</span>
-                          <span className="text-emerald-600 dark:text-emerald-400 truncate">
+                          <span className="truncate font-medium text-foreground">{teamName}</span>
+                          <span className="truncate text-emerald-600 dark:text-emerald-400">
                             {names.join(", ")}
                           </span>
                         </div>
@@ -845,7 +896,7 @@ const TimezoneVisualizer = ({
                   )}
                   {!isFullOverlap && unavailableByTeam.size > 0 && (
                     <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-red-600 dark:text-red-400">
+                      <span className="text-[10px] font-medium tracking-wide text-red-600 uppercase dark:text-red-400">
                         Unavailable
                       </span>
                       {/* Teams with no one available - shown with strikethrough */}
@@ -854,7 +905,7 @@ const TimezoneVisualizer = ({
                           key={`${teamName}-fully-unavailable`}
                           className="flex items-center justify-between gap-4 text-xs text-muted-foreground opacity-60"
                         >
-                          <span className="font-medium line-through truncate">{teamName}</span>
+                          <span className="truncate font-medium line-through">{teamName}</span>
                           <span className="truncate">
                             {unavailableByTeam.get(teamName)?.join(", ")}
                           </span>
@@ -866,7 +917,7 @@ const TimezoneVisualizer = ({
                           key={`${teamName}-unavailable`}
                           className="flex items-center justify-between gap-4 text-xs text-muted-foreground"
                         >
-                          <span className="font-medium text-foreground truncate">{teamName}</span>
+                          <span className="truncate font-medium text-foreground">{teamName}</span>
                           <span className="truncate">{names.join(", ")}</span>
                         </div>
                       ))}
@@ -886,7 +937,9 @@ const TimezoneVisualizer = ({
     const start = anyOverlap.findIndex(Boolean);
     const end = anyOverlap.lastIndexOf(true);
 
-    if (start === -1 || end === -1) {return null;}
+    if (start === -1 || end === -1) {
+      return null;
+    }
 
     const fullHoursCount = overlapHours.filter(Boolean).length;
     const partialHoursCount = partialOverlapHours.filter(Boolean).length;
@@ -948,7 +1001,7 @@ const TimezoneVisualizer = ({
       <div className="flex flex-col gap-6">
         {renderTimeAxis()}
 
-        <ScrollArea ref={sectionsContainerRef} className="relative flex flex-col gap-4 max-h-80">
+        <ScrollArea ref={sectionsContainerRef} className="relative flex max-h-80 flex-col gap-4">
           {renderCurrentTimeIndicator()}
 
           {groupedSections.map((section, sectionIndex) => {
@@ -1061,7 +1114,7 @@ const TimezoneVisualizer = ({
                       <Badge
                         key={serializeSelection(sel)}
                         variant="secondary"
-                        className="flex items-center gap-1.5 py-1 pl-2 pr-1"
+                        className="flex items-center gap-1.5 py-1 pr-1 pl-2"
                       >
                         {sel.type === "group" && <Users className="h-3 w-3" />}
                         <span>{getSelectionName(sel)}</span>
@@ -1079,7 +1132,9 @@ const TimezoneVisualizer = ({
                       value=""
                       onValueChange={(val) => {
                         const sel = deserializeSelection(val);
-                        if (sel) {addSelection(sel);}
+                        if (sel) {
+                          addSelection(sel);
+                        }
                       }}
                     >
                       {validSelections.length === 0 ? (
@@ -1149,7 +1204,7 @@ const TimezoneVisualizer = ({
 
                   {canShowOverlap && (
                     <div className="flex flex-col gap-3 border-t border-border pt-3">
-                      <p className="text-right text-xs tabular-nums text-muted-foreground">
+                      <p className="text-right text-xs text-muted-foreground tabular-nums">
                         {renderOverlapSummary()}
                       </p>
 
@@ -1187,7 +1242,7 @@ const TimezoneVisualizer = ({
                                 }}
                               >
                                 <div className="h-1.5 w-px bg-border" />
-                                <span className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground sm:text-xs">
+                                <span className="text-[10px] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
                                   {formatHour(hour % HOURS_IN_DAY)}
                                 </span>
                               </div>

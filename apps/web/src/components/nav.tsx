@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@repo/ui";
 import {
   Check,
   Copy,
@@ -17,19 +21,17 @@ import {
   User,
   X,
 } from "lucide-react";
-import { signOut, useSession } from "@/lib/auth-client";
+import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
+
+import { signOut, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
-import { ModeToggle } from "./mode-toggle";
+
 import { CurrentTimeDisplay } from "./current-time-display";
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@repo/ui";
+import { ModeToggle } from "./mode-toggle";
 
 // Logo component
 const NavLogo = ({ showTitle = true }: { showTitle?: boolean }) => (
@@ -91,7 +93,7 @@ const TeamTitle = ({
         onKeyDown={handleKeyDown}
         autoFocus
         placeholder="Team name…"
-        className="h-9 w-full max-w-48 rounded-lg border border-input bg-background px-3 text-base font-bold tracking-tight text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 sm:text-lg"
+        className="h-9 w-full max-w-48 rounded-lg border border-input bg-background px-3 text-base font-bold tracking-tight text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:text-lg"
       />
     );
   }
@@ -342,7 +344,9 @@ const Nav = (props: NavProps) => {
 
   // Team variant - with team name and editing
   if (variant === "team") {
-    if (props.variant !== "team") {return null;}
+    if (props.variant !== "team") {
+      return null;
+    }
     const { teamName, isAdmin, isEditingName, onEditName, onNameChange, onSaveName, onCancelEdit } =
       props;
 

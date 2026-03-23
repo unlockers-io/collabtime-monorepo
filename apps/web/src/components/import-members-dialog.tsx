@@ -1,10 +1,5 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { CheckCircle, Download, Upload, Users, XCircle } from "lucide-react";
-import { toast } from "sonner";
-import { importMembers } from "@/lib/actions";
-import { COMMON_TIMEZONES, formatTimezoneLabel, fuzzyMatchTimezone } from "@/lib/timezones";
 import {
   Button,
   Dialog,
@@ -22,6 +17,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@repo/ui";
+import { CheckCircle, Download, Upload, Users, XCircle } from "lucide-react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+
+import { importMembers } from "@/lib/actions";
+import { COMMON_TIMEZONES, formatTimezoneLabel, fuzzyMatchTimezone } from "@/lib/timezones";
 
 type ParsedRow = {
   errors: Array<string>;
@@ -51,13 +52,17 @@ const normalizeHeader = (h: string) => h.toLowerCase().replaceAll(/[\s_-]/g, "")
 const findColIndex = (headers: Array<string>, ...names: Array<string>): number => {
   for (const name of names) {
     const idx = headers.indexOf(normalizeHeader(name));
-    if (idx !== -1) {return idx;}
+    if (idx !== -1) {
+      return idx;
+    }
   }
   return -1;
 };
 
 const parseCSVLine = (line: string, sep: string): Array<string> => {
-  if (sep === "\t") {return line.split("\t").map((s) => s.trim());}
+  if (sep === "\t") {
+    return line.split("\t").map((s) => s.trim());
+  }
 
   const cells: Array<string> = [];
   let cur = "";
@@ -85,7 +90,9 @@ const parseCSVLine = (line: string, sep: string): Array<string> => {
 
 const parseCSV = (text: string): Array<ParsedRow> => {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  if (lines.length === 0) {return [];}
+  if (lines.length === 0) {
+    return [];
+  }
 
   const firstLine = lines[0];
   const sep =
@@ -102,9 +109,7 @@ const parseCSV = (text: string): Array<ParsedRow> => {
   const firstCells = parseCSVLine(firstLine, sep).map(normalizeHeader);
 
   const hasHeader =
-    firstCells.includes("name") ||
-    firstCells.includes("timezone") ||
-    firstCells.includes("tz");
+    firstCells.includes("name") || firstCells.includes("timezone") || firstCells.includes("tz");
 
   if (hasHeader) {
     startRow = 1;
@@ -121,7 +126,9 @@ const parseCSV = (text: string): Array<ParsedRow> => {
 
   for (let i = startRow; i < lines.length; i++) {
     const cells = parseCSVLine(lines[i], sep);
-    if (cells.every((c) => !c)) {continue;}
+    if (cells.every((c) => !c)) {
+      continue;
+    }
 
     const name = (nameIdx !== null ? (cells[nameIdx] ?? "") : "").trim();
     const rawTimezone = (tzIdx !== null ? (cells[tzIdx] ?? "") : "").trim();
@@ -134,10 +141,17 @@ const parseCSV = (text: string): Array<ParsedRow> => {
     const workEnd = Number.parseInt(workEndRaw, 10);
 
     const errors: Array<string> = [];
-    if (!name) {errors.push("Name is required");}
-    if (name.length > 100) {errors.push("Name too long (max 100 chars)");}
-    if (!rawTimezone) {errors.push("Timezone is required");}
-    else if (!matchedTimezone) {errors.push(`Unknown timezone: "${rawTimezone}"`);}
+    if (!name) {
+      errors.push("Name is required");
+    }
+    if (name.length > 100) {
+      errors.push("Name too long (max 100 chars)");
+    }
+    if (!rawTimezone) {
+      errors.push("Timezone is required");
+    } else if (!matchedTimezone) {
+      errors.push(`Unknown timezone: "${rawTimezone}"`);
+    }
     if (Number.isNaN(workStart) || workStart < 0 || workStart > 23) {
       errors.push("Work start must be 0–23");
     }
@@ -186,7 +200,9 @@ const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
   };
 
   const handleOpenChange = (next: boolean) => {
-    if (!next) {handleReset();}
+    if (!next) {
+      handleReset();
+    }
     setOpen(next);
   };
 
@@ -197,7 +213,9 @@ const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) {return;}
+    if (!file) {
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (ev) => handleFileRead(ev.target?.result as string);
     reader.readAsText(file);
@@ -208,21 +226,29 @@ const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
-    if (!file) {return;}
+    if (!file) {
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (ev) => handleFileRead(ev.target?.result as string);
     reader.readAsText(file);
   };
 
   const handlePreview = () => {
-    if (!csvText.trim()) {return;}
+    if (!csvText.trim()) {
+      return;
+    }
     setRows(parseCSV(csvText));
   };
 
   const handleImport = async () => {
-    if (!rows) {return;}
+    if (!rows) {
+      return;
+    }
     const valid = rows.filter((r) => r.errors.length === 0 && r.matchedTimezone);
-    if (valid.length === 0) {return;}
+    if (valid.length === 0) {
+      return;
+    }
 
     setIsImporting(true);
     const result = await importMembers(
@@ -240,7 +266,9 @@ const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
     setIsImporting(false);
 
     if (result.success) {
-      toast.success(`${result.data.imported} member${result.data.imported === 1 ? "" : "s"} imported`);
+      toast.success(
+        `${result.data.imported} member${result.data.imported === 1 ? "" : "s"} imported`,
+      );
       handleOpenChange(false);
     } else {
       toast.error(result.error);
@@ -390,7 +418,7 @@ const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
                               key={row.index}
                               className={`border-b border-border last:border-0 ${isValid ? "" : "opacity-50"}`}
                             >
-                              <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                              <td className="px-3 py-2 text-muted-foreground tabular-nums">
                                 {row.index}
                               </td>
                               <td className="px-3 py-2 font-medium">
@@ -417,7 +445,7 @@ const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
                               <td className="px-3 py-2 text-muted-foreground">
                                 {row.title || <span className="opacity-40">—</span>}
                               </td>
-                              <td className="whitespace-nowrap px-3 py-2 tabular-nums text-muted-foreground">
+                              <td className="px-3 py-2 whitespace-nowrap text-muted-foreground tabular-nums">
                                 {row.workingHoursStart}:00–{row.workingHoursEnd}:00
                               </td>
                               <td className="px-3 py-2">
@@ -430,9 +458,7 @@ const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
                                         <XCircle className="h-4 w-4 text-destructive" />
                                       </span>
                                     </TooltipTrigger>
-                                    <TooltipContent>
-                                      {row.errors.join(" · ")}
-                                    </TooltipContent>
+                                    <TooltipContent>{row.errors.join(" · ")}</TooltipContent>
                                   </Tooltip>
                                 )}
                               </td>

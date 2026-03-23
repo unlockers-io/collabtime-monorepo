@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { z } from "zod";
-import bcrypt from "bcryptjs";
-import { auth } from "@/lib/auth-server";
 import { prisma, SubscriptionPlan } from "@repo/db";
+import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
+import { auth } from "@/lib/auth-server";
 
 const updateSpaceSchema = z.object({
   isPrivate: z.boolean().optional(),

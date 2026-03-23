@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { useLocalStorage } from "./use-local-storage";
+
 import { validateTeam } from "@/lib/actions";
+
+import { useLocalStorage } from "./use-local-storage";
 
 const STORAGE_KEY = "collabtime-visited-teams";
 const MAX_VISITED_TEAMS = 10;
@@ -22,7 +24,9 @@ const useVisitedTeams = () => {
   }, []);
 
   useEffect(() => {
-    if (!isHydrated || visitedTeams.length === 0) {return;}
+    if (!isHydrated || visitedTeams.length === 0) {
+      return;
+    }
 
     let cancelled = false;
     const runValidation = async () => {
@@ -34,7 +38,9 @@ const useVisitedTeams = () => {
           }),
         );
 
-        if (cancelled) {return;}
+        if (cancelled) {
+          return;
+        }
         const invalidIds = results.filter((r) => !r.exists).map((r) => r.id);
         if (invalidIds.length > 0) {
           setVisitedTeams((teams) => teams.filter((t) => !invalidIds.includes(t.id)));

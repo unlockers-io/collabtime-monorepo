@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { Crown, Lock, Shield, Zap, Check, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@repo/ui";
+import { Crown, Lock, Shield, Zap, Check, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 type ProFeature = {
   description: string;
@@ -55,7 +55,7 @@ const ProFeaturesDialog = ({ children, isAuthenticated = false }: ProFeaturesDia
           View PRO features
         </button>
       )}
-      <DialogContent className="flex flex-col gap-4 max-w-lg bg-popover">
+      <DialogContent className="flex max-w-lg flex-col gap-4 bg-popover">
         <DialogHeader className="flex flex-col gap-2">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-amber-400 to-amber-600">
             <Crown className="h-6 w-6 text-white" />
@@ -95,7 +95,7 @@ const ProFeaturesDialog = ({ children, isAuthenticated = false }: ProFeaturesDia
           {isAuthenticated ? (
             <Link
               href="/settings"
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               Upgrade Now
               <ArrowRight className="h-4 w-4" />
@@ -104,7 +104,7 @@ const ProFeaturesDialog = ({ children, isAuthenticated = false }: ProFeaturesDia
             <div className="flex flex-col gap-2">
               <Link
                 href="/signup"
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
                 Create Account to Upgrade
                 <ArrowRight className="h-4 w-4" />

@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
-import { Circle, Clock, Sunrise, Users } from "lucide-react";
-import type { TeamGroup, TeamMember } from "@/types";
-import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
 import { ScrollArea, Badge } from "@repo/ui";
+import { Circle, Clock, Sunrise, Users } from "lucide-react";
+import { useMemo, useSyncExternalStore } from "react";
+
+import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
+import type { TeamGroup, TeamMember } from "@/types";
 
 const SOON_THRESHOLD_HOURS = 2;
 const SCROLL_AREA_MAX_HEIGHT = 120;
@@ -41,7 +42,9 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
   const tick = useSyncExternalStore(tickSubscribe, getTickSnapshot, getTickServerSnapshot);
 
   const memberStatuses = useMemo((): Array<MemberStatus> => {
-    if (!viewerTimezone) {return [];}
+    if (!viewerTimezone) {
+      return [];
+    }
     // Include tick in the dependency to trigger recalculation every 30 seconds
     void tick;
 
@@ -77,11 +80,15 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
 
       if (!working) {
         let diff = startInViewer - currentHourInViewer;
-        if (diff < 0) {diff += 24;}
+        if (diff < 0) {
+          diff += 24;
+        }
         hoursUntilStart = diff;
       } else {
         let diff = endInViewer - currentHourInViewer;
-        if (diff < 0) {diff += 24;}
+        if (diff < 0) {
+          diff += 24;
+        }
         hoursUntilEnd = diff;
       }
 
@@ -118,7 +125,9 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
   );
 
   const getGroupName = (groupId?: string) => {
-    if (!groupId) {return null;}
+    if (!groupId) {
+      return null;
+    }
     return groups.find((g) => g.id === groupId)?.name ?? null;
   };
 
@@ -141,7 +150,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
               <Circle className="h-2.5 w-2.5 fill-green-500 text-green-500" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Online Now</span>
-            <span className="ml-auto rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-green-700 dark:bg-green-900/40 dark:text-green-400">
+            <span className="ml-auto rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 tabular-nums dark:bg-green-900/40 dark:text-green-400">
               {onlineMembers.length}
             </span>
           </div>
@@ -153,7 +162,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
                   return (
                     <Badge
                       key={member.id}
-                      className="cursor-help bg-background shadow-sm text-foreground"
+                      className="cursor-help bg-background text-foreground shadow-sm"
                       title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
@@ -175,7 +184,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
               <Sunrise className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Starting Soon</span>
-            <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+            <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 tabular-nums dark:bg-amber-900/40 dark:text-amber-400">
               {comingSoonMembers.length}
             </span>
           </div>
@@ -192,7 +201,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
                       title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
                       <span className="text-xs font-medium text-foreground">{member.name}</span>
-                      <span className="text-xs tabular-nums text-amber-600 dark:text-amber-400">
+                      <span className="text-xs text-amber-600 tabular-nums dark:text-amber-400">
                         in {hoursUntilStart}h
                       </span>
                     </Badge>
@@ -214,7 +223,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
               <Clock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Wrapping Up</span>
-            <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+            <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 tabular-nums dark:bg-blue-900/40 dark:text-blue-400">
               {leavingSoonMembers.length}
             </span>
           </div>
@@ -231,7 +240,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
                       title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
                       <span className="text-xs font-medium text-foreground">{member.name}</span>
-                      <span className="text-xs tabular-nums text-blue-600 dark:text-blue-400">
+                      <span className="text-xs text-blue-600 tabular-nums dark:text-blue-400">
                         {hoursUntilEnd}h left
                       </span>
                     </Badge>

@@ -1,15 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import { UserPlus } from "lucide-react";
-import { addMember } from "@/lib/actions";
-import type { TeamGroup, TeamMember } from "@/types";
-import { COMMON_TIMEZONES, formatTimezoneLabel, getUserTimezone } from "@/lib/timezones";
-import { formatHour } from "@/lib/utils";
 import {
   Button,
   Dialog,
@@ -30,7 +21,17 @@ import {
   SelectValue,
   Spinner,
 } from "@repo/ui";
+import { UserPlus } from "lucide-react";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
 import { GroupSelector } from "@/components/group-selector";
+import { addMember } from "@/lib/actions";
+import { COMMON_TIMEZONES, formatTimezoneLabel, getUserTimezone } from "@/lib/timezones";
+import { formatHour } from "@/lib/utils";
+import type { TeamGroup, TeamMember } from "@/types";
 
 type AddMemberDialogProps = {
   groups: Array<TeamGroup>;
