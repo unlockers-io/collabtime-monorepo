@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## What is Collabtime
 
@@ -86,6 +86,6 @@ User → Session, Account, Subscription, Space. Users have a `subscriptionPlan` 
 
 ## Environment variables
 
-Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (≥32 chars), `BETTER_AUTH_URL`, `STRIPE_SECRET_KEY` (sk*\*), `STRIPE_WEBHOOK_SECRET` (whsec*_), `STRIPE_PRO_PRICE_ID` (price\__), `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (≥32 chars), `BETTER_AUTH_URL`, `STRIPE_SECRET_KEY` (sk*\*), `STRIPE_WEBHOOK_SECRET` (whsec*\_), `STRIPE_PRO_PRICE_ID` (price\_\_), `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 
 Optional: `WEB_APP_URL`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SPACE_ACCESS_SECRET`, `NODE_ENV`
