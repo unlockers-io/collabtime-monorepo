@@ -161,6 +161,9 @@ const updateTeamName = async (teamId: string, name: string): Promise<ActionResul
     }
 
     const trimmedName = name.trim().slice(0, 100);
+    if (!trimmedName) {
+      return { success: false, error: "Team name cannot be empty" };
+    }
 
     const team = await getTeamRecord(teamId);
     if (!team) {

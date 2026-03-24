@@ -28,7 +28,11 @@ const getPublicTeam = async (
       where: { teamId },
     });
 
-    if (space?.isPrivate) {
+    if (!space) {
+      return { success: false, error: "Team not found" };
+    }
+
+    if (space.isPrivate) {
       const teamRole = await getTeamRole(teamId);
       if (!teamRole) {
         return { success: false, error: "This team is private" };
@@ -57,8 +61,12 @@ const validateTeam = async (teamId: string): Promise<boolean> => {
       return false;
     }
 
-    const exists = await redis.exists(`team:${teamId}`);
-    return exists === 1;
+    const space = await prisma.space.findUnique({
+      where: { teamId },
+      select: { id: true },
+    });
+
+    return space !== null;
   } catch (error) {
     console.error("Failed to validate team:", error);
     return false;

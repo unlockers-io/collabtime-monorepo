@@ -8,7 +8,10 @@ import { UUIDSchema } from "../validation";
 const sanitizeTeam = (team: TeamRecord): Team => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { adminPasswordHash, ...publicTeam } = team;
-  return publicTeam;
+  return {
+    ...publicTeam,
+    members: publicTeam.members.map(({ userId: _userId, ...member }) => member),
+  };
 };
 
 const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {

@@ -34,18 +34,22 @@ const createTeam = async (): Promise<ActionResult<string>> => {
       }),
     ]);
 
-    // Write Redis record last so Postgres is the source of truth
-    const team: TeamRecord = {
-      id: teamId,
-      name: "",
-      createdAt: new Date().toISOString(),
-      members: [],
-      groups: [],
-    };
+    // Post-commit: populate Redis cache (best-effort)
+    try {
+      const team: TeamRecord = {
+        id: teamId,
+        name: "",
+        createdAt: new Date().toISOString(),
+        members: [],
+        groups: [],
+      };
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_INITIAL_TTL_SECONDS,
-    });
+      await redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_INITIAL_TTL_SECONDS,
+      });
+    } catch (cacheError) {
+      console.error("Post-commit Redis cache failed (team created in Postgres):", cacheError);
+    }
 
     return { success: true, data: teamId };
   } catch (error) {

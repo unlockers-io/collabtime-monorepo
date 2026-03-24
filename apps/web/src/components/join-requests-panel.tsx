@@ -24,7 +24,10 @@ const joinRequestsQueryKey = (teamId: string) => ["join-requests", teamId] as co
 
 const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    id: string;
+    type: "approve" | "deny";
+  } | null>(null);
   const [isPending, startTransition] = useTransition();
   const queryClient = useQueryClient();
 
@@ -44,7 +47,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   };
 
   const handleApprove = (requestId: string) => {
-    setPendingAction(requestId);
+    setPendingAction({ id: requestId, type: "approve" });
     startTransition(async () => {
       const result = await approveJoinRequest(requestId);
 
@@ -60,7 +63,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   };
 
   const handleDeny = (requestId: string) => {
-    setPendingAction(requestId);
+    setPendingAction({ id: requestId, type: "deny" });
     startTransition(async () => {
       const result = await denyJoinRequest(requestId);
 
@@ -122,7 +125,9 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
           <ScrollArea className="max-h-64">
             <ul className="divide-y divide-amber-100 dark:divide-amber-900/30">
               {requests.map((request) => {
-                const isActionPending = isPending && pendingAction === request.id;
+                const isThisRequest = isPending && pendingAction?.id === request.id;
+                const isApproving = isThisRequest && pendingAction?.type === "approve";
+                const isDenying = isThisRequest && pendingAction?.type === "deny";
 
                 return (
                   <li key={request.id} className="flex items-center gap-3 px-4 py-3">
@@ -144,21 +149,21 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => handleApprove(request.id)}
-                        disabled={isActionPending}
+                        disabled={isThisRequest}
                         className="text-green-600 hover:bg-green-100 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-900/30 dark:hover:text-green-300"
                         aria-label={`Approve ${request.userName}`}
                       >
-                        {isActionPending ? <Spinner /> : <Check className="h-4 w-4" />}
+                        {isApproving ? <Spinner /> : <Check className="h-4 w-4" />}
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => handleDeny(request.id)}
-                        disabled={isActionPending}
+                        disabled={isThisRequest}
                         className="text-red-600 hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300"
                         aria-label={`Deny ${request.userName}`}
                       >
-                        {isActionPending ? <Spinner /> : <X className="h-4 w-4" />}
+                        {isDenying ? <Spinner /> : <X className="h-4 w-4" />}
                       </Button>
                     </div>
                   </li>

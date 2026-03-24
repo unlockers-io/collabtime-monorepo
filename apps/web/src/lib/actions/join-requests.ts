@@ -111,14 +111,8 @@ const approveJoinRequest = async (
       }),
     ]);
 
-    // Add TeamMember to Redis
-    const team = await getTeamRecord(joinRequest.teamId);
-    if (!team) {
-      return { success: false, error: "Team not found" };
-    }
-
+    // Post-commit side effects: cache + realtime (best-effort)
     const memberName = joinRequest.user.name || joinRequest.user.email.split("@")[0] || "Unknown";
-
     const newMember: TeamMember = {
       id: uuidv4(),
       name: memberName,
@@ -129,13 +123,18 @@ const approveJoinRequest = async (
       userId: joinRequest.userId,
     };
 
-    team.members.push(newMember);
-
-    await redis.set(`team:${joinRequest.teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${joinRequest.teamId}`).emit("team.memberAdded", newMember);
+    try {
+      const team = await getTeamRecord(joinRequest.teamId);
+      if (team) {
+        team.members.push(newMember);
+        await redis.set(`team:${joinRequest.teamId}`, JSON.stringify(team), {
+          ex: TEAM_ACTIVE_TTL_SECONDS,
+        });
+      }
+      await realtime.channel(`team-${joinRequest.teamId}`).emit("team.memberAdded", newMember);
+    } catch (cacheError) {
+      console.error("Post-commit cache/realtime failed (approval committed):", cacheError);
+    }
 
     return { success: true, data: { memberId: newMember.id } };
   } catch (error) {
