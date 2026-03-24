@@ -27,6 +27,9 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().email().optional(),
 
+  // Vercel Cron
+  CRON_SECRET: z.string().min(1).optional(),
+
   // Node environment
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });

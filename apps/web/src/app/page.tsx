@@ -159,7 +159,7 @@ const Home = () => {
                           </span>
                         </div>
                       </Link>
-                      {team.role === "admin" && (
+                      {team.role === "ADMIN" && (
                         <Shield className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       )}
                     </motion.div>

@@ -28,7 +28,7 @@ export type MembershipMinAggregateOutputType = {
   id: string | null;
   userId: string | null;
   teamId: string | null;
-  role: string | null;
+  role: $Enums.MemberRole | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 };
@@ -37,7 +37,7 @@ export type MembershipMaxAggregateOutputType = {
   id: string | null;
   userId: string | null;
   teamId: string | null;
-  role: string | null;
+  role: $Enums.MemberRole | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 };
@@ -159,7 +159,7 @@ export type MembershipGroupByOutputType = {
   id: string;
   userId: string;
   teamId: string;
-  role: string;
+  role: $Enums.MemberRole;
   createdAt: Date;
   updatedAt: Date;
   _count: MembershipCountAggregateOutputType | null;
@@ -186,10 +186,11 @@ export type MembershipWhereInput = {
   id?: Prisma.StringFilter<"Membership"> | string;
   userId?: Prisma.StringFilter<"Membership"> | string;
   teamId?: Prisma.StringFilter<"Membership"> | string;
-  role?: Prisma.StringFilter<"Membership"> | string;
+  role?: Prisma.EnumMemberRoleFilter<"Membership"> | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeFilter<"Membership"> | Date | string;
   updatedAt?: Prisma.DateTimeFilter<"Membership"> | Date | string;
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+  space?: Prisma.XOR<Prisma.SpaceScalarRelationFilter, Prisma.SpaceWhereInput>;
 };
 
 export type MembershipOrderByWithRelationInput = {
@@ -200,6 +201,7 @@ export type MembershipOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
   user?: Prisma.UserOrderByWithRelationInput;
+  space?: Prisma.SpaceOrderByWithRelationInput;
 };
 
 export type MembershipWhereUniqueInput = Prisma.AtLeast<
@@ -211,10 +213,11 @@ export type MembershipWhereUniqueInput = Prisma.AtLeast<
     NOT?: Prisma.MembershipWhereInput | Prisma.MembershipWhereInput[];
     userId?: Prisma.StringFilter<"Membership"> | string;
     teamId?: Prisma.StringFilter<"Membership"> | string;
-    role?: Prisma.StringFilter<"Membership"> | string;
+    role?: Prisma.EnumMemberRoleFilter<"Membership"> | $Enums.MemberRole;
     createdAt?: Prisma.DateTimeFilter<"Membership"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"Membership"> | Date | string;
     user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+    space?: Prisma.XOR<Prisma.SpaceScalarRelationFilter, Prisma.SpaceWhereInput>;
   },
   "id" | "userId_teamId"
 >;
@@ -242,43 +245,43 @@ export type MembershipScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Membership"> | string;
   userId?: Prisma.StringWithAggregatesFilter<"Membership"> | string;
   teamId?: Prisma.StringWithAggregatesFilter<"Membership"> | string;
-  role?: Prisma.StringWithAggregatesFilter<"Membership"> | string;
+  role?: Prisma.EnumMemberRoleWithAggregatesFilter<"Membership"> | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Membership"> | Date | string;
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Membership"> | Date | string;
 };
 
 export type MembershipCreateInput = {
   id?: string;
-  teamId: string;
-  role?: string;
+  role?: $Enums.MemberRole;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   user: Prisma.UserCreateNestedOneWithoutMembershipsInput;
+  space: Prisma.SpaceCreateNestedOneWithoutMembershipsInput;
 };
 
 export type MembershipUncheckedCreateInput = {
   id?: string;
   userId: string;
   teamId: string;
-  role?: string;
+  role?: $Enums.MemberRole;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
 export type MembershipUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
-  teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   user?: Prisma.UserUpdateOneRequiredWithoutMembershipsNestedInput;
+  space?: Prisma.SpaceUpdateOneRequiredWithoutMembershipsNestedInput;
 };
 
 export type MembershipUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   userId?: Prisma.StringFieldUpdateOperationsInput | string;
   teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -287,15 +290,14 @@ export type MembershipCreateManyInput = {
   id?: string;
   userId: string;
   teamId: string;
-  role?: string;
+  role?: $Enums.MemberRole;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
 export type MembershipUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
-  teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -304,7 +306,7 @@ export type MembershipUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   userId?: Prisma.StringFieldUpdateOperationsInput | string;
   teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -437,18 +439,108 @@ export type MembershipUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.MembershipScalarWhereInput | Prisma.MembershipScalarWhereInput[];
 };
 
+export type EnumMemberRoleFieldUpdateOperationsInput = {
+  set?: $Enums.MemberRole;
+};
+
+export type MembershipCreateNestedManyWithoutSpaceInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.MembershipCreateWithoutSpaceInput,
+        Prisma.MembershipUncheckedCreateWithoutSpaceInput
+      >
+    | Prisma.MembershipCreateWithoutSpaceInput[]
+    | Prisma.MembershipUncheckedCreateWithoutSpaceInput[];
+  connectOrCreate?:
+    | Prisma.MembershipCreateOrConnectWithoutSpaceInput
+    | Prisma.MembershipCreateOrConnectWithoutSpaceInput[];
+  createMany?: Prisma.MembershipCreateManySpaceInputEnvelope;
+  connect?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+};
+
+export type MembershipUncheckedCreateNestedManyWithoutSpaceInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.MembershipCreateWithoutSpaceInput,
+        Prisma.MembershipUncheckedCreateWithoutSpaceInput
+      >
+    | Prisma.MembershipCreateWithoutSpaceInput[]
+    | Prisma.MembershipUncheckedCreateWithoutSpaceInput[];
+  connectOrCreate?:
+    | Prisma.MembershipCreateOrConnectWithoutSpaceInput
+    | Prisma.MembershipCreateOrConnectWithoutSpaceInput[];
+  createMany?: Prisma.MembershipCreateManySpaceInputEnvelope;
+  connect?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+};
+
+export type MembershipUpdateManyWithoutSpaceNestedInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.MembershipCreateWithoutSpaceInput,
+        Prisma.MembershipUncheckedCreateWithoutSpaceInput
+      >
+    | Prisma.MembershipCreateWithoutSpaceInput[]
+    | Prisma.MembershipUncheckedCreateWithoutSpaceInput[];
+  connectOrCreate?:
+    | Prisma.MembershipCreateOrConnectWithoutSpaceInput
+    | Prisma.MembershipCreateOrConnectWithoutSpaceInput[];
+  upsert?:
+    | Prisma.MembershipUpsertWithWhereUniqueWithoutSpaceInput
+    | Prisma.MembershipUpsertWithWhereUniqueWithoutSpaceInput[];
+  createMany?: Prisma.MembershipCreateManySpaceInputEnvelope;
+  set?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+  disconnect?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+  delete?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+  connect?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+  update?:
+    | Prisma.MembershipUpdateWithWhereUniqueWithoutSpaceInput
+    | Prisma.MembershipUpdateWithWhereUniqueWithoutSpaceInput[];
+  updateMany?:
+    | Prisma.MembershipUpdateManyWithWhereWithoutSpaceInput
+    | Prisma.MembershipUpdateManyWithWhereWithoutSpaceInput[];
+  deleteMany?: Prisma.MembershipScalarWhereInput | Prisma.MembershipScalarWhereInput[];
+};
+
+export type MembershipUncheckedUpdateManyWithoutSpaceNestedInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.MembershipCreateWithoutSpaceInput,
+        Prisma.MembershipUncheckedCreateWithoutSpaceInput
+      >
+    | Prisma.MembershipCreateWithoutSpaceInput[]
+    | Prisma.MembershipUncheckedCreateWithoutSpaceInput[];
+  connectOrCreate?:
+    | Prisma.MembershipCreateOrConnectWithoutSpaceInput
+    | Prisma.MembershipCreateOrConnectWithoutSpaceInput[];
+  upsert?:
+    | Prisma.MembershipUpsertWithWhereUniqueWithoutSpaceInput
+    | Prisma.MembershipUpsertWithWhereUniqueWithoutSpaceInput[];
+  createMany?: Prisma.MembershipCreateManySpaceInputEnvelope;
+  set?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+  disconnect?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+  delete?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+  connect?: Prisma.MembershipWhereUniqueInput | Prisma.MembershipWhereUniqueInput[];
+  update?:
+    | Prisma.MembershipUpdateWithWhereUniqueWithoutSpaceInput
+    | Prisma.MembershipUpdateWithWhereUniqueWithoutSpaceInput[];
+  updateMany?:
+    | Prisma.MembershipUpdateManyWithWhereWithoutSpaceInput
+    | Prisma.MembershipUpdateManyWithWhereWithoutSpaceInput[];
+  deleteMany?: Prisma.MembershipScalarWhereInput | Prisma.MembershipScalarWhereInput[];
+};
+
 export type MembershipCreateWithoutUserInput = {
   id?: string;
-  teamId: string;
-  role?: string;
+  role?: $Enums.MemberRole;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+  space: Prisma.SpaceCreateNestedOneWithoutMembershipsInput;
 };
 
 export type MembershipUncheckedCreateWithoutUserInput = {
   id?: string;
   teamId: string;
-  role?: string;
+  role?: $Enums.MemberRole;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
@@ -501,31 +593,88 @@ export type MembershipScalarWhereInput = {
   id?: Prisma.StringFilter<"Membership"> | string;
   userId?: Prisma.StringFilter<"Membership"> | string;
   teamId?: Prisma.StringFilter<"Membership"> | string;
-  role?: Prisma.StringFilter<"Membership"> | string;
+  role?: Prisma.EnumMemberRoleFilter<"Membership"> | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeFilter<"Membership"> | Date | string;
   updatedAt?: Prisma.DateTimeFilter<"Membership"> | Date | string;
+};
+
+export type MembershipCreateWithoutSpaceInput = {
+  id?: string;
+  role?: $Enums.MemberRole;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  user: Prisma.UserCreateNestedOneWithoutMembershipsInput;
+};
+
+export type MembershipUncheckedCreateWithoutSpaceInput = {
+  id?: string;
+  userId: string;
+  role?: $Enums.MemberRole;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+};
+
+export type MembershipCreateOrConnectWithoutSpaceInput = {
+  where: Prisma.MembershipWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.MembershipCreateWithoutSpaceInput,
+    Prisma.MembershipUncheckedCreateWithoutSpaceInput
+  >;
+};
+
+export type MembershipCreateManySpaceInputEnvelope = {
+  data: Prisma.MembershipCreateManySpaceInput | Prisma.MembershipCreateManySpaceInput[];
+  skipDuplicates?: boolean;
+};
+
+export type MembershipUpsertWithWhereUniqueWithoutSpaceInput = {
+  where: Prisma.MembershipWhereUniqueInput;
+  update: Prisma.XOR<
+    Prisma.MembershipUpdateWithoutSpaceInput,
+    Prisma.MembershipUncheckedUpdateWithoutSpaceInput
+  >;
+  create: Prisma.XOR<
+    Prisma.MembershipCreateWithoutSpaceInput,
+    Prisma.MembershipUncheckedCreateWithoutSpaceInput
+  >;
+};
+
+export type MembershipUpdateWithWhereUniqueWithoutSpaceInput = {
+  where: Prisma.MembershipWhereUniqueInput;
+  data: Prisma.XOR<
+    Prisma.MembershipUpdateWithoutSpaceInput,
+    Prisma.MembershipUncheckedUpdateWithoutSpaceInput
+  >;
+};
+
+export type MembershipUpdateManyWithWhereWithoutSpaceInput = {
+  where: Prisma.MembershipScalarWhereInput;
+  data: Prisma.XOR<
+    Prisma.MembershipUpdateManyMutationInput,
+    Prisma.MembershipUncheckedUpdateManyWithoutSpaceInput
+  >;
 };
 
 export type MembershipCreateManyUserInput = {
   id?: string;
   teamId: string;
-  role?: string;
+  role?: $Enums.MemberRole;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
 export type MembershipUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
-  teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  space?: Prisma.SpaceUpdateOneRequiredWithoutMembershipsNestedInput;
 };
 
 export type MembershipUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -533,7 +682,39 @@ export type MembershipUncheckedUpdateWithoutUserInput = {
 export type MembershipUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+
+export type MembershipCreateManySpaceInput = {
+  id?: string;
+  userId: string;
+  role?: $Enums.MemberRole;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+};
+
+export type MembershipUpdateWithoutSpaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  user?: Prisma.UserUpdateOneRequiredWithoutMembershipsNestedInput;
+};
+
+export type MembershipUncheckedUpdateWithoutSpaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  userId?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+
+export type MembershipUncheckedUpdateManyWithoutSpaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  userId?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -549,6 +730,7 @@ export type MembershipSelect<
     createdAt?: boolean;
     updatedAt?: boolean;
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
   },
   ExtArgs["result"]["membership"]
 >;
@@ -564,6 +746,7 @@ export type MembershipSelectCreateManyAndReturn<
     createdAt?: boolean;
     updatedAt?: boolean;
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
   },
   ExtArgs["result"]["membership"]
 >;
@@ -579,6 +762,7 @@ export type MembershipSelectUpdateManyAndReturn<
     createdAt?: boolean;
     updatedAt?: boolean;
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
   },
   ExtArgs["result"]["membership"]
 >;
@@ -602,16 +786,19 @@ export type MembershipInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
 };
 export type MembershipIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
 };
 export type MembershipIncludeUpdateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
 };
 
 export type $MembershipPayload<
@@ -620,13 +807,14 @@ export type $MembershipPayload<
   name: "Membership";
   objects: {
     user: Prisma.$UserPayload<ExtArgs>;
+    space: Prisma.$SpacePayload<ExtArgs>;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
       id: string;
       userId: string;
       teamId: string;
-      role: string;
+      role: $Enums.MemberRole;
       createdAt: Date;
       updatedAt: Date;
     },
@@ -1181,6 +1369,20 @@ export interface Prisma__MembershipClient<
     ExtArgs,
     GlobalOmitOptions
   >;
+  space<T extends Prisma.SpaceDefaultArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.SpaceDefaultArgs<ExtArgs>>,
+  ): Prisma.Prisma__SpaceClient<
+    | runtime.Types.Result.GetResult<
+        Prisma.$SpacePayload<ExtArgs>,
+        T,
+        "findUniqueOrThrow",
+        GlobalOmitOptions
+      >
+    | Null,
+    Null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1215,7 +1417,7 @@ export interface MembershipFieldRefs {
   readonly id: Prisma.FieldRef<"Membership", "String">;
   readonly userId: Prisma.FieldRef<"Membership", "String">;
   readonly teamId: Prisma.FieldRef<"Membership", "String">;
-  readonly role: Prisma.FieldRef<"Membership", "String">;
+  readonly role: Prisma.FieldRef<"Membership", "MemberRole">;
   readonly createdAt: Prisma.FieldRef<"Membership", "DateTime">;
   readonly updatedAt: Prisma.FieldRef<"Membership", "DateTime">;
 }
