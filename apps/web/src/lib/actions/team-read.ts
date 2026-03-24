@@ -46,7 +46,7 @@ const getPublicTeam = async (
 
     return {
       success: true,
-      data: { team: sanitizeTeam(team), role: "member" },
+      data: { team: sanitizeTeam(team), role: "MEMBER" },
     };
   } catch (error) {
     console.error("Failed to fetch public team:", error);

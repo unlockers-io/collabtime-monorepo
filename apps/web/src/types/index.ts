@@ -30,15 +30,15 @@ type TeamRecord = Team & {
 
 type ServerSession = {
   createdAt: number;
-  role: "admin" | "member";
+  role: "ADMIN" | "MEMBER";
   teamId: string;
 };
 
-type TeamRole = "admin" | "member";
+type TeamRole = "ADMIN" | "MEMBER";
 
-type TeamStatus = "admin" | "member" | "pending" | "none";
+type TeamStatus = "ADMIN" | "MEMBER" | "PENDING" | "none";
 
-const TEAM_ROLES = new Set<string>(["admin", "member"]);
+const TEAM_ROLES = new Set<string>(["ADMIN", "MEMBER"]);
 
 const isTeamRole = (value: unknown): value is TeamRole => {
   return typeof value === "string" && TEAM_ROLES.has(value);

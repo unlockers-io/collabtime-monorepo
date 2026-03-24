@@ -31,7 +31,7 @@ model Session {
   token     String   @unique @db.VarChar(512)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  ipAddress String?
+  ipAddress String?  @db.VarChar(45)
   userAgent String?  @db.Text
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -63,7 +63,7 @@ model Account {
 model Verification {
   id         String   @id @default(cuid())
   identifier String
-  value      String
+  value      String   @db.VarChar(255)
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -73,14 +73,26 @@ model Verification {
 }
 
 
+enum MemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
 model Membership {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   userId    String
   teamId    String
-  role      String   @default("member") // "admin" | "member"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      MemberRole @default(MEMBER)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  space     Space      @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
 
   @@unique([userId, teamId])
   @@index([userId])
@@ -88,13 +100,14 @@ model Membership {
 }
 
 model JoinRequest {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   userId    String
   teamId    String
-  status    String   @default("pending") // "pending" | "approved" | "denied"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    JoinRequestStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  space     Space             @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
 
   @@unique([userId, teamId])
   @@index([teamId, status])
@@ -102,14 +115,16 @@ model JoinRequest {
 }
 
 model Space {
-  id             String   @id @default(cuid())
-  teamId         String   @unique
-  isPrivate      Boolean  @default(false)
-  accessPassword String?  @db.VarChar(255)
+  id             String        @id @default(cuid())
+  teamId         String        @unique
+  isPrivate      Boolean       @default(false)
+  accessPassword String?       @db.VarChar(255)
   ownerId        String
-  owner          User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  owner          User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  memberships    Membership[]
+  joinRequests   JoinRequest[]
 
   @@index([ownerId])
   @@index([teamId])

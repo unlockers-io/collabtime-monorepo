@@ -52,8 +52,8 @@ const TeamPageClient = ({
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
   const lastRemovalRef = useRef<{ id: string; ts: number }>({ id: "", ts: 0 });
 
-  const isAdmin = teamStatus === "admin";
-  const isMember = teamStatus === "admin" || teamStatus === "member";
+  const isAdmin = teamStatus === "ADMIN";
+  const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
 
   // Fetch team data with TanStack Query
   const { data: teamData, error: teamError } = useTeamQuery({ teamId });
@@ -332,7 +332,7 @@ const TeamPageClient = ({
     try {
       const result = await requestToJoin(teamId);
       if (result.success) {
-        setTeamStatus("pending");
+        setTeamStatus("PENDING");
         toast.success("Join request sent! The team admin will review it.");
       } else {
         toast.error(result.error);
@@ -697,7 +697,7 @@ const TeamPageClient = ({
                         </Link>
                       </Button>
                     </>
-                  ) : teamStatus === "pending" ? (
+                  ) : teamStatus === "PENDING" ? (
                     <p className="text-sm text-muted-foreground">
                       Your join request is pending admin approval.
                     </p>

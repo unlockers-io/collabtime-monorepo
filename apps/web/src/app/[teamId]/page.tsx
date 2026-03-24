@@ -44,8 +44,8 @@ const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus
     where: { userId_teamId: { userId, teamId } },
   });
 
-  if (joinRequest?.status === "pending") {
-    return "pending";
+  if (joinRequest?.status === "PENDING") {
+    return "PENDING";
   }
 
   return "none";

@@ -8,5 +8,17 @@
  * 🟢 You can import this file directly.
  */
 
-// This file is empty because there are no enums in the schema.
-export {};
+export const MemberRole = {
+  ADMIN: "ADMIN",
+  MEMBER: "MEMBER",
+} as const;
+
+export type MemberRole = (typeof MemberRole)[keyof typeof MemberRole];
+
+export const JoinRequestStatus = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  DENIED: "DENIED",
+} as const;
+
+export type JoinRequestStatus = (typeof JoinRequestStatus)[keyof typeof JoinRequestStatus];

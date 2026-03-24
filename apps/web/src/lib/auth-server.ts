@@ -2,6 +2,8 @@ import { createAuth, type Auth } from "@repo/auth/server";
 import { prisma } from "@repo/db";
 import { nextCookies } from "better-auth/next-js";
 
+import { redis } from "./redis";
+
 // Lazily initialized auth instance to avoid build-time errors
 // when environment variables aren't available
 let _auth: Auth | null = null;
@@ -14,6 +16,25 @@ const getAuthConfig = () => ({
   },
   // nextCookies() must be last — lets better-auth read cookies in RSC/Server Actions
   extraPlugins: [nextCookies()],
+  secondaryStorage: {
+    get: async (key: string) => {
+      const value = await redis.get(key);
+      if (value === null || value === undefined) return null;
+      if (typeof value === "string") return value;
+      if (typeof value === "object") return JSON.stringify(value);
+      return String(value);
+    },
+    set: async (key: string, value: string, ttl?: number) => {
+      if (ttl) {
+        await redis.setex(key, ttl, value);
+      } else {
+        await redis.set(key, value);
+      }
+    },
+    delete: async (key: string) => {
+      await redis.del(key);
+    },
+  },
 });
 
 /**

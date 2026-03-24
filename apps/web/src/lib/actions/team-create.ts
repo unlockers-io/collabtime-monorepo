@@ -29,7 +29,7 @@ const createTeam = async (): Promise<ActionResult<string>> => {
         data: {
           userId: session.user.id,
           teamId,
-          role: "admin",
+          role: "ADMIN",
         },
       }),
     ]);

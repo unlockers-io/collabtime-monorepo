@@ -28,7 +28,7 @@ export type JoinRequestMinAggregateOutputType = {
   id: string | null;
   userId: string | null;
   teamId: string | null;
-  status: string | null;
+  status: $Enums.JoinRequestStatus | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 };
@@ -37,7 +37,7 @@ export type JoinRequestMaxAggregateOutputType = {
   id: string | null;
   userId: string | null;
   teamId: string | null;
-  status: string | null;
+  status: $Enums.JoinRequestStatus | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 };
@@ -161,7 +161,7 @@ export type JoinRequestGroupByOutputType = {
   id: string;
   userId: string;
   teamId: string;
-  status: string;
+  status: $Enums.JoinRequestStatus;
   createdAt: Date;
   updatedAt: Date;
   _count: JoinRequestCountAggregateOutputType | null;
@@ -188,10 +188,11 @@ export type JoinRequestWhereInput = {
   id?: Prisma.StringFilter<"JoinRequest"> | string;
   userId?: Prisma.StringFilter<"JoinRequest"> | string;
   teamId?: Prisma.StringFilter<"JoinRequest"> | string;
-  status?: Prisma.StringFilter<"JoinRequest"> | string;
+  status?: Prisma.EnumJoinRequestStatusFilter<"JoinRequest"> | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeFilter<"JoinRequest"> | Date | string;
   updatedAt?: Prisma.DateTimeFilter<"JoinRequest"> | Date | string;
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+  space?: Prisma.XOR<Prisma.SpaceScalarRelationFilter, Prisma.SpaceWhereInput>;
 };
 
 export type JoinRequestOrderByWithRelationInput = {
@@ -202,6 +203,7 @@ export type JoinRequestOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
   user?: Prisma.UserOrderByWithRelationInput;
+  space?: Prisma.SpaceOrderByWithRelationInput;
 };
 
 export type JoinRequestWhereUniqueInput = Prisma.AtLeast<
@@ -213,10 +215,11 @@ export type JoinRequestWhereUniqueInput = Prisma.AtLeast<
     NOT?: Prisma.JoinRequestWhereInput | Prisma.JoinRequestWhereInput[];
     userId?: Prisma.StringFilter<"JoinRequest"> | string;
     teamId?: Prisma.StringFilter<"JoinRequest"> | string;
-    status?: Prisma.StringFilter<"JoinRequest"> | string;
+    status?: Prisma.EnumJoinRequestStatusFilter<"JoinRequest"> | $Enums.JoinRequestStatus;
     createdAt?: Prisma.DateTimeFilter<"JoinRequest"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"JoinRequest"> | Date | string;
     user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+    space?: Prisma.XOR<Prisma.SpaceScalarRelationFilter, Prisma.SpaceWhereInput>;
   },
   "id" | "userId_teamId"
 >;
@@ -244,43 +247,45 @@ export type JoinRequestScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"JoinRequest"> | string;
   userId?: Prisma.StringWithAggregatesFilter<"JoinRequest"> | string;
   teamId?: Prisma.StringWithAggregatesFilter<"JoinRequest"> | string;
-  status?: Prisma.StringWithAggregatesFilter<"JoinRequest"> | string;
+  status?:
+    | Prisma.EnumJoinRequestStatusWithAggregatesFilter<"JoinRequest">
+    | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"JoinRequest"> | Date | string;
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"JoinRequest"> | Date | string;
 };
 
 export type JoinRequestCreateInput = {
   id?: string;
-  teamId: string;
-  status?: string;
+  status?: $Enums.JoinRequestStatus;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   user: Prisma.UserCreateNestedOneWithoutJoinRequestsInput;
+  space: Prisma.SpaceCreateNestedOneWithoutJoinRequestsInput;
 };
 
 export type JoinRequestUncheckedCreateInput = {
   id?: string;
   userId: string;
   teamId: string;
-  status?: string;
+  status?: $Enums.JoinRequestStatus;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
 export type JoinRequestUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
-  teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   user?: Prisma.UserUpdateOneRequiredWithoutJoinRequestsNestedInput;
+  space?: Prisma.SpaceUpdateOneRequiredWithoutJoinRequestsNestedInput;
 };
 
 export type JoinRequestUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   userId?: Prisma.StringFieldUpdateOperationsInput | string;
   teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -289,15 +294,14 @@ export type JoinRequestCreateManyInput = {
   id?: string;
   userId: string;
   teamId: string;
-  status?: string;
+  status?: $Enums.JoinRequestStatus;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
 export type JoinRequestUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
-  teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -306,7 +310,7 @@ export type JoinRequestUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   userId?: Prisma.StringFieldUpdateOperationsInput | string;
   teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -439,18 +443,108 @@ export type JoinRequestUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.JoinRequestScalarWhereInput | Prisma.JoinRequestScalarWhereInput[];
 };
 
+export type EnumJoinRequestStatusFieldUpdateOperationsInput = {
+  set?: $Enums.JoinRequestStatus;
+};
+
+export type JoinRequestCreateNestedManyWithoutSpaceInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.JoinRequestCreateWithoutSpaceInput,
+        Prisma.JoinRequestUncheckedCreateWithoutSpaceInput
+      >
+    | Prisma.JoinRequestCreateWithoutSpaceInput[]
+    | Prisma.JoinRequestUncheckedCreateWithoutSpaceInput[];
+  connectOrCreate?:
+    | Prisma.JoinRequestCreateOrConnectWithoutSpaceInput
+    | Prisma.JoinRequestCreateOrConnectWithoutSpaceInput[];
+  createMany?: Prisma.JoinRequestCreateManySpaceInputEnvelope;
+  connect?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+};
+
+export type JoinRequestUncheckedCreateNestedManyWithoutSpaceInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.JoinRequestCreateWithoutSpaceInput,
+        Prisma.JoinRequestUncheckedCreateWithoutSpaceInput
+      >
+    | Prisma.JoinRequestCreateWithoutSpaceInput[]
+    | Prisma.JoinRequestUncheckedCreateWithoutSpaceInput[];
+  connectOrCreate?:
+    | Prisma.JoinRequestCreateOrConnectWithoutSpaceInput
+    | Prisma.JoinRequestCreateOrConnectWithoutSpaceInput[];
+  createMany?: Prisma.JoinRequestCreateManySpaceInputEnvelope;
+  connect?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+};
+
+export type JoinRequestUpdateManyWithoutSpaceNestedInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.JoinRequestCreateWithoutSpaceInput,
+        Prisma.JoinRequestUncheckedCreateWithoutSpaceInput
+      >
+    | Prisma.JoinRequestCreateWithoutSpaceInput[]
+    | Prisma.JoinRequestUncheckedCreateWithoutSpaceInput[];
+  connectOrCreate?:
+    | Prisma.JoinRequestCreateOrConnectWithoutSpaceInput
+    | Prisma.JoinRequestCreateOrConnectWithoutSpaceInput[];
+  upsert?:
+    | Prisma.JoinRequestUpsertWithWhereUniqueWithoutSpaceInput
+    | Prisma.JoinRequestUpsertWithWhereUniqueWithoutSpaceInput[];
+  createMany?: Prisma.JoinRequestCreateManySpaceInputEnvelope;
+  set?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+  disconnect?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+  delete?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+  connect?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+  update?:
+    | Prisma.JoinRequestUpdateWithWhereUniqueWithoutSpaceInput
+    | Prisma.JoinRequestUpdateWithWhereUniqueWithoutSpaceInput[];
+  updateMany?:
+    | Prisma.JoinRequestUpdateManyWithWhereWithoutSpaceInput
+    | Prisma.JoinRequestUpdateManyWithWhereWithoutSpaceInput[];
+  deleteMany?: Prisma.JoinRequestScalarWhereInput | Prisma.JoinRequestScalarWhereInput[];
+};
+
+export type JoinRequestUncheckedUpdateManyWithoutSpaceNestedInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.JoinRequestCreateWithoutSpaceInput,
+        Prisma.JoinRequestUncheckedCreateWithoutSpaceInput
+      >
+    | Prisma.JoinRequestCreateWithoutSpaceInput[]
+    | Prisma.JoinRequestUncheckedCreateWithoutSpaceInput[];
+  connectOrCreate?:
+    | Prisma.JoinRequestCreateOrConnectWithoutSpaceInput
+    | Prisma.JoinRequestCreateOrConnectWithoutSpaceInput[];
+  upsert?:
+    | Prisma.JoinRequestUpsertWithWhereUniqueWithoutSpaceInput
+    | Prisma.JoinRequestUpsertWithWhereUniqueWithoutSpaceInput[];
+  createMany?: Prisma.JoinRequestCreateManySpaceInputEnvelope;
+  set?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+  disconnect?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+  delete?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+  connect?: Prisma.JoinRequestWhereUniqueInput | Prisma.JoinRequestWhereUniqueInput[];
+  update?:
+    | Prisma.JoinRequestUpdateWithWhereUniqueWithoutSpaceInput
+    | Prisma.JoinRequestUpdateWithWhereUniqueWithoutSpaceInput[];
+  updateMany?:
+    | Prisma.JoinRequestUpdateManyWithWhereWithoutSpaceInput
+    | Prisma.JoinRequestUpdateManyWithWhereWithoutSpaceInput[];
+  deleteMany?: Prisma.JoinRequestScalarWhereInput | Prisma.JoinRequestScalarWhereInput[];
+};
+
 export type JoinRequestCreateWithoutUserInput = {
   id?: string;
-  teamId: string;
-  status?: string;
+  status?: $Enums.JoinRequestStatus;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+  space: Prisma.SpaceCreateNestedOneWithoutJoinRequestsInput;
 };
 
 export type JoinRequestUncheckedCreateWithoutUserInput = {
   id?: string;
   teamId: string;
-  status?: string;
+  status?: $Enums.JoinRequestStatus;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
@@ -503,31 +597,88 @@ export type JoinRequestScalarWhereInput = {
   id?: Prisma.StringFilter<"JoinRequest"> | string;
   userId?: Prisma.StringFilter<"JoinRequest"> | string;
   teamId?: Prisma.StringFilter<"JoinRequest"> | string;
-  status?: Prisma.StringFilter<"JoinRequest"> | string;
+  status?: Prisma.EnumJoinRequestStatusFilter<"JoinRequest"> | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeFilter<"JoinRequest"> | Date | string;
   updatedAt?: Prisma.DateTimeFilter<"JoinRequest"> | Date | string;
+};
+
+export type JoinRequestCreateWithoutSpaceInput = {
+  id?: string;
+  status?: $Enums.JoinRequestStatus;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  user: Prisma.UserCreateNestedOneWithoutJoinRequestsInput;
+};
+
+export type JoinRequestUncheckedCreateWithoutSpaceInput = {
+  id?: string;
+  userId: string;
+  status?: $Enums.JoinRequestStatus;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+};
+
+export type JoinRequestCreateOrConnectWithoutSpaceInput = {
+  where: Prisma.JoinRequestWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.JoinRequestCreateWithoutSpaceInput,
+    Prisma.JoinRequestUncheckedCreateWithoutSpaceInput
+  >;
+};
+
+export type JoinRequestCreateManySpaceInputEnvelope = {
+  data: Prisma.JoinRequestCreateManySpaceInput | Prisma.JoinRequestCreateManySpaceInput[];
+  skipDuplicates?: boolean;
+};
+
+export type JoinRequestUpsertWithWhereUniqueWithoutSpaceInput = {
+  where: Prisma.JoinRequestWhereUniqueInput;
+  update: Prisma.XOR<
+    Prisma.JoinRequestUpdateWithoutSpaceInput,
+    Prisma.JoinRequestUncheckedUpdateWithoutSpaceInput
+  >;
+  create: Prisma.XOR<
+    Prisma.JoinRequestCreateWithoutSpaceInput,
+    Prisma.JoinRequestUncheckedCreateWithoutSpaceInput
+  >;
+};
+
+export type JoinRequestUpdateWithWhereUniqueWithoutSpaceInput = {
+  where: Prisma.JoinRequestWhereUniqueInput;
+  data: Prisma.XOR<
+    Prisma.JoinRequestUpdateWithoutSpaceInput,
+    Prisma.JoinRequestUncheckedUpdateWithoutSpaceInput
+  >;
+};
+
+export type JoinRequestUpdateManyWithWhereWithoutSpaceInput = {
+  where: Prisma.JoinRequestScalarWhereInput;
+  data: Prisma.XOR<
+    Prisma.JoinRequestUpdateManyMutationInput,
+    Prisma.JoinRequestUncheckedUpdateManyWithoutSpaceInput
+  >;
 };
 
 export type JoinRequestCreateManyUserInput = {
   id?: string;
   teamId: string;
-  status?: string;
+  status?: $Enums.JoinRequestStatus;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
 export type JoinRequestUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
-  teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  space?: Prisma.SpaceUpdateOneRequiredWithoutJoinRequestsNestedInput;
 };
 
 export type JoinRequestUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -535,7 +686,39 @@ export type JoinRequestUncheckedUpdateWithoutUserInput = {
 export type JoinRequestUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   teamId?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+
+export type JoinRequestCreateManySpaceInput = {
+  id?: string;
+  userId: string;
+  status?: $Enums.JoinRequestStatus;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+};
+
+export type JoinRequestUpdateWithoutSpaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  user?: Prisma.UserUpdateOneRequiredWithoutJoinRequestsNestedInput;
+};
+
+export type JoinRequestUncheckedUpdateWithoutSpaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  userId?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+
+export type JoinRequestUncheckedUpdateManyWithoutSpaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  userId?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumJoinRequestStatusFieldUpdateOperationsInput | $Enums.JoinRequestStatus;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -551,6 +734,7 @@ export type JoinRequestSelect<
     createdAt?: boolean;
     updatedAt?: boolean;
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
   },
   ExtArgs["result"]["joinRequest"]
 >;
@@ -566,6 +750,7 @@ export type JoinRequestSelectCreateManyAndReturn<
     createdAt?: boolean;
     updatedAt?: boolean;
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
   },
   ExtArgs["result"]["joinRequest"]
 >;
@@ -581,6 +766,7 @@ export type JoinRequestSelectUpdateManyAndReturn<
     createdAt?: boolean;
     updatedAt?: boolean;
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
   },
   ExtArgs["result"]["joinRequest"]
 >;
@@ -604,16 +790,19 @@ export type JoinRequestInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
 };
 export type JoinRequestIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
 };
 export type JoinRequestIncludeUpdateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  space?: boolean | Prisma.SpaceDefaultArgs<ExtArgs>;
 };
 
 export type $JoinRequestPayload<
@@ -622,13 +811,14 @@ export type $JoinRequestPayload<
   name: "JoinRequest";
   objects: {
     user: Prisma.$UserPayload<ExtArgs>;
+    space: Prisma.$SpacePayload<ExtArgs>;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
       id: string;
       userId: string;
       teamId: string;
-      status: string;
+      status: $Enums.JoinRequestStatus;
       createdAt: Date;
       updatedAt: Date;
     },
@@ -1183,6 +1373,20 @@ export interface Prisma__JoinRequestClient<
     ExtArgs,
     GlobalOmitOptions
   >;
+  space<T extends Prisma.SpaceDefaultArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.SpaceDefaultArgs<ExtArgs>>,
+  ): Prisma.Prisma__SpaceClient<
+    | runtime.Types.Result.GetResult<
+        Prisma.$SpacePayload<ExtArgs>,
+        T,
+        "findUniqueOrThrow",
+        GlobalOmitOptions
+      >
+    | Null,
+    Null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1217,7 +1421,7 @@ export interface JoinRequestFieldRefs {
   readonly id: Prisma.FieldRef<"JoinRequest", "String">;
   readonly userId: Prisma.FieldRef<"JoinRequest", "String">;
   readonly teamId: Prisma.FieldRef<"JoinRequest", "String">;
-  readonly status: Prisma.FieldRef<"JoinRequest", "String">;
+  readonly status: Prisma.FieldRef<"JoinRequest", "JoinRequestStatus">;
   readonly createdAt: Prisma.FieldRef<"JoinRequest", "DateTime">;
   readonly updatedAt: Prisma.FieldRef<"JoinRequest", "DateTime">;
 }

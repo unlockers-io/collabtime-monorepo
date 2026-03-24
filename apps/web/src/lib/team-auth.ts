@@ -59,7 +59,7 @@ const requireTeamAdmin = async (teamId: string): Promise<string> => {
     throw new Error("Not a member of this team");
   }
 
-  if (result.role !== "admin") {
+  if (result.role !== "ADMIN") {
     throw new Error("Admin access required");
   }
 

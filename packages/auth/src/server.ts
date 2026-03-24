@@ -3,6 +3,12 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import type { BetterAuthPlugin } from "better-auth/types";
 
+type SecondaryStorage = {
+  get: (key: string) => Promise<string | null>;
+  set: (key: string, value: string, ttl?: number) => Promise<void>;
+  delete: (key: string) => Promise<void>;
+};
+
 type AuthConfig = {
   betterAuth: {
     secret: string;
@@ -17,6 +23,7 @@ type AuthConfig = {
     fromEmail: string;
     replyTo?: string;
   };
+  secondaryStorage?: SecondaryStorage;
 };
 
 /**
@@ -68,11 +75,13 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
     rateLimit: {
       enabled: true,
       max: 100,
-      storage: "database",
+      storage: config.secondaryStorage ? "secondary-storage" : "database",
       window: 60, // 1 minute
     },
 
     secret: betterAuthConfig.secret,
+
+    ...(config.secondaryStorage && { secondaryStorage: config.secondaryStorage }),
 
     session: {
       cookieCache: {

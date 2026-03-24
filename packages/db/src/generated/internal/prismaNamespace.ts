@@ -1117,6 +1117,38 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, "DateTime[]">;
 
 /**
+ * Reference to a field of type 'MemberRole'
+ */
+export type EnumMemberRoleFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  "MemberRole"
+>;
+
+/**
+ * Reference to a field of type 'MemberRole[]'
+ */
+export type ListEnumMemberRoleFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  "MemberRole[]"
+>;
+
+/**
+ * Reference to a field of type 'JoinRequestStatus'
+ */
+export type EnumJoinRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  "JoinRequestStatus"
+>;
+
+/**
+ * Reference to a field of type 'JoinRequestStatus[]'
+ */
+export type ListEnumJoinRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  "JoinRequestStatus[]"
+>;
+
+/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, "Int">;

@@ -49,7 +49,7 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
       },
     });
 
-    if (existingRequest && existingRequest.status === "pending") {
+    if (existingRequest && existingRequest.status === "PENDING") {
       return { success: false, error: "You already have a pending request for this team" };
     }
 
@@ -61,12 +61,12 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
         },
       },
       update: {
-        status: "pending",
+        status: "PENDING",
       },
       create: {
         userId: session.user.id,
         teamId,
-        status: "pending",
+        status: "PENDING",
       },
     });
 
@@ -90,7 +90,7 @@ const approveJoinRequest = async (
       return { success: false, error: "Join request not found" };
     }
 
-    if (joinRequest.status !== "pending") {
+    if (joinRequest.status !== "PENDING") {
       return { success: false, error: "Join request is no longer pending" };
     }
 
@@ -100,13 +100,13 @@ const approveJoinRequest = async (
     await prisma.$transaction([
       prisma.joinRequest.update({
         where: { id: requestId },
-        data: { status: "approved" },
+        data: { status: "APPROVED" },
       }),
       prisma.membership.create({
         data: {
           userId: joinRequest.userId,
           teamId: joinRequest.teamId,
-          role: "member",
+          role: "MEMBER",
         },
       }),
     ]);
@@ -153,7 +153,7 @@ const denyJoinRequest = async (requestId: string): Promise<ActionResult<void>> =
       return { success: false, error: "Join request not found" };
     }
 
-    if (joinRequest.status !== "pending") {
+    if (joinRequest.status !== "PENDING") {
       return { success: false, error: "Join request is no longer pending" };
     }
 
@@ -161,7 +161,7 @@ const denyJoinRequest = async (requestId: string): Promise<ActionResult<void>> =
 
     await prisma.joinRequest.update({
       where: { id: requestId },
-      data: { status: "denied" },
+      data: { status: "DENIED" },
     });
 
     return { success: true, data: undefined };
@@ -189,7 +189,7 @@ const getPendingJoinRequests = async (
     const requests = await prisma.joinRequest.findMany({
       where: {
         teamId,
-        status: "pending",
+        status: "PENDING",
       },
       include: {
         user: {
@@ -222,7 +222,7 @@ const getPendingJoinRequests = async (
 
 const getMyTeamStatus = async (
   teamId: string,
-): Promise<ActionResult<{ status: "admin" | "member" | "pending" | "none" }>> => {
+): Promise<ActionResult<{ status: "ADMIN" | "MEMBER" | "PENDING" | "none" }>> => {
   try {
     const session = await requireAuth();
 
@@ -245,8 +245,8 @@ const getMyTeamStatus = async (
       },
     });
 
-    if (pendingRequest && pendingRequest.status === "pending") {
-      return { success: true, data: { status: "pending" } };
+    if (pendingRequest && pendingRequest.status === "PENDING") {
+      return { success: true, data: { status: "PENDING" } };
     }
 
     return { success: true, data: { status: "none" } };
