@@ -1,5 +1,3 @@
-"use server";
-
 import type { Team, TeamRecord } from "@/types";
 
 import { redis } from "../redis";
