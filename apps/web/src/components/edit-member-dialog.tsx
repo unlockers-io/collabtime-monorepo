@@ -38,7 +38,6 @@ type EditMemberDialogProps = {
   onOpenChange: (open: boolean) => void;
   open: boolean;
   teamId: string;
-  token: string | null;
 };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -49,7 +48,6 @@ type EditMemberFormProps = {
   onMemberUpdated: (member: TeamMember) => void;
   onOpenChange: (open: boolean) => void;
   teamId: string;
-  token: string;
 };
 
 const formSchema = z.object({
@@ -66,7 +64,6 @@ type FormValues = z.infer<typeof formSchema>;
 const EditMemberForm = ({
   member,
   teamId,
-  token,
   groups,
   onOpenChange,
   onMemberUpdated,
@@ -98,7 +95,7 @@ const EditMemberForm = ({
 
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
-      const result = await updateMember(teamId, token, member.id, {
+      const result = await updateMember(teamId, member.id, {
         ...data,
         title: data.title ?? "",
       });
@@ -288,17 +285,11 @@ const EditMemberForm = ({
 const EditMemberDialog = ({
   member,
   teamId,
-  token,
   groups,
   open,
   onOpenChange,
   onMemberUpdated,
 }: EditMemberDialogProps) => {
-  // Don't render if no token (can't edit without auth)
-  if (!token) {
-    return null;
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -307,7 +298,6 @@ const EditMemberDialog = ({
             key={member.id}
             member={member}
             teamId={teamId}
-            token={token}
             groups={groups}
             onOpenChange={onOpenChange}
             onMemberUpdated={onMemberUpdated}

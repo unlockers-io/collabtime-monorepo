@@ -14,7 +14,7 @@ import {
   DialogTrigger,
   Spinner,
 } from "@repo/ui";
-import { Settings, Globe, Lock, Crown, Eye, EyeOff } from "lucide-react";
+import { Settings, Globe, Lock, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
@@ -28,7 +28,6 @@ type Space = {
 };
 
 type SpaceSettingsDialogProps = {
-  isPro: boolean;
   onSpaceUpdated: (space: Space) => void;
   space: Space | null;
   teamId: string;
@@ -46,12 +45,7 @@ const spaceSettingsSchema = z.object({
 
 type SpaceSettingsFormValues = z.infer<typeof spaceSettingsSchema>;
 
-const SpaceSettingsDialog = ({
-  teamId,
-  isPro,
-  space,
-  onSpaceUpdated,
-}: SpaceSettingsDialogProps) => {
+const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -149,11 +143,7 @@ const SpaceSettingsDialog = ({
       const result = (await response.json()) as { error?: string; space?: Space };
 
       if (!response.ok) {
-        if (response.status === 402) {
-          toast.error("This feature requires a PRO subscription");
-        } else {
-          toast.error(result.error ?? "Failed to update space");
-        }
+        toast.error(result.error ?? "Failed to update space");
         return;
       }
 
@@ -216,12 +206,6 @@ const SpaceSettingsDialog = ({
                 <Label className="flex items-center gap-2">
                   <Lock className="h-4 w-4" />
                   Privacy
-                  {!isPro && (
-                    <span className="flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                      <Crown className="h-3 w-3" />
-                      PRO
-                    </span>
-                  )}
                 </Label>
                 <Controller
                   control={control}
@@ -233,7 +217,6 @@ const SpaceSettingsDialog = ({
                         variant={!field.value ? "default" : "outline"}
                         size="sm"
                         onClick={() => field.onChange(false)}
-                        disabled={!isPro && !space.isPrivate}
                         className="flex-1"
                       >
                         <span className="flex items-center gap-2">
@@ -246,7 +229,6 @@ const SpaceSettingsDialog = ({
                         variant={field.value ? "default" : "outline"}
                         size="sm"
                         onClick={() => field.onChange(true)}
-                        disabled={!isPro}
                         className="flex-1"
                       >
                         <span className="flex items-center gap-2">

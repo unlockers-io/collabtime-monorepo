@@ -15,43 +15,13 @@ const SettingsPage = async () => {
     redirect("/login");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      subscriptionPlan: true,
-      stripeCustomerId: true,
-    },
-  });
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const subscription = await prisma.subscription.findFirst({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
-
   return (
     <SettingsClient
       user={{
-        id: user.id,
-        name: user.name ?? "",
-        email: user.email,
-        subscriptionPlan: user.subscriptionPlan,
+        id: session.user.id,
+        name: session.user.name ?? "",
+        email: session.user.email,
       }}
-      subscription={
-        subscription
-          ? {
-              status: subscription.status,
-              periodEnd: subscription.periodEnd?.toISOString() ?? null,
-              cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-            }
-          : null
-      }
     />
   );
 };

@@ -37,10 +37,15 @@ export type Account = Prisma.AccountModel;
  */
 export type Verification = Prisma.VerificationModel;
 /**
- * Model Subscription
+ * Model Membership
  *
  */
-export type Subscription = Prisma.SubscriptionModel;
+export type Membership = Prisma.MembershipModel;
+/**
+ * Model JoinRequest
+ *
+ */
+export type JoinRequest = Prisma.JoinRequestModel;
 /**
  * Model Space
  *

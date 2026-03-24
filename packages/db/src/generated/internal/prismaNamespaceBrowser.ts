@@ -52,7 +52,8 @@ export const ModelName = {
   Session: "Session",
   Account: "Account",
   Verification: "Verification",
-  Subscription: "Subscription",
+  Membership: "Membership",
+  JoinRequest: "JoinRequest",
   Space: "Space",
 } as const;
 
@@ -80,8 +81,6 @@ export const UserScalarFieldEnum = {
   image: "image",
   createdAt: "createdAt",
   updatedAt: "updatedAt",
-  subscriptionPlan: "subscriptionPlan",
-  stripeCustomerId: "stripeCustomerId",
 } as const;
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum];
@@ -131,23 +130,29 @@ export const VerificationScalarFieldEnum = {
 export type VerificationScalarFieldEnum =
   (typeof VerificationScalarFieldEnum)[keyof typeof VerificationScalarFieldEnum];
 
-export const SubscriptionScalarFieldEnum = {
+export const MembershipScalarFieldEnum = {
   id: "id",
-  plan: "plan",
-  referenceId: "referenceId",
-  stripeCustomerId: "stripeCustomerId",
-  stripeSubscriptionId: "stripeSubscriptionId",
-  status: "status",
-  periodStart: "periodStart",
-  periodEnd: "periodEnd",
-  cancelAtPeriodEnd: "cancelAtPeriodEnd",
+  userId: "userId",
+  teamId: "teamId",
+  role: "role",
   createdAt: "createdAt",
   updatedAt: "updatedAt",
-  userId: "userId",
 } as const;
 
-export type SubscriptionScalarFieldEnum =
-  (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum];
+export type MembershipScalarFieldEnum =
+  (typeof MembershipScalarFieldEnum)[keyof typeof MembershipScalarFieldEnum];
+
+export const JoinRequestScalarFieldEnum = {
+  id: "id",
+  userId: "userId",
+  teamId: "teamId",
+  status: "status",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+} as const;
+
+export type JoinRequestScalarFieldEnum =
+  (typeof JoinRequestScalarFieldEnum)[keyof typeof JoinRequestScalarFieldEnum];
 
 export const SpaceScalarFieldEnum = {
   id: "id",

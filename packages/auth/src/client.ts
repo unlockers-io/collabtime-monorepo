@@ -2,7 +2,6 @@
 import { createAuthClient } from "better-auth/react";
 
 export { createAuthClient as createBetterAuthClient } from "better-auth/react";
-export { stripeClient } from "@better-auth/stripe/client";
 
 type AuthClient = ReturnType<typeof createAuthClient>;
 

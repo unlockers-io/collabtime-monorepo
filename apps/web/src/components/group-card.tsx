@@ -17,13 +17,11 @@ type GroupHeaderProps = {
   onGroupUpdated: (group: TeamGroup) => void;
   onMemberDropped?: (memberId: string, groupId: string) => void;
   teamId: string;
-  token: string;
 };
 
 const GroupCard = ({
   group,
   teamId,
-  token,
   memberCount,
   canEdit,
   onGroupUpdated,
@@ -56,7 +54,7 @@ const GroupCard = ({
 
     setIsEditing(false);
     startTransition(async () => {
-      const result = await updateGroup(teamId, token, group.id, {
+      const result = await updateGroup(teamId, group.id, {
         name: trimmedName,
       });
       if (result.success) {
@@ -65,7 +63,7 @@ const GroupCard = ({
         toast.error(result.error);
       }
     });
-  }, [canEdit, editingName, group, teamId, token, onGroupUpdated]);
+  }, [canEdit, editingName, group, teamId, onGroupUpdated]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -80,7 +78,7 @@ const GroupCard = ({
       return;
     }
     startTransition(async () => {
-      const result = await removeGroup(teamId, token, group.id);
+      const result = await removeGroup(teamId, group.id);
       if (result.success) {
         onGroupRemoved(group.id);
         toast.success(`Group "${group.name}" removed`);

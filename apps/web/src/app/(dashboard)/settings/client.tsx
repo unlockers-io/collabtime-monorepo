@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, Input, Label, Spinner } from "@repo/ui";
-import { User, CreditCard, Crown, Check, Loader2 } from "lucide-react";
+import { User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,104 +9,17 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
 type SettingsClientProps = {
-  subscription: {
-    cancelAtPeriodEnd: boolean;
-    periodEnd: string | null;
-    status: string;
-  } | null;
   user: {
     email: string;
     id: string;
     name: string;
-    subscriptionPlan: string;
   };
 };
 
-const PRO_FEATURES = [
-  "Password protection for spaces",
-  "Priority support",
-  "Custom branding (coming soon)",
-];
-
-const formatDate = (dateString: string | null) => {
-  if (!dateString) {
-    return null;
-  }
-  return new Date(dateString).toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-};
-
-const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
+const SettingsClient = ({ user }: SettingsClientProps) => {
   const router = useRouter();
-  const [isUpgrading, setIsUpgrading] = useState(false);
-  const [isManaging, setIsManaging] = useState(false);
   const [name, setName] = useState(user.name);
   const [isSaving, setIsSaving] = useState(false);
-
-  const isPro = user.subscriptionPlan === "PRO";
-  const isActive = subscription?.status === "active" || subscription?.status === "trialing";
-
-  const handleUpgrade = async () => {
-    setIsUpgrading(true);
-
-    try {
-      const response = await fetch("/api/subscription/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          successUrl: `${window.location.origin}/settings?success=true`,
-          cancelUrl: `${window.location.origin}/settings?canceled=true`,
-        }),
-      });
-
-      const data = (await response.json()) as { error?: string; url?: string };
-
-      if (!response.ok) {
-        toast.error(data.error ?? "Failed to start checkout");
-        setIsUpgrading(false);
-        return;
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch {
-      toast.error("Failed to start checkout");
-      setIsUpgrading(false);
-    }
-  };
-
-  const handleManageSubscription = async () => {
-    setIsManaging(true);
-
-    try {
-      const response = await fetch("/api/subscription/portal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          returnUrl: `${window.location.origin}/settings`,
-        }),
-      });
-
-      const data = (await response.json()) as { error?: string; url?: string };
-
-      if (!response.ok) {
-        toast.error(data.error ?? "Failed to open billing portal");
-        setIsManaging(false);
-        return;
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch {
-      toast.error("Failed to open billing portal");
-      setIsManaging(false);
-    }
-  };
 
   const handleSaveName = async () => {
     const trimmedName = name.trim();
@@ -142,7 +55,7 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
-          <p className="text-sm text-muted-foreground">Manage your account and subscription</p>
+          <p className="text-sm text-muted-foreground">Manage your account</p>
         </div>
 
         <div className="flex flex-col gap-6">
@@ -184,94 +97,6 @@ const SettingsClient = ({ user, subscription }: SettingsClientProps) => {
                 <p className="text-xs text-muted-foreground">Email cannot be changed</p>
               </div>
             </div>
-          </Card>
-
-          {/* Subscription Section */}
-          <Card className="flex flex-col gap-6 p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-                <CreditCard className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-foreground">Subscription</h2>
-                <p className="text-sm text-muted-foreground">Manage your plan</p>
-              </div>
-            </div>
-
-            {isPro && isActive ? (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 dark:bg-amber-900/20">
-                  <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                  <span className="font-medium text-amber-700 dark:text-amber-300">
-                    PRO Plan Active
-                  </span>
-                </div>
-
-                {subscription?.periodEnd && (
-                  <p className="text-sm text-muted-foreground">
-                    {subscription.cancelAtPeriodEnd
-                      ? `Your subscription will end on ${formatDate(subscription.periodEnd)}`
-                      : `Next billing date: ${formatDate(subscription.periodEnd)}`}
-                  </p>
-                )}
-
-                <Button onClick={handleManageSubscription} disabled={isManaging} variant="outline">
-                  {isManaging ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading...
-                    </span>
-                  ) : (
-                    "Manage Subscription"
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-6">
-                <div className="flex flex-col gap-6 rounded-xl border border-border bg-linear-to-br from-amber-50 to-orange-50 p-6 dark:from-amber-900/20 dark:to-orange-900/20">
-                  <div className="flex items-center gap-2">
-                    <Crown className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                    <h3 className="text-lg font-bold text-foreground">Upgrade to PRO</h3>
-                  </div>
-
-                  <p className="text-2xl font-bold text-foreground">
-                    $10
-                    <span className="text-base font-normal text-muted-foreground">/year</span>
-                  </p>
-
-                  <ul className="flex flex-col gap-2">
-                    {PRO_FEATURES.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-sm text-foreground">
-                        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Button
-                    onClick={handleUpgrade}
-                    disabled={isUpgrading}
-                    className="w-full bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
-                  >
-                    {isUpgrading ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Redirecting to checkout...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Crown className="h-4 w-4" />
-                        Upgrade to PRO
-                      </span>
-                    )}
-                  </Button>
-                </div>
-
-                <p className="text-center text-xs text-muted-foreground">
-                  Secure checkout powered by Stripe. Cancel anytime.
-                </p>
-              </div>
-            )}
           </Card>
         </div>
       </div>

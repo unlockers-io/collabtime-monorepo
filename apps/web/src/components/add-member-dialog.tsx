@@ -38,7 +38,6 @@ type AddMemberDialogProps = {
   isFirstMember: boolean;
   onMemberAdded: (member: TeamMember) => void;
   teamId: string;
-  token: string;
 };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -81,12 +80,10 @@ type AddMemberFormProps = {
   onMemberAdded: (member: TeamMember) => void;
   onOpenChange: (open: boolean) => void;
   teamId: string;
-  token: string;
 };
 
 const AddMemberForm = ({
   teamId,
-  token,
   groups,
   isFirstMember,
   onOpenChange,
@@ -111,7 +108,7 @@ const AddMemberForm = ({
   const { handleSubmit, formState } = form;
 
   const onSubmit = async (data: FormValues) => {
-    const result = await addMember(teamId, token, {
+    const result = await addMember(teamId, {
       ...data,
       title: data.title ?? "",
     });
@@ -302,7 +299,6 @@ const AddMemberForm = ({
 
 const AddMemberDialog = ({
   teamId,
-  token,
   groups,
   onMemberAdded,
   isFirstMember,
@@ -326,7 +322,6 @@ const AddMemberDialog = ({
         {open && (
           <AddMemberForm
             teamId={teamId}
-            token={token}
             groups={groups}
             isFirstMember={isFirstMember}
             onOpenChange={setOpen}

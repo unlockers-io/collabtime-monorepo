@@ -32,8 +32,6 @@ export type UserMinAggregateOutputType = {
   image: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
-  subscriptionPlan: $Enums.SubscriptionPlan | null;
-  stripeCustomerId: string | null;
 };
 
 export type UserMaxAggregateOutputType = {
@@ -44,8 +42,6 @@ export type UserMaxAggregateOutputType = {
   image: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
-  subscriptionPlan: $Enums.SubscriptionPlan | null;
-  stripeCustomerId: string | null;
 };
 
 export type UserCountAggregateOutputType = {
@@ -56,8 +52,6 @@ export type UserCountAggregateOutputType = {
   image: number;
   createdAt: number;
   updatedAt: number;
-  subscriptionPlan: number;
-  stripeCustomerId: number;
   _all: number;
 };
 
@@ -69,8 +63,6 @@ export type UserMinAggregateInputType = {
   image?: true;
   createdAt?: true;
   updatedAt?: true;
-  subscriptionPlan?: true;
-  stripeCustomerId?: true;
 };
 
 export type UserMaxAggregateInputType = {
@@ -81,8 +73,6 @@ export type UserMaxAggregateInputType = {
   image?: true;
   createdAt?: true;
   updatedAt?: true;
-  subscriptionPlan?: true;
-  stripeCustomerId?: true;
 };
 
 export type UserCountAggregateInputType = {
@@ -93,8 +83,6 @@ export type UserCountAggregateInputType = {
   image?: true;
   createdAt?: true;
   updatedAt?: true;
-  subscriptionPlan?: true;
-  stripeCustomerId?: true;
   _all?: true;
 };
 
@@ -179,8 +167,6 @@ export type UserGroupByOutputType = {
   image: string | null;
   createdAt: Date;
   updatedAt: Date;
-  subscriptionPlan: $Enums.SubscriptionPlan;
-  stripeCustomerId: string | null;
   _count: UserCountAggregateOutputType | null;
   _min: UserMinAggregateOutputType | null;
   _max: UserMaxAggregateOutputType | null;
@@ -209,12 +195,11 @@ export type UserWhereInput = {
   image?: Prisma.StringNullableFilter<"User"> | string | null;
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string;
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string;
-  subscriptionPlan?: Prisma.EnumSubscriptionPlanFilter<"User"> | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.StringNullableFilter<"User"> | string | null;
   accounts?: Prisma.AccountListRelationFilter;
   sessions?: Prisma.SessionListRelationFilter;
-  subscriptions?: Prisma.SubscriptionListRelationFilter;
   spaces?: Prisma.SpaceListRelationFilter;
+  memberships?: Prisma.MembershipListRelationFilter;
+  joinRequests?: Prisma.JoinRequestListRelationFilter;
 };
 
 export type UserOrderByWithRelationInput = {
@@ -225,19 +210,17 @@ export type UserOrderByWithRelationInput = {
   image?: Prisma.SortOrderInput | Prisma.SortOrder;
   createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
-  subscriptionPlan?: Prisma.SortOrder;
-  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder;
   accounts?: Prisma.AccountOrderByRelationAggregateInput;
   sessions?: Prisma.SessionOrderByRelationAggregateInput;
-  subscriptions?: Prisma.SubscriptionOrderByRelationAggregateInput;
   spaces?: Prisma.SpaceOrderByRelationAggregateInput;
+  memberships?: Prisma.MembershipOrderByRelationAggregateInput;
+  joinRequests?: Prisma.JoinRequestOrderByRelationAggregateInput;
 };
 
 export type UserWhereUniqueInput = Prisma.AtLeast<
   {
     id?: string;
     email?: string;
-    stripeCustomerId?: string;
     AND?: Prisma.UserWhereInput | Prisma.UserWhereInput[];
     OR?: Prisma.UserWhereInput[];
     NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[];
@@ -246,13 +229,13 @@ export type UserWhereUniqueInput = Prisma.AtLeast<
     image?: Prisma.StringNullableFilter<"User"> | string | null;
     createdAt?: Prisma.DateTimeFilter<"User"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string;
-    subscriptionPlan?: Prisma.EnumSubscriptionPlanFilter<"User"> | $Enums.SubscriptionPlan;
     accounts?: Prisma.AccountListRelationFilter;
     sessions?: Prisma.SessionListRelationFilter;
-    subscriptions?: Prisma.SubscriptionListRelationFilter;
     spaces?: Prisma.SpaceListRelationFilter;
+    memberships?: Prisma.MembershipListRelationFilter;
+    joinRequests?: Prisma.JoinRequestListRelationFilter;
   },
-  "id" | "email" | "stripeCustomerId"
+  "id" | "email"
 >;
 
 export type UserOrderByWithAggregationInput = {
@@ -263,8 +246,6 @@ export type UserOrderByWithAggregationInput = {
   image?: Prisma.SortOrderInput | Prisma.SortOrder;
   createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
-  subscriptionPlan?: Prisma.SortOrder;
-  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder;
   _count?: Prisma.UserCountOrderByAggregateInput;
   _max?: Prisma.UserMaxOrderByAggregateInput;
   _min?: Prisma.UserMinOrderByAggregateInput;
@@ -281,10 +262,6 @@ export type UserScalarWhereWithAggregatesInput = {
   image?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null;
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string;
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanWithAggregatesFilter<"User">
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null;
 };
 
 export type UserCreateInput = {
@@ -295,12 +272,11 @@ export type UserCreateInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput;
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput;
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput;
   spaces?: Prisma.SpaceCreateNestedManyWithoutOwnerInput;
+  memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
+  joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateInput = {
@@ -311,12 +287,11 @@ export type UserUncheckedCreateInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput;
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput;
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput;
   spaces?: Prisma.SpaceUncheckedCreateNestedManyWithoutOwnerInput;
+  memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutUserInput;
+  joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserUpdateInput = {
@@ -327,14 +302,11 @@ export type UserUpdateInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput;
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput;
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput;
   spaces?: Prisma.SpaceUpdateManyWithoutOwnerNestedInput;
+  memberships?: Prisma.MembershipUpdateManyWithoutUserNestedInput;
+  joinRequests?: Prisma.JoinRequestUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateInput = {
@@ -345,14 +317,11 @@ export type UserUncheckedUpdateInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput;
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput;
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput;
   spaces?: Prisma.SpaceUncheckedUpdateManyWithoutOwnerNestedInput;
+  memberships?: Prisma.MembershipUncheckedUpdateManyWithoutUserNestedInput;
+  joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutUserNestedInput;
 };
 
 export type UserCreateManyInput = {
@@ -363,8 +332,6 @@ export type UserCreateManyInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
 };
 
 export type UserUpdateManyMutationInput = {
@@ -375,10 +342,6 @@ export type UserUpdateManyMutationInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
 
 export type UserUncheckedUpdateManyInput = {
@@ -389,10 +352,6 @@ export type UserUncheckedUpdateManyInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
 
 export type UserCountOrderByAggregateInput = {
@@ -403,8 +362,6 @@ export type UserCountOrderByAggregateInput = {
   image?: Prisma.SortOrder;
   createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
-  subscriptionPlan?: Prisma.SortOrder;
-  stripeCustomerId?: Prisma.SortOrder;
 };
 
 export type UserMaxOrderByAggregateInput = {
@@ -415,8 +372,6 @@ export type UserMaxOrderByAggregateInput = {
   image?: Prisma.SortOrder;
   createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
-  subscriptionPlan?: Prisma.SortOrder;
-  stripeCustomerId?: Prisma.SortOrder;
 };
 
 export type UserMinOrderByAggregateInput = {
@@ -427,8 +382,6 @@ export type UserMinOrderByAggregateInput = {
   image?: Prisma.SortOrder;
   createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
-  subscriptionPlan?: Prisma.SortOrder;
-  stripeCustomerId?: Prisma.SortOrder;
 };
 
 export type UserScalarRelationFilter = {
@@ -450,10 +403,6 @@ export type NullableStringFieldUpdateOperationsInput = {
 
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string;
-};
-
-export type EnumSubscriptionPlanFieldUpdateOperationsInput = {
-  set?: $Enums.SubscriptionPlan;
 };
 
 export type UserCreateNestedOneWithoutSessionsInput = {
@@ -508,29 +457,55 @@ export type UserUpdateOneRequiredWithoutAccountsNestedInput = {
   >;
 };
 
-export type UserCreateNestedOneWithoutSubscriptionsInput = {
+export type UserCreateNestedOneWithoutMembershipsInput = {
   create?: Prisma.XOR<
-    Prisma.UserCreateWithoutSubscriptionsInput,
-    Prisma.UserUncheckedCreateWithoutSubscriptionsInput
+    Prisma.UserCreateWithoutMembershipsInput,
+    Prisma.UserUncheckedCreateWithoutMembershipsInput
   >;
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSubscriptionsInput;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMembershipsInput;
   connect?: Prisma.UserWhereUniqueInput;
 };
 
-export type UserUpdateOneRequiredWithoutSubscriptionsNestedInput = {
+export type UserUpdateOneRequiredWithoutMembershipsNestedInput = {
   create?: Prisma.XOR<
-    Prisma.UserCreateWithoutSubscriptionsInput,
-    Prisma.UserUncheckedCreateWithoutSubscriptionsInput
+    Prisma.UserCreateWithoutMembershipsInput,
+    Prisma.UserUncheckedCreateWithoutMembershipsInput
   >;
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSubscriptionsInput;
-  upsert?: Prisma.UserUpsertWithoutSubscriptionsInput;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMembershipsInput;
+  upsert?: Prisma.UserUpsertWithoutMembershipsInput;
   connect?: Prisma.UserWhereUniqueInput;
   update?: Prisma.XOR<
     Prisma.XOR<
-      Prisma.UserUpdateToOneWithWhereWithoutSubscriptionsInput,
-      Prisma.UserUpdateWithoutSubscriptionsInput
+      Prisma.UserUpdateToOneWithWhereWithoutMembershipsInput,
+      Prisma.UserUpdateWithoutMembershipsInput
     >,
-    Prisma.UserUncheckedUpdateWithoutSubscriptionsInput
+    Prisma.UserUncheckedUpdateWithoutMembershipsInput
+  >;
+};
+
+export type UserCreateNestedOneWithoutJoinRequestsInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutJoinRequestsInput,
+    Prisma.UserUncheckedCreateWithoutJoinRequestsInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutJoinRequestsInput;
+  connect?: Prisma.UserWhereUniqueInput;
+};
+
+export type UserUpdateOneRequiredWithoutJoinRequestsNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutJoinRequestsInput,
+    Prisma.UserUncheckedCreateWithoutJoinRequestsInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutJoinRequestsInput;
+  upsert?: Prisma.UserUpsertWithoutJoinRequestsInput;
+  connect?: Prisma.UserWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.UserUpdateToOneWithWhereWithoutJoinRequestsInput,
+      Prisma.UserUpdateWithoutJoinRequestsInput
+    >,
+    Prisma.UserUncheckedUpdateWithoutJoinRequestsInput
   >;
 };
 
@@ -568,11 +543,10 @@ export type UserCreateWithoutSessionsInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput;
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput;
   spaces?: Prisma.SpaceCreateNestedManyWithoutOwnerInput;
+  memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
+  joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -583,11 +557,10 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput;
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput;
   spaces?: Prisma.SpaceUncheckedCreateNestedManyWithoutOwnerInput;
+  memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutUserInput;
+  joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -626,13 +599,10 @@ export type UserUpdateWithoutSessionsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput;
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput;
   spaces?: Prisma.SpaceUpdateManyWithoutOwnerNestedInput;
+  memberships?: Prisma.MembershipUpdateManyWithoutUserNestedInput;
+  joinRequests?: Prisma.JoinRequestUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -643,13 +613,10 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput;
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput;
   spaces?: Prisma.SpaceUncheckedUpdateManyWithoutOwnerNestedInput;
+  memberships?: Prisma.MembershipUncheckedUpdateManyWithoutUserNestedInput;
+  joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutUserNestedInput;
 };
 
 export type UserCreateWithoutAccountsInput = {
@@ -660,11 +627,10 @@ export type UserCreateWithoutAccountsInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput;
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput;
   spaces?: Prisma.SpaceCreateNestedManyWithoutOwnerInput;
+  memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
+  joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -675,11 +641,10 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput;
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput;
   spaces?: Prisma.SpaceUncheckedCreateNestedManyWithoutOwnerInput;
+  memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutUserInput;
+  joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -718,13 +683,10 @@ export type UserUpdateWithoutAccountsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput;
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput;
   spaces?: Prisma.SpaceUpdateManyWithoutOwnerNestedInput;
+  memberships?: Prisma.MembershipUpdateManyWithoutUserNestedInput;
+  joinRequests?: Prisma.JoinRequestUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -735,16 +697,13 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput;
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput;
   spaces?: Prisma.SpaceUncheckedUpdateManyWithoutOwnerNestedInput;
+  memberships?: Prisma.MembershipUncheckedUpdateManyWithoutUserNestedInput;
+  joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutUserNestedInput;
 };
 
-export type UserCreateWithoutSubscriptionsInput = {
+export type UserCreateWithoutMembershipsInput = {
   id?: string;
   email: string;
   emailVerified?: boolean;
@@ -752,14 +711,13 @@ export type UserCreateWithoutSubscriptionsInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput;
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput;
   spaces?: Prisma.SpaceCreateNestedManyWithoutOwnerInput;
+  joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutUserInput;
 };
 
-export type UserUncheckedCreateWithoutSubscriptionsInput = {
+export type UserUncheckedCreateWithoutMembershipsInput = {
   id?: string;
   email: string;
   emailVerified?: boolean;
@@ -767,42 +725,41 @@ export type UserUncheckedCreateWithoutSubscriptionsInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput;
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput;
   spaces?: Prisma.SpaceUncheckedCreateNestedManyWithoutOwnerInput;
+  joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutUserInput;
 };
 
-export type UserCreateOrConnectWithoutSubscriptionsInput = {
+export type UserCreateOrConnectWithoutMembershipsInput = {
   where: Prisma.UserWhereUniqueInput;
   create: Prisma.XOR<
-    Prisma.UserCreateWithoutSubscriptionsInput,
-    Prisma.UserUncheckedCreateWithoutSubscriptionsInput
+    Prisma.UserCreateWithoutMembershipsInput,
+    Prisma.UserUncheckedCreateWithoutMembershipsInput
   >;
 };
 
-export type UserUpsertWithoutSubscriptionsInput = {
+export type UserUpsertWithoutMembershipsInput = {
   update: Prisma.XOR<
-    Prisma.UserUpdateWithoutSubscriptionsInput,
-    Prisma.UserUncheckedUpdateWithoutSubscriptionsInput
+    Prisma.UserUpdateWithoutMembershipsInput,
+    Prisma.UserUncheckedUpdateWithoutMembershipsInput
   >;
   create: Prisma.XOR<
-    Prisma.UserCreateWithoutSubscriptionsInput,
-    Prisma.UserUncheckedCreateWithoutSubscriptionsInput
+    Prisma.UserCreateWithoutMembershipsInput,
+    Prisma.UserUncheckedCreateWithoutMembershipsInput
   >;
   where?: Prisma.UserWhereInput;
 };
 
-export type UserUpdateToOneWithWhereWithoutSubscriptionsInput = {
+export type UserUpdateToOneWithWhereWithoutMembershipsInput = {
   where?: Prisma.UserWhereInput;
   data: Prisma.XOR<
-    Prisma.UserUpdateWithoutSubscriptionsInput,
-    Prisma.UserUncheckedUpdateWithoutSubscriptionsInput
+    Prisma.UserUpdateWithoutMembershipsInput,
+    Prisma.UserUncheckedUpdateWithoutMembershipsInput
   >;
 };
 
-export type UserUpdateWithoutSubscriptionsInput = {
+export type UserUpdateWithoutMembershipsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean;
@@ -810,16 +767,13 @@ export type UserUpdateWithoutSubscriptionsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput;
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput;
   spaces?: Prisma.SpaceUpdateManyWithoutOwnerNestedInput;
+  joinRequests?: Prisma.JoinRequestUpdateManyWithoutUserNestedInput;
 };
 
-export type UserUncheckedUpdateWithoutSubscriptionsInput = {
+export type UserUncheckedUpdateWithoutMembershipsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean;
@@ -827,13 +781,94 @@ export type UserUncheckedUpdateWithoutSubscriptionsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput;
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput;
   spaces?: Prisma.SpaceUncheckedUpdateManyWithoutOwnerNestedInput;
+  joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutUserNestedInput;
+};
+
+export type UserCreateWithoutJoinRequestsInput = {
+  id?: string;
+  email: string;
+  emailVerified?: boolean;
+  name?: string | null;
+  image?: string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput;
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput;
+  spaces?: Prisma.SpaceCreateNestedManyWithoutOwnerInput;
+  memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
+};
+
+export type UserUncheckedCreateWithoutJoinRequestsInput = {
+  id?: string;
+  email: string;
+  emailVerified?: boolean;
+  name?: string | null;
+  image?: string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput;
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput;
+  spaces?: Prisma.SpaceUncheckedCreateNestedManyWithoutOwnerInput;
+  memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutUserInput;
+};
+
+export type UserCreateOrConnectWithoutJoinRequestsInput = {
+  where: Prisma.UserWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutJoinRequestsInput,
+    Prisma.UserUncheckedCreateWithoutJoinRequestsInput
+  >;
+};
+
+export type UserUpsertWithoutJoinRequestsInput = {
+  update: Prisma.XOR<
+    Prisma.UserUpdateWithoutJoinRequestsInput,
+    Prisma.UserUncheckedUpdateWithoutJoinRequestsInput
+  >;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutJoinRequestsInput,
+    Prisma.UserUncheckedCreateWithoutJoinRequestsInput
+  >;
+  where?: Prisma.UserWhereInput;
+};
+
+export type UserUpdateToOneWithWhereWithoutJoinRequestsInput = {
+  where?: Prisma.UserWhereInput;
+  data: Prisma.XOR<
+    Prisma.UserUpdateWithoutJoinRequestsInput,
+    Prisma.UserUncheckedUpdateWithoutJoinRequestsInput
+  >;
+};
+
+export type UserUpdateWithoutJoinRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput;
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput;
+  spaces?: Prisma.SpaceUpdateManyWithoutOwnerNestedInput;
+  memberships?: Prisma.MembershipUpdateManyWithoutUserNestedInput;
+};
+
+export type UserUncheckedUpdateWithoutJoinRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput;
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput;
+  spaces?: Prisma.SpaceUncheckedUpdateManyWithoutOwnerNestedInput;
+  memberships?: Prisma.MembershipUncheckedUpdateManyWithoutUserNestedInput;
 };
 
 export type UserCreateWithoutSpacesInput = {
@@ -844,11 +879,10 @@ export type UserCreateWithoutSpacesInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput;
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput;
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput;
+  memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
+  joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateWithoutSpacesInput = {
@@ -859,11 +893,10 @@ export type UserUncheckedCreateWithoutSpacesInput = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  subscriptionPlan?: $Enums.SubscriptionPlan;
-  stripeCustomerId?: string | null;
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput;
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput;
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput;
+  memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutUserInput;
+  joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserCreateOrConnectWithoutSpacesInput = {
@@ -902,13 +935,10 @@ export type UserUpdateWithoutSpacesInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput;
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput;
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput;
+  memberships?: Prisma.MembershipUpdateManyWithoutUserNestedInput;
+  joinRequests?: Prisma.JoinRequestUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutSpacesInput = {
@@ -919,13 +949,10 @@ export type UserUncheckedUpdateWithoutSpacesInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  subscriptionPlan?:
-    | Prisma.EnumSubscriptionPlanFieldUpdateOperationsInput
-    | $Enums.SubscriptionPlan;
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput;
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput;
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput;
+  memberships?: Prisma.MembershipUncheckedUpdateManyWithoutUserNestedInput;
+  joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutUserNestedInput;
 };
 
 /**
@@ -935,8 +962,9 @@ export type UserUncheckedUpdateWithoutSpacesInput = {
 export type UserCountOutputType = {
   accounts: number;
   sessions: number;
-  subscriptions: number;
   spaces: number;
+  memberships: number;
+  joinRequests: number;
 };
 
 export type UserCountOutputTypeSelect<
@@ -944,8 +972,9 @@ export type UserCountOutputTypeSelect<
 > = {
   accounts?: boolean | UserCountOutputTypeCountAccountsArgs;
   sessions?: boolean | UserCountOutputTypeCountSessionsArgs;
-  subscriptions?: boolean | UserCountOutputTypeCountSubscriptionsArgs;
   spaces?: boolean | UserCountOutputTypeCountSpacesArgs;
+  memberships?: boolean | UserCountOutputTypeCountMembershipsArgs;
+  joinRequests?: boolean | UserCountOutputTypeCountJoinRequestsArgs;
 };
 
 /**
@@ -981,19 +1010,28 @@ export type UserCountOutputTypeCountSessionsArgs<
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountSubscriptionsArgs<
+export type UserCountOutputTypeCountSpacesArgs<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  where?: Prisma.SubscriptionWhereInput;
+  where?: Prisma.SpaceWhereInput;
 };
 
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountSpacesArgs<
+export type UserCountOutputTypeCountMembershipsArgs<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  where?: Prisma.SpaceWhereInput;
+  where?: Prisma.MembershipWhereInput;
+};
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountJoinRequestsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.JoinRequestWhereInput;
 };
 
 export type UserSelect<
@@ -1007,12 +1045,11 @@ export type UserSelect<
     image?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
-    subscriptionPlan?: boolean;
-    stripeCustomerId?: boolean;
     accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>;
     sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>;
-    subscriptions?: boolean | Prisma.User$subscriptionsArgs<ExtArgs>;
     spaces?: boolean | Prisma.User$spacesArgs<ExtArgs>;
+    memberships?: boolean | Prisma.User$membershipsArgs<ExtArgs>;
+    joinRequests?: boolean | Prisma.User$joinRequestsArgs<ExtArgs>;
     _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs["result"]["user"]
@@ -1029,8 +1066,6 @@ export type UserSelectCreateManyAndReturn<
     image?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
-    subscriptionPlan?: boolean;
-    stripeCustomerId?: boolean;
   },
   ExtArgs["result"]["user"]
 >;
@@ -1046,8 +1081,6 @@ export type UserSelectUpdateManyAndReturn<
     image?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
-    subscriptionPlan?: boolean;
-    stripeCustomerId?: boolean;
   },
   ExtArgs["result"]["user"]
 >;
@@ -1060,22 +1093,12 @@ export type UserSelectScalar = {
   image?: boolean;
   createdAt?: boolean;
   updatedAt?: boolean;
-  subscriptionPlan?: boolean;
-  stripeCustomerId?: boolean;
 };
 
 export type UserOmit<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = runtime.Types.Extensions.GetOmit<
-  | "id"
-  | "email"
-  | "emailVerified"
-  | "name"
-  | "image"
-  | "createdAt"
-  | "updatedAt"
-  | "subscriptionPlan"
-  | "stripeCustomerId",
+  "id" | "email" | "emailVerified" | "name" | "image" | "createdAt" | "updatedAt",
   ExtArgs["result"]["user"]
 >;
 export type UserInclude<
@@ -1083,8 +1106,9 @@ export type UserInclude<
 > = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>;
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>;
-  subscriptions?: boolean | Prisma.User$subscriptionsArgs<ExtArgs>;
   spaces?: boolean | Prisma.User$spacesArgs<ExtArgs>;
+  memberships?: boolean | Prisma.User$membershipsArgs<ExtArgs>;
+  joinRequests?: boolean | Prisma.User$joinRequestsArgs<ExtArgs>;
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type UserIncludeCreateManyAndReturn<
@@ -1101,8 +1125,9 @@ export type $UserPayload<
   objects: {
     accounts: Prisma.$AccountPayload<ExtArgs>[];
     sessions: Prisma.$SessionPayload<ExtArgs>[];
-    subscriptions: Prisma.$SubscriptionPayload<ExtArgs>[];
     spaces: Prisma.$SpacePayload<ExtArgs>[];
+    memberships: Prisma.$MembershipPayload<ExtArgs>[];
+    joinRequests: Prisma.$JoinRequestPayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1113,8 +1138,6 @@ export type $UserPayload<
       image: string | null;
       createdAt: Date;
       updatedAt: Date;
-      subscriptionPlan: $Enums.SubscriptionPlan;
-      stripeCustomerId: string | null;
     },
     ExtArgs["result"]["user"]
   >;
@@ -1647,22 +1670,33 @@ export interface Prisma__UserClient<
       >
     | Null
   >;
-  subscriptions<T extends Prisma.User$subscriptionsArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.User$subscriptionsArgs<ExtArgs>>,
+  spaces<T extends Prisma.User$spacesArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.User$spacesArgs<ExtArgs>>,
   ): Prisma.PrismaPromise<
     | runtime.Types.Result.GetResult<
-        Prisma.$SubscriptionPayload<ExtArgs>,
+        Prisma.$SpacePayload<ExtArgs>,
         T,
         "findMany",
         GlobalOmitOptions
       >
     | Null
   >;
-  spaces<T extends Prisma.User$spacesArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.User$spacesArgs<ExtArgs>>,
+  memberships<T extends Prisma.User$membershipsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.User$membershipsArgs<ExtArgs>>,
   ): Prisma.PrismaPromise<
     | runtime.Types.Result.GetResult<
-        Prisma.$SpacePayload<ExtArgs>,
+        Prisma.$MembershipPayload<ExtArgs>,
+        T,
+        "findMany",
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  joinRequests<T extends Prisma.User$joinRequestsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.User$joinRequestsArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$JoinRequestPayload<ExtArgs>,
         T,
         "findMany",
         GlobalOmitOptions
@@ -1707,8 +1741,6 @@ export interface UserFieldRefs {
   readonly image: Prisma.FieldRef<"User", "String">;
   readonly createdAt: Prisma.FieldRef<"User", "DateTime">;
   readonly updatedAt: Prisma.FieldRef<"User", "DateTime">;
-  readonly subscriptionPlan: Prisma.FieldRef<"User", "SubscriptionPlan">;
-  readonly stripeCustomerId: Prisma.FieldRef<"User", "String">;
 }
 
 // Custom InputTypes
@@ -2181,34 +2213,6 @@ export type User$sessionsArgs<
 };
 
 /**
- * User.subscriptions
- */
-export type User$subscriptionsArgs<
-  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
-> = {
-  /**
-   * Select specific fields to fetch from the Subscription
-   */
-  select?: Prisma.SubscriptionSelect<ExtArgs> | null;
-  /**
-   * Omit specific fields from the Subscription
-   */
-  omit?: Prisma.SubscriptionOmit<ExtArgs> | null;
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SubscriptionInclude<ExtArgs> | null;
-  where?: Prisma.SubscriptionWhereInput;
-  orderBy?:
-    | Prisma.SubscriptionOrderByWithRelationInput
-    | Prisma.SubscriptionOrderByWithRelationInput[];
-  cursor?: Prisma.SubscriptionWhereUniqueInput;
-  take?: number;
-  skip?: number;
-  distinct?: Prisma.SubscriptionScalarFieldEnum | Prisma.SubscriptionScalarFieldEnum[];
-};
-
-/**
  * User.spaces
  */
 export type User$spacesArgs<
@@ -2232,6 +2236,60 @@ export type User$spacesArgs<
   take?: number;
   skip?: number;
   distinct?: Prisma.SpaceScalarFieldEnum | Prisma.SpaceScalarFieldEnum[];
+};
+
+/**
+ * User.memberships
+ */
+export type User$membershipsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the Membership
+   */
+  select?: Prisma.MembershipSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the Membership
+   */
+  omit?: Prisma.MembershipOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MembershipInclude<ExtArgs> | null;
+  where?: Prisma.MembershipWhereInput;
+  orderBy?: Prisma.MembershipOrderByWithRelationInput | Prisma.MembershipOrderByWithRelationInput[];
+  cursor?: Prisma.MembershipWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.MembershipScalarFieldEnum | Prisma.MembershipScalarFieldEnum[];
+};
+
+/**
+ * User.joinRequests
+ */
+export type User$joinRequestsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the JoinRequest
+   */
+  select?: Prisma.JoinRequestSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the JoinRequest
+   */
+  omit?: Prisma.JoinRequestOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.JoinRequestInclude<ExtArgs> | null;
+  where?: Prisma.JoinRequestWhereInput;
+  orderBy?:
+    | Prisma.JoinRequestOrderByWithRelationInput
+    | Prisma.JoinRequestOrderByWithRelationInput[];
+  cursor?: Prisma.JoinRequestWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.JoinRequestScalarFieldEnum | Prisma.JoinRequestScalarFieldEnum[];
 };
 
 /**

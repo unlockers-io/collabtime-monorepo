@@ -1,10 +1,7 @@
-import { stripe } from "@better-auth/stripe";
 import type { PrismaClient } from "@repo/db";
-import { SubscriptionPlan } from "@repo/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import type { BetterAuthPlugin } from "better-auth/types";
-import Stripe from "stripe";
 
 type AuthConfig = {
   betterAuth: {
@@ -20,11 +17,6 @@ type AuthConfig = {
     fromEmail: string;
     replyTo?: string;
   };
-  stripe: {
-    proPriceId: string;
-    secretKey: string;
-    webhookSecret: string;
-  };
 };
 
 /**
@@ -38,11 +30,7 @@ const TRUSTED_ORIGINS = [
 ];
 
 const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
-  const { betterAuth: betterAuthConfig, stripe: stripeConfig } = config;
-
-  const stripeClient = new Stripe(stripeConfig.secretKey, {
-    apiVersion: "2026-02-25.clover",
-  });
+  const { betterAuth: betterAuthConfig } = config;
 
   return betterAuth({
     account: {
@@ -75,78 +63,7 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       requireEmailVerification: false, // Can enable later with Resend
     },
 
-    plugins: [
-      stripe({
-        createCustomerOnSignUp: true,
-        stripeClient,
-        stripeWebhookSecret: stripeConfig.webhookSecret,
-        subscription: {
-          enabled: true,
-          onSubscriptionCancel: async (params) => {
-            const { subscription } = params;
-            const userId = subscription.referenceId;
-
-            if (!userId) {
-              return;
-            }
-
-            // Downgrade user
-            await prisma.user.update({
-              data: { subscriptionPlan: SubscriptionPlan.FREE },
-              where: { id: userId },
-            });
-          },
-          onSubscriptionComplete: async (params) => {
-            const { subscription } = params;
-            const userId = subscription.referenceId;
-
-            if (!userId) {
-              return;
-            }
-
-            // Update user subscription plan
-            await prisma.user.update({
-              data: { subscriptionPlan: SubscriptionPlan.PRO },
-              where: { id: userId },
-            });
-          },
-          onSubscriptionUpdate: async ({ subscription }) => {
-            if (!subscription.referenceId) {
-              return;
-            }
-
-            const user = await prisma.user.findUnique({
-              where: { id: subscription.referenceId },
-            });
-
-            if (!user) {
-              return;
-            }
-
-            const plan =
-              subscription.status === "active" || subscription.status === "trialing"
-                ? SubscriptionPlan.PRO
-                : SubscriptionPlan.FREE;
-
-            await prisma.user.update({
-              data: { subscriptionPlan: plan },
-              where: { id: user.id },
-            });
-          },
-          plans: [
-            {
-              limits: {
-                customDomain: 1,
-                privateSpaces: 10,
-              },
-              name: "PRO",
-              priceId: stripeConfig.proPriceId,
-            },
-          ],
-        },
-      }),
-      ...(config.extraPlugins ?? []),
-    ],
+    plugins: [...(config.extraPlugins ?? [])],
 
     rateLimit: {
       enabled: true,

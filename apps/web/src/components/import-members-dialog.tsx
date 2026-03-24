@@ -37,7 +37,6 @@ type ParsedRow = {
 
 type ImportMembersDialogProps = {
   teamId: string;
-  token: string;
 };
 
 const TEMPLATE_CSV = [
@@ -186,7 +185,7 @@ const handleDownloadTemplate = () => {
   URL.revokeObjectURL(url);
 };
 
-const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
+const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [rows, setRows] = useState<Array<ParsedRow> | null>(null);
@@ -253,7 +252,6 @@ const ImportMembersDialog = ({ teamId, token }: ImportMembersDialogProps) => {
     setIsImporting(true);
     const result = await importMembers(
       teamId,
-      token,
       valid.map((r) => ({
         name: r.name,
         // matchedTimezone is guaranteed non-null here due to the filter above

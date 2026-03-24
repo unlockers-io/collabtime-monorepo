@@ -1,8 +1,12 @@
+import { prisma } from "@repo/db";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 
 import { getTeamName, validateTeam } from "@/lib/actions";
-import { readTeamSession } from "@/lib/team-session";
+import { auth } from "@/lib/auth-server";
+import { isTeamRole } from "@/types";
+import type { TeamStatus } from "@/types";
 
 import { TeamPageClient } from "./client";
 
@@ -27,6 +31,26 @@ export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metad
   };
 };
 
+const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus> => {
+  const membership = await prisma.membership.findUnique({
+    where: { userId_teamId: { userId, teamId } },
+  });
+
+  if (membership && isTeamRole(membership.role)) {
+    return membership.role;
+  }
+
+  const joinRequest = await prisma.joinRequest.findUnique({
+    where: { userId_teamId: { userId, teamId } },
+  });
+
+  if (joinRequest?.status === "pending") {
+    return "pending";
+  }
+
+  return "none";
+};
+
 const TeamPage = async ({ params }: TeamPageProps) => {
   const { teamId } = await params;
   const exists = await validateTeam(teamId);
@@ -35,9 +59,34 @@ const TeamPage = async ({ params }: TeamPageProps) => {
     notFound();
   }
 
-  const initialToken = await readTeamSession(teamId);
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  return <TeamPageClient teamId={teamId} initialToken={initialToken} />;
+  const space = await prisma.space.findUnique({
+    where: { teamId },
+  });
+
+  if (space?.isPrivate) {
+    if (!session) {
+      redirect(`/login?redirect=/${teamId}`);
+    }
+
+    // Authenticated but not a member — block access to private teams
+    const membership = await prisma.membership.findUnique({
+      where: { userId_teamId: { userId: session.user.id, teamId } },
+    });
+
+    if (!membership) {
+      notFound();
+    }
+  }
+
+  const teamStatus: TeamStatus = session ? await getTeamStatus(session.user.id, teamId) : "none";
+
+  return (
+    <TeamPageClient teamId={teamId} isAuthenticated={Boolean(session)} teamStatus={teamStatus} />
+  );
 };
 
 export default TeamPage;

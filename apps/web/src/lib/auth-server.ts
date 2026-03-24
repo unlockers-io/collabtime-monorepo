@@ -7,11 +7,6 @@ import { nextCookies } from "better-auth/next-js";
 let _auth: Auth | null = null;
 
 const getAuthConfig = () => ({
-  stripe: {
-    secretKey: process.env.STRIPE_SECRET_KEY ?? "",
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
-    proPriceId: process.env.STRIPE_PRO_PRICE_ID ?? "",
-  },
   betterAuth: {
     secret: process.env.BETTER_AUTH_SECRET ?? "",
     url: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",

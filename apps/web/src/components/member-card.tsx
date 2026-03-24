@@ -32,13 +32,11 @@ type MemberCardProps = {
   onMemberRemoved: (memberId: string) => void;
   onMemberUpdated: (member: TeamMember) => void;
   teamId: string;
-  token: string | null;
 };
 
 const MemberCard = ({
   member,
   teamId,
-  token,
   groups,
   canEdit,
   onMemberRemoved,
@@ -94,11 +92,11 @@ const MemberCard = ({
   }, [member.timezone, member.workingHoursStart, member.workingHoursEnd]);
 
   const handleRemove = () => {
-    if (!canEdit || !token) {
+    if (!canEdit) {
       return;
     }
     startTransition(async () => {
-      const result = await removeMember(teamId, token, member.id);
+      const result = await removeMember(teamId, member.id);
       if (result.success) {
         onMemberRemoved(member.id);
       } else {
@@ -218,11 +216,10 @@ const MemberCard = ({
         </div>
       </div>
 
-      {canEdit && token && (
+      {canEdit && (
         <EditMemberDialog
           member={member}
           teamId={teamId}
-          token={token}
           groups={groups}
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
