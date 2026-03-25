@@ -877,7 +877,7 @@ const TeamPageClient = ({
           className="grid grid-cols-1 gap-6 xl:grid-cols-2"
         >
           {/* Team Members */}
-          <section className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <Users className="h-5 w-5 text-muted-foreground" />
@@ -946,7 +946,7 @@ const TeamPageClient = ({
           </section>
 
           {/* Groups */}
-          <section className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <FolderKanban className="h-5 w-5 text-muted-foreground" />

@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
   Dialog,
@@ -20,8 +19,8 @@ import {
   SelectValue,
   Spinner,
 } from "@repo/ui";
-import { useEffect, useTransition } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "@tanstack/react-form";
+import { useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -54,11 +53,11 @@ type EditMemberFormProps = {
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  title: z.string().optional(),
+  title: z.string(),
   timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
   workingHoursStart: z.number().min(0).max(23),
   workingHoursEnd: z.number().min(0).max(23),
-  groupId: z.string().optional(),
+  groupId: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -73,56 +72,49 @@ const EditMemberForm = ({
 }: EditMemberFormProps) => {
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    mode: "onChange",
+
+  const form = useForm({
     defaultValues: {
       name: member.name,
-      title: member.title,
+      title: member.title ?? "",
       timezone: member.timezone as FormValues["timezone"],
       workingHoursStart: member.workingHoursStart,
       workingHoursEnd: member.workingHoursEnd,
-      groupId: member.groupId,
+      groupId: member.groupId ?? "",
+    },
+    validators: {
+      onBlur: formSchema,
+      onChange: formSchema,
+    },
+    onSubmit: ({ value }) => {
+      startTransition(async () => {
+        const { groupId: _stripped, ...claimSafeData } = value;
+        const result = isClaim
+          ? await updateOwnMember(teamId, member.id, {
+              ...claimSafeData,
+              title: claimSafeData.title || "",
+            })
+          : await updateMember(teamId, member.id, {
+              ...value,
+              title: value.title || "",
+              groupId: value.groupId || undefined,
+            });
+        if (!result.success) {
+          toast.error(result.error);
+          return;
+        }
+
+        toast.success(isClaim ? "Profile claimed" : "Member updated");
+        onOpenChange(false);
+        onMemberUpdated({
+          ...member,
+          ...value,
+          title: value.title || "",
+          groupId: value.groupId || undefined,
+        });
+      });
     },
   });
-
-  useEffect(() => {
-    form.reset({
-      name: member.name,
-      title: member.title,
-      timezone: member.timezone as FormValues["timezone"],
-      workingHoursStart: member.workingHoursStart,
-      workingHoursEnd: member.workingHoursEnd,
-      groupId: member.groupId,
-    });
-  }, [form, member]);
-
-  const onSubmit = (data: FormValues) => {
-    startTransition(async () => {
-      const { groupId: _stripped, ...claimSafeData } = data;
-      const result = isClaim
-        ? await updateOwnMember(teamId, member.id, {
-            ...claimSafeData,
-            title: claimSafeData.title ?? "",
-          })
-        : await updateMember(teamId, member.id, {
-            ...data,
-            title: data.title ?? "",
-          });
-      if (!result.success) {
-        toast.error(result.error);
-        return;
-      }
-
-      toast.success(isClaim ? "Profile claimed" : "Member updated");
-      onOpenChange(false);
-      onMemberUpdated({
-        ...member,
-        ...data,
-        title: data.title ?? "",
-      });
-    });
-  };
 
   return (
     <>
@@ -135,51 +127,68 @@ const EditMemberForm = ({
         </DialogDescription>
       </DialogHeader>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          form.handleSubmit();
+        }}
+        noValidate
+      >
         <div className="flex flex-col gap-4 py-2">
-          <Controller
-            control={form.control}
-            name="name"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
+          <form.Field name="name">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                 <FieldLabel htmlFor="edit-name">Name</FieldLabel>
                 <Input
-                  {...field}
                   id="edit-name"
                   placeholder="John Doe"
-                  aria-invalid={fieldState.invalid}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                 />
-                <FieldError errors={[fieldState.error]} />
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
               </Field>
             )}
-          />
+          </form.Field>
 
-          <Controller
-            control={form.control}
-            name="title"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
+          <form.Field name="title">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                 <FieldLabel htmlFor="edit-title">Title (optional)</FieldLabel>
                 <Input
-                  {...field}
                   id="edit-title"
-                  value={field.value ?? ""}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
                   placeholder="Software Engineer"
-                  aria-invalid={fieldState.invalid}
+                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                 />
-                <FieldError errors={[fieldState.error]} />
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
               </Field>
             )}
-          />
+          </form.Field>
 
-          <Controller
-            control={form.control}
-            name="timezone"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
+          <form.Field name="timezone">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                 <FieldLabel htmlFor="edit-timezone">Timezone</FieldLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="edit-timezone" aria-invalid={fieldState.invalid}>
+                <Select
+                  value={field.state.value}
+                  onValueChange={(value) => {
+                    field.handleChange(value as FormValues["timezone"]);
+                    field.handleBlur();
+                  }}
+                >
+                  <SelectTrigger
+                    id="edit-timezone"
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -190,44 +199,53 @@ const EditMemberForm = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <FieldError errors={[fieldState.error]} />
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
               </Field>
             )}
-          />
+          </form.Field>
 
           {!isClaim && groups.length > 0 && (
-            <Controller
-              control={form.control}
-              name="groupId"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+            <form.Field name="groupId">
+              {(field) => (
+                <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                   <FieldLabel htmlFor="edit-group">Group</FieldLabel>
                   <GroupSelector
                     id="edit-group"
-                    aria-invalid={fieldState.invalid}
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                     groups={groups}
-                    value={field.value}
-                    onValueChange={(value) => field.onChange(value)}
+                    value={field.state.value || undefined}
+                    onValueChange={(value) => {
+                      field.handleChange(value ?? "");
+                      field.handleBlur();
+                    }}
                     placeholder="No group"
                   />
-                  <FieldError errors={[fieldState.error]} />
+                  {field.state.meta.isTouched && !field.state.meta.isValid && (
+                    <FieldError errors={field.state.meta.errors} />
+                  )}
                 </Field>
               )}
-            />
+            </form.Field>
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <Controller
-              control={form.control}
-              name="workingHoursStart"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+            <form.Field name="workingHoursStart">
+              {(field) => (
+                <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                   <FieldLabel htmlFor="edit-work-start">Work Starts</FieldLabel>
                   <Select
-                    value={String(field.value)}
-                    onValueChange={(value) => field.onChange(Number(value))}
+                    value={String(field.state.value)}
+                    onValueChange={(value) => {
+                      field.handleChange(Number(value));
+                      field.handleBlur();
+                    }}
                   >
-                    <SelectTrigger id="edit-work-start" aria-invalid={fieldState.invalid}>
+                    <SelectTrigger
+                      id="edit-work-start"
+                      aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -238,22 +256,28 @@ const EditMemberForm = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FieldError errors={[fieldState.error]} />
+                  {field.state.meta.isTouched && !field.state.meta.isValid && (
+                    <FieldError errors={field.state.meta.errors} />
+                  )}
                 </Field>
               )}
-            />
+            </form.Field>
 
-            <Controller
-              control={form.control}
-              name="workingHoursEnd"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+            <form.Field name="workingHoursEnd">
+              {(field) => (
+                <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                   <FieldLabel htmlFor="edit-work-end">Work Ends</FieldLabel>
                   <Select
-                    value={String(field.value)}
-                    onValueChange={(value) => field.onChange(Number(value))}
+                    value={String(field.state.value)}
+                    onValueChange={(value) => {
+                      field.handleChange(Number(value));
+                      field.handleBlur();
+                    }}
                   >
-                    <SelectTrigger id="edit-work-end" aria-invalid={fieldState.invalid}>
+                    <SelectTrigger
+                      id="edit-work-end"
+                      aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -264,10 +288,12 @@ const EditMemberForm = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FieldError errors={[fieldState.error]} />
+                  {field.state.meta.isTouched && !field.state.meta.isValid && (
+                    <FieldError errors={field.state.meta.errors} />
+                  )}
                 </Field>
               )}
-            />
+            </form.Field>
           </div>
         </div>
 
@@ -280,18 +306,22 @@ const EditMemberForm = ({
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isPending || !form.formState.isValid}>
-            {isPending ? (
-              <span className="flex items-center gap-2">
-                <Spinner />
-                Saving…
-              </span>
-            ) : isClaim ? (
-              "Claim Profile"
-            ) : (
-              "Save Changes"
+          <form.Subscribe selector={(state) => ({ canSubmit: state.canSubmit })}>
+            {({ canSubmit }) => (
+              <Button type="submit" disabled={isPending || !canSubmit}>
+                {isPending ? (
+                  <span className="flex items-center gap-2">
+                    <Spinner />
+                    Saving...
+                  </span>
+                ) : isClaim ? (
+                  "Claim Profile"
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
             )}
-          </Button>
+          </form.Subscribe>
         </DialogFooter>
       </form>
     </>
