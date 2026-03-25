@@ -30,6 +30,7 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { useDragToScroll } from "@/hooks/use-drag-to-scroll";
 import {
   convertHourToTimezone,
   formatTimezoneAbbreviation,
@@ -314,7 +315,18 @@ const TimezoneVisualizer = ({
   const isDark = resolvedTheme === "dark";
 
   const sectionsContainerRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLElement | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
+  const { isDragging } = useDragToScroll(scrollViewportRef);
+
+  useEffect(() => {
+    const root = sectionsContainerRef.current;
+    if (!root) {
+      return;
+    }
+    const viewport = root.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    scrollViewportRef.current = viewport;
+  }, []);
   const lineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isHoveringRef = useRef(false);
   const selectedBlockRef = useRef<number | null>(null);
@@ -1001,7 +1013,10 @@ const TimezoneVisualizer = ({
       <div className="flex flex-col gap-6">
         {renderTimeAxis()}
 
-        <ScrollArea ref={sectionsContainerRef} className="relative flex max-h-80 flex-col gap-4">
+        <ScrollArea
+          ref={sectionsContainerRef}
+          className="relative flex max-h-80 flex-col gap-4 select-none"
+        >
           {renderCurrentTimeIndicator()}
 
           {groupedSections.map((section, sectionIndex) => {
@@ -1037,9 +1052,9 @@ const TimezoneVisualizer = ({
 
                       <div
                         ref={sectionIndex === 0 ? timelineRef : undefined}
-                        className="relative flex-1 cursor-crosshair"
-                        onMouseMove={handleMouseMove}
-                        onMouseLeave={handleMouseLeave}
+                        className={`relative flex-1 ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+                        onMouseMove={isDragging ? undefined : handleMouseMove}
+                        onMouseLeave={isDragging ? undefined : handleMouseLeave}
                       >
                         <div className="flex flex-col gap-3">
                           {visibleRows.map(({ member, hours }) => (
