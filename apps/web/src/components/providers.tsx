@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
 type ProvidersProps = { children: ReactNode };
+
+const RealtimeReadyContext = createContext(false);
+
+const useRealtimeReady = () => useContext(RealtimeReadyContext);
 
 // @upstash/realtime does not ship "use client" in its dist files. Next.js 16
 // + Turbopack resolves `react` via react-server exports for SSR bundles, which
@@ -31,9 +35,13 @@ const RealtimeMount = ({ children }: { children: ReactNode }) => {
   }, []);
 
   if (!Provider) {
-    return <>{children}</>;
+    return <RealtimeReadyContext value={false}>{children}</RealtimeReadyContext>;
   }
-  return <Provider api={{ url: "/api/realtime" }}>{children}</Provider>;
+  return (
+    <Provider api={{ url: "/api/realtime" }}>
+      <RealtimeReadyContext value={true}>{children}</RealtimeReadyContext>
+    </Provider>
+  );
 };
 
 const Providers = ({ children }: ProvidersProps) => (
@@ -44,4 +52,4 @@ const Providers = ({ children }: ProvidersProps) => (
   </QueryProvider>
 );
 
-export { Providers };
+export { Providers, useRealtimeReady };
