@@ -30,6 +30,9 @@
     "typescript": "^5.9.3"
   },
   "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "oxlint"
+    ],
     "*.{ts,tsx,js,jsx,json,md}": [
       "oxfmt"
     ]
