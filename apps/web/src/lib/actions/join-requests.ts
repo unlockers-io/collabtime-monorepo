@@ -113,6 +113,7 @@ const approveJoinRequest = async (
 
     // Post-commit side effects: cache + realtime (best-effort)
     const memberName = joinRequest.user.name || joinRequest.user.email.split("@")[0] || "Unknown";
+    const team = await getTeamRecord(joinRequest.teamId);
     const newMember: TeamMember = {
       id: uuidv4(),
       name: memberName,
@@ -121,10 +122,10 @@ const approveJoinRequest = async (
       workingHoursStart: 9,
       workingHoursEnd: 17,
       userId: joinRequest.userId,
+      order: team?.members.length ?? 0,
     };
 
     try {
-      const team = await getTeamRecord(joinRequest.teamId);
       if (team) {
         team.members.push(newMember);
         await redis.set(`team:${joinRequest.teamId}`, JSON.stringify(team), {

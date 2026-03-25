@@ -36,6 +36,9 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
       team.members = [];
     }
 
+    // Backfill order for members that lack it
+    team.members = team.members.map((m, i) => ({ ...m, order: m.order ?? i }));
+
     return team;
   } catch (error) {
     console.error("Failed to get team:", error);

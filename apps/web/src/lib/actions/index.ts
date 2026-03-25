@@ -1,4 +1,4 @@
-export { createGroup, removeGroup, updateGroup } from "./group-actions";
+export { createGroup, removeGroup, reorderGroups, updateGroup } from "./group-actions";
 export {
   approveJoinRequest,
   denyJoinRequest,
@@ -10,6 +10,7 @@ export {
   addMember,
   importMembers,
   removeMember,
+  reorderMembers,
   updateMember,
   updateOwnMember,
   updateTeamName,

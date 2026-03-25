@@ -14,7 +14,6 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { EditMemberDialog } from "@/components/edit-member-dialog";
-import { useDrag } from "@/contexts/drag-context";
 import { removeMember } from "@/lib/actions";
 import {
   formatTimezoneLabel,
@@ -22,7 +21,7 @@ import {
   getMinutesUntilAvailable,
   formatTimeUntilAvailable,
 } from "@/lib/timezones";
-import { cn, formatHour } from "@/lib/utils";
+import { formatHour } from "@/lib/utils";
 import type { TeamGroup, TeamMember } from "@/types";
 
 type MemberCardProps = {
@@ -51,26 +50,9 @@ const MemberCard = ({
   const [minutesUntilAvailable, setMinutesUntilAvailable] = useState(0);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const { isDragging, startDrag, endDrag } = useDrag();
 
   const isOwnProfile = Boolean(currentUserId && member.userId === currentUserId);
   const canClaim = Boolean(currentUserId && !member.userId && !hasClaimedProfile);
-
-  // Detect touch device to disable dragging on mobile
-  useEffect(() => {
-    const checkTouchDevice = () => {
-      setIsTouchDevice(
-        "ontouchstart" in window ||
-          navigator.maxTouchPoints > 0 ||
-          window.matchMedia("(pointer: coarse)").matches,
-      );
-    };
-    checkTouchDevice();
-    // Re-check on resize in case of device mode changes in dev tools
-    window.addEventListener("resize", checkTouchDevice);
-    return () => window.removeEventListener("resize", checkTouchDevice);
-  }, []);
 
   useEffect(() => {
     const checkAvailability = () => {
@@ -113,29 +95,9 @@ const MemberCard = ({
     });
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData("text/plain", member.id);
-    e.dataTransfer.effectAllowed = "move";
-    startDrag(member.groupId);
-  };
-
-  const handleDragEnd = () => {
-    endDrag();
-  };
-
-  const isDraggable = canEdit && !isTouchDevice;
-
   return (
     <>
-      <div
-        className={cn(
-          "group flex h-full min-h-45 flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-input hover:shadow-md",
-          isDraggable && (isDragging ? "cursor-grabbing" : "cursor-grab"),
-        )}
-        draggable={isDraggable}
-        onDragStart={isDraggable ? handleDragStart : undefined}
-        onDragEnd={isDraggable ? handleDragEnd : undefined}
-      >
+      <div className="group flex h-full min-h-45 flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-input hover:shadow-md">
         {/* Top row: Avatar and Actions */}
         <div className="flex items-start justify-between">
           {/* Avatar with status */}

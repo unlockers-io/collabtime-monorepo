@@ -160,4 +160,48 @@ const removeGroup = async (teamId: string, groupId: string): Promise<ActionResul
   }
 };
 
-export { createGroup, removeGroup, updateGroup };
+const reorderGroups = async (
+  teamId: string,
+  groupIds: Array<string>,
+): Promise<ActionResult<void>> => {
+  try {
+    await requireTeamAdmin(teamId);
+
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    const existingIds = new Set(team.groups.map((g) => g.id));
+    const inputIds = new Set(groupIds);
+    if (inputIds.size !== existingIds.size || !groupIds.every((id) => existingIds.has(id))) {
+      return { success: false, error: "Invalid group order" };
+    }
+
+    const groupMap = new Map(team.groups.map((g) => [g.id, g]));
+    team.groups = groupIds.map((id, index) => ({
+      ...groupMap.get(id)!,
+      order: index,
+    }));
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.groupsReordered", {
+      order: groupIds,
+    });
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error("Failed to reorder groups:", error);
+    return { success: false, error: "Failed to reorder groups" };
+  }
+};
+
+export { createGroup, removeGroup, reorderGroups, updateGroup };
