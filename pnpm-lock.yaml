@@ -27,8 +27,8 @@ importers:
         specifier: ^1.56.0
         version: 1.56.0
       oxlint-config-awesomeness:
-        specifier: ^1.0.0
-        version: 1.0.0(@typescript-eslint/eslint-plugin@8.57.1(@typescript-eslint/parser@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.3(jiti@2.6.1))(oxlint@1.56.0)(typescript@5.9.3)
+        specifier: ^1.0.1
+        version: 1.0.1(@typescript-eslint/eslint-plugin@8.57.1(@typescript-eslint/parser@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.3(jiti@2.6.1))(oxlint@1.56.0)(typescript@5.9.3)
       turbo:
         specifier: ^2.8.20
         version: 2.8.20
@@ -67,7 +67,7 @@ importers:
         version: 3.0.3
       better-auth:
         specifier: ^1.5.5
-        version: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.2.0(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.1(@types/node@25.5.0)(jsdom@26.1.0)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2)))
+        version: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.2.0(@babel/core@7.28.5)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.1(@types/node@25.5.0)(jsdom@26.1.0)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2)))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -79,7 +79,7 @@ importers:
         version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next:
         specifier: ^16.2.0
-        version: 16.2.0(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 16.2.0(@babel/core@7.28.5)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -158,7 +158,7 @@ importers:
         version: link:../db
       better-auth:
         specifier: ^1.5.5
-        version: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.2.0(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.1(@types/node@25.5.0)(jsdom@26.1.0)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2)))
+        version: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.2.0(@babel/core@7.28.5)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.1(@types/node@25.5.0)(jsdom@26.1.0)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2)))
     devDependencies:
       '@repo/config-vitest':
         specifier: workspace:*
@@ -3426,8 +3426,8 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  oxlint-config-awesomeness@1.0.0:
-    resolution: {integrity: sha512-nmfzyLfDpg+aUX0A7z5t8fhmKnbrPsvtPeujQnrvhmU/CvKbnzLnIQNEWbg1JKtMXR+hbCF/byEiLZatkpW/yw==}
+  oxlint-config-awesomeness@1.0.1:
+    resolution: {integrity: sha512-j0Akssrj+rdl69cpvdJ3XCFMF5xIZl1JTqSIl44yySCqUuS99h6vFNy+bjrdGtZ9j9MbyP6Sk9C7WMguuOsdxw==}
     peerDependencies:
       oxlint: '>=1.46.0'
 
@@ -5986,7 +5986,7 @@ snapshots:
 
   bcryptjs@3.0.3: {}
 
-  better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.2.0(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.1(@types/node@25.5.0)(jsdom@26.1.0)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))):
+  better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.2.0(@babel/core@7.28.5)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.1(@types/node@25.5.0)(jsdom@26.1.0)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(yaml@2.8.2))):
     dependencies:
       '@better-auth/core': 1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0)
       '@better-auth/drizzle-adapter': 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)
@@ -6009,7 +6009,7 @@ snapshots:
       '@prisma/client': 7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
       mongodb: 7.1.0
       mysql2: 3.15.3
-      next: 16.2.0(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next: 16.2.0(@babel/core@7.28.5)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       pg: 8.20.0
       prisma: 7.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       react: 19.2.4
@@ -6236,7 +6236,7 @@ snapshots:
   eslint-plugin-react-hooks@7.0.1(eslint@10.0.3(jiti@2.6.1)):
     dependencies:
       '@babel/core': 7.28.5
-      '@babel/parser': 7.28.5
+      '@babel/parser': 7.29.2
       eslint: 10.0.3(jiti@2.6.1)
       hermes-parser: 0.25.1
       zod: 4.3.6
@@ -6732,7 +6732,7 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
-  next@16.2.0(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  next@16.2.0(@babel/core@7.28.5)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@next/env': 16.2.0
       '@swc/helpers': 0.5.15
@@ -6741,7 +6741,7 @@ snapshots:
       postcss: 8.4.31
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
-      styled-jsx: 5.1.6(react@19.2.4)
+      styled-jsx: 5.1.6(@babel/core@7.28.5)(react@19.2.4)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.2.0
       '@next/swc-darwin-x64': 16.2.0
@@ -6815,7 +6815,7 @@ snapshots:
       '@oxfmt/binding-win32-ia32-msvc': 0.41.0
       '@oxfmt/binding-win32-x64-msvc': 0.41.0
 
-  oxlint-config-awesomeness@1.0.0(@typescript-eslint/eslint-plugin@8.57.1(@typescript-eslint/parser@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.3(jiti@2.6.1))(oxlint@1.56.0)(typescript@5.9.3):
+  oxlint-config-awesomeness@1.0.1(@typescript-eslint/eslint-plugin@8.57.1(@typescript-eslint/parser@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.3(jiti@2.6.1))(oxlint@1.56.0)(typescript@5.9.3):
     dependencies:
       eslint-plugin-no-only-tests: 3.3.0
       eslint-plugin-perfectionist: 5.7.0(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3)
@@ -7259,10 +7259,12 @@ snapshots:
     dependencies:
       min-indent: 1.0.1
 
-  styled-jsx@5.1.6(react@19.2.4):
+  styled-jsx@5.1.6(@babel/core@7.28.5)(react@19.2.4):
     dependencies:
       client-only: 0.0.1
       react: 19.2.4
+    optionalDependencies:
+      '@babel/core': 7.28.5
 
   supports-color@7.2.0:
     dependencies:
