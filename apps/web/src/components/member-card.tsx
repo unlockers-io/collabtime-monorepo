@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from "@repo/ui";
 import { Badge } from "@repo/ui";
-import { Pencil, Trash2 } from "lucide-react";
+import { Hand, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -27,7 +27,9 @@ import type { TeamGroup, TeamMember } from "@/types";
 
 type MemberCardProps = {
   canEdit: boolean;
+  currentUserId?: string;
   groups: Array<TeamGroup>;
+  hasClaimedProfile: boolean;
   member: TeamMember;
   onMemberRemoved: (memberId: string) => void;
   onMemberUpdated: (member: TeamMember) => void;
@@ -39,6 +41,8 @@ const MemberCard = ({
   teamId,
   groups,
   canEdit,
+  currentUserId,
+  hasClaimedProfile,
   onMemberRemoved,
   onMemberUpdated,
 }: MemberCardProps) => {
@@ -46,8 +50,12 @@ const MemberCard = ({
   const [isAvailable, setIsAvailable] = useState(false);
   const [minutesUntilAvailable, setMinutesUntilAvailable] = useState(0);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const { isDragging, startDrag, endDrag } = useDrag();
+
+  const isOwnProfile = Boolean(currentUserId && member.userId === currentUserId);
+  const canClaim = Boolean(currentUserId && !member.userId && !hasClaimedProfile);
 
   // Detect touch device to disable dragging on mobile
   useEffect(() => {
@@ -166,12 +174,31 @@ const MemberCard = ({
               </Button>
             </div>
           )}
+          {canClaim && !canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsClaimDialogOpen(true)}
+              className="text-xs"
+              aria-label={`Claim ${member.name}'s profile`}
+            >
+              <Hand className="mr-1 h-3.5 w-3.5" />
+              That&apos;s me
+            </Button>
+          )}
         </div>
 
         {/* Info - stacked vertically */}
         <div className="flex flex-1 flex-col gap-1.5">
           <div className="flex flex-col gap-0.5">
-            <span className="font-semibold text-foreground">{member.name}</span>
+            <span className="flex items-center gap-1.5 font-semibold text-foreground">
+              {member.name}
+              {isOwnProfile && (
+                <Badge variant="secondary" className="border-transparent text-xs">
+                  You
+                </Badge>
+              )}
+            </span>
             {member.title && <span className="text-sm text-muted-foreground">{member.title}</span>}
           </div>
 
@@ -223,6 +250,17 @@ const MemberCard = ({
           groups={groups}
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
+          onMemberUpdated={onMemberUpdated}
+        />
+      )}
+      {canClaim && (
+        <EditMemberDialog
+          member={member}
+          teamId={teamId}
+          groups={groups}
+          mode="claim"
+          open={isClaimDialogOpen}
+          onOpenChange={setIsClaimDialogOpen}
           onMemberUpdated={onMemberUpdated}
         />
       )}
