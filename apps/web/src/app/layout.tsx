@@ -79,6 +79,20 @@ const RootLayout = ({
 }>) => {
   return (
     <html lang="en" suppressHydrationWarning>
+      {process.env.NODE_ENV === "development" && (
+        <>
+          <script
+            src="https://unpkg.com/react-scan/dist/auto.global.js"
+            crossOrigin="anonymous"
+            async
+          />
+          <script
+            src="https://unpkg.com/react-grab/dist/index.global.js"
+            crossOrigin="anonymous"
+            async
+          />
+        </>
+      )}
       <body
         className={`${geistMono.variable} flex min-h-screen flex-col bg-background font-(family-name:--font-geist-mono) text-foreground antialiased selection:bg-accent selection:text-accent-foreground`}
       >
