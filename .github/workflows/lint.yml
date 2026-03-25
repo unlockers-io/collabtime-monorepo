@@ -21,4 +21,5 @@ jobs:
           node-version: lts/*
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: find apps/ packages/ -name node_modules -type d -prune -exec rm -rf {} +
       - run: pnpm oxlint --format=github apps/ packages/
