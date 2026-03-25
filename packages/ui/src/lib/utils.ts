@@ -1,7 +1,22 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { type ClassValue, clsx } from "clsx";
+import { extendTailwindMerge } from "tailwind-merge";
 
-const cn = (...inputs: Array<ClassValue>) => {
+const twMerge = extendTailwindMerge({
+  experimentalParseClassName({ className, parseClassName }) {
+    const parsed = parseClassName(className);
+
+    if (parsed.baseClassName.startsWith("ui:")) {
+      return {
+        ...parsed,
+        baseClassName: parsed.baseClassName.slice(3),
+      };
+    }
+
+    return parsed;
+  },
+});
+
+const cn = (...inputs: ClassValue[]) => {
   return twMerge(clsx(inputs));
 };
 
