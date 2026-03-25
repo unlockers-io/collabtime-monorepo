@@ -174,7 +174,7 @@ const MemberCard = ({
               </Button>
             </div>
           )}
-          {canClaim && !canEdit && (
+          {canClaim && (
             <Button
               variant="outline"
               size="sm"

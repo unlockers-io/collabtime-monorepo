@@ -71,7 +71,7 @@ const TeamPageClient = ({
   const groups = useMemo(() => teamData?.team?.groups ?? [], [teamData?.team?.groups]);
 
   const { data: session } = useSession();
-  const currentUserId = session?.user?.id;
+  const currentUserId = isMember ? session?.user?.id : undefined;
   const hasClaimedProfile = useMemo(
     () => Boolean(currentUserId && members.some((m) => m.userId === currentUserId)),
     [currentUserId, members],
