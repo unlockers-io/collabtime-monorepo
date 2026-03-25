@@ -261,7 +261,7 @@ const MemberCard = ({
           mode="claim"
           open={isClaimDialogOpen}
           onOpenChange={setIsClaimDialogOpen}
-          onMemberUpdated={onMemberUpdated}
+          onMemberUpdated={(updated) => onMemberUpdated({ ...updated, userId: currentUserId })}
         />
       )}
     </>

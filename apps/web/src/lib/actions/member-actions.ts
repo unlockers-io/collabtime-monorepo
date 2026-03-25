@@ -308,7 +308,7 @@ const updateOwnMember = async (
 
     await realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember);
 
-    return { success: true, data: sanitizeTeam(team) };
+    return { success: true, data: sanitizeTeam(team, session.user.id) };
   } catch (error) {
     console.error("Failed to update own member:", error);
     return { success: false, error: "Failed to update member" };

@@ -3,12 +3,14 @@ import type { Team, TeamRecord } from "@/types";
 import { redis } from "../redis";
 import { UUIDSchema } from "../validation";
 
-const sanitizeTeam = (team: TeamRecord): Team => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { adminPasswordHash, ...publicTeam } = team;
+const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
+  const { adminPasswordHash: _, ...publicTeam } = team;
   return {
     ...publicTeam,
-    members: publicTeam.members.map(({ userId: _userId, ...member }) => member),
+    members: publicTeam.members.map(({ userId, ...member }) => ({
+      ...member,
+      ...(userId === currentUserId ? { userId } : userId ? { userId: "claimed" } : {}),
+    })),
   };
 };
 

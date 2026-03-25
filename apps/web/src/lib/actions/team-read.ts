@@ -1,7 +1,9 @@
 "use server";
 
 import { prisma } from "@repo/db";
+import { headers } from "next/headers";
 
+import { auth } from "@/lib/auth-server";
 import { getTeamRole } from "@/lib/team-auth";
 import type { Team, TeamRole } from "@/types";
 
@@ -44,9 +46,11 @@ const getPublicTeam = async (
       return { success: false, error: "Team not found" };
     }
 
+    const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+
     return {
       success: true,
-      data: { team: sanitizeTeam(team), role: "MEMBER" },
+      data: { team: sanitizeTeam(team, session?.user?.id), role: "MEMBER" },
     };
   } catch (error) {
     console.error("Failed to fetch public team:", error);
