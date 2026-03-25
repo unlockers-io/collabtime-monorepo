@@ -13,6 +13,7 @@ const TeamMemberSchema = z.object({
   workingHoursStart: z.number(),
   workingHoursEnd: z.number(),
   groupId: z.string().optional(),
+  order: z.number(),
 });
 
 const TeamGroupSchema = z.object({

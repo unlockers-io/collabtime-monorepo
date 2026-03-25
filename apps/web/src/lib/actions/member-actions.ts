@@ -15,7 +15,7 @@ import type { ActionResult } from "./types";
 
 const addMember = async (
   teamId: string,
-  member: Omit<TeamMember, "id">,
+  member: Omit<TeamMember, "id" | "order">,
 ): Promise<ActionResult<{ member: TeamMember; team: Team }>> => {
   try {
     await requireTeamAdmin(teamId);
@@ -35,6 +35,7 @@ const addMember = async (
     const newMember: TeamMember = {
       ...memberResult.data,
       id: uuidv4(),
+      order: team.members.length,
     };
 
     team.members.push(newMember);
@@ -189,7 +190,7 @@ const updateTeamName = async (teamId: string, name: string): Promise<ActionResul
 
 const importMembers = async (
   teamId: string,
-  members: Array<Omit<TeamMember, "id">>,
+  members: Array<Omit<TeamMember, "id" | "order">>,
 ): Promise<ActionResult<{ imported: number; members: Array<TeamMember>; team: Team }>> => {
   try {
     await requireTeamAdmin(teamId);
@@ -209,7 +210,7 @@ const importMembers = async (
         const msg = result.error.issues[0]?.message ?? "Invalid member data";
         return { success: false, error: `Invalid member "${member.name}": ${msg}` };
       }
-      validated.push({ ...result.data, id: uuidv4() });
+      validated.push({ ...result.data, id: uuidv4(), order: 0 });
     }
 
     const team = await getTeamRecord(teamId);
@@ -217,7 +218,9 @@ const importMembers = async (
       return { success: false, error: "Team not found" };
     }
 
-    team.members.push(...validated);
+    const startOrder = team.members.length;
+    const orderedValidated = validated.map((m, i) => ({ ...m, order: startOrder + i }));
+    team.members.push(...orderedValidated);
 
     await redis.set(`team:${teamId}`, JSON.stringify(team), {
       ex: TEAM_ACTIVE_TTL_SECONDS,
@@ -315,4 +318,56 @@ const updateOwnMember = async (
   }
 };
 
-export { addMember, importMembers, removeMember, updateMember, updateOwnMember, updateTeamName };
+const reorderMembers = async (
+  teamId: string,
+  memberIds: Array<string>,
+): Promise<ActionResult<void>> => {
+  try {
+    await requireTeamAdmin(teamId);
+
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return { success: false, error: "Invalid team ID" };
+    }
+
+    const team = await getTeamRecord(teamId);
+    if (!team) {
+      return { success: false, error: "Team not found" };
+    }
+
+    const existingIds = new Set(team.members.map((m) => m.id));
+    const inputIds = new Set(memberIds);
+    if (inputIds.size !== existingIds.size || !memberIds.every((id) => existingIds.has(id))) {
+      return { success: false, error: "Invalid member order" };
+    }
+
+    const memberMap = new Map(team.members.map((m) => [m.id, m]));
+    team.members = memberIds.map((id, index) => ({
+      ...memberMap.get(id)!,
+      order: index,
+    }));
+
+    await redis.set(`team:${teamId}`, JSON.stringify(team), {
+      ex: TEAM_ACTIVE_TTL_SECONDS,
+    });
+
+    await realtime.channel(`team-${teamId}`).emit("team.membersReordered", {
+      order: memberIds,
+    });
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error("Failed to reorder members:", error);
+    return { success: false, error: "Failed to reorder members" };
+  }
+};
+
+export {
+  addMember,
+  importMembers,
+  removeMember,
+  reorderMembers,
+  updateMember,
+  updateOwnMember,
+  updateTeamName,
+};

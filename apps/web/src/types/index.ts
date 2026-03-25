@@ -8,6 +8,7 @@ type TeamMember = {
   groupId?: string; // Optional: undefined = ungrouped
   id: string;
   name: string;
+  order: number;
   timezone: string;
   title: string;
   userId?: string; // Links to authenticated user; undefined for manually-added members

@@ -5,17 +5,16 @@ import { Pencil, Trash2, Users } from "lucide-react";
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { useDrag } from "@/contexts/drag-context";
 import { removeGroup, updateGroup } from "@/lib/actions";
 import type { TeamGroup } from "@/types";
 
-type GroupHeaderProps = {
+type GroupCardProps = {
   canEdit: boolean;
   group: TeamGroup;
+  isDropTarget?: boolean;
   memberCount: number;
   onGroupRemoved: (groupId: string) => void;
   onGroupUpdated: (group: TeamGroup) => void;
-  onMemberDropped?: (memberId: string, groupId: string) => void;
   teamId: string;
 };
 
@@ -24,18 +23,13 @@ const GroupCard = ({
   teamId,
   memberCount,
   canEdit,
+  isDropTarget = false,
   onGroupUpdated,
   onGroupRemoved,
-  onMemberDropped,
-}: GroupHeaderProps) => {
+}: GroupCardProps) => {
   const [isPending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState("");
-  const [isDragOver, setIsDragOver] = useState(false);
-  const { isDragging, draggedMemberGroupId } = useDrag();
-
-  // Check if the member being dragged is already in this group
-  const isCurrentGroup = isDragging && draggedMemberGroupId === group.id;
 
   const handleStartEditing = useCallback(() => {
     setEditingName(group.name);
@@ -88,50 +82,12 @@ const GroupCard = ({
     });
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    if (!canEdit) {
-      return;
-    }
-    if (isCurrentGroup) {
-      e.dataTransfer.dropEffect = "none";
-      return;
-    }
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    if (!canEdit) {
-      return;
-    }
-    e.preventDefault();
-    setIsDragOver(false);
-    const memberId = e.dataTransfer.getData("text/plain");
-    if (memberId && onMemberDropped) {
-      onMemberDropped(memberId, group.id);
-    }
-  };
-
   return (
     <div
       className={cn(
         "group flex h-full min-h-45 flex-col gap-3 rounded-2xl border-2 p-4 transition-all",
-        isCurrentGroup
-          ? "cursor-not-allowed border-transparent bg-secondary opacity-50"
-          : isDragOver
-            ? "border-foreground bg-muted"
-            : isDragging
-              ? "border-dashed border-muted-foreground bg-secondary"
-              : "border-transparent bg-secondary",
+        isDropTarget ? "border-foreground bg-muted" : "border-transparent bg-secondary",
       )}
-      onDragOver={canEdit ? handleDragOver : undefined}
-      onDragLeave={canEdit ? handleDragLeave : undefined}
-      onDrop={canEdit ? handleDrop : undefined}
     >
       {/* Top row: Icon and Actions */}
       <div className="flex items-start justify-between">
