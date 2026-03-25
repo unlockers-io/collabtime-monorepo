@@ -19,9 +19,15 @@ const getAuthConfig = () => ({
   secondaryStorage: {
     get: async (key: string) => {
       const value = await redis.get(key);
-      if (value === null || value === undefined) return null;
-      if (typeof value === "string") return value;
-      if (typeof value === "object") return JSON.stringify(value);
+      if (value === null || value === undefined) {
+        return null;
+      }
+      if (typeof value === "string") {
+        return value;
+      }
+      if (typeof value === "object") {
+        return JSON.stringify(value);
+      }
       return String(value);
     },
     set: async (key: string, value: string, ttl?: number) => {

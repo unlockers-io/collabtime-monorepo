@@ -19,6 +19,7 @@ import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { DragProvider } from "@/contexts/drag-context";
 import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { updateTeamName, updateMember, requestToJoin } from "@/lib/actions";
+import { useSession } from "@/lib/auth-client";
 import { useRealtime } from "@/lib/realtime-client";
 import { isCurrentlyWorking, getMinutesUntilAvailable } from "@/lib/timezones";
 import type { TeamGroup, TeamMember, TeamStatus } from "@/types";
@@ -68,6 +69,13 @@ const TeamPageClient = ({
 
   const members = useMemo(() => teamData?.team?.members ?? [], [teamData?.team?.members]);
   const groups = useMemo(() => teamData?.team?.groups ?? [], [teamData?.team?.groups]);
+
+  const { data: session } = useSession();
+  const currentUserId = isMember ? session?.user?.id : undefined;
+  const hasClaimedProfile = useMemo(
+    () => Boolean(currentUserId && members.some((m) => m.userId === currentUserId)),
+    [currentUserId, members],
+  );
 
   const teamName = teamData?.team?.name ?? "";
   const displayName = isEditingName ? editingTeamName : teamName;
@@ -666,6 +674,8 @@ const TeamPageClient = ({
                         teamId={teamId}
                         groups={groups}
                         canEdit={isAdmin}
+                        currentUserId={currentUserId}
+                        hasClaimedProfile={hasClaimedProfile}
                         onMemberRemoved={handleMemberRemoved}
                         onMemberUpdated={handleMemberUpdated}
                       />

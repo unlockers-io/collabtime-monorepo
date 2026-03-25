@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
-import { updateMember } from "@/lib/actions";
+import { updateMember, updateOwnMember } from "@/lib/actions";
 import { COMMON_TIMEZONES, formatTimezoneLabel } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 import type { TeamGroup, TeamMember } from "@/types";
@@ -34,6 +34,7 @@ import type { TeamGroup, TeamMember } from "@/types";
 type EditMemberDialogProps = {
   groups: Array<TeamGroup>;
   member: TeamMember;
+  mode?: "admin" | "claim";
   onMemberUpdated: (member: TeamMember) => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
@@ -45,6 +46,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 type EditMemberFormProps = {
   groups: Array<TeamGroup>;
   member: TeamMember;
+  mode: "admin" | "claim";
   onMemberUpdated: (member: TeamMember) => void;
   onOpenChange: (open: boolean) => void;
   teamId: string;
@@ -65,9 +67,11 @@ const EditMemberForm = ({
   member,
   teamId,
   groups,
+  mode,
   onOpenChange,
   onMemberUpdated,
 }: EditMemberFormProps) => {
+  const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -95,16 +99,22 @@ const EditMemberForm = ({
 
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
-      const result = await updateMember(teamId, member.id, {
-        ...data,
-        title: data.title ?? "",
-      });
+      const { groupId: _stripped, ...claimSafeData } = data;
+      const result = isClaim
+        ? await updateOwnMember(teamId, member.id, {
+            ...claimSafeData,
+            title: claimSafeData.title ?? "",
+          })
+        : await updateMember(teamId, member.id, {
+            ...data,
+            title: data.title ?? "",
+          });
       if (!result.success) {
         toast.error(result.error);
         return;
       }
 
-      toast.success("Member updated");
+      toast.success(isClaim ? "Profile claimed" : "Member updated");
       onOpenChange(false);
       onMemberUpdated({
         ...member,
@@ -117,8 +127,12 @@ const EditMemberForm = ({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Edit Member</DialogTitle>
-        <DialogDescription>Update {member.name}&apos;s profile information.</DialogDescription>
+        <DialogTitle>{isClaim ? "Claim this profile" : "Edit Member"}</DialogTitle>
+        <DialogDescription>
+          {isClaim
+            ? "This looks like you — update your profile information."
+            : `Update ${member.name}'s profile information.`}
+        </DialogDescription>
       </DialogHeader>
 
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
@@ -181,7 +195,7 @@ const EditMemberForm = ({
             )}
           />
 
-          {groups.length > 0 && (
+          {!isClaim && groups.length > 0 && (
             <Controller
               control={form.control}
               name="groupId"
@@ -272,6 +286,8 @@ const EditMemberForm = ({
                 <Spinner />
                 Saving…
               </span>
+            ) : isClaim ? (
+              "Claim Profile"
             ) : (
               "Save Changes"
             )}
@@ -286,6 +302,7 @@ const EditMemberDialog = ({
   member,
   teamId,
   groups,
+  mode = "admin",
   open,
   onOpenChange,
   onMemberUpdated,
@@ -299,6 +316,7 @@ const EditMemberDialog = ({
             member={member}
             teamId={teamId}
             groups={groups}
+            mode={mode}
             onOpenChange={onOpenChange}
             onMemberUpdated={onMemberUpdated}
           />

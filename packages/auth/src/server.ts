@@ -4,9 +4,9 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import type { BetterAuthPlugin } from "better-auth/types";
 
 type SecondaryStorage = {
+  delete: (key: string) => Promise<void>;
   get: (key: string) => Promise<string | null>;
   set: (key: string, value: string, ttl?: number) => Promise<void>;
-  delete: (key: string) => Promise<void>;
 };
 
 type AuthConfig = {
