@@ -1,11 +1,10 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Input, Label, Card, Spinner } from "@repo/ui";
+import { Button, Field, FieldError, FieldLabel, Input, Card, Spinner } from "@repo/ui";
+import { useForm } from "@tanstack/react-form";
 import { Lock, ArrowRight, Eye, EyeOff, Globe } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -18,15 +17,11 @@ const passwordSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-type PasswordFormValues = z.infer<typeof passwordSchema>;
-
 const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Detect desktop to enable autofocus only on non-touch devices
-  // This prevents layout shift from keyboard popup on mobile
   const [isDesktop] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -34,42 +29,41 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
     return window.matchMedia("(pointer: fine)").matches;
   });
 
-  const form = useForm<PasswordFormValues>({
-    resolver: zodResolver(passwordSchema),
-    mode: "onChange",
+  const form = useForm({
     defaultValues: {
       password: "",
     },
-  });
+    validators: {
+      onBlur: passwordSchema,
+      onChange: passwordSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setIsLoading(true);
 
-  const { handleSubmit, control, formState } = form;
+      try {
+        const response = await fetch(`/api/spaces/${spaceId}/verify-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: value.password }),
+        });
 
-  const onSubmit = async (data: PasswordFormValues) => {
-    setIsLoading(true);
+        const result = (await response.json()) as { error?: string };
 
-    try {
-      const response = await fetch(`/api/spaces/${spaceId}/verify-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: data.password }),
-      });
+        if (!response.ok) {
+          toast.error(result.error ?? "Incorrect password");
+          setIsLoading(false);
+          return;
+        }
 
-      const result = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        toast.error(result.error ?? "Incorrect password");
+        toast.success("Access granted!");
+        router.refresh();
+      } catch (error) {
+        console.error("[PasswordGate] Failed to verify password:", error);
+        toast.error("Failed to verify password");
         setIsLoading(false);
-        return;
       }
-
-      toast.success("Access granted!");
-      router.refresh();
-    } catch (error) {
-      console.error("[PasswordGate] Failed to verify password:", error);
-      toast.error("Failed to verify password");
-      setIsLoading(false);
-    }
-  };
+    },
+  });
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 pb-16">
@@ -84,53 +78,64 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
       </div>
 
       <Card className="w-full max-w-sm p-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Enter Password
-            </Label>
-            <div className="relative">
-              <Controller
-                control={control}
-                name="password"
-                render={({ field }) => (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          className="flex flex-col gap-4"
+        >
+          <form.Field name="password">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <FieldLabel htmlFor="password" className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  Enter Password
+                </FieldLabel>
+                <div className="relative">
                   <Input
-                    {...field}
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter the access password"
                     className="pr-10"
                     autoFocus={isDesktop}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
                 )}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {formState.errors.password && (
-              <p className="text-xs text-red-500">{formState.errors.password.message}</p>
+              </Field>
             )}
-          </div>
+          </form.Field>
 
-          <Button type="submit" disabled={isLoading || !formState.isValid} className="w-full">
-            {isLoading ? (
-              <>
-                <Spinner className="mr-2" />
-                Verifying...
-              </>
-            ) : (
-              <>
-                Access Team
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </>
+          <form.Subscribe selector={(state) => ({ canSubmit: state.canSubmit })}>
+            {({ canSubmit }) => (
+              <Button type="submit" disabled={isLoading || !canSubmit} className="w-full">
+                {isLoading ? (
+                  <>
+                    <Spinner className="mr-2" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    Access Team
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+          </form.Subscribe>
         </form>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">

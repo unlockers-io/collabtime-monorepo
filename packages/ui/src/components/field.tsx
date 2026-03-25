@@ -1,8 +1,6 @@
 "use client";
 
-/* eslint-disable react/prop-types */
 import * as React from "react";
-import type { FieldError as ReactHookFormFieldError } from "react-hook-form";
 
 import { cn } from "../lib/utils";
 
@@ -100,7 +98,7 @@ const FieldDescription = React.forwardRef<
 FieldDescription.displayName = "FieldDescription";
 
 type FieldErrorProps = React.HTMLAttributes<HTMLParagraphElement> & {
-  errors?: Array<ReactHookFormFieldError | undefined>;
+  errors?: Array<unknown>;
 };
 
 const FieldError = React.forwardRef<HTMLParagraphElement, FieldErrorProps>(
@@ -108,9 +106,15 @@ const FieldError = React.forwardRef<HTMLParagraphElement, FieldErrorProps>(
     const message =
       children ??
       errors
-        ?.map((e) => e?.message)
+        ?.filter(Boolean)
+        .map((e) =>
+          typeof e === "string"
+            ? e
+            : typeof e === "object" && e !== null && "message" in e
+              ? (e as { message: string }).message
+              : String(e),
+        )
         .filter(Boolean)
-        .map(String)
         .at(0);
 
     if (!message) {

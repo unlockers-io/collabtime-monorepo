@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
   Dialog,
@@ -21,9 +20,9 @@ import {
   SelectValue,
   Spinner,
 } from "@repo/ui";
+import { useForm } from "@tanstack/react-form";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -65,11 +64,11 @@ const getRandomPlaceholder = () =>
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  title: z.string().optional(),
+  title: z.string(),
   timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
   workingHoursStart: z.number().min(0).max(23),
   workingHoursEnd: z.number().min(0).max(23),
-  groupId: z.string().optional(),
+  groupId: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -92,38 +91,45 @@ const AddMemberForm = ({
   const [titlePlaceholder] = useState(getRandomPlaceholder);
   const defaultTimezone = getUserTimezone() as FormValues["timezone"];
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    mode: "onChange",
+  const form = useForm({
     defaultValues: {
       name: "",
       title: "",
       timezone: defaultTimezone,
       workingHoursStart: 9,
       workingHoursEnd: 17,
-      groupId: undefined,
+      groupId: "",
+    },
+    validators: {
+      onBlur: formSchema,
+      onChange: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      const result = await addMember(teamId, {
+        ...value,
+        title: value.title || "",
+        groupId: value.groupId || undefined,
+      });
+
+      if (result.success) {
+        onOpenChange(false);
+        onMemberAdded(result.data.member);
+        toast.success(`${value.name} added to team`);
+      } else {
+        toast.error(result.error);
+      }
     },
   });
 
-  const { handleSubmit, formState } = form;
-
-  const onSubmit = async (data: FormValues) => {
-    const result = await addMember(teamId, {
-      ...data,
-      title: data.title ?? "",
-    });
-
-    if (result.success) {
-      onOpenChange(false);
-      onMemberAdded(result.data.member);
-      toast.success(`${data.name} added to team`);
-    } else {
-      toast.error(result.error);
-    }
-  };
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+      noValidate
+    >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
@@ -137,49 +143,59 @@ const AddMemberForm = ({
       </DialogHeader>
 
       <div className="flex flex-col gap-4 py-4">
-        <Controller
-          control={form.control}
-          name="name"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
+        <form.Field name="name">
+          {(field) => (
+            <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
               <FieldLabel htmlFor="member-name">Name *</FieldLabel>
               <Input
-                {...field}
                 id="member-name"
                 placeholder="John Doe"
-                aria-invalid={fieldState.invalid}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
               />
-              <FieldError errors={[fieldState.error]} />
+              {field.state.meta.isTouched && !field.state.meta.isValid && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
             </Field>
           )}
-        />
+        </form.Field>
 
-        <Controller
-          control={form.control}
-          name="title"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
+        <form.Field name="title">
+          {(field) => (
+            <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
               <FieldLabel htmlFor="member-title">Title (optional)</FieldLabel>
               <Input
-                {...field}
                 id="member-title"
-                value={field.value ?? ""}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
                 placeholder={titlePlaceholder}
-                aria-invalid={fieldState.invalid}
+                aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
               />
-              <FieldError errors={[fieldState.error]} />
+              {field.state.meta.isTouched && !field.state.meta.isValid && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
             </Field>
           )}
-        />
+        </form.Field>
 
-        <Controller
-          control={form.control}
-          name="timezone"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
+        <form.Field name="timezone">
+          {(field) => (
+            <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
               <FieldLabel htmlFor="member-timezone">Timezone</FieldLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="member-timezone" aria-invalid={fieldState.invalid}>
+              <Select
+                value={field.state.value}
+                onValueChange={(value) => {
+                  field.handleChange(value as FormValues["timezone"]);
+                  field.handleBlur();
+                }}
+              >
+                <SelectTrigger
+                  id="member-timezone"
+                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -190,44 +206,53 @@ const AddMemberForm = ({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={[fieldState.error]} />
+              {field.state.meta.isTouched && !field.state.meta.isValid && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
             </Field>
           )}
-        />
+        </form.Field>
 
         {groups.length > 0 && (
-          <Controller
-            control={form.control}
-            name="groupId"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
+          <form.Field name="groupId">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                 <FieldLabel htmlFor="member-group">Group (optional)</FieldLabel>
                 <GroupSelector
                   id="member-group"
-                  aria-invalid={fieldState.invalid}
+                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                   groups={groups}
-                  value={field.value}
-                  onValueChange={(value) => field.onChange(value)}
+                  value={field.state.value || undefined}
+                  onValueChange={(value) => {
+                    field.handleChange(value ?? "");
+                    field.handleBlur();
+                  }}
                   placeholder="No group"
                 />
-                <FieldError errors={[fieldState.error]} />
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
               </Field>
             )}
-          />
+          </form.Field>
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          <Controller
-            control={form.control}
-            name="workingHoursStart"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
+          <form.Field name="workingHoursStart">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                 <FieldLabel htmlFor="member-work-start">Work Starts</FieldLabel>
                 <Select
-                  value={String(field.value)}
-                  onValueChange={(value) => field.onChange(Number(value))}
+                  value={String(field.state.value)}
+                  onValueChange={(value) => {
+                    field.handleChange(Number(value));
+                    field.handleBlur();
+                  }}
                 >
-                  <SelectTrigger id="member-work-start" aria-invalid={fieldState.invalid}>
+                  <SelectTrigger
+                    id="member-work-start"
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -238,22 +263,28 @@ const AddMemberForm = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <FieldError errors={[fieldState.error]} />
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
               </Field>
             )}
-          />
+          </form.Field>
 
-          <Controller
-            control={form.control}
-            name="workingHoursEnd"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
+          <form.Field name="workingHoursEnd">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                 <FieldLabel htmlFor="member-work-end">Work Ends</FieldLabel>
                 <Select
-                  value={String(field.value)}
-                  onValueChange={(value) => field.onChange(Number(value))}
+                  value={String(field.state.value)}
+                  onValueChange={(value) => {
+                    field.handleChange(Number(value));
+                    field.handleBlur();
+                  }}
                 >
-                  <SelectTrigger id="member-work-end" aria-invalid={fieldState.invalid}>
+                  <SelectTrigger
+                    id="member-work-end"
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -264,10 +295,12 @@ const AddMemberForm = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <FieldError errors={[fieldState.error]} />
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
               </Field>
             )}
-          />
+          </form.Field>
         </div>
       </div>
 
@@ -277,21 +310,30 @@ const AddMemberForm = ({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={formState.isSubmitting}
+            disabled={form.state.isSubmitting}
           >
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={formState.isSubmitting || !formState.isValid}>
-          {formState.isSubmitting ? (
-            <span className="flex items-center gap-2">
-              <Spinner />
-              Adding…
-            </span>
-          ) : (
-            "Add Member"
+        <form.Subscribe
+          selector={(state) => ({
+            canSubmit: state.canSubmit,
+            isSubmitting: state.isSubmitting,
+          })}
+        >
+          {({ canSubmit, isSubmitting }) => (
+            <Button type="submit" disabled={isSubmitting || !canSubmit}>
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <Spinner />
+                  Adding...
+                </span>
+              ) : (
+                "Add Member"
+              )}
+            </Button>
           )}
-        </Button>
+        </form.Subscribe>
       </DialogFooter>
     </form>
   );
@@ -303,7 +345,6 @@ const AddMemberDialog = ({
   onMemberAdded,
   isFirstMember,
 }: AddMemberDialogProps) => {
-  // Initialize open state based on isFirstMember prop
   const [open, setOpen] = useState(isFirstMember);
 
   return (

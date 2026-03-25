@@ -1,12 +1,11 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Input, Label, Card, Spinner } from "@repo/ui";
+import { Button, Field, FieldError, FieldLabel, Input, Card, Spinner } from "@repo/ui";
+import { useForm } from "@tanstack/react-form";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -17,47 +16,44 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
-
 const LoginPage = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    mode: "onChange",
+  const form = useForm({
     defaultValues: {
       email: "",
       password: "",
     },
-  });
+    validators: {
+      onBlur: loginSchema,
+      onChange: loginSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setIsLoading(true);
 
-  const { handleSubmit, control, formState } = form;
+      try {
+        const result = await signIn.email({
+          email: value.email,
+          password: value.password,
+        });
 
-  const onSubmit = async (data: LoginFormValues) => {
-    setIsLoading(true);
+        if (result.error) {
+          toast.error(result.error.message ?? "Failed to sign in");
+          setIsLoading(false);
+          return;
+        }
 
-    try {
-      const result = await signIn.email({
-        email: data.email,
-        password: data.password,
-      });
-
-      if (result.error) {
-        toast.error(result.error.message ?? "Failed to sign in");
+        toast.success("Welcome back!");
+        router.push("/");
+        router.refresh();
+      } catch (error) {
+        console.error("[Login] Unexpected error:", error);
+        toast.error("An unexpected error occurred");
         setIsLoading(false);
-        return;
       }
-
-      toast.success("Welcome back!");
-      router.push("/");
-      router.refresh();
-    } catch (error) {
-      console.error("[Login] Unexpected error:", error);
-      toast.error("An unexpected error occurred");
-      setIsLoading(false);
-    }
-  };
+    },
+  });
 
   return (
     <Card className="w-full max-w-md p-8">
@@ -67,70 +63,83 @@ const LoginPage = () => {
           <p className="text-sm text-muted-foreground">Sign in to your account to continue</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Controller
-                control={control}
-                name="email"
-                render={({ field }) => (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          className="flex flex-col gap-4"
+        >
+          <form.Field name="email">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <div className="relative">
+                  <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    {...field}
                     id="email"
                     type="email"
                     placeholder="you@example.com"
                     className="pl-10"
                     autoComplete="email"
-                    aria-invalid={formState.errors.email ? "true" : "false"}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                   />
+                </div>
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
                 )}
-              />
-            </div>
-            {formState.errors.email && (
-              <p className="text-xs text-destructive">{formState.errors.email.message}</p>
+              </Field>
             )}
-          </div>
+          </form.Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Controller
-                control={control}
-                name="password"
-                render={({ field }) => (
+          <form.Field name="password">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <div className="relative">
+                  <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    {...field}
                     id="password"
                     type="password"
                     placeholder="Your password"
                     className="pl-10"
                     autoComplete="current-password"
-                    aria-invalid={formState.errors.password ? "true" : "false"}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                   />
+                </div>
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
                 )}
-              />
-            </div>
-            {formState.errors.password && (
-              <p className="text-xs text-destructive">{formState.errors.password.message}</p>
+              </Field>
             )}
-          </div>
+          </form.Field>
 
-          <Button type="submit" disabled={isLoading || !formState.isValid} className="w-full">
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <Spinner />
-                Signing in...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                Sign in
-                <ArrowRight className="h-4 w-4" />
-              </span>
+          <form.Subscribe
+            selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
+          >
+            {({ canSubmit }) => (
+              <Button type="submit" disabled={isLoading || !canSubmit} className="w-full">
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Spinner />
+                    Signing in...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Sign in
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                )}
+              </Button>
             )}
-          </Button>
+          </form.Subscribe>
         </form>
 
         <div className="text-center text-sm text-muted-foreground">
