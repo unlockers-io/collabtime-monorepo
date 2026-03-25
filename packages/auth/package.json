@@ -9,6 +9,9 @@
   },
   "scripts": {
     "lint": "oxlint src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -16,8 +19,10 @@
     "better-auth": "^1.5.5"
   },
   "devDependencies": {
+    "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^25.5.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.0"
   }
 }
