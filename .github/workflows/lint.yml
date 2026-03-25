@@ -18,4 +18,4 @@ jobs:
           node-version: lts/*
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm oxlint --format=github .
+      - run: pnpm oxlint --format=github --ignore-pattern='**/node_modules/**' --ignore-pattern='**/*.d.ts' .
