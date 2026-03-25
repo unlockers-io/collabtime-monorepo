@@ -33,6 +33,7 @@
     "build/**",
     "coverage/**",
     "storybook-static/**",
-    "pnpm-lock.yaml"
+    "pnpm-lock.yaml",
+    "packages/db/src/generated/**"
   ]
 }
