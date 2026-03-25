@@ -21,7 +21,10 @@ const GroupSelector = ({
   placeholder = "Select group",
   ...triggerProps
 }: GroupSelectorProps) => {
-  const handleChange = (newValue: string) => {
+  const handleChange = (newValue: string | null) => {
+    if (newValue === null) {
+      return;
+    }
     onValueChange(newValue === NO_GROUP_VALUE ? undefined : newValue);
   };
 

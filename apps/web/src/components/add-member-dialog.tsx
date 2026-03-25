@@ -188,6 +188,9 @@ const AddMemberForm = ({
               <Select
                 value={field.state.value}
                 onValueChange={(value) => {
+                  if (value === null) {
+                    return;
+                  }
                   field.handleChange(value as FormValues["timezone"]);
                   field.handleBlur();
                 }}
@@ -245,6 +248,9 @@ const AddMemberForm = ({
                 <Select
                   value={String(field.state.value)}
                   onValueChange={(value) => {
+                    if (value === null) {
+                      return;
+                    }
                     field.handleChange(Number(value));
                     field.handleBlur();
                   }}
@@ -277,6 +283,9 @@ const AddMemberForm = ({
                 <Select
                   value={String(field.state.value)}
                   onValueChange={(value) => {
+                    if (value === null) {
+                      return;
+                    }
                     field.handleChange(Number(value));
                     field.handleBlur();
                   }}
@@ -349,15 +358,17 @@ const AddMemberDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          type="button"
-          className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
-        >
-          <UserPlus className="h-5 w-5 transition-transform group-hover:scale-110" />
-          <span className="font-medium">Add Team Member</span>
-        </Button>
+      <DialogTrigger
+        render={
+          <Button
+            variant="outline"
+            type="button"
+            className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
+          />
+        }
+      >
+        <UserPlus className="h-5 w-5 transition-transform group-hover:scale-110" />
+        <span className="font-medium">Add Team Member</span>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         {open && (

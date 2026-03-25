@@ -278,15 +278,17 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          type="button"
-          className="group flex h-9 w-full items-center justify-center gap-2 text-muted-foreground"
-        >
-          <Upload className="h-4 w-4 transition-transform group-hover:scale-110" />
-          <span className="text-sm font-medium">Import from CSV</span>
-        </Button>
+      <DialogTrigger
+        render={
+          <Button
+            variant="outline"
+            type="button"
+            className="group flex h-9 w-full items-center justify-center gap-2 text-muted-foreground"
+          />
+        }
+      >
+        <Upload className="h-4 w-4 transition-transform group-hover:scale-110" />
+        <span className="text-sm font-medium">Import from CSV</span>
       </DialogTrigger>
 
       <DialogContent className="max-w-2xl">
@@ -386,7 +388,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                 </div>
 
                 <ScrollArea className="max-h-80 rounded-lg border border-border">
-                  <TooltipProvider delayDuration={200}>
+                  <TooltipProvider delay={200}>
                     <table className="w-full text-sm">
                       <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
                         <tr className="border-b border-border">
@@ -451,10 +453,10 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                                   <CheckCircle className="h-4 w-4 text-green-500" />
                                 ) : (
                                   <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className="inline-flex cursor-default">
-                                        <XCircle className="h-4 w-4 text-destructive" />
-                                      </span>
+                                    <TooltipTrigger
+                                      render={<span className="inline-flex cursor-default" />}
+                                    >
+                                      <XCircle className="h-4 w-4 text-destructive" />
                                     </TooltipTrigger>
                                     <TooltipContent>{row.errors.join(" · ")}</TooltipContent>
                                   </Tooltip>

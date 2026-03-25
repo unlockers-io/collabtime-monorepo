@@ -71,15 +71,17 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          type="button"
-          className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
-        >
-          <Users className="h-5 w-5 transition-transform group-hover:scale-110" />
-          <span className="font-medium">Add Group</span>
-        </Button>
+      <DialogTrigger
+        render={
+          <Button
+            variant="outline"
+            type="button"
+            className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
+          />
+        }
+      >
+        <Users className="h-5 w-5 transition-transform group-hover:scale-110" />
+        <span className="font-medium">Add Group</span>
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <form

@@ -149,11 +149,9 @@ const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDia
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Settings className="h-4 w-4" />
-          <span className="hidden sm:inline">Space Settings</span>
-        </Button>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2" />}>
+        <Settings className="h-4 w-4" />
+        <span className="hidden sm:inline">Space Settings</span>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>

@@ -2,6 +2,7 @@
 
 import {
   Button,
+  buttonVariants,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -165,10 +166,10 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="Account menu">
-          {isAdmin ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
-        </Button>
+      <DropdownMenuTrigger
+        render={<Button variant="outline" size="icon" aria-label="Account menu" />}
+      >
+        {isAdmin ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 bg-popover">
         <div className="px-2 py-1.5 text-sm">
@@ -178,24 +179,30 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
         {!isAuthenticated && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Button variant="outline" asChild>
-                <Link href="/login" className="flex cursor-pointer items-center gap-2">
-                  <LogIn className="h-4 w-4" />
-                  Sign in
-                </Link>
-              </Button>
+            <DropdownMenuItem
+              render={
+                <Link
+                  href="/login"
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "flex cursor-pointer items-center gap-2",
+                  )}
+                />
+              }
+            >
+              <LogIn className="h-4 w-4" />
+              Sign in
             </DropdownMenuItem>
           </>
         )}
         {isAuthenticated && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/settings" className="flex cursor-pointer items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Settings
-              </Link>
+            <DropdownMenuItem
+              render={<Link href="/settings" className="flex items-center gap-2" />}
+            >
+              <Settings className="h-4 w-4" />
+              Settings
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleSignOut}
@@ -277,21 +284,29 @@ const MobileMenu = ({
             </div>
 
             {!isAuthenticated && (
-              <Button variant="ghost" className="justify-start" asChild>
-                <Link href="/login" className="flex items-center gap-2">
-                  <LogIn className="h-4 w-4" />
-                  Sign in
-                </Link>
-              </Button>
+              <Link
+                href="/login"
+                className={cn(
+                  buttonVariants({ variant: "ghost" }),
+                  "flex items-center justify-start gap-2",
+                )}
+              >
+                <LogIn className="h-4 w-4" />
+                Sign in
+              </Link>
             )}
 
             {isAuthenticated && (
-              <Button variant="ghost" className="justify-start" asChild>
-                <Link href="/settings" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </Link>
-              </Button>
+              <Link
+                href="/settings"
+                className={cn(
+                  buttonVariants({ variant: "ghost" }),
+                  "flex items-center justify-start gap-2",
+                )}
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </Link>
             )}
           </div>
         </div>
@@ -407,17 +422,13 @@ const Nav = (props: NavProps) => {
       <div className="flex items-center gap-2">
         <ModeToggle />
         {isAuthenticated ? (
-          <Button variant="outline" asChild>
-            <Link href="/settings">
-              <Settings className="h-4 w-4" />
-            </Link>
-          </Button>
+          <Link href="/settings" className={buttonVariants({ variant: "outline" })}>
+            <Settings className="h-4 w-4" />
+          </Link>
         ) : (
-          <Button variant="outline" asChild>
-            <Link href="/login">
-              <LogIn className="h-4 w-4" />
-            </Link>
-          </Button>
+          <Link href="/login" className={buttonVariants({ variant: "outline" })}>
+            <LogIn className="h-4 w-4" />
+          </Link>
         )}
       </div>
     </header>

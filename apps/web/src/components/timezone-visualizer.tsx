@@ -162,15 +162,18 @@ const HourBlock = memo(function HourBlock({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            `h-full flex-1 cursor-[inherit] ${getRoundedCornerClass(hour)}`,
-            isWorking ? "bg-accent-foreground" : "bg-accent transition-colors hover:bg-muted",
-          )}
-        />
-      </TooltipTrigger>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            className={cn(
+              `h-full flex-1 cursor-[inherit] ${getRoundedCornerClass(hour)}`,
+              isWorking ? "bg-accent-foreground" : "bg-accent transition-colors hover:bg-muted",
+            )}
+          />
+        }
+      />
+
       <TooltipContent side="top">
         <div className="flex flex-col gap-1">
           <span className="font-medium tabular-nums">
@@ -787,7 +790,7 @@ const TimezoneVisualizer = ({
     if (dayOffsetLabel) {
       return (
         <Tooltip key={member.id}>
-          <TooltipTrigger asChild>{content}</TooltipTrigger>
+          <TooltipTrigger render={<div />}>{content}</TooltipTrigger>
           <TooltipContent side="left">
             <span>{dayOffsetLabel}</span>
           </TooltipContent>
@@ -818,9 +821,9 @@ const TimezoneVisualizer = ({
           if (!hasAnyOverlap) {
             return (
               <Tooltip key={hour}>
-                <TooltipTrigger asChild>
-                  <div className={`h-6 flex-1 bg-muted ${getRoundedCornerClass(hour)}`} />
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={<div className={`h-6 flex-1 bg-muted ${getRoundedCornerClass(hour)}`} />}
+                />
                 <TooltipContent side="top">
                   <div className="font-medium tabular-nums">
                     {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
@@ -877,9 +880,11 @@ const TimezoneVisualizer = ({
 
           return (
             <Tooltip key={hour}>
-              <TooltipTrigger asChild>
-                <div className={`h-6 flex-1 ${getRoundedCornerClass(hour)} ${colorClass}`} />
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <div className={`h-6 flex-1 ${getRoundedCornerClass(hour)} ${colorClass}`} />
+                }
+              />
               <TooltipContent side="top">
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-0.5">
@@ -1009,7 +1014,7 @@ const TimezoneVisualizer = ({
   };
 
   return (
-    <TooltipProvider delayDuration={120}>
+    <TooltipProvider delay={120}>
       <div className="flex flex-col gap-6">
         {renderTimeAxis()}
 
@@ -1146,6 +1151,9 @@ const TimezoneVisualizer = ({
                     <Select
                       value=""
                       onValueChange={(val) => {
+                        if (val === null) {
+                          return;
+                        }
                         const sel = deserializeSelection(val);
                         if (sel) {
                           addSelection(sel);

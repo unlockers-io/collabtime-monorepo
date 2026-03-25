@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Spinner } from "@repo/ui";
+import { buttonVariants, cn, Spinner } from "@repo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Shield, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -98,12 +98,13 @@ const Home = () => {
             </button>
           ) : (
             <div className="flex w-full flex-col items-center gap-3">
-              <Button asChild size="lg" className="w-full sm:w-auto sm:min-w-72">
-                <Link href="/signup">
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
+              <Link
+                href="/signup"
+                className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto sm:min-w-72")}
+              >
+                Get Started
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <Link href="/login" className="font-medium text-foreground hover:underline">

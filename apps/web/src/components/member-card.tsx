@@ -182,13 +182,11 @@ const MemberCard = ({
             ) : (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Badge className="cursor-help border-transparent bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                        Not Available
-                      </Badge>
-                    </span>
+                  <TooltipTrigger render={<span />}>
+                    <Badge className="cursor-help border-transparent bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                      Not Available
+                    </Badge>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Available {formatTimeUntilAvailable(minutesUntilAvailable)}</p>
