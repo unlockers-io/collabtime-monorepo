@@ -1,12 +1,11 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Input, Label, Card, Spinner } from "@repo/ui";
+import { Button, Field, FieldError, FieldLabel, Input, Card, Spinner } from "@repo/ui";
+import { useForm } from "@tanstack/react-form";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -21,49 +20,46 @@ const signupSchema = z.object({
     .max(128, "Password is too long"),
 });
 
-type SignupFormValues = z.infer<typeof signupSchema>;
-
 const SignupPage = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    mode: "onChange",
+  const form = useForm({
     defaultValues: {
       name: "",
       email: "",
       password: "",
     },
-  });
+    validators: {
+      onBlur: signupSchema,
+      onChange: signupSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setIsLoading(true);
 
-  const { handleSubmit, control, formState } = form;
+      try {
+        const result = await signUp.email({
+          name: value.name,
+          email: value.email,
+          password: value.password,
+        });
 
-  const onSubmit = async (data: SignupFormValues) => {
-    setIsLoading(true);
+        if (result.error) {
+          toast.error(result.error.message ?? "Failed to create account");
+          setIsLoading(false);
+          return;
+        }
 
-    try {
-      const result = await signUp.email({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-      });
-
-      if (result.error) {
-        toast.error(result.error.message ?? "Failed to create account");
+        toast.success("Account created successfully!");
+        router.push("/");
+        router.refresh();
+      } catch (error) {
+        console.error("[Signup] Unexpected error:", error);
+        toast.error("An unexpected error occurred");
         setIsLoading(false);
-        return;
       }
-
-      toast.success("Account created successfully!");
-      router.push("/");
-      router.refresh();
-    } catch (error) {
-      console.error("[Signup] Unexpected error:", error);
-      toast.error("An unexpected error occurred");
-      setIsLoading(false);
-    }
-  };
+    },
+  });
 
   return (
     <Card className="w-full max-w-md p-8">
@@ -73,95 +69,108 @@ const SignupPage = () => {
           <p className="text-sm text-muted-foreground">Get started with Collab Time for free</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="name">Name</Label>
-            <div className="relative">
-              <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Controller
-                control={control}
-                name="name"
-                render={({ field }) => (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          className="flex flex-col gap-4"
+        >
+          <form.Field name="name">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <FieldLabel htmlFor="name">Name</FieldLabel>
+                <div className="relative">
+                  <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    {...field}
                     id="name"
                     type="text"
                     placeholder="Your name"
                     className="pl-10"
                     autoComplete="name"
-                    aria-invalid={formState.errors.name ? "true" : "false"}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                   />
+                </div>
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
                 )}
-              />
-            </div>
-            {formState.errors.name && (
-              <p className="text-xs text-destructive">{formState.errors.name.message}</p>
+              </Field>
             )}
-          </div>
+          </form.Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Controller
-                control={control}
-                name="email"
-                render={({ field }) => (
+          <form.Field name="email">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <div className="relative">
+                  <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    {...field}
                     id="email"
                     type="email"
                     placeholder="you@example.com"
                     className="pl-10"
                     autoComplete="email"
-                    aria-invalid={formState.errors.email ? "true" : "false"}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                   />
+                </div>
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
                 )}
-              />
-            </div>
-            {formState.errors.email && (
-              <p className="text-xs text-destructive">{formState.errors.email.message}</p>
+              </Field>
             )}
-          </div>
+          </form.Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Controller
-                control={control}
-                name="password"
-                render={({ field }) => (
+          <form.Field name="password">
+            {(field) => (
+              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <div className="relative">
+                  <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    {...field}
                     id="password"
                     type="password"
                     placeholder="At least 8 characters"
                     className="pl-10"
                     autoComplete="new-password"
-                    aria-invalid={formState.errors.password ? "true" : "false"}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                   />
+                </div>
+                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                  <FieldError errors={field.state.meta.errors} />
                 )}
-              />
-            </div>
-            {formState.errors.password && (
-              <p className="text-xs text-destructive">{formState.errors.password.message}</p>
+              </Field>
             )}
-          </div>
+          </form.Field>
 
-          <Button type="submit" disabled={isLoading || !formState.isValid} className="w-full">
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <Spinner />
-                Creating account...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                Create account
-                <ArrowRight className="h-4 w-4" />
-              </span>
+          <form.Subscribe
+            selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
+          >
+            {({ canSubmit }) => (
+              <Button type="submit" disabled={isLoading || !canSubmit} className="w-full">
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Spinner />
+                    Creating account...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Create account
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                )}
+              </Button>
             )}
-          </Button>
+          </form.Subscribe>
         </form>
 
         <p className="text-center text-xs text-muted-foreground">

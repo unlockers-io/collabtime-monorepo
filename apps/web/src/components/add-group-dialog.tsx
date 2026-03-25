@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
   Dialog,
@@ -16,9 +15,9 @@ import {
   Input,
   Spinner,
 } from "@repo/ui";
+import { useForm } from "@tanstack/react-form";
 import { Users } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -38,42 +37,40 @@ const formSchema = z.object({
     .trim(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
-
 const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
   const [open, setOpen] = useState(false);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    mode: "onChange",
+  const form = useForm({
     defaultValues: {
       name: "",
     },
+    validators: {
+      onBlur: formSchema,
+      onChange: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      const result = await createGroup(teamId, { name: value.name });
+
+      if (result.success) {
+        setOpen(false);
+        onGroupAdded(result.data.group);
+        toast.success(`Group "${value.name}" created`);
+        form.reset();
+      } else {
+        toast.error(result.error);
+      }
+    },
   });
 
-  const { handleSubmit, reset, formState } = form;
-
-  // Reset form when dialog opens
-  useEffect(() => {
-    if (open) {
-      reset({ name: "" });
-    }
-  }, [open, reset]);
-
-  const onSubmit = async (data: FormValues) => {
-    const result = await createGroup(teamId, { name: data.name });
-
-    if (result.success) {
-      setOpen(false);
-      onGroupAdded(result.data.group);
-      toast.success(`Group "${data.name}" created`);
-    } else {
-      toast.error(result.error);
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) {
+      form.reset();
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -85,7 +82,14 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-sm">
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          noValidate
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
@@ -97,22 +101,24 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
           </DialogHeader>
 
           <div className="py-4">
-            <Controller
-              control={form.control}
-              name="name"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+            <form.Field name="name">
+              {(field) => (
+                <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
                   <FieldLabel htmlFor="group-name">Group Name</FieldLabel>
                   <Input
-                    {...field}
                     id="group-name"
-                    placeholder="e.g., Engineering, Design, Marketing…"
-                    aria-invalid={fieldState.invalid}
+                    placeholder="e.g., Engineering, Design, Marketing..."
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                   />
-                  <FieldError errors={[fieldState.error]} />
+                  {field.state.meta.isTouched && !field.state.meta.isValid && (
+                    <FieldError errors={field.state.meta.errors} />
+                  )}
                 </Field>
               )}
-            />
+            </form.Field>
           </div>
 
           <DialogFooter>
@@ -120,20 +126,29 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              disabled={formState.isSubmitting}
+              disabled={form.state.isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={formState.isSubmitting || !formState.isValid}>
-              {formState.isSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <Spinner />
-                  Creating…
-                </span>
-              ) : (
-                "Create Group"
+            <form.Subscribe
+              selector={(state) => ({
+                canSubmit: state.canSubmit,
+                isSubmitting: state.isSubmitting,
+              })}
+            >
+              {({ canSubmit, isSubmitting }) => (
+                <Button type="submit" disabled={isSubmitting || !canSubmit}>
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <Spinner />
+                      Creating...
+                    </span>
+                  ) : (
+                    "Create Group"
+                  )}
+                </Button>
               )}
-            </Button>
+            </form.Subscribe>
           </DialogFooter>
         </form>
       </DialogContent>

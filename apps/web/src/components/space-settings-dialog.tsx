@@ -1,10 +1,10 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
+  FieldError,
+  FieldLabel,
   Input,
-  Label,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -14,9 +14,9 @@ import {
   DialogTrigger,
   Spinner,
 } from "@repo/ui";
+import { useForm } from "@tanstack/react-form";
 import { Settings, Globe, Lock, Eye, EyeOff } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -36,14 +36,11 @@ type SpaceSettingsDialogProps = {
 const spaceSettingsSchema = z.object({
   isPrivate: z.boolean(),
   changePassword: z.boolean(),
-  accessPassword: z
-    .string()
-    .min(4, "Password must be at least 4 characters")
-    .optional()
-    .or(z.literal("")),
+  accessPassword: z.union([
+    z.string().min(4, "Password must be at least 4 characters"),
+    z.literal(""),
+  ]),
 });
-
-type SpaceSettingsFormValues = z.infer<typeof spaceSettingsSchema>;
 
 const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDialogProps) => {
   const [open, setOpen] = useState(false);
@@ -51,32 +48,78 @@ const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDia
   const [isClaiming, setIsClaiming] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const form = useForm<SpaceSettingsFormValues>({
-    resolver: zodResolver(spaceSettingsSchema),
-    mode: "onChange",
+  const form = useForm({
     defaultValues: {
       isPrivate: space?.isPrivate ?? false,
       changePassword: false,
       accessPassword: "",
     },
+    validators: {
+      onBlur: spaceSettingsSchema,
+      onChange: spaceSettingsSchema,
+    },
+    onSubmit: async ({ value }) => {
+      if (!space) {
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        const updates: Record<string, unknown> = {};
+
+        if (value.isPrivate !== space.isPrivate) {
+          updates.isPrivate = value.isPrivate;
+        }
+
+        if (value.changePassword) {
+          updates.updatePassword = true;
+          if (value.accessPassword) {
+            updates.accessPassword = value.accessPassword;
+          } else {
+            updates.accessPassword = null;
+          }
+        }
+
+        if (Object.keys(updates).length === 0) {
+          setOpen(false);
+          return;
+        }
+
+        const response = await fetch(`/api/spaces/${space.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+
+        const result = (await response.json()) as { error?: string; space?: Space };
+
+        if (!response.ok) {
+          toast.error(result.error ?? "Failed to update space");
+          return;
+        }
+
+        onSpaceUpdated(result.space!);
+        toast.success("Space settings updated!");
+        setOpen(false);
+      } catch {
+        toast.error("Failed to update space");
+      } finally {
+        setIsLoading(false);
+      }
+    },
   });
 
-  const { handleSubmit, control, formState, watch, reset, setValue } = form;
-
-  const isPrivate = watch("isPrivate");
-  const changePassword = watch("changePassword");
-
-  // Reset form when space changes or dialog opens
-  useEffect(() => {
-    if (open) {
-      reset({
-        isPrivate: space?.isPrivate ?? false,
-        changePassword: false,
-        accessPassword: "",
-      });
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) {
+      form.reset();
+      form.setFieldValue("isPrivate", space?.isPrivate ?? false);
+      form.setFieldValue("changePassword", false);
+      form.setFieldValue("accessPassword", "");
       setShowPassword(false);
     }
-  }, [open, space, reset]);
+  };
 
   const handleClaimSpace = async () => {
     setIsClaiming(true);
@@ -104,61 +147,8 @@ const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDia
     }
   };
 
-  const onSubmit = async (data: SpaceSettingsFormValues) => {
-    if (!space) {
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const updates: Record<string, unknown> = {};
-
-      if (data.isPrivate !== space.isPrivate) {
-        updates.isPrivate = data.isPrivate;
-      }
-
-      // Only update password if explicitly requested
-      if (data.changePassword) {
-        updates.updatePassword = true;
-        if (data.accessPassword) {
-          updates.accessPassword = data.accessPassword;
-        } else {
-          // Clear password
-          updates.accessPassword = null;
-        }
-      }
-
-      if (Object.keys(updates).length === 0) {
-        setOpen(false);
-        return;
-      }
-
-      const response = await fetch(`/api/spaces/${space.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      });
-
-      const result = (await response.json()) as { error?: string; space?: Space };
-
-      if (!response.ok) {
-        toast.error(result.error ?? "Failed to update space");
-        return;
-      }
-
-      onSpaceUpdated(result.space!);
-      toast.success("Space settings updated!");
-      setOpen(false);
-    } catch {
-      toast.error("Failed to update space");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Settings className="h-4 w-4" />
@@ -199,24 +189,27 @@ const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDia
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              form.handleSubmit();
+            }}
+          >
             <div className="flex flex-col gap-4 py-4">
-              {/* Privacy Toggle */}
-              <div className="flex flex-col gap-2">
-                <Label className="flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  Privacy
-                </Label>
-                <Controller
-                  control={control}
-                  name="isPrivate"
-                  render={({ field }) => (
+              <form.Field name="isPrivate">
+                {(field) => (
+                  <div className="flex flex-col gap-2">
+                    <FieldLabel className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Privacy
+                    </FieldLabel>
                     <div className="flex gap-2">
                       <Button
                         type="button"
-                        variant={!field.value ? "default" : "outline"}
+                        variant={!field.state.value ? "default" : "outline"}
                         size="sm"
-                        onClick={() => field.onChange(false)}
+                        onClick={() => field.handleChange(false)}
                         className="flex-1"
                       >
                         <span className="flex items-center gap-2">
@@ -226,9 +219,9 @@ const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDia
                       </Button>
                       <Button
                         type="button"
-                        variant={field.value ? "default" : "outline"}
+                        variant={field.state.value ? "default" : "outline"}
                         size="sm"
-                        onClick={() => field.onChange(true)}
+                        onClick={() => field.handleChange(true)}
                         className="flex-1"
                       >
                         <span className="flex items-center gap-2">
@@ -237,86 +230,95 @@ const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDia
                         </span>
                       </Button>
                     </div>
-                  )}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {isPrivate
-                    ? "Only people with the password can access this team."
-                    : "Anyone with the link can view this team."}
-                </p>
-              </div>
-
-              {/* Access Password */}
-              {isPrivate && (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="accessPassword">Access Password</Label>
-                    {space.hasPassword && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setValue("changePassword", !changePassword);
-                          if (!changePassword) {
-                            setValue("accessPassword", "");
-                          }
-                        }}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        {changePassword ? "Cancel" : "Change password"}
-                      </button>
-                    )}
-                  </div>
-
-                  {(!space.hasPassword || changePassword) && (
-                    <>
-                      <div className="relative">
-                        <Controller
-                          control={control}
-                          name="accessPassword"
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              id="accessPassword"
-                              type={showPassword ? "text" : "password"}
-                              placeholder={
-                                space.hasPassword ? "Enter new password" : "Set a password"
-                              }
-                              className="pr-10"
-                            />
-                          )}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                      {formState.errors.accessPassword && (
-                        <p className="text-xs text-red-500">
-                          {formState.errors.accessPassword.message}
-                        </p>
-                      )}
-                      {space.hasPassword && changePassword && (
-                        <p className="text-xs text-muted-foreground">
-                          Leave blank to remove password protection
-                        </p>
-                      )}
-                    </>
-                  )}
-
-                  {space.hasPassword && !changePassword && (
                     <p className="text-xs text-muted-foreground">
-                      Password is set. Click &quot;Change password&quot; to update.
+                      {field.state.value
+                        ? "Only people with the password can access this team."
+                        : "Anyone with the link can view this team."}
                     </p>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Subscribe
+                selector={(state) => ({
+                  isPrivate: state.values.isPrivate,
+                  changePassword: state.values.changePassword,
+                })}
+              >
+                {({ isPrivate: isPrivateValue, changePassword: changePasswordValue }) => (
+                  <>
+                    {isPrivateValue && (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <FieldLabel htmlFor="accessPassword">Access Password</FieldLabel>
+                          {space.hasPassword && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const current = form.getFieldValue("changePassword");
+                                form.setFieldValue("changePassword", !current);
+                                if (!current) {
+                                  form.setFieldValue("accessPassword", "");
+                                }
+                              }}
+                              className="text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              {changePasswordValue ? "Cancel" : "Change password"}
+                            </button>
+                          )}
+                        </div>
+
+                        {(!space.hasPassword || changePasswordValue) && (
+                          <form.Field name="accessPassword">
+                            {(field) => (
+                              <>
+                                <div className="relative">
+                                  <Input
+                                    id="accessPassword"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder={
+                                      space.hasPassword ? "Enter new password" : "Set a password"
+                                    }
+                                    className="pr-10"
+                                    value={field.state.value}
+                                    onChange={(e) => field.handleChange(e.target.value)}
+                                    onBlur={field.handleBlur}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                  >
+                                    {showPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                </div>
+                                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                                  <FieldError errors={field.state.meta.errors} />
+                                )}
+                                {space.hasPassword && changePasswordValue && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Leave blank to remove password protection
+                                  </p>
+                                )}
+                              </>
+                            )}
+                          </form.Field>
+                        )}
+
+                        {space.hasPassword && !changePasswordValue && (
+                          <p className="text-xs text-muted-foreground">
+                            Password is set. Click &quot;Change password&quot; to update.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </form.Subscribe>
             </div>
 
             <DialogFooter>
