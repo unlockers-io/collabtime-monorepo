@@ -79,7 +79,7 @@ const RootLayout = ({
 }>) => {
   return (
     <html lang="en" suppressHydrationWarning>
-      {process.env.NODE_ENV === "development" && (
+      {process.env.NODE_ENV === "development" && !process.env.CI && (
         <>
           <script
             src="https://unpkg.com/react-scan/dist/auto.global.js"

@@ -26,8 +26,42 @@ services:
       - -c
       - shared_buffers=256MB
 
+  redis:
+    image: redis:alpine
+    container_name: collabtime-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - collabtime-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-rest:
+    image: hiett/serverless-redis-http:latest
+    container_name: collabtime-redis-rest
+    restart: unless-stopped
+    ports:
+      - "8079:80"
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: local-dev-token
+      SRH_CONNECTION_STRING: redis://redis:6379
+    networks:
+      - collabtime-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:
