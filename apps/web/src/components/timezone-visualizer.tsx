@@ -1059,7 +1059,7 @@ const TimezoneVisualizer = ({
 
                       <div
                         ref={sectionIndex === 0 ? timelineRef : undefined}
-                        className={`relative flex-1 ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+                        className="relative flex-1"
                         onMouseMove={isDragging ? undefined : handleMouseMove}
                         onMouseLeave={isDragging ? undefined : handleMouseLeave}
                       >
