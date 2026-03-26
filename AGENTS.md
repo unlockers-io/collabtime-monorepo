@@ -38,7 +38,7 @@ pnpm monorepo with Turborepo orchestration. Node >=24, pnpm 10.32.1.
 
 ### Apps
 
-- **`apps/web`** — Next.js 16 App Router with React Compiler enabled (`http://web.localhost:1355`). Uses `@/*` path alias mapping to `src/*`.
+- **`apps/web`** — Next.js 16 App Router with React Compiler enabled (`http://collabtime.web.localhost:1355`). Uses `@/*` path alias mapping to `src/*`.
 
 ### Packages
 
@@ -99,7 +99,7 @@ Optional: `WEB_APP_URL`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SPACE_ACCESS_SE
 
 ## Portless (Dev URLs)
 
-All dev scripts use `portless <name>` prefix. Dev URLs follow the pattern `http://<name>.localhost:1355`. Portless must be installed globally: `npm install -g portless`. No hardcoded port numbers in dev scripts.
+Dev scripts use `portless run --name <project>.<app>`. URLs follow `http://<project>.<app>.localhost:1355`. In git worktrees, the branch is auto-prepended: `http://<branch>.<project>.<app>.localhost:1355`. Install globally: `npm install -g portless`.
 
 ## Dev Tools (Development Only)
 
