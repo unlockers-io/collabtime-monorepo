@@ -99,9 +99,9 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
     plugins: [...(config.extraPlugins ?? [])],
 
     rateLimit: {
-      enabled: true,
+      enabled: !!config.secondaryStorage,
       max: 100,
-      storage: config.secondaryStorage ? "secondary-storage" : "database",
+      storage: config.secondaryStorage ? "secondary-storage" : "memory",
       window: 60, // 1 minute
     },
 
