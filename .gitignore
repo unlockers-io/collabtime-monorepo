@@ -58,3 +58,4 @@ next-env.d.ts
 # backup files
 *.backup
 *.bak
+agents/
