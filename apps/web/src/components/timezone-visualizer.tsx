@@ -168,7 +168,9 @@ const HourBlock = memo(function HourBlock({
             type="button"
             className={cn(
               `h-full flex-1 cursor-[inherit] ${getRoundedCornerClass(hour)}`,
-              isWorking ? "bg-accent-foreground" : "bg-accent transition-colors hover:bg-muted",
+              isWorking
+                ? "bg-foreground/80 dark:bg-accent-foreground"
+                : "bg-accent transition-colors hover:bg-muted",
             )}
           />
         }
@@ -979,7 +981,7 @@ const TimezoneVisualizer = ({
     return (
       <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-accent-foreground" />
+          <div className="h-3 w-3 rounded bg-foreground/80 dark:bg-accent-foreground" />
           <span>Working hours</span>
         </div>
         {isComparing && canShowOverlap && (
