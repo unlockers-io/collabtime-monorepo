@@ -58,7 +58,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: process.env.CI ? "pnpm start" : "pnpm run dev --filter=web",
+      command: process.env.CI ? "pnpm --filter web start" : "pnpm run dev --filter=web",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       url: webUrl,

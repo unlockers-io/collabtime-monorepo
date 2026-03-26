@@ -16,9 +16,9 @@ const envSchema = z.object({
   // Web App URL (for redirects, etc.)
   WEB_APP_URL: z.string().url("WEB_APP_URL must be a valid URL").optional(),
 
-  // Upstash Redis
-  UPSTASH_REDIS_REST_URL: z.string().url("UPSTASH_REDIS_REST_URL must be a valid URL"),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1, "UPSTASH_REDIS_REST_TOKEN is required"),
+  // Upstash Redis (optional — app boots without Redis, features degrade gracefully)
+  UPSTASH_REDIS_REST_URL: z.string().url("UPSTASH_REDIS_REST_URL must be a valid URL").optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1, "UPSTASH_REDIS_REST_TOKEN is required").optional(),
 
   // Optional: Space access signing (falls back to BETTER_AUTH_SECRET)
   SPACE_ACCESS_SECRET: z.string().min(32).optional(),

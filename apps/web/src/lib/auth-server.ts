@@ -37,31 +37,35 @@ const getAuthConfig = () => {
     },
     // nextCookies() must be last — lets better-auth read cookies in RSC/Server Actions
     extraPlugins: [nextCookies()],
-    secondaryStorage: {
-      get: async (key: string) => {
-        const value = await redis.get(key);
-        if (value === null || value === undefined) {
-          return null;
+    ...(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+      ? {
+          secondaryStorage: {
+            get: async (key: string) => {
+              const value = await redis.get(key);
+              if (value === null || value === undefined) {
+                return null;
+              }
+              if (typeof value === "string") {
+                return value;
+              }
+              if (typeof value === "object") {
+                return JSON.stringify(value);
+              }
+              return String(value);
+            },
+            set: async (key: string, value: string, ttl?: number) => {
+              if (ttl) {
+                await redis.setex(key, ttl, value);
+              } else {
+                await redis.set(key, value);
+              }
+            },
+            delete: async (key: string) => {
+              await redis.del(key);
+            },
+          },
         }
-        if (typeof value === "string") {
-          return value;
-        }
-        if (typeof value === "object") {
-          return JSON.stringify(value);
-        }
-        return String(value);
-      },
-      set: async (key: string, value: string, ttl?: number) => {
-        if (ttl) {
-          await redis.setex(key, ttl, value);
-        } else {
-          await redis.set(key, value);
-        }
-      },
-      delete: async (key: string) => {
-        await redis.del(key);
-      },
-    },
+      : {}),
   };
 };
 

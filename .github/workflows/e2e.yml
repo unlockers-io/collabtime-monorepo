@@ -18,6 +18,7 @@ jobs:
       DATABASE_URL: postgresql://test:test@localhost:5432/test
       BETTER_AUTH_SECRET: test-secret-minimum-32-characters-long-for-e2e
       BETTER_AUTH_URL: http://localhost:3000
+      WEB_APP_URL: http://localhost:3000
     services:
       postgres:
         image: postgres:16
