@@ -1,14 +1,10 @@
 import { test, expect } from "../fixtures";
 
 test.describe("Member Management", () => {
-  let teamUrl: string;
-
   test.beforeEach(async ({ homePage, page }) => {
-    // Create a fresh workspace for each test
     await homePage.goto();
     await homePage.createWorkspace();
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
-    teamUrl = page.url();
   });
 
   test("adds a member to the workspace", async ({ page }) => {

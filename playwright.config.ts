@@ -47,7 +47,7 @@ export default defineConfig({
       },
     },
   ],
-  reporter: process.env.CI ? "blob" : [["list"], ["html"]],
+  reporter: process.env.CI ? [["html", { open: "never" }]] : [["list"], ["html"]],
   retries: process.env.CI ? 2 : 0,
   testDir: "./tests/e2e",
   use: {
@@ -58,7 +58,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: process.env.CI ? "turbo run dev:ci --filter=@repo/web" : "pnpm run dev --filter=web",
+      command: process.env.CI ? "pnpm start" : "pnpm run dev --filter=web",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       url: webUrl,

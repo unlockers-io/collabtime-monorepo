@@ -32,8 +32,8 @@ class HomePage {
   getMyTeamsHeading = () => this.myTeamsHeading;
 
   getTeamCards = () =>
-    this.page.locator("[class*='rounded-xl border']").filter({
-      has: this.page.locator("a[href^='/']"),
+    this.page.getByRole("article").filter({
+      has: this.page.getByRole("link"),
     });
 }
 
