@@ -72,21 +72,28 @@ const getApiLimiter = (): Ratelimit => {
   return _apiLimiter;
 };
 
+const ALLOWED_RESULT = { success: true, limit: 0, remaining: 0, reset: 0 } as const;
+
 // Legacy exports for backwards compatibility - these are getters now
+// When Redis is unavailable, rate limiting is bypassed (allows all requests)
 const passwordVerificationLimiter = {
-  limit: (key: string) => getPasswordVerificationLimiter().limit(key),
+  limit: (key: string) =>
+    getRedis() ? getPasswordVerificationLimiter().limit(key) : Promise.resolve(ALLOWED_RESULT),
 };
 
 const loginLimiter = {
-  limit: (key: string) => getLoginLimiter().limit(key),
+  limit: (key: string) =>
+    getRedis() ? getLoginLimiter().limit(key) : Promise.resolve(ALLOWED_RESULT),
 };
 
 const signupLimiter = {
-  limit: (key: string) => getSignupLimiter().limit(key),
+  limit: (key: string) =>
+    getRedis() ? getSignupLimiter().limit(key) : Promise.resolve(ALLOWED_RESULT),
 };
 
 const apiLimiter = {
-  limit: (key: string) => getApiLimiter().limit(key),
+  limit: (key: string) =>
+    getRedis() ? getApiLimiter().limit(key) : Promise.resolve(ALLOWED_RESULT),
 };
 
 /**

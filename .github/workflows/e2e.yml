@@ -19,6 +19,8 @@ jobs:
       BETTER_AUTH_SECRET: test-secret-minimum-32-characters-long-for-e2e
       BETTER_AUTH_URL: http://localhost:3000
       WEB_APP_URL: http://localhost:3000
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
     services:
       postgres:
         image: postgres:16
@@ -53,9 +55,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
       - if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps
+        run: pnpm exec playwright install chromium --with-deps
       - if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps
+        run: pnpm exec playwright install-deps chromium
       - run: pnpm test:e2e
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

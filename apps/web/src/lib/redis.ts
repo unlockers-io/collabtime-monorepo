@@ -6,7 +6,7 @@ let _redis: Redis | null = null;
  * Get the Redis client instance.
  * Uses lazy initialization to avoid build-time errors when env vars aren't available.
  */
-const getRedis = (): Redis => {
+const getRedis = (): Redis | null => {
   if (_redis) {
     return _redis;
   }
@@ -15,10 +15,7 @@ const getRedis = (): Redis => {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
-    throw new Error(
-      "Missing required environment variables: UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN. " +
-        "Please check your .env.local file.",
-    );
+    return null;
   }
 
   _redis = new Redis({ url, token });
@@ -36,6 +33,16 @@ const getRedis = (): Redis => {
 const redis = new Proxy({} as Redis, {
   get(_, prop) {
     const instance = getRedis();
+    if (!instance) {
+      // Return no-op functions and undefined for properties when Redis is unavailable
+      if (
+        typeof prop === "string" &&
+        ["get", "set", "setex", "del", "scan", "publish"].includes(prop)
+      ) {
+        return () => Promise.resolve(null);
+      }
+      return undefined;
+    }
     const value = instance[prop as keyof Redis];
     if (typeof value === "function") {
       return value.bind(instance);

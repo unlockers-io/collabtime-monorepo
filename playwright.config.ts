@@ -30,22 +30,26 @@ export default defineConfig({
         storageState: "tests/e2e/.auth/user.json",
       },
     },
-    {
-      dependencies: ["setup"],
-      name: "firefox",
-      use: {
-        ...devices["Desktop Firefox"],
-        storageState: "tests/e2e/.auth/user.json",
-      },
-    },
-    {
-      dependencies: ["setup"],
-      name: "webkit",
-      use: {
-        ...devices["Desktop Safari"],
-        storageState: "tests/e2e/.auth/user.json",
-      },
-    },
+    ...(process.env.CI
+      ? []
+      : [
+          {
+            dependencies: ["setup"],
+            name: "firefox",
+            use: {
+              ...devices["Desktop Firefox"],
+              storageState: "tests/e2e/.auth/user.json",
+            },
+          },
+          {
+            dependencies: ["setup"],
+            name: "webkit",
+            use: {
+              ...devices["Desktop Safari"],
+              storageState: "tests/e2e/.auth/user.json",
+            },
+          },
+        ]),
   ],
   reporter: process.env.CI ? [["html", { open: "never" }]] : [["list"], ["html"]],
   retries: process.env.CI ? 2 : 0,
