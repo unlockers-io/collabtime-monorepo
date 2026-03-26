@@ -102,7 +102,7 @@ const MemberCard = ({
         <div className="flex items-start justify-between">
           {/* Avatar with status */}
           <div className="relative">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-base font-semibold text-muted-foreground dark:bg-primary dark:text-primary-foreground">
               {member.name.charAt(0).toUpperCase()}
             </div>
             {isAvailable && (

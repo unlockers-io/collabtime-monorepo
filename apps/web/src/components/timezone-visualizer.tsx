@@ -181,7 +181,7 @@ const HourBlock = memo(function HourBlock({
           <span className="font-medium tabular-nums">
             {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
           </span>
-          <span className="text-xs text-muted-foreground tabular-nums">
+          <span className="text-xs text-background/70 tabular-nums">
             {formatHour(memberHour)} – {formatHour(memberNextHour)} {memberTzAbbrev}
           </span>
         </div>
