@@ -17,7 +17,7 @@ import {
   rectSortingStrategy,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
-import { Button, ScrollArea, Spinner } from "@repo/ui";
+import { Button, buttonVariants, cn, ScrollArea, Spinner } from "@repo/ui";
 import { Clock, FolderKanban, LogIn, UserPlus, Users } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
@@ -710,12 +710,13 @@ const TeamPageClient = ({
                 {!isAuthenticated ? (
                   <>
                     <p className="text-sm text-muted-foreground">Sign in to request access</p>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/login?redirect=/${teamId}`}>
-                        <LogIn className="mr-2 h-4 w-4" />
-                        Sign in
-                      </Link>
-                    </Button>
+                    <Link
+                      href={`/login?redirect=/${teamId}`}
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    >
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Sign in
+                    </Link>
                   </>
                 ) : teamStatus === "PENDING" ? (
                   <p className="text-sm text-muted-foreground">
