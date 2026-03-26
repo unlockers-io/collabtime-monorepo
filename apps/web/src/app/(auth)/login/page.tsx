@@ -16,15 +16,19 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+type LoginFormValues = z.infer<typeof loginSchema>;
+
 const LoginPage = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
+  const defaultValues: LoginFormValues = {
+    email: "",
+    password: "",
+  };
+
   const form = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues,
     validators: {
       onBlur: loginSchema,
       onChange: loginSchema,
@@ -70,6 +74,7 @@ const LoginPage = () => {
             form.handleSubmit();
           }}
           className="flex flex-col gap-4"
+          noValidate
         >
           <form.Field name="email">
             {(field) => (

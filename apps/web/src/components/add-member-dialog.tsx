@@ -91,15 +91,17 @@ const AddMemberForm = ({
   const [titlePlaceholder] = useState(getRandomPlaceholder);
   const defaultTimezone = getUserTimezone() as FormValues["timezone"];
 
+  const defaultValues: FormValues = {
+    name: "",
+    title: "",
+    timezone: defaultTimezone,
+    workingHoursStart: 9,
+    workingHoursEnd: 17,
+    groupId: "",
+  };
+
   const form = useForm({
-    defaultValues: {
-      name: "",
-      title: "",
-      timezone: defaultTimezone,
-      workingHoursStart: 9,
-      workingHoursEnd: 17,
-      groupId: "",
-    },
+    defaultValues,
     validators: {
       onBlur: formSchema,
       onChange: formSchema,

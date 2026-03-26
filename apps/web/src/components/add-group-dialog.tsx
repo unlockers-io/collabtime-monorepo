@@ -37,13 +37,17 @@ const formSchema = z.object({
     .trim(),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
   const [open, setOpen] = useState(false);
 
+  const defaultValues: FormValues = {
+    name: "",
+  };
+
   const form = useForm({
-    defaultValues: {
-      name: "",
-    },
+    defaultValues,
     validators: {
       onBlur: formSchema,
       onChange: formSchema,

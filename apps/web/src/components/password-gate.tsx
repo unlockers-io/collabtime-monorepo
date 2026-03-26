@@ -17,6 +17,8 @@ const passwordSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+type PasswordFormValues = z.infer<typeof passwordSchema>;
+
 const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -29,10 +31,12 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
     return window.matchMedia("(pointer: fine)").matches;
   });
 
+  const defaultValues: PasswordFormValues = {
+    password: "",
+  };
+
   const form = useForm({
-    defaultValues: {
-      password: "",
-    },
+    defaultValues,
     validators: {
       onBlur: passwordSchema,
       onChange: passwordSchema,
@@ -85,6 +89,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
             form.handleSubmit();
           }}
           className="flex flex-col gap-4"
+          noValidate
         >
           <form.Field name="password">
             {(field) => (

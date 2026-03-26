@@ -42,18 +42,22 @@ const spaceSettingsSchema = z.object({
   ]),
 });
 
+type SpaceSettingsFormValues = z.infer<typeof spaceSettingsSchema>;
+
 const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const defaultValues: SpaceSettingsFormValues = {
+    isPrivate: space?.isPrivate ?? false,
+    changePassword: false,
+    accessPassword: "",
+  };
+
   const form = useForm({
-    defaultValues: {
-      isPrivate: space?.isPrivate ?? false,
-      changePassword: false,
-      accessPassword: "",
-    },
+    defaultValues,
     validators: {
       onBlur: spaceSettingsSchema,
       onChange: spaceSettingsSchema,
@@ -193,6 +197,7 @@ const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDia
               e.stopPropagation();
               form.handleSubmit();
             }}
+            noValidate
           >
             <div className="flex flex-col gap-4 py-4">
               <form.Field name="isPrivate">

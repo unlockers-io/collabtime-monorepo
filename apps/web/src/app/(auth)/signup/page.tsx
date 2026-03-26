@@ -20,16 +20,20 @@ const signupSchema = z.object({
     .max(128, "Password is too long"),
 });
 
+type SignupFormValues = z.infer<typeof signupSchema>;
+
 const SignupPage = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
+  const defaultValues: SignupFormValues = {
+    name: "",
+    email: "",
+    password: "",
+  };
+
   const form = useForm({
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
+    defaultValues,
     validators: {
       onBlur: signupSchema,
       onChange: signupSchema,
@@ -76,6 +80,7 @@ const SignupPage = () => {
             form.handleSubmit();
           }}
           className="flex flex-col gap-4"
+          noValidate
         >
           <form.Field name="name">
             {(field) => (

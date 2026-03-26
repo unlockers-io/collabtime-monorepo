@@ -73,15 +73,17 @@ const EditMemberForm = ({
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
 
+  const defaultValues: FormValues = {
+    name: member.name,
+    title: member.title ?? "",
+    timezone: member.timezone as FormValues["timezone"],
+    workingHoursStart: member.workingHoursStart,
+    workingHoursEnd: member.workingHoursEnd,
+    groupId: member.groupId ?? "",
+  };
+
   const form = useForm({
-    defaultValues: {
-      name: member.name,
-      title: member.title ?? "",
-      timezone: member.timezone as FormValues["timezone"],
-      workingHoursStart: member.workingHoursStart,
-      workingHoursEnd: member.workingHoursEnd,
-      groupId: member.groupId ?? "",
-    },
+    defaultValues,
     validators: {
       onBlur: formSchema,
       onChange: formSchema,
