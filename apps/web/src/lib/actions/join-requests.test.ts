@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createMockSession, createTestTeamRecord, VALID_UUID } from "./__tests__/test-helpers";
+import { createMockSession, createTestTeamRecord, VALID_UUID } from "./test-helpers";
 
 vi.mock("@/lib/team-auth", () => ({
   requireAuth: vi.fn(),

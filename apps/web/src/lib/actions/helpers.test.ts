@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TeamRecord } from "@/types";
 
-import { createTestMember, createTestTeamRecord, VALID_UUID } from "./__tests__/test-helpers";
+import { createTestMember, createTestTeamRecord, VALID_UUID } from "./test-helpers";
 
 vi.mock("../redis", () => ({
   redis: { get: vi.fn() },

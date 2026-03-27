@@ -5,6 +5,8 @@ import { requireTeamAdmin } from "@/lib/team-auth";
 import { realtime } from "../realtime";
 import { redis } from "../redis";
 
+import { createGroup, removeGroup, reorderGroups, updateGroup } from "./group-actions";
+import { getTeamRecord, sanitizeTeam } from "./helpers";
 import {
   createTestGroup,
   createTestMember,
@@ -12,9 +14,7 @@ import {
   VALID_UUID,
   VALID_UUID_2,
   VALID_UUID_3,
-} from "./__tests__/test-helpers";
-import { createGroup, removeGroup, reorderGroups, updateGroup } from "./group-actions";
-import { getTeamRecord, sanitizeTeam } from "./helpers";
+} from "./test-helpers";
 
 vi.mock("@/lib/team-auth", () => ({ requireTeamAdmin: vi.fn() }));
 vi.mock("../redis", () => ({

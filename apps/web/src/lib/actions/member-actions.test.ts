@@ -9,7 +9,7 @@ import {
   VALID_UUID,
   VALID_UUID_2,
   VALID_UUID_3,
-} from "./__tests__/test-helpers";
+} from "./test-helpers";
 
 vi.mock("@/lib/team-auth", () => ({
   requireTeamAdmin: vi.fn(),
