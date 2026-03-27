@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth-server";
 import { getTeamRole } from "@/lib/team-auth";
+import { isTeamRole } from "@/types";
 import type { Team, TeamRole } from "@/types";
 
 import { redis } from "../redis";
