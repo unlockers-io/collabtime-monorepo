@@ -15,7 +15,7 @@ let _apiLimiter: Ratelimit | null = null;
 const getPasswordVerificationLimiter = (): Ratelimit => {
   if (!_passwordVerificationLimiter) {
     _passwordVerificationLimiter = new Ratelimit({
-      redis: getRedis(),
+      redis: getRedis()!,
       limiter: Ratelimit.slidingWindow(5, "15 m"),
       prefix: "ratelimit:password-verify",
       analytics: true,
@@ -31,7 +31,7 @@ const getPasswordVerificationLimiter = (): Ratelimit => {
 const getLoginLimiter = (): Ratelimit => {
   if (!_loginLimiter) {
     _loginLimiter = new Ratelimit({
-      redis: getRedis(),
+      redis: getRedis()!,
       limiter: Ratelimit.slidingWindow(10, "15 m"),
       prefix: "ratelimit:login",
       analytics: true,
@@ -47,7 +47,7 @@ const getLoginLimiter = (): Ratelimit => {
 const getSignupLimiter = (): Ratelimit => {
   if (!_signupLimiter) {
     _signupLimiter = new Ratelimit({
-      redis: getRedis(),
+      redis: getRedis()!,
       limiter: Ratelimit.slidingWindow(5, "1 h"),
       prefix: "ratelimit:signup",
       analytics: true,
@@ -63,7 +63,7 @@ const getSignupLimiter = (): Ratelimit => {
 const getApiLimiter = (): Ratelimit => {
   if (!_apiLimiter) {
     _apiLimiter = new Ratelimit({
-      redis: getRedis(),
+      redis: getRedis()!,
       limiter: Ratelimit.slidingWindow(100, "1 m"),
       prefix: "ratelimit:api",
       analytics: true,
