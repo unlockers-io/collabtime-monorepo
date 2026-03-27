@@ -6,8 +6,9 @@ test.describe("Logout", () => {
     await homePage.goto();
     await homePage.createWorkspace();
 
-    // Wait for navigation to team page and data to load
+    // Wait for navigation to team page, reload to ensure fresh server render with session
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
+    await page.reload();
     await expect(page.getByRole("button", { name: /account menu/i })).toBeVisible({
       timeout: 30_000,
     });

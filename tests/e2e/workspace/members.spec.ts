@@ -5,7 +5,8 @@ test.describe("Member Management", () => {
     await homePage.goto();
     await homePage.createWorkspace();
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
-    // Wait for team data to load and admin UI to render
+    // Hard reload to ensure server component re-renders with fresh session
+    await page.reload();
     await expect(page.getByRole("button", { name: /add team member/i })).toBeVisible({
       timeout: 30_000,
     });
