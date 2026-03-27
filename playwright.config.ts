@@ -54,6 +54,7 @@ export default defineConfig({
   reporter: process.env.CI ? [["html", { open: "never" }]] : [["list"], ["html"]],
   retries: process.env.CI ? 2 : 0,
   testDir: "./tests/e2e",
+  timeout: process.env.CI ? 60_000 : 30_000,
   use: {
     baseURL: webUrl,
     screenshot: "only-on-failure",

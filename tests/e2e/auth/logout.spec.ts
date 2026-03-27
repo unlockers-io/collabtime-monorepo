@@ -6,8 +6,11 @@ test.describe("Logout", () => {
     await homePage.goto();
     await homePage.createWorkspace();
 
-    // Wait for navigation to team page
+    // Wait for navigation to team page and data to load
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
+    await expect(page.getByRole("button", { name: /account menu/i })).toBeVisible({
+      timeout: 30_000,
+    });
 
     // Open the account menu dropdown
     await page.getByRole("button", { name: /account menu/i }).click();
