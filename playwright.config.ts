@@ -54,7 +54,7 @@ export default defineConfig({
   reporter: process.env.CI ? [["html", { open: "never" }]] : [["list"], ["html"]],
   retries: process.env.CI ? 1 : 0,
   testDir: "./tests/e2e",
-  timeout: process.env.CI ? 90_000 : 30_000,
+  timeout: process.env.CI ? 60_000 : 30_000,
   use: {
     baseURL: webUrl,
     screenshot: "only-on-failure",
@@ -63,9 +63,9 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: process.env.CI ? "pnpm --filter web dev:ci" : "pnpm run dev --filter=web",
+      command: process.env.CI ? "pnpm --filter web start" : "pnpm run dev --filter=web",
       reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
+      timeout: 120_000,
       url: webUrl,
     },
   ],
