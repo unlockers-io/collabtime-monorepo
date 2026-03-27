@@ -50,7 +50,6 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
     defaultValues,
     validators: {
       onBlur: formSchema,
-      onChange: formSchema,
     },
     onSubmit: async ({ value }) => {
       const result = await createGroup(teamId, { name: value.name });

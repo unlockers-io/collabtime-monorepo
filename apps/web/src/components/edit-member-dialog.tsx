@@ -86,7 +86,6 @@ const EditMemberForm = ({
     defaultValues,
     validators: {
       onBlur: formSchema,
-      onChange: formSchema,
     },
     onSubmit: ({ value }) => {
       startTransition(async () => {
