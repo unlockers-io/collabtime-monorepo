@@ -77,11 +77,18 @@ const TeamPageClient = ({
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
   const lastRemovalRef = useRef<{ id: string; ts: number }>({ id: "", ts: 0 });
 
-  const isAdmin = teamStatus === "ADMIN";
-  const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
-
   // Fetch team data with TanStack Query
   const { data: teamData, error: teamError } = useTeamQuery({ teamId });
+
+  // Sync teamStatus from query result (server actions have reliable session access)
+  useEffect(() => {
+    if (teamData?.role && teamData.role !== teamStatus) {
+      setTeamStatus(teamData.role);
+    }
+  }, [teamData?.role, teamStatus]);
+
+  const isAdmin = teamStatus === "ADMIN";
+  const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
 
   const updateTeamCache = useUpdateTeamCache();
 

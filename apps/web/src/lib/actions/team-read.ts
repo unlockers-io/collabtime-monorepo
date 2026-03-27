@@ -47,10 +47,21 @@ const getPublicTeam = async (
     }
 
     const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+    const userId = session?.user?.id;
+
+    let role: TeamRole = "MEMBER";
+    if (userId) {
+      const membership = await prisma.membership.findUnique({
+        where: { userId_teamId: { userId, teamId } },
+      });
+      if (membership && isTeamRole(membership.role)) {
+        role = membership.role;
+      }
+    }
 
     return {
       success: true,
-      data: { team: sanitizeTeam(team, session?.user?.id), role: "MEMBER" },
+      data: { team: sanitizeTeam(team, userId), role },
     };
   } catch (error) {
     console.error("Failed to fetch public team:", error);
