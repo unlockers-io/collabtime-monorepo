@@ -67,8 +67,8 @@ const getRealtime = () => {
 
 const isRealtimeAvailable = () => getRealtime() !== null;
 
-// Type inference from the schema
-type RealtimeInstance = ReturnType<typeof createRealtime>;
+// Type inference from the schema — use non-null type for the proxy facade
+type RealtimeInstance = Exclude<ReturnType<typeof createRealtime>, null>;
 type RealtimeEvents = InferRealtimeEvents<RealtimeInstance>;
 
 // Legacy export for backwards compatibility - now a getter proxy
