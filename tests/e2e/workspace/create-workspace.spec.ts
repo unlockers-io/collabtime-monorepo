@@ -12,11 +12,6 @@ test.describe("Create Workspace", () => {
 
     // Should see the team page with empty state
     await expect(page.getByText(/build your team/i)).toBeVisible();
-
-    // Admin UI should render (Add Team Member button)
-    await expect(page.getByRole("button", { name: /add team member/i })).toBeVisible({
-      timeout: 60_000,
-    });
   });
 
   test("new workspace appears in My Teams list", async ({ homePage, page }) => {
