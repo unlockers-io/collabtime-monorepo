@@ -1,14 +1,25 @@
 import { test, expect } from "../fixtures";
 
+// Use a separate session so signing out doesn't invalidate the shared test user's session
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test.describe("Logout", () => {
-  test("signs out from the team page and redirects to home", async ({ homePage, page }) => {
+  test("signs out from the team page and redirects to home", async ({
+    homePage,
+    page,
+    signupPage,
+  }) => {
+    // Create a fresh user for this test so logout doesn't affect other tests
+    const logoutEmail = `e2e-logout-${Date.now()}@collabtime.localhost`;
+    await signupPage.goto();
+    await signupPage.signup("Logout Test User", logoutEmail, "TestPassword123!");
+    await expect(page).toHaveURL("/", { timeout: 10_000 });
+
     // Create a workspace so we can access the team page with the UserMenu
-    await homePage.goto();
     await homePage.createWorkspace();
 
-    // Wait for navigation to team page, reload to ensure fresh server render with session
+    // Wait for navigation to team page
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
-    await page.reload();
     await expect(page.getByRole("button", { name: /account menu/i })).toBeVisible({
       timeout: 30_000,
     });

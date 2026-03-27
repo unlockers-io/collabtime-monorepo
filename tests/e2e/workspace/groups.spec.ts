@@ -5,8 +5,6 @@ test.describe("Group Management", () => {
     await homePage.goto();
     await homePage.createWorkspace();
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
-    // Hard reload to ensure server component re-renders with fresh session
-    await page.reload();
     await expect(page.getByRole("button", { name: /add group/i })).toBeVisible({ timeout: 30_000 });
   });
 
