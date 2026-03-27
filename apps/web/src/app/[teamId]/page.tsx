@@ -63,6 +63,15 @@ const TeamPage = async ({ params }: TeamPageProps) => {
     headers: await headers(),
   });
 
+  if (process.env.CI) {
+    console.log(
+      "[E2E DEBUG] teamId:",
+      teamId,
+      "session:",
+      session ? `user=${session.user.id}` : "null",
+    );
+  }
+
   const space = await prisma.space.findUnique({
     where: { teamId },
   });
