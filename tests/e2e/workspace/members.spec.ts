@@ -1,8 +1,6 @@
 import { test, expect } from "../fixtures/auth.fixture";
 
-// TODO: Admin UI doesn't render in CI — Better Auth session detection issue
-// See: https://github.com/unlockers-io/collabtime-monorepo/issues/TBD
-test.describe.skip("Member Management", () => {
+test.describe("Member Management", () => {
   test.beforeEach(async ({ homePage, page }) => {
     await homePage.goto();
     await homePage.createWorkspace();
