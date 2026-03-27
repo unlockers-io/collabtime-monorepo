@@ -110,4 +110,25 @@ const getTeamName = async (teamId: string): Promise<string | null> => {
   }
 };
 
-export { getPublicTeam, getTeamName, validateTeam };
+export { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam };
+
+const getTeamMembershipRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return null;
+    }
+
+    const membership = await prisma.membership.findUnique({
+      where: { userId_teamId: { userId, teamId } },
+    });
+
+    if (membership && isTeamRole(membership.role)) {
+      return membership.role;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};

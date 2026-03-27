@@ -80,12 +80,22 @@ const TeamPageClient = ({
   // Fetch team data with TanStack Query
   const { data: teamData, error: teamError } = useTeamQuery({ teamId });
 
-  // Sync teamStatus from query result (server actions have reliable session access)
+  const { data: session } = useSession();
+
+  // Resolve admin status client-side when server-side session detection fails
   useEffect(() => {
-    if (teamData?.role && teamData.role !== teamStatus) {
-      setTeamStatus(teamData.role);
-    }
-  }, [teamData?.role, teamStatus]);
+    const resolveRole = async () => {
+      if (teamStatus !== "none" || !session?.user?.id) {
+        return;
+      }
+      const { getTeamMembershipRole } = await import("@/lib/actions");
+      const role = await getTeamMembershipRole(teamId, session.user.id);
+      if (role) {
+        setTeamStatus(role);
+      }
+    };
+    resolveRole();
+  }, [session?.user?.id, teamId, teamStatus]);
 
   const isAdmin = teamStatus === "ADMIN";
   const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
@@ -101,7 +111,6 @@ const TeamPageClient = ({
   const members = useMemo(() => teamData?.team?.members ?? [], [teamData?.team?.members]);
   const groups = useMemo(() => teamData?.team?.groups ?? [], [teamData?.team?.groups]);
 
-  const { data: session } = useSession();
   const currentUserId = isMember ? session?.user?.id : undefined;
   const hasClaimedProfile = useMemo(
     () => Boolean(currentUserId && members.some((m) => m.userId === currentUserId)),

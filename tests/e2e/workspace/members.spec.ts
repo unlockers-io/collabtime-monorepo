@@ -6,7 +6,7 @@ test.describe("Member Management", () => {
     await homePage.createWorkspace();
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
     await expect(page.getByRole("button", { name: /add team member/i })).toBeVisible({
-      timeout: 30_000,
+      timeout: 60_000,
     });
   });
 

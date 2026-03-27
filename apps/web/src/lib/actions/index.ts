@@ -16,4 +16,4 @@ export {
   updateTeamName,
 } from "./member-actions";
 export { createTeam } from "./team-create";
-export { getPublicTeam, getTeamName, validateTeam } from "./team-read";
+export { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam } from "./team-read";

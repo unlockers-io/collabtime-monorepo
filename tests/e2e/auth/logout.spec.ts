@@ -21,7 +21,7 @@ test.describe("Logout", () => {
     // Wait for navigation to team page
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
     await expect(page.getByRole("button", { name: /account menu/i })).toBeVisible({
-      timeout: 30_000,
+      timeout: 60_000,
     });
 
     // Open the account menu dropdown

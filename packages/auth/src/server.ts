@@ -78,8 +78,8 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       defaultCookieAttributes: {
         httpOnly: true,
         sameSite: "lax" as const,
-        secure: betterAuthConfig.url.startsWith("https://"),
       },
+      useSecureCookies: betterAuthConfig.url.startsWith("https://"),
     },
 
     basePath: "/api/auth",

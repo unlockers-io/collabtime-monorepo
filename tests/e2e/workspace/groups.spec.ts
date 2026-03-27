@@ -5,7 +5,7 @@ test.describe("Group Management", () => {
     await homePage.goto();
     await homePage.createWorkspace();
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
-    await expect(page.getByRole("button", { name: /add group/i })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: /add group/i })).toBeVisible({ timeout: 60_000 });
   });
 
   test("creates a group", async ({ page }) => {

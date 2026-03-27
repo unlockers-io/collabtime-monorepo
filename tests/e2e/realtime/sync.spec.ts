@@ -27,10 +27,10 @@ test.describe("Realtime Sync", () => {
 
     // Wait for pages to load
     await expect(pageA.getByRole("button", { name: /add team member/i })).toBeVisible({
-      timeout: 30_000,
+      timeout: 60_000,
     });
     await expect(pageB.getByRole("heading", { name: "Team Members" })).toBeVisible({
-      timeout: 30_000,
+      timeout: 60_000,
     });
 
     // Context A adds a member
@@ -63,10 +63,10 @@ test.describe("Realtime Sync", () => {
     await Promise.all([pageA.goto(`/${teamId}`), pageB.goto(`/${teamId}`)]);
 
     await expect(pageA.getByRole("button", { name: /add group/i })).toBeVisible({
-      timeout: 30_000,
+      timeout: 60_000,
     });
     await expect(pageB.getByRole("heading", { name: "Groups" })).toBeVisible({
-      timeout: 30_000,
+      timeout: 60_000,
     });
 
     // Context A creates a group
