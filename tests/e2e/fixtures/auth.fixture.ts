@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/rules-of-hooks -- Playwright fixtures, not React hooks */
 import { test as base } from "@playwright/test";
 
 import { HomePage } from "../pages/home.page";

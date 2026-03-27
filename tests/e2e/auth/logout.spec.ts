@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures";
+import { test, expect } from "../fixtures/auth.fixture";
 
 // Use a separate session so signing out doesn't invalidate the shared test user's session
 test.use({ storageState: { cookies: [], origins: [] } });

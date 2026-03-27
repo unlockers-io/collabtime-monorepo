@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures";
+import { test, expect } from "../fixtures/auth.fixture";
 
 test.describe("Create Workspace", () => {
   test("creates a new workspace and navigates to it", async ({ homePage, page }) => {

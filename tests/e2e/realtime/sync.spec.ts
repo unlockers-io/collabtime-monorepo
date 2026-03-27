@@ -1,4 +1,4 @@
-import { expect, test } from "../fixtures";
+import { expect, test } from "../fixtures/auth.fixture";
 
 const STORAGE_STATE = "tests/e2e/.auth/user.json";
 

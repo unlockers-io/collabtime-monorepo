@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures";
+import { test, expect } from "../fixtures/auth.fixture";
 
 // Use a fresh storageState so registration tests run unauthenticated
 test.use({ storageState: { cookies: [], origins: [] } });

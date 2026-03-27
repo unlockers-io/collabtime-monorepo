@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures";
+import { test, expect } from "../fixtures/auth.fixture";
 
 test.describe("Login", () => {
   test("logs in with valid credentials and redirects to home", async ({

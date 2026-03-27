@@ -49,6 +49,12 @@
       }
     },
     {
+      "files": ["**/*.fixture.ts", "**/*.setup.ts"],
+      "rules": {
+        "react-hooks/rules-of-hooks": "off"
+      }
+    },
+    {
       "files": ["**/seed.ts"],
       "rules": {
         "no-console": "off"
