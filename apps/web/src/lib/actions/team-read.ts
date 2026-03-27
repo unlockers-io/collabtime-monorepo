@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth-server";
 import { getTeamRole } from "@/lib/team-auth";
+import { isTeamRole } from "@/types";
 import type { Team, TeamRole } from "@/types";
 
 import { redis } from "../redis";
@@ -47,10 +48,21 @@ const getPublicTeam = async (
     }
 
     const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+    const userId = session?.user?.id;
+
+    let role: TeamRole = "MEMBER";
+    if (userId) {
+      const membership = await prisma.membership.findUnique({
+        where: { userId_teamId: { userId, teamId } },
+      });
+      if (membership && isTeamRole(membership.role)) {
+        role = membership.role;
+      }
+    }
 
     return {
       success: true,
-      data: { team: sanitizeTeam(team, session?.user?.id), role: "MEMBER" },
+      data: { team: sanitizeTeam(team, userId), role },
     };
   } catch (error) {
     console.error("Failed to fetch public team:", error);
@@ -98,4 +110,25 @@ const getTeamName = async (teamId: string): Promise<string | null> => {
   }
 };
 
-export { getPublicTeam, getTeamName, validateTeam };
+export { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam };
+
+const getTeamMembershipRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return null;
+    }
+
+    const membership = await prisma.membership.findUnique({
+      where: { userId_teamId: { userId, teamId } },
+    });
+
+    if (membership && isTeamRole(membership.role)) {
+      return membership.role;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};

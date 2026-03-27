@@ -12,6 +12,10 @@ node_modules
 
 # testing
 coverage
+tests/e2e/.auth/
+playwright-report/
+blob-report/
+test-results/
 
 # next.js
 .next
@@ -54,3 +58,4 @@ next-env.d.ts
 # backup files
 *.backup
 *.bak
+agents/

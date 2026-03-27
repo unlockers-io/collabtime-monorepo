@@ -28,13 +28,39 @@ type AuthConfig = {
 
 /**
  * Trusted origins for the auth system.
- * Includes localhost for development and the main production domains.
+ * Includes localhost for development (portless uses *.localhost:1355) and the main production domains.
  */
 const TRUSTED_ORIGINS = [
   "http://localhost:3000",
   "https://collabtime.io",
   "https://www.collabtime.io",
 ];
+
+/**
+ * Build the trusted origins list, dynamically including the request's origin
+ * if it matches *.localhost (portless dev URLs).
+ */
+const getTrustedOrigins = (request?: Request): Array<string> => {
+  if (!request) {
+    return TRUSTED_ORIGINS;
+  }
+
+  const origin = request.headers.get("origin");
+  if (!origin) {
+    return TRUSTED_ORIGINS;
+  }
+
+  try {
+    const url = new URL(origin);
+    if (url.hostname === "localhost" || url.hostname.endsWith(".localhost")) {
+      return [...TRUSTED_ORIGINS, origin];
+    }
+  } catch {
+    // invalid origin URL
+  }
+
+  return TRUSTED_ORIGINS;
+};
 
 const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
   const { betterAuth: betterAuthConfig } = config;
@@ -52,8 +78,8 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       defaultCookieAttributes: {
         httpOnly: true,
         sameSite: "lax" as const,
-        secure: process.env.NODE_ENV === "production",
       },
+      useSecureCookies: betterAuthConfig.url.startsWith("https://"),
     },
 
     basePath: "/api/auth",
@@ -73,9 +99,9 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
     plugins: [...(config.extraPlugins ?? [])],
 
     rateLimit: {
-      enabled: true,
+      enabled: !!config.secondaryStorage,
       max: 100,
-      storage: config.secondaryStorage ? "secondary-storage" : "database",
+      storage: config.secondaryStorage ? "secondary-storage" : "memory",
       window: 60, // 1 minute
     },
 
@@ -92,7 +118,7 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       updateAge: 60 * 60 * 24, // Update session if older than 1 day
     },
 
-    trustedOrigins: TRUSTED_ORIGINS,
+    trustedOrigins: getTrustedOrigins,
   });
 };
 

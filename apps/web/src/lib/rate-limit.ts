@@ -15,7 +15,7 @@ let _apiLimiter: Ratelimit | null = null;
 const getPasswordVerificationLimiter = (): Ratelimit => {
   if (!_passwordVerificationLimiter) {
     _passwordVerificationLimiter = new Ratelimit({
-      redis: getRedis(),
+      redis: getRedis()!,
       limiter: Ratelimit.slidingWindow(5, "15 m"),
       prefix: "ratelimit:password-verify",
       analytics: true,
@@ -31,7 +31,7 @@ const getPasswordVerificationLimiter = (): Ratelimit => {
 const getLoginLimiter = (): Ratelimit => {
   if (!_loginLimiter) {
     _loginLimiter = new Ratelimit({
-      redis: getRedis(),
+      redis: getRedis()!,
       limiter: Ratelimit.slidingWindow(10, "15 m"),
       prefix: "ratelimit:login",
       analytics: true,
@@ -47,7 +47,7 @@ const getLoginLimiter = (): Ratelimit => {
 const getSignupLimiter = (): Ratelimit => {
   if (!_signupLimiter) {
     _signupLimiter = new Ratelimit({
-      redis: getRedis(),
+      redis: getRedis()!,
       limiter: Ratelimit.slidingWindow(5, "1 h"),
       prefix: "ratelimit:signup",
       analytics: true,
@@ -63,7 +63,7 @@ const getSignupLimiter = (): Ratelimit => {
 const getApiLimiter = (): Ratelimit => {
   if (!_apiLimiter) {
     _apiLimiter = new Ratelimit({
-      redis: getRedis(),
+      redis: getRedis()!,
       limiter: Ratelimit.slidingWindow(100, "1 m"),
       prefix: "ratelimit:api",
       analytics: true,
@@ -72,21 +72,28 @@ const getApiLimiter = (): Ratelimit => {
   return _apiLimiter;
 };
 
+const ALLOWED_RESULT = { success: true, limit: 0, remaining: 0, reset: 0 } as const;
+
 // Legacy exports for backwards compatibility - these are getters now
+// When Redis is unavailable, rate limiting is bypassed (allows all requests)
 const passwordVerificationLimiter = {
-  limit: (key: string) => getPasswordVerificationLimiter().limit(key),
+  limit: (key: string) =>
+    getRedis() ? getPasswordVerificationLimiter().limit(key) : Promise.resolve(ALLOWED_RESULT),
 };
 
 const loginLimiter = {
-  limit: (key: string) => getLoginLimiter().limit(key),
+  limit: (key: string) =>
+    getRedis() ? getLoginLimiter().limit(key) : Promise.resolve(ALLOWED_RESULT),
 };
 
 const signupLimiter = {
-  limit: (key: string) => getSignupLimiter().limit(key),
+  limit: (key: string) =>
+    getRedis() ? getSignupLimiter().limit(key) : Promise.resolve(ALLOWED_RESULT),
 };
 
 const apiLimiter = {
-  limit: (key: string) => getApiLimiter().limit(key),
+  limit: (key: string) =>
+    getRedis() ? getApiLimiter().limit(key) : Promise.resolve(ALLOWED_RESULT),
 };
 
 /**

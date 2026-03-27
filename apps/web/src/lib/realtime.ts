@@ -40,14 +40,19 @@ const schema = {
 // Lazily initialized realtime instance
 let _realtime: ReturnType<typeof createRealtime> | null = null;
 
-const createRealtime = () =>
-  new Realtime({
+const createRealtime = () => {
+  const redisInstance = getRedis();
+  if (!redisInstance) {
+    return null;
+  }
+  return new Realtime({
     schema,
-    redis: getRedis(),
+    redis: redisInstance,
     history: {
       maxLength: 10,
     },
   });
+};
 
 /**
  * Get the Realtime instance (lazily initialized).
@@ -60,14 +65,22 @@ const getRealtime = () => {
   return _realtime;
 };
 
-// Type inference from the schema
-type RealtimeInstance = ReturnType<typeof createRealtime>;
+const isRealtimeAvailable = () => getRealtime() !== null;
+
+// Type inference from the schema — use non-null type for the proxy facade
+type RealtimeInstance = Exclude<ReturnType<typeof createRealtime>, null>;
 type RealtimeEvents = InferRealtimeEvents<RealtimeInstance>;
 
 // Legacy export for backwards compatibility - now a getter proxy
 const realtime = new Proxy({} as RealtimeInstance, {
   get(_, prop) {
     const instance = getRealtime();
+    if (!instance) {
+      if (typeof prop === "string") {
+        return () => Promise.resolve(null);
+      }
+      return undefined;
+    }
     const value = instance[prop as keyof RealtimeInstance];
     if (typeof value === "function") {
       return (value as (...args: Array<unknown>) => unknown).bind(instance);
@@ -76,5 +89,5 @@ const realtime = new Proxy({} as RealtimeInstance, {
   },
 });
 
-export { realtime, getRealtime };
+export { realtime, getRealtime, isRealtimeAvailable };
 export type { RealtimeEvents };
