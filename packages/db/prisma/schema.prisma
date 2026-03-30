@@ -16,11 +16,12 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  spaces        Space[]
-  memberships   Membership[]
-  joinRequests  JoinRequest[]
+  accounts        Account[]
+  sessions        Session[]
+  spaces          Space[]
+  memberships     Membership[]
+  joinRequests    JoinRequest[]
+  invitationsSent Invitation[] @relation("invitationsSent")
 
   @@index([email])
 }
@@ -84,6 +85,12 @@ enum JoinRequestStatus {
   DENIED
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
 model Membership {
   id        String     @id @default(cuid())
   userId    String
@@ -125,7 +132,25 @@ model Space {
   updatedAt      DateTime      @updatedAt
   memberships    Membership[]
   joinRequests   JoinRequest[]
+  invitations    Invitation[]
 
   @@index([ownerId])
+  @@index([teamId])
+}
+
+model Invitation {
+  id          String           @id @default(cuid())
+  email       String
+  teamId      String
+  memberId    String
+  status      InvitationStatus @default(PENDING)
+  invitedById String
+  invitedBy   User             @relation("invitationsSent", fields: [invitedById], references: [id], onDelete: Cascade)
+  space       Space            @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([email, teamId])
+  @@index([email, status])
   @@index([teamId])
 }

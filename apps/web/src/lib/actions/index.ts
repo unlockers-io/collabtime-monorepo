@@ -1,5 +1,11 @@
 export { createGroup, removeGroup, reorderGroups, updateGroup } from "./group-actions";
 export {
+  acceptInvitation,
+  declineInvitation,
+  getMyInvitations,
+  inviteMember,
+} from "./invitation-actions";
+export {
   approveJoinRequest,
   denyJoinRequest,
   getMyTeamStatus,

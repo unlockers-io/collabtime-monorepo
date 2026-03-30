@@ -57,7 +57,8 @@ export const ModelName = {
   Verification: 'Verification',
   Membership: 'Membership',
   JoinRequest: 'JoinRequest',
-  Space: 'Space'
+  Space: 'Space',
+  Invitation: 'Invitation'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -169,6 +170,20 @@ export const SpaceScalarFieldEnum = {
 } as const
 
 export type SpaceScalarFieldEnum = (typeof SpaceScalarFieldEnum)[keyof typeof SpaceScalarFieldEnum]
+
+
+export const InvitationScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  teamId: 'teamId',
+  memberId: 'memberId',
+  status: 'status',
+  invitedById: 'invitedById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type InvitationScalarFieldEnum = (typeof InvitationScalarFieldEnum)[keyof typeof InvitationScalarFieldEnum]
 
 
 export const SortOrder = {

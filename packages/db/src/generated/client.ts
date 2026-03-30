@@ -76,3 +76,8 @@ export type JoinRequest = Prisma.JoinRequestModel
  * 
  */
 export type Space = Prisma.SpaceModel
+/**
+ * Model Invitation
+ * 
+ */
+export type Invitation = Prisma.InvitationModel

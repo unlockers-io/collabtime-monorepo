@@ -201,6 +201,7 @@ export type SpaceWhereInput = {
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   memberships?: Prisma.MembershipListRelationFilter
   joinRequests?: Prisma.JoinRequestListRelationFilter
+  invitations?: Prisma.InvitationListRelationFilter
 }
 
 export type SpaceOrderByWithRelationInput = {
@@ -214,6 +215,7 @@ export type SpaceOrderByWithRelationInput = {
   owner?: Prisma.UserOrderByWithRelationInput
   memberships?: Prisma.MembershipOrderByRelationAggregateInput
   joinRequests?: Prisma.JoinRequestOrderByRelationAggregateInput
+  invitations?: Prisma.InvitationOrderByRelationAggregateInput
 }
 
 export type SpaceWhereUniqueInput = Prisma.AtLeast<{
@@ -230,6 +232,7 @@ export type SpaceWhereUniqueInput = Prisma.AtLeast<{
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   memberships?: Prisma.MembershipListRelationFilter
   joinRequests?: Prisma.JoinRequestListRelationFilter
+  invitations?: Prisma.InvitationListRelationFilter
 }, "id" | "teamId">
 
 export type SpaceOrderByWithAggregationInput = {
@@ -268,6 +271,7 @@ export type SpaceCreateInput = {
   owner: Prisma.UserCreateNestedOneWithoutSpacesInput
   memberships?: Prisma.MembershipCreateNestedManyWithoutSpaceInput
   joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutSpaceInput
+  invitations?: Prisma.InvitationCreateNestedManyWithoutSpaceInput
 }
 
 export type SpaceUncheckedCreateInput = {
@@ -280,6 +284,7 @@ export type SpaceUncheckedCreateInput = {
   updatedAt?: Date | string
   memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutSpaceInput
   joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutSpaceInput
+  invitations?: Prisma.InvitationUncheckedCreateNestedManyWithoutSpaceInput
 }
 
 export type SpaceUpdateInput = {
@@ -292,6 +297,7 @@ export type SpaceUpdateInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutSpacesNestedInput
   memberships?: Prisma.MembershipUpdateManyWithoutSpaceNestedInput
   joinRequests?: Prisma.JoinRequestUpdateManyWithoutSpaceNestedInput
+  invitations?: Prisma.InvitationUpdateManyWithoutSpaceNestedInput
 }
 
 export type SpaceUncheckedUpdateInput = {
@@ -304,6 +310,7 @@ export type SpaceUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.MembershipUncheckedUpdateManyWithoutSpaceNestedInput
   joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutSpaceNestedInput
+  invitations?: Prisma.InvitationUncheckedUpdateManyWithoutSpaceNestedInput
 }
 
 export type SpaceCreateManyInput = {
@@ -450,6 +457,20 @@ export type SpaceUpdateOneRequiredWithoutJoinRequestsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SpaceUpdateToOneWithWhereWithoutJoinRequestsInput, Prisma.SpaceUpdateWithoutJoinRequestsInput>, Prisma.SpaceUncheckedUpdateWithoutJoinRequestsInput>
 }
 
+export type SpaceCreateNestedOneWithoutInvitationsInput = {
+  create?: Prisma.XOR<Prisma.SpaceCreateWithoutInvitationsInput, Prisma.SpaceUncheckedCreateWithoutInvitationsInput>
+  connectOrCreate?: Prisma.SpaceCreateOrConnectWithoutInvitationsInput
+  connect?: Prisma.SpaceWhereUniqueInput
+}
+
+export type SpaceUpdateOneRequiredWithoutInvitationsNestedInput = {
+  create?: Prisma.XOR<Prisma.SpaceCreateWithoutInvitationsInput, Prisma.SpaceUncheckedCreateWithoutInvitationsInput>
+  connectOrCreate?: Prisma.SpaceCreateOrConnectWithoutInvitationsInput
+  upsert?: Prisma.SpaceUpsertWithoutInvitationsInput
+  connect?: Prisma.SpaceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SpaceUpdateToOneWithWhereWithoutInvitationsInput, Prisma.SpaceUpdateWithoutInvitationsInput>, Prisma.SpaceUncheckedUpdateWithoutInvitationsInput>
+}
+
 export type SpaceCreateWithoutOwnerInput = {
   id?: string
   teamId: string
@@ -459,6 +480,7 @@ export type SpaceCreateWithoutOwnerInput = {
   updatedAt?: Date | string
   memberships?: Prisma.MembershipCreateNestedManyWithoutSpaceInput
   joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutSpaceInput
+  invitations?: Prisma.InvitationCreateNestedManyWithoutSpaceInput
 }
 
 export type SpaceUncheckedCreateWithoutOwnerInput = {
@@ -470,6 +492,7 @@ export type SpaceUncheckedCreateWithoutOwnerInput = {
   updatedAt?: Date | string
   memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutSpaceInput
   joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutSpaceInput
+  invitations?: Prisma.InvitationUncheckedCreateNestedManyWithoutSpaceInput
 }
 
 export type SpaceCreateOrConnectWithoutOwnerInput = {
@@ -520,6 +543,7 @@ export type SpaceCreateWithoutMembershipsInput = {
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutSpacesInput
   joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutSpaceInput
+  invitations?: Prisma.InvitationCreateNestedManyWithoutSpaceInput
 }
 
 export type SpaceUncheckedCreateWithoutMembershipsInput = {
@@ -531,6 +555,7 @@ export type SpaceUncheckedCreateWithoutMembershipsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutSpaceInput
+  invitations?: Prisma.InvitationUncheckedCreateNestedManyWithoutSpaceInput
 }
 
 export type SpaceCreateOrConnectWithoutMembershipsInput = {
@@ -558,6 +583,7 @@ export type SpaceUpdateWithoutMembershipsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutSpacesNestedInput
   joinRequests?: Prisma.JoinRequestUpdateManyWithoutSpaceNestedInput
+  invitations?: Prisma.InvitationUpdateManyWithoutSpaceNestedInput
 }
 
 export type SpaceUncheckedUpdateWithoutMembershipsInput = {
@@ -569,6 +595,7 @@ export type SpaceUncheckedUpdateWithoutMembershipsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutSpaceNestedInput
+  invitations?: Prisma.InvitationUncheckedUpdateManyWithoutSpaceNestedInput
 }
 
 export type SpaceCreateWithoutJoinRequestsInput = {
@@ -580,6 +607,7 @@ export type SpaceCreateWithoutJoinRequestsInput = {
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutSpacesInput
   memberships?: Prisma.MembershipCreateNestedManyWithoutSpaceInput
+  invitations?: Prisma.InvitationCreateNestedManyWithoutSpaceInput
 }
 
 export type SpaceUncheckedCreateWithoutJoinRequestsInput = {
@@ -591,6 +619,7 @@ export type SpaceUncheckedCreateWithoutJoinRequestsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutSpaceInput
+  invitations?: Prisma.InvitationUncheckedCreateNestedManyWithoutSpaceInput
 }
 
 export type SpaceCreateOrConnectWithoutJoinRequestsInput = {
@@ -618,6 +647,7 @@ export type SpaceUpdateWithoutJoinRequestsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutSpacesNestedInput
   memberships?: Prisma.MembershipUpdateManyWithoutSpaceNestedInput
+  invitations?: Prisma.InvitationUpdateManyWithoutSpaceNestedInput
 }
 
 export type SpaceUncheckedUpdateWithoutJoinRequestsInput = {
@@ -629,6 +659,71 @@ export type SpaceUncheckedUpdateWithoutJoinRequestsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.MembershipUncheckedUpdateManyWithoutSpaceNestedInput
+  invitations?: Prisma.InvitationUncheckedUpdateManyWithoutSpaceNestedInput
+}
+
+export type SpaceCreateWithoutInvitationsInput = {
+  id?: string
+  teamId: string
+  isPrivate?: boolean
+  accessPassword?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutSpacesInput
+  memberships?: Prisma.MembershipCreateNestedManyWithoutSpaceInput
+  joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutSpaceInput
+}
+
+export type SpaceUncheckedCreateWithoutInvitationsInput = {
+  id?: string
+  teamId: string
+  isPrivate?: boolean
+  accessPassword?: string | null
+  ownerId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutSpaceInput
+  joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutSpaceInput
+}
+
+export type SpaceCreateOrConnectWithoutInvitationsInput = {
+  where: Prisma.SpaceWhereUniqueInput
+  create: Prisma.XOR<Prisma.SpaceCreateWithoutInvitationsInput, Prisma.SpaceUncheckedCreateWithoutInvitationsInput>
+}
+
+export type SpaceUpsertWithoutInvitationsInput = {
+  update: Prisma.XOR<Prisma.SpaceUpdateWithoutInvitationsInput, Prisma.SpaceUncheckedUpdateWithoutInvitationsInput>
+  create: Prisma.XOR<Prisma.SpaceCreateWithoutInvitationsInput, Prisma.SpaceUncheckedCreateWithoutInvitationsInput>
+  where?: Prisma.SpaceWhereInput
+}
+
+export type SpaceUpdateToOneWithWhereWithoutInvitationsInput = {
+  where?: Prisma.SpaceWhereInput
+  data: Prisma.XOR<Prisma.SpaceUpdateWithoutInvitationsInput, Prisma.SpaceUncheckedUpdateWithoutInvitationsInput>
+}
+
+export type SpaceUpdateWithoutInvitationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  teamId?: Prisma.StringFieldUpdateOperationsInput | string
+  isPrivate?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  accessPassword?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutSpacesNestedInput
+  memberships?: Prisma.MembershipUpdateManyWithoutSpaceNestedInput
+  joinRequests?: Prisma.JoinRequestUpdateManyWithoutSpaceNestedInput
+}
+
+export type SpaceUncheckedUpdateWithoutInvitationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  teamId?: Prisma.StringFieldUpdateOperationsInput | string
+  isPrivate?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  accessPassword?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.MembershipUncheckedUpdateManyWithoutSpaceNestedInput
+  joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutSpaceNestedInput
 }
 
 export type SpaceCreateManyOwnerInput = {
@@ -649,6 +744,7 @@ export type SpaceUpdateWithoutOwnerInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.MembershipUpdateManyWithoutSpaceNestedInput
   joinRequests?: Prisma.JoinRequestUpdateManyWithoutSpaceNestedInput
+  invitations?: Prisma.InvitationUpdateManyWithoutSpaceNestedInput
 }
 
 export type SpaceUncheckedUpdateWithoutOwnerInput = {
@@ -660,6 +756,7 @@ export type SpaceUncheckedUpdateWithoutOwnerInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.MembershipUncheckedUpdateManyWithoutSpaceNestedInput
   joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutSpaceNestedInput
+  invitations?: Prisma.InvitationUncheckedUpdateManyWithoutSpaceNestedInput
 }
 
 export type SpaceUncheckedUpdateManyWithoutOwnerInput = {
@@ -679,11 +776,13 @@ export type SpaceUncheckedUpdateManyWithoutOwnerInput = {
 export type SpaceCountOutputType = {
   memberships: number
   joinRequests: number
+  invitations: number
 }
 
 export type SpaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   memberships?: boolean | SpaceCountOutputTypeCountMembershipsArgs
   joinRequests?: boolean | SpaceCountOutputTypeCountJoinRequestsArgs
+  invitations?: boolean | SpaceCountOutputTypeCountInvitationsArgs
 }
 
 /**
@@ -710,6 +809,13 @@ export type SpaceCountOutputTypeCountJoinRequestsArgs<ExtArgs extends runtime.Ty
   where?: Prisma.JoinRequestWhereInput
 }
 
+/**
+ * SpaceCountOutputType without action
+ */
+export type SpaceCountOutputTypeCountInvitationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InvitationWhereInput
+}
+
 
 export type SpaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -722,6 +828,7 @@ export type SpaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   memberships?: boolean | Prisma.Space$membershipsArgs<ExtArgs>
   joinRequests?: boolean | Prisma.Space$joinRequestsArgs<ExtArgs>
+  invitations?: boolean | Prisma.Space$invitationsArgs<ExtArgs>
   _count?: boolean | Prisma.SpaceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["space"]>
 
@@ -762,6 +869,7 @@ export type SpaceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   memberships?: boolean | Prisma.Space$membershipsArgs<ExtArgs>
   joinRequests?: boolean | Prisma.Space$joinRequestsArgs<ExtArgs>
+  invitations?: boolean | Prisma.Space$invitationsArgs<ExtArgs>
   _count?: boolean | Prisma.SpaceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SpaceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -777,6 +885,7 @@ export type $SpacePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     owner: Prisma.$UserPayload<ExtArgs>
     memberships: Prisma.$MembershipPayload<ExtArgs>[]
     joinRequests: Prisma.$JoinRequestPayload<ExtArgs>[]
+    invitations: Prisma.$InvitationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1183,6 +1292,7 @@ export interface Prisma__SpaceClient<T, Null = never, ExtArgs extends runtime.Ty
   owner<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   memberships<T extends Prisma.Space$membershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Space$membershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MembershipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   joinRequests<T extends Prisma.Space$joinRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Space$joinRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$JoinRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  invitations<T extends Prisma.Space$invitationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Space$invitationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InvitationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1665,6 +1775,30 @@ export type Space$joinRequestsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.JoinRequestScalarFieldEnum | Prisma.JoinRequestScalarFieldEnum[]
+}
+
+/**
+ * Space.invitations
+ */
+export type Space$invitationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Invitation
+   */
+  select?: Prisma.InvitationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Invitation
+   */
+  omit?: Prisma.InvitationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InvitationInclude<ExtArgs> | null
+  where?: Prisma.InvitationWhereInput
+  orderBy?: Prisma.InvitationOrderByWithRelationInput | Prisma.InvitationOrderByWithRelationInput[]
+  cursor?: Prisma.InvitationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InvitationScalarFieldEnum | Prisma.InvitationScalarFieldEnum[]
 }
 
 /**

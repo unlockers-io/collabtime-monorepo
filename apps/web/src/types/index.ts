@@ -45,5 +45,22 @@ const isTeamRole = (value: unknown): value is TeamRole => {
   return typeof value === "string" && TEAM_ROLES.has(value);
 };
 
-export type { ServerSession, Team, TeamGroup, TeamMember, TeamRecord, TeamRole, TeamStatus };
+type PendingInvitation = {
+  id: string;
+  inviterName: string;
+  memberId: string;
+  teamId: string;
+  teamName: string;
+};
+
+export type {
+  PendingInvitation,
+  ServerSession,
+  Team,
+  TeamGroup,
+  TeamMember,
+  TeamRecord,
+  TeamRole,
+  TeamStatus,
+};
 export { isTeamRole };

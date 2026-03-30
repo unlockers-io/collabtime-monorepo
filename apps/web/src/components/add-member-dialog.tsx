@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
-import { addMember } from "@/lib/actions";
+import { addMember, inviteMember } from "@/lib/actions";
 import { COMMON_TIMEZONES, formatTimezoneLabel, getUserTimezone } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 import type { TeamGroup, TeamMember } from "@/types";
@@ -64,6 +64,7 @@ const getRandomPlaceholder = () =>
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address").or(z.literal("")),
   title: z.string(),
   timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
   workingHoursStart: z.number().min(0).max(23),
@@ -93,6 +94,7 @@ const AddMemberForm = ({
 
   const defaultValues: FormValues = {
     name: "",
+    email: "",
     title: "",
     timezone: defaultTimezone,
     workingHoursStart: 9,
@@ -106,16 +108,30 @@ const AddMemberForm = ({
       onBlur: formSchema,
     },
     onSubmit: async ({ value }) => {
+      const { email: emailValue, ...memberData } = value;
       const result = await addMember(teamId, {
-        ...value,
-        title: value.title || "",
-        groupId: value.groupId || undefined,
+        ...memberData,
+        title: memberData.title || "",
+        groupId: memberData.groupId || undefined,
       });
 
       if (result.success) {
         onOpenChange(false);
         onMemberAdded(result.data.member);
         toast.success(`${value.name} added to team`);
+
+        if (emailValue) {
+          const inviteResult = await inviteMember(teamId, result.data.member.id, emailValue);
+          if (inviteResult.success) {
+            if (inviteResult.data.emailSent) {
+              toast.success(`Invitation sent to ${emailValue}`);
+            } else {
+              toast.success(`Invitation created for ${emailValue}`);
+            }
+          } else {
+            toast.error(inviteResult.error);
+          }
+        }
       } else {
         toast.error(result.error);
       }
@@ -156,6 +172,31 @@ const AddMemberForm = ({
                 onBlur={field.handleBlur}
                 aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
               />
+              {field.state.meta.isTouched && !field.state.meta.isValid && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
+          )}
+        </form.Field>
+
+        <form.Field name="email">
+          {(field) => (
+            <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <FieldLabel htmlFor="member-email">Email (optional)</FieldLabel>
+              <Input
+                id="member-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="jane@example.com"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+              />
+              <p className="text-xs text-muted-foreground">
+                Send an invitation to this email address.
+              </p>
               {field.state.meta.isTouched && !field.state.meta.isValid && (
                 <FieldError errors={field.state.meta.errors} />
               )}

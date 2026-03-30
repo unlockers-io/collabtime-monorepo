@@ -1,8 +1,8 @@
 "use client";
 
-import { buttonVariants, cn, Spinner } from "@repo/ui";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Shield, Users } from "lucide-react";
+import { Button, buttonVariants, cn, Spinner } from "@repo/ui";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, Check, Mail, Shield, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,8 +10,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Nav } from "@/components/nav";
-import { createTeam } from "@/lib/actions";
+import { acceptInvitation, createTeam, declineInvitation } from "@/lib/actions";
 import { useSession } from "@/lib/auth-client";
+import type { PendingInvitation } from "@/types";
 
 type MyTeam = {
   memberCount: number;
@@ -23,9 +24,65 @@ type MyTeam = {
 const Home = () => {
   const router = useRouter();
   const { data: session } = useSession();
+  const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
+  const [processingInvitations, setProcessingInvitations] = useState<Set<string>>(new Set());
 
   const isAuthenticated = Boolean(session?.user);
+
+  const { data: invitations = [] } = useQuery<Array<PendingInvitation>>({
+    queryKey: ["my-invitations"],
+    queryFn: async () => {
+      const response = await fetch("/api/invitations");
+      if (!response.ok) {
+        throw new Error("Failed to fetch invitations");
+      }
+      const data = (await response.json()) as { invitations: Array<PendingInvitation> };
+      return data.invitations;
+    },
+    enabled: isAuthenticated,
+  });
+
+  const handleAcceptInvitation = async (invitation: PendingInvitation) => {
+    setProcessingInvitations((prev) => new Set(prev).add(invitation.id));
+    try {
+      const result = await acceptInvitation(invitation.id);
+      if (result.success) {
+        toast.success(`Joined ${invitation.teamName}`);
+        await Promise.allSettled([
+          queryClient.invalidateQueries({ queryKey: ["my-invitations"] }),
+          queryClient.invalidateQueries({ queryKey: ["my-teams"] }),
+        ]);
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setProcessingInvitations((prev) => {
+        const next = new Set(prev);
+        next.delete(invitation.id);
+        return next;
+      });
+    }
+  };
+
+  const handleDeclineInvitation = async (invitation: PendingInvitation) => {
+    setProcessingInvitations((prev) => new Set(prev).add(invitation.id));
+    try {
+      const result = await declineInvitation(invitation.id);
+      if (result.success) {
+        toast.success("Invitation declined");
+        await queryClient.invalidateQueries({ queryKey: ["my-invitations"] });
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setProcessingInvitations((prev) => {
+        const next = new Set(prev);
+        next.delete(invitation.id);
+        return next;
+      });
+    }
+  };
 
   const { data: myTeams = [], isLoading: isLoadingTeams } = useQuery({
     queryKey: ["my-teams"],
@@ -114,6 +171,91 @@ const Home = () => {
             </div>
           )}
         </div>
+
+        {/* Pending Invitations */}
+        <AnimatePresence>
+          {isAuthenticated && invitations.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{
+                duration: 0.6,
+                delay: 0.2,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="flex w-full flex-col gap-3"
+            >
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-medium text-muted-foreground">Pending Invitations</h2>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <AnimatePresence mode="popLayout">
+                  {invitations.map((invitation) => {
+                    const isProcessing = processingInvitations.has(invitation.id);
+                    return (
+                      <motion.div
+                        key={invitation.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                            <Mail className="h-4 w-4 text-primary" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-foreground">
+                              {invitation.teamName}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Invited by {invitation.inviterName}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={isProcessing}
+                            onClick={() => handleDeclineInvitation(invitation)}
+                            aria-label={`Decline invitation to ${invitation.teamName}`}
+                          >
+                            {isProcessing ? (
+                              <Spinner className="h-4 w-4" />
+                            ) : (
+                              <X className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            disabled={isProcessing}
+                            onClick={() => handleAcceptInvitation(invitation)}
+                            aria-label={`Accept invitation to ${invitation.teamName}`}
+                          >
+                            {isProcessing ? (
+                              <Spinner className="h-4 w-4" />
+                            ) : (
+                              <>
+                                <Check className="h-4 w-4" />
+                                Accept
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* My Teams */}
         <AnimatePresence>
