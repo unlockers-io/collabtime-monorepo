@@ -20,12 +20,13 @@ import {
   Spinner,
 } from "@repo/ui";
 import { useForm } from "@tanstack/react-form";
-import { useTransition } from "react";
+import { Mail } from "lucide-react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
-import { updateMember, updateOwnMember } from "@/lib/actions";
+import { inviteMember, updateMember, updateOwnMember } from "@/lib/actions";
 import { COMMON_TIMEZONES, formatTimezoneLabel } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 import type { TeamGroup, TeamMember } from "@/types";
@@ -72,6 +73,27 @@ const EditMemberForm = ({
 }: EditMemberFormProps) => {
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [isInviting, setIsInviting] = useState(false);
+
+  const handleSendInvitation = async () => {
+    setIsInviting(true);
+    try {
+      const result = await inviteMember(teamId, member.id, inviteEmail);
+      if (result.success) {
+        if (result.data.emailSent) {
+          toast.success(`Invitation sent to ${inviteEmail}`);
+        } else {
+          toast.success(`Invitation created for ${inviteEmail}`);
+        }
+        setInviteEmail("");
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setIsInviting(false);
+    }
+  };
 
   const defaultValues: FormValues = {
     name: member.name,
@@ -297,6 +319,32 @@ const EditMemberForm = ({
             </form.Field>
           </div>
         </div>
+
+        {!isClaim && !member.userId && (
+          <div className="border-t border-border pt-4">
+            <FieldLabel htmlFor="invite-email">Invite User</FieldLabel>
+            <div className="flex gap-2">
+              <Input
+                id="invite-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="jane@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                aria-label="Send invitation"
+                disabled={isInviting || !inviteEmail}
+                onClick={handleSendInvitation}
+              >
+                {isInviting ? <Spinner /> : <Mail className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        )}
 
         <DialogFooter>
           <Button
