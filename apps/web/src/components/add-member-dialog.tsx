@@ -104,7 +104,6 @@ const AddMemberForm = ({
     defaultValues,
     validators: {
       onBlur: formSchema,
-      onChange: formSchema,
     },
     onSubmit: async ({ value }) => {
       const result = await addMember(teamId, {

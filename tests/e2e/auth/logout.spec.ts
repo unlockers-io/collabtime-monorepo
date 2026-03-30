@@ -3,8 +3,7 @@ import { test, expect } from "../fixtures/auth.fixture";
 // Use a separate session so signing out doesn't invalidate the shared test user's session
 test.use({ storageState: { cookies: [], origins: [] } });
 
-// TODO: Admin UI doesn't render in CI — Better Auth session detection issue
-// See: https://github.com/unlockers-io/collabtime-monorepo/issues/TBD
+// Skip: admin UI doesn't render in CI production builds (Better Auth session detection)
 test.describe.skip("Logout", () => {
   test("signs out from the team page and redirects to home", async ({
     homePage,

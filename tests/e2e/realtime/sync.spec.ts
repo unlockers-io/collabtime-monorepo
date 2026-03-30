@@ -2,8 +2,7 @@ import { expect, test } from "../fixtures/auth.fixture";
 
 const STORAGE_STATE = "tests/e2e/.auth/user.json";
 
-// TODO: Admin UI doesn't render in CI — Better Auth session detection issue
-// See: https://github.com/unlockers-io/collabtime-monorepo/issues/TBD
+// Skip: admin UI doesn't render in CI production builds (Better Auth session detection)
 test.describe.skip("Realtime Sync", () => {
   let teamId: string;
 
