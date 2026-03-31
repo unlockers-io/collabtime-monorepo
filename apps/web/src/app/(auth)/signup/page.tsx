@@ -35,8 +35,7 @@ const SignupPage = () => {
   const form = useForm({
     defaultValues,
     validators: {
-      onBlur: signupSchema,
-      onChange: signupSchema,
+      onSubmit: signupSchema,
     },
     onSubmit: async ({ value }) => {
       setIsLoading(true);
@@ -84,7 +83,7 @@ const SignupPage = () => {
         >
           <form.Field name="name">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="name">Name</FieldLabel>
                 <div className="relative">
                   <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -97,19 +96,17 @@ const SignupPage = () => {
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
-                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    aria-invalid={!field.state.meta.isValid}
                   />
                 </div>
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>
 
           <form.Field name="email">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <div className="relative">
                   <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -122,19 +119,17 @@ const SignupPage = () => {
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
-                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    aria-invalid={!field.state.meta.isValid}
                   />
                 </div>
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>
 
           <form.Field name="password">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
                 <div className="relative">
                   <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -147,12 +142,10 @@ const SignupPage = () => {
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
-                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    aria-invalid={!field.state.meta.isValid}
                   />
                 </div>
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>

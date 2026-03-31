@@ -11,7 +11,9 @@ vi.mock("@repo/db", () => ({
   },
 }));
 vi.mock("../redis", () => ({ redis: { set: vi.fn() }, TEAM_INITIAL_TTL_SECONDS: 100 }));
-vi.mock("uuid", () => ({ v4: vi.fn(() => "test-team-id") }));
+
+let uuidCounter = 0;
+vi.mock("uuid", () => ({ v4: vi.fn(() => `test-uuid-${uuidCounter++}`) }));
 
 import { prisma } from "@repo/db";
 
@@ -21,16 +23,19 @@ import { redis } from "../redis";
 
 import { createTeam } from "./team-create";
 
+const TEST_TIMEZONE = "America/New_York";
+
 describe("createTeam", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    uuidCounter = 0;
   });
 
   it("returns error when not authenticated", async () => {
     vi.mocked(requireAuth).mockRejectedValue(new Error("Unauthorized"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const result = await createTeam();
+    const result = await createTeam(TEST_TIMEZONE);
 
     expect(result).toEqual({ success: false, error: "Failed to create team" });
     spy.mockRestore();
@@ -42,31 +47,38 @@ describe("createTeam", () => {
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
     vi.mocked(redis.set).mockResolvedValue("OK" as never);
 
-    await createTeam();
+    await createTeam(TEST_TIMEZONE);
 
     expect(prisma.$transaction).toHaveBeenCalledWith([
       prisma.space.create({
-        data: { teamId: "test-team-id", isPrivate: false, ownerId: "user-123" },
+        data: { teamId: "test-uuid-0", isPrivate: false, ownerId: "user-123" },
       }),
       prisma.membership.create({
-        data: { userId: "user-123", teamId: "test-team-id", role: "ADMIN" },
+        data: { userId: "user-123", teamId: "test-uuid-0", role: "ADMIN" },
       }),
     ]);
   });
 
-  it("populates redis cache after commit", async () => {
+  it("populates redis cache with creator as first member", async () => {
     const session = createMockSession();
     vi.mocked(requireAuth).mockResolvedValue(session as never);
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
     vi.mocked(redis.set).mockResolvedValue("OK" as never);
 
-    await createTeam();
+    await createTeam(TEST_TIMEZONE);
 
-    expect(redis.set).toHaveBeenCalledWith(
-      "team:test-team-id",
-      expect.stringContaining('"id":"test-team-id"'),
-      { ex: 100 },
-    );
+    const redisCall = vi.mocked(redis.set).mock.calls[0];
+    const storedTeam = JSON.parse(redisCall[1] as string);
+
+    expect(storedTeam.members).toHaveLength(1);
+    expect(storedTeam.members[0]).toMatchObject({
+      name: "Test User",
+      timezone: TEST_TIMEZONE,
+      userId: "user-123",
+      workingHoursStart: 9,
+      workingHoursEnd: 17,
+      order: 0,
+    });
   });
 
   it("succeeds even if redis cache fails", async () => {
@@ -76,9 +88,9 @@ describe("createTeam", () => {
     vi.mocked(redis.set).mockRejectedValue(new Error("Redis down"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const result = await createTeam();
+    const result = await createTeam(TEST_TIMEZONE);
 
-    expect(result).toEqual({ success: true, data: "test-team-id" });
+    expect(result).toEqual({ success: true, data: "test-uuid-0" });
     expect(spy).toHaveBeenCalledWith(
       "Post-commit Redis cache failed (team created in Postgres):",
       expect.any(Error),
@@ -92,8 +104,8 @@ describe("createTeam", () => {
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
     vi.mocked(redis.set).mockResolvedValue("OK" as never);
 
-    const result = await createTeam();
+    const result = await createTeam(TEST_TIMEZONE);
 
-    expect(result).toEqual({ success: true, data: "test-team-id" });
+    expect(result).toEqual({ success: true, data: "test-uuid-0" });
   });
 });

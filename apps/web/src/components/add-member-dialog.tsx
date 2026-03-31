@@ -105,7 +105,7 @@ const AddMemberForm = ({
   const form = useForm({
     defaultValues,
     validators: {
-      onBlur: formSchema,
+      onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
       const { email: emailValue, ...memberData } = value;
@@ -162,7 +162,7 @@ const AddMemberForm = ({
       <div className="flex flex-col gap-4 py-4">
         <form.Field name="name">
           {(field) => (
-            <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+            <Field data-invalid={!field.state.meta.isValid}>
               <FieldLabel htmlFor="member-name">Name *</FieldLabel>
               <Input
                 id="member-name"
@@ -170,18 +170,16 @@ const AddMemberForm = ({
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
-                aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                aria-invalid={!field.state.meta.isValid}
               />
-              {field.state.meta.isTouched && !field.state.meta.isValid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )}
         </form.Field>
 
         <form.Field name="email">
           {(field) => (
-            <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+            <Field data-invalid={!field.state.meta.isValid}>
               <FieldLabel htmlFor="member-email">Email (optional)</FieldLabel>
               <Input
                 id="member-email"
@@ -192,21 +190,19 @@ const AddMemberForm = ({
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
-                aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                aria-invalid={!field.state.meta.isValid}
               />
               <p className="text-xs text-muted-foreground">
                 Send an invitation to this email address.
               </p>
-              {field.state.meta.isTouched && !field.state.meta.isValid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )}
         </form.Field>
 
         <form.Field name="title">
           {(field) => (
-            <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+            <Field data-invalid={!field.state.meta.isValid}>
               <FieldLabel htmlFor="member-title">Title (optional)</FieldLabel>
               <Input
                 id="member-title"
@@ -214,18 +210,16 @@ const AddMemberForm = ({
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 placeholder={titlePlaceholder}
-                aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                aria-invalid={!field.state.meta.isValid}
               />
-              {field.state.meta.isTouched && !field.state.meta.isValid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )}
         </form.Field>
 
         <form.Field name="timezone">
           {(field) => (
-            <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+            <Field data-invalid={!field.state.meta.isValid}>
               <FieldLabel htmlFor="member-timezone">Timezone</FieldLabel>
               <Select
                 value={field.state.value}
@@ -237,10 +231,7 @@ const AddMemberForm = ({
                   field.handleBlur();
                 }}
               >
-                <SelectTrigger
-                  id="member-timezone"
-                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                >
+                <SelectTrigger id="member-timezone" aria-invalid={!field.state.meta.isValid}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -251,9 +242,7 @@ const AddMemberForm = ({
                   ))}
                 </SelectContent>
               </Select>
-              {field.state.meta.isTouched && !field.state.meta.isValid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )}
         </form.Field>
@@ -261,11 +250,11 @@ const AddMemberForm = ({
         {groups.length > 0 && (
           <form.Field name="groupId">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="member-group">Group (optional)</FieldLabel>
                 <GroupSelector
                   id="member-group"
-                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                  aria-invalid={!field.state.meta.isValid}
                   groups={groups}
                   value={field.state.value || undefined}
                   onValueChange={(value) => {
@@ -274,9 +263,7 @@ const AddMemberForm = ({
                   }}
                   placeholder="No group"
                 />
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>
@@ -285,7 +272,7 @@ const AddMemberForm = ({
         <div className="grid grid-cols-2 gap-4">
           <form.Field name="workingHoursStart">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="member-work-start">Work Starts</FieldLabel>
                 <Select
                   value={String(field.state.value)}
@@ -297,10 +284,7 @@ const AddMemberForm = ({
                     field.handleBlur();
                   }}
                 >
-                  <SelectTrigger
-                    id="member-work-start"
-                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                  >
+                  <SelectTrigger id="member-work-start" aria-invalid={!field.state.meta.isValid}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -311,16 +295,14 @@ const AddMemberForm = ({
                     ))}
                   </SelectContent>
                 </Select>
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>
 
           <form.Field name="workingHoursEnd">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="member-work-end">Work Ends</FieldLabel>
                 <Select
                   value={String(field.state.value)}
@@ -332,10 +314,7 @@ const AddMemberForm = ({
                     field.handleBlur();
                   }}
                 >
-                  <SelectTrigger
-                    id="member-work-end"
-                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                  >
+                  <SelectTrigger id="member-work-end" aria-invalid={!field.state.meta.isValid}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -346,9 +325,7 @@ const AddMemberForm = ({
                     ))}
                   </SelectContent>
                 </Select>
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>

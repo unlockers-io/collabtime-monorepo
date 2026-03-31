@@ -59,8 +59,7 @@ const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDia
   const form = useForm({
     defaultValues,
     validators: {
-      onBlur: spaceSettingsSchema,
-      onChange: spaceSettingsSchema,
+      onSubmit: spaceSettingsSchema,
     },
     onSubmit: async ({ value }) => {
       if (!space) {
@@ -299,7 +298,7 @@ const SpaceSettingsDialog = ({ teamId, space, onSpaceUpdated }: SpaceSettingsDia
                                     )}
                                   </button>
                                 </div>
-                                {field.state.meta.isTouched && !field.state.meta.isValid && (
+                                {!field.state.meta.isValid && (
                                   <FieldError errors={field.state.meta.errors} />
                                 )}
                                 {space.hasPassword && changePasswordValue && (

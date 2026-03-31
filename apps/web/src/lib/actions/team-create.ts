@@ -4,13 +4,13 @@ import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 
 import { requireAuth } from "@/lib/team-auth";
-import type { TeamRecord } from "@/types";
+import type { TeamMember, TeamRecord } from "@/types";
 
 import { redis, TEAM_INITIAL_TTL_SECONDS } from "../redis";
 
 import type { ActionResult } from "./types";
 
-const createTeam = async (): Promise<ActionResult<string>> => {
+const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
   try {
     const session = await requireAuth();
 
@@ -36,11 +36,22 @@ const createTeam = async (): Promise<ActionResult<string>> => {
 
     // Post-commit: populate Redis cache (best-effort)
     try {
+      const creatorMember: TeamMember = {
+        id: uuidv4(),
+        name: session.user.name ?? "",
+        timezone,
+        title: "",
+        workingHoursStart: 9,
+        workingHoursEnd: 17,
+        order: 0,
+        userId: session.user.id,
+      };
+
       const team: TeamRecord = {
         id: teamId,
         name: "",
         createdAt: new Date().toISOString(),
-        members: [],
+        members: [creatorMember],
         groups: [],
       };
 
