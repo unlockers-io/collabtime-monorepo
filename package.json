@@ -44,6 +44,18 @@
   "pnpm": {
     "overrides": {
       "@types/pg": "8.11.11"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@prisma/client",
+      "@prisma/engines",
+      "@swc/core",
+      "@tailwindcss/oxide",
+      "esbuild",
+      "msw",
+      "prisma",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }
