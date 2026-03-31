@@ -11,7 +11,7 @@ test.describe("Create Workspace", () => {
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
 
     // Should see the team page with the creator already added
-    await expect(page.getByText(/team members/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /team members/i })).toBeVisible();
   });
 
   test("new workspace appears in My Teams list", async ({ homePage, page }) => {
