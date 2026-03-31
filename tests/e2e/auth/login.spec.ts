@@ -29,7 +29,7 @@ test.describe("Login", () => {
     const emailInput = page.getByLabel("Email");
     await emailInput.click();
     await emailInput.pressSequentially("not-an-email", { delay: 10 });
-    await page.keyboard.press("Tab");
+    await page.getByRole("button", { name: /sign in/i }).click();
 
     await expect(page.getByText(/valid email/i)).toBeVisible();
   });
@@ -37,9 +37,10 @@ test.describe("Login", () => {
   test("shows validation error for empty password", async ({ loginPage, page }) => {
     await loginPage.goto();
 
-    const passwordInput = page.getByLabel("Password");
-    await passwordInput.focus();
-    await page.keyboard.press("Tab");
+    const emailInput = page.getByLabel("Email");
+    await emailInput.click();
+    await emailInput.pressSequentially("test@example.com", { delay: 10 });
+    await page.getByRole("button", { name: /sign in/i }).click();
 
     await expect(page.getByText(/password is required/i)).toBeVisible();
   });
