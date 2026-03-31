@@ -115,6 +115,7 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
         maxAge: 5 * 60, // 5 minutes
       },
       expiresIn: 60 * 60 * 24 * 7, // 7 days
+      storeSessionInDatabase: true,
       updateAge: 60 * 60 * 24, // Update session if older than 1 day
     },
 
