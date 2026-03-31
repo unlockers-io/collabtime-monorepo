@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Nav } from "@/components/nav";
 import { acceptInvitation, createTeam, declineInvitation } from "@/lib/actions";
 import { useSession } from "@/lib/auth-client";
+import { getUserTimezone } from "@/lib/timezones";
 import type { PendingInvitation } from "@/types";
 
 type MyTeam = {
@@ -105,7 +106,7 @@ const Home = () => {
 
     setIsCreating(true);
     try {
-      const result = await createTeam();
+      const result = await createTeam(getUserTimezone());
       if (!result.success) {
         toast.error(result.error);
         return;

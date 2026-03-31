@@ -38,8 +38,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
   const form = useForm({
     defaultValues,
     validators: {
-      onBlur: passwordSchema,
-      onChange: passwordSchema,
+      onSubmit: passwordSchema,
     },
     onSubmit: async ({ value }) => {
       setIsLoading(true);
@@ -93,7 +92,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
         >
           <form.Field name="password">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="password" className="flex items-center gap-2">
                   <Lock className="h-4 w-4" />
                   Enter Password
@@ -117,9 +116,7 @@ const PasswordGate = ({ spaceId, teamName }: PasswordGateProps) => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>

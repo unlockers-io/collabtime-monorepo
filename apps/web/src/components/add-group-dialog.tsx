@@ -49,7 +49,7 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
   const form = useForm({
     defaultValues,
     validators: {
-      onBlur: formSchema,
+      onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
       const result = await createGroup(teamId, { name: value.name });
@@ -108,7 +108,7 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
           <div className="py-4">
             <form.Field name="name">
               {(field) => (
-                <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <Field data-invalid={!field.state.meta.isValid}>
                   <FieldLabel htmlFor="group-name">Group Name</FieldLabel>
                   <Input
                     id="group-name"
@@ -116,11 +116,9 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
-                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    aria-invalid={!field.state.meta.isValid}
                   />
-                  {field.state.meta.isTouched && !field.state.meta.isValid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )}
             </form.Field>

@@ -107,7 +107,7 @@ const EditMemberForm = ({
   const form = useForm({
     defaultValues,
     validators: {
-      onBlur: formSchema,
+      onSubmit: formSchema,
     },
     onSubmit: ({ value }) => {
       startTransition(async () => {
@@ -161,7 +161,7 @@ const EditMemberForm = ({
         <div className="flex flex-col gap-4 py-2">
           <form.Field name="name">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="edit-name">Name</FieldLabel>
                 <Input
                   id="edit-name"
@@ -169,18 +169,16 @@ const EditMemberForm = ({
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
-                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                  aria-invalid={!field.state.meta.isValid}
                 />
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>
 
           <form.Field name="title">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="edit-title">Title (optional)</FieldLabel>
                 <Input
                   id="edit-title"
@@ -188,18 +186,16 @@ const EditMemberForm = ({
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                   placeholder="Software Engineer"
-                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                  aria-invalid={!field.state.meta.isValid}
                 />
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>
 
           <form.Field name="timezone">
             {(field) => (
-              <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+              <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="edit-timezone">Timezone</FieldLabel>
                 <Select
                   value={field.state.value}
@@ -208,10 +204,7 @@ const EditMemberForm = ({
                     field.handleBlur();
                   }}
                 >
-                  <SelectTrigger
-                    id="edit-timezone"
-                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                  >
+                  <SelectTrigger id="edit-timezone" aria-invalid={!field.state.meta.isValid}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -222,9 +215,7 @@ const EditMemberForm = ({
                     ))}
                   </SelectContent>
                 </Select>
-                {field.state.meta.isTouched && !field.state.meta.isValid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )}
           </form.Field>
@@ -232,11 +223,11 @@ const EditMemberForm = ({
           {!isClaim && groups.length > 0 && (
             <form.Field name="groupId">
               {(field) => (
-                <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <Field data-invalid={!field.state.meta.isValid}>
                   <FieldLabel htmlFor="edit-group">Group</FieldLabel>
                   <GroupSelector
                     id="edit-group"
-                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    aria-invalid={!field.state.meta.isValid}
                     groups={groups}
                     value={field.state.value || undefined}
                     onValueChange={(value) => {
@@ -245,9 +236,7 @@ const EditMemberForm = ({
                     }}
                     placeholder="No group"
                   />
-                  {field.state.meta.isTouched && !field.state.meta.isValid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )}
             </form.Field>
@@ -256,7 +245,7 @@ const EditMemberForm = ({
           <div className="grid grid-cols-2 gap-4">
             <form.Field name="workingHoursStart">
               {(field) => (
-                <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <Field data-invalid={!field.state.meta.isValid}>
                   <FieldLabel htmlFor="edit-work-start">Work Starts</FieldLabel>
                   <Select
                     value={String(field.state.value)}
@@ -265,10 +254,7 @@ const EditMemberForm = ({
                       field.handleBlur();
                     }}
                   >
-                    <SelectTrigger
-                      id="edit-work-start"
-                      aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                    >
+                    <SelectTrigger id="edit-work-start" aria-invalid={!field.state.meta.isValid}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -279,16 +265,14 @@ const EditMemberForm = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  {field.state.meta.isTouched && !field.state.meta.isValid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )}
             </form.Field>
 
             <form.Field name="workingHoursEnd">
               {(field) => (
-                <Field data-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
+                <Field data-invalid={!field.state.meta.isValid}>
                   <FieldLabel htmlFor="edit-work-end">Work Ends</FieldLabel>
                   <Select
                     value={String(field.state.value)}
@@ -297,10 +281,7 @@ const EditMemberForm = ({
                       field.handleBlur();
                     }}
                   >
-                    <SelectTrigger
-                      id="edit-work-end"
-                      aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                    >
+                    <SelectTrigger id="edit-work-end" aria-invalid={!field.state.meta.isValid}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -311,9 +292,7 @@ const EditMemberForm = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  {field.state.meta.isTouched && !field.state.meta.isValid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )}
             </form.Field>

@@ -24,9 +24,7 @@ test.describe("Register", () => {
   test("shows validation error for empty name", async ({ page, signupPage }) => {
     await signupPage.goto();
 
-    const nameInput = page.getByLabel("Name");
-    await nameInput.focus();
-    await page.keyboard.press("Tab");
+    await page.getByRole("button", { name: /create account/i }).click();
 
     await expect(page.getByText(/name is required/i)).toBeVisible();
   });
@@ -34,10 +32,14 @@ test.describe("Register", () => {
   test("shows validation error for invalid email", async ({ page, signupPage }) => {
     await signupPage.goto();
 
+    const nameInput = page.getByLabel("Name");
+    await nameInput.click();
+    await nameInput.pressSequentially("Test User", { delay: 10 });
+
     const emailInput = page.getByLabel("Email");
     await emailInput.click();
     await emailInput.pressSequentially("bad-email", { delay: 10 });
-    await page.keyboard.press("Tab");
+    await page.getByRole("button", { name: /create account/i }).click();
 
     await expect(page.getByText(/valid email/i)).toBeVisible();
   });
@@ -45,10 +47,18 @@ test.describe("Register", () => {
   test("shows validation error for short password", async ({ page, signupPage }) => {
     await signupPage.goto();
 
+    const nameInput = page.getByLabel("Name");
+    await nameInput.click();
+    await nameInput.pressSequentially("Test User", { delay: 10 });
+
+    const emailInput = page.getByLabel("Email");
+    await emailInput.click();
+    await emailInput.pressSequentially("test@example.com", { delay: 10 });
+
     const passwordInput = page.getByLabel("Password");
     await passwordInput.click();
     await passwordInput.pressSequentially("short", { delay: 10 });
-    await page.keyboard.press("Tab");
+    await page.getByRole("button", { name: /create account/i }).click();
 
     await expect(page.getByText(/at least 8 characters/i)).toBeVisible();
   });
