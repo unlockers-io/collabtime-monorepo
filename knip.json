@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "exclude": ["unresolved", "exports", "types", "unlisted"],
+  "ignore": ["packages/db/src/generated/**", "packages/ui/src/styles/globals.css"],
+  "ignoreBinaries": ["portless"],
+  "ignoreDependencies": [
+    "tailwindcss",
+    "tw-animate-css",
+    "@tailwindcss/postcss",
+    "@repo/tailwind-config",
+    "oxlint-config-awesomeness",
+    "react-scan",
+    "@testing-library/user-event",
+    "@vitest/coverage-v8"
+  ],
+  "workspaces": {
+    ".": {
+      "entry": ["tests/e2e/**/*.{ts,tsx}"]
+    }
+  }
+}

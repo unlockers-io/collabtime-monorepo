@@ -17,10 +17,12 @@
     "test": "turbo run test",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "knip": "knip",
     "prepare": "husky"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.0",
+    "@upstash/redis": "^1.37.0",
     "husky": "^9.1.7",
     "knip": "^6.1.1",
     "lint-staged": "^16.4.0",
