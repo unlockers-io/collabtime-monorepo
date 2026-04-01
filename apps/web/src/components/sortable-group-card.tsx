@@ -41,4 +41,3 @@ const SortableGroupCard = (props: SortableGroupCardProps) => {
 };
 
 export { SortableGroupCard };
-export type { SortableGroupCardProps };

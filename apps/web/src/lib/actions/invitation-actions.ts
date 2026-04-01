@@ -265,4 +265,4 @@ const declineInvitation = async (invitationId: string): Promise<ActionResult<voi
   }
 };
 
-export { acceptInvitation, declineInvitation, getMyInvitations, inviteMember };
+export { acceptInvitation, declineInvitation, inviteMember };

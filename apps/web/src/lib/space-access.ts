@@ -164,9 +164,4 @@ const hasSpaceAccess = async (
   return result.valid;
 };
 
-export {
-  SPACE_ACCESS_COOKIE_PREFIX,
-  createSpaceAccessToken,
-  verifySpaceAccessToken,
-  hasSpaceAccess,
-};
+export { SPACE_ACCESS_COOKIE_PREFIX, createSpaceAccessToken, verifySpaceAccessToken };

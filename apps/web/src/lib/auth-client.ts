@@ -6,6 +6,6 @@ const authClient = createBetterAuthClient({
   baseURL: typeof window !== "undefined" ? window.location.origin : "",
 });
 
-const { signIn, signUp, signOut, useSession, getSession } = authClient;
+const { signIn, signUp, signOut, useSession } = authClient;
 
-export { authClient, signIn, signUp, signOut, useSession, getSession };
+export { authClient, signIn, signUp, signOut, useSession };

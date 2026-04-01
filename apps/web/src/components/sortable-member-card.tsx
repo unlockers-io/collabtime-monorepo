@@ -42,4 +42,3 @@ const SortableMemberCard = (props: SortableMemberCardProps) => {
 };
 
 export { SortableMemberCard };
-export type { SortableMemberCardProps };

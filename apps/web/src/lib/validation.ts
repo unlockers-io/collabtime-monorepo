@@ -54,8 +54,6 @@ const TeamAuthInputSchema = z.object({
 
 export {
   PasswordSchema,
-  TeamAuthInputSchema,
-  TeamCreateInputSchema,
   TeamGroupInputSchema,
   TeamGroupUpdateSchema,
   TeamMemberInputSchema,

@@ -60,4 +60,4 @@ const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2; // 2 years
 // TTL for sessions (24 hours)
 const SESSION_TTL_SECONDS = 60 * 60 * 24;
 
-export { redis, getRedis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS, SESSION_TTL_SECONDS };
+export { redis, getRedis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };
