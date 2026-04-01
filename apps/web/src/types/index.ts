@@ -29,12 +29,6 @@ type TeamRecord = Team & {
   adminPasswordHash?: string;
 };
 
-type ServerSession = {
-  createdAt: number;
-  role: "ADMIN" | "MEMBER";
-  teamId: string;
-};
-
 type TeamRole = "ADMIN" | "MEMBER";
 
 type TeamStatus = "ADMIN" | "MEMBER" | "PENDING" | "none";
@@ -53,14 +47,5 @@ type PendingInvitation = {
   teamName: string;
 };
 
-export type {
-  PendingInvitation,
-  ServerSession,
-  Team,
-  TeamGroup,
-  TeamMember,
-  TeamRecord,
-  TeamRole,
-  TeamStatus,
-};
+export type { PendingInvitation, Team, TeamGroup, TeamMember, TeamRecord, TeamRole, TeamStatus };
 export { isTeamRole };

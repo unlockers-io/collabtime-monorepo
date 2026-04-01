@@ -89,5 +89,5 @@ const realtime = new Proxy({} as RealtimeInstance, {
   },
 });
 
-export { realtime, getRealtime, isRealtimeAvailable };
+export { realtime };
 export type { RealtimeEvents };

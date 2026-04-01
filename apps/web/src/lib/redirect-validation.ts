@@ -37,4 +37,4 @@ const redirectUrlSchema = z
   .url()
   .refine(isValidRedirectUrl, { message: "Invalid redirect URL" });
 
-export { ALLOWED_ORIGINS, isValidRedirectUrl, redirectUrlSchema };
+export { isValidRedirectUrl, redirectUrlSchema };

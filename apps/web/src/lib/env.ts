@@ -76,5 +76,4 @@ const isEnvValid = (): boolean => {
   return result.success;
 };
 
-export { validateEnv, getEnv, isEnvValid, envSchema };
-export type { Env };
+export { validateEnv, getEnv };
