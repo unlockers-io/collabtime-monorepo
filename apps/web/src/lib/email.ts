@@ -3,14 +3,7 @@
 import { Resend } from "resend";
 
 import { getEnv } from "./env";
-
-const escapeHtml = (str: string) =>
-  str
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+import { escapeHtml } from "./escape-html";
 
 const getResendClient = () => {
   const apiKey = getEnv("RESEND_API_KEY");
