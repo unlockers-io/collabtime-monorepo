@@ -1,18 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-/**
- * escapeHtml is not exported from email.ts (marked "use server"), so we
- * replicate the same logic here to keep the test independent.
- * If the implementation changes, these tests will catch regressions
- * when imported directly in a future refactor.
- */
-const escapeHtml = (str: string) =>
-  str
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+import { escapeHtml } from "./escape-html";
 
 describe("escapeHtml", () => {
   it("escapes ampersands", () => {
