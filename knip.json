@@ -1,18 +1,26 @@
 {
-  "$schema": "https://unpkg.com/knip@6/schema.json",
-  "exclude": ["unresolved", "exports", "types", "unlisted"],
-  "ignore": ["packages/db/src/generated/**", "packages/ui/src/styles/globals.css"],
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
   "ignoreBinaries": ["portless"],
   "ignoreDependencies": [
-    "tailwindcss",
-    "tw-animate-css",
+    "eslint-plugin-*",
     "@tailwindcss/postcss",
-    "@repo/tailwind-config",
     "oxlint-config-awesomeness",
+    "tw-animate-css",
+    "postcss",
+    "pino-pretty",
     "react-scan",
-    "@testing-library/user-event",
-    "@vitest/coverage-v8"
+    "@repo/tailwind-config",
+    "@repo/typescript-config",
+    "tailwindcss",
+    "@prisma/client",
+    "clsx",
+    "tailwind-merge",
+    "jsdom",
+    "@vitest/coverage-v8",
+    "@testing-library/user-event"
   ],
+  "ignore": ["packages/db/src/generated/**", "packages/ui/src/styles/globals.css"],
+  "exclude": ["unresolved"],
   "workspaces": {
     ".": {
       "entry": ["tests/e2e/**/*.{ts,tsx}"]
