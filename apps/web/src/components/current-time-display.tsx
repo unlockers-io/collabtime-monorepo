@@ -43,7 +43,7 @@ const CurrentTimeDisplay = () => {
   // Show placeholder during SSR (viewerTimezone is empty string on server)
   if (!viewerTimezone) {
     return (
-      <div className="flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 font-medium text-card-foreground shadow-xs">
+      <div className="h-9 gap-2 px-3 py-2 font-medium shadow-xs flex items-center rounded-lg border border-border bg-card text-card-foreground">
         <Clock className="h-4 w-4 text-muted-foreground" />
         <span className="tabular-nums">--:--:-- --</span>
       </div>
@@ -55,7 +55,7 @@ const CurrentTimeDisplay = () => {
   const timezoneAbbr = formatTimezoneAbbreviation(viewerTimezone);
 
   return (
-    <div className="flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 font-medium text-card-foreground shadow-xs">
+    <div className="h-9 gap-2 px-3 py-2 font-medium shadow-xs flex items-center rounded-lg border border-border bg-card text-card-foreground">
       <Clock className="h-4 w-4 text-muted-foreground" />
       <span className="text-sm tabular-nums">{currentTime}</span>
       <span className="text-xs text-muted-foreground">{timezoneAbbr}</span>

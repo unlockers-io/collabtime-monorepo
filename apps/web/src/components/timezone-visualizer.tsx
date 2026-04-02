@@ -177,7 +177,7 @@ const HourBlock = memo(function HourBlock({
       />
 
       <TooltipContent side="top">
-        <div className="flex flex-col gap-1">
+        <div className="gap-1 flex flex-col">
           <span className="font-medium tabular-nums">
             {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
           </span>
@@ -207,7 +207,7 @@ const MemberTimelineRow = memo(function MemberTimelineRow({
   viewerTimezone,
 }: MemberTimelineRowProps) {
   return (
-    <div key={memberId} className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1">
+    <div key={memberId} className="h-8 p-1 flex gap-px overflow-hidden rounded-lg bg-secondary">
       {hours.map((isWorking, hour) => (
         <HourBlock
           key={hour}
@@ -239,7 +239,7 @@ const GroupHeader = memo(function GroupHeader({
     <button
       type="button"
       onClick={onToggle}
-      className="-ml-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+      className="-ml-1.5 gap-2 px-1.5 py-1 text-xs font-medium flex items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
     >
       <ChevronRight
         className={`h-3 w-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
@@ -283,7 +283,7 @@ const OverlapStatusIcon = memo(function OverlapStatusIcon({ status }: OverlapSta
 
   return (
     <div
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${config.bgClass} sm:h-7 sm:w-7`}
+      className={`h-6 w-6 flex shrink-0 items-center justify-center rounded-full ${config.bgClass} sm:h-7 sm:w-7`}
     >
       <Icon className={`h-3 w-3 ${config.iconClass} sm:h-3.5 sm:w-3.5`} />
     </div>
@@ -301,7 +301,7 @@ const FindMeetingTimeButton = memo(function FindMeetingTimeButton({
     <Button
       variant="outline"
       type="button"
-      className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
+      className="group h-14 gap-2 flex w-full items-center justify-center border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
       onClick={onClick}
     >
       <Clock className="h-5 w-5 transition-transform group-hover:scale-110" />
@@ -701,8 +701,8 @@ const TimezoneVisualizer = ({
   }
 
   const renderTimeAxis = () => (
-    <div className="flex gap-2 sm:gap-3">
-      <div className="w-8 shrink-0 sm:w-24" />
+    <div className="gap-2 sm:gap-3 flex">
+      <div className="w-8 sm:w-24 shrink-0" />
       <div className="flex flex-1 justify-between">
         {TIME_AXIS_HOURS.map((hour, index, arr) => {
           const isFirst = index === 0;
@@ -716,8 +716,8 @@ const TimezoneVisualizer = ({
                 alignItems: isFirst ? "flex-start" : isLast ? "flex-end" : "center",
               }}
             >
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
+              <div className="gap-1 flex flex-col items-center">
+                <span className="sm:text-xs text-[10px] whitespace-nowrap text-muted-foreground tabular-nums">
                   {formatHour(hour % HOURS_IN_DAY)}
                 </span>
                 <div className="h-1.5 w-px bg-border" />
@@ -737,21 +737,21 @@ const TimezoneVisualizer = ({
     return (
       <>
         <div
-          className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 rounded-full bg-red-500 shadow-sm sm:hidden"
+          className="top-0 bottom-0 w-0.5 bg-red-500 shadow-sm sm:hidden pointer-events-none absolute z-20 rounded-full"
           style={{
             left: `calc(2.5rem + (100% - 2.5rem) * ${nowPosition / 100})`,
           }}
         >
-          <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-red-500" />
+          <div className="-top-1.5 h-2.5 w-2.5 bg-red-500 absolute left-1/2 -translate-x-1/2 rounded-full" />
         </div>
         {/* Desktop */}
         <div
-          className="pointer-events-none absolute top-0 bottom-0 z-20 hidden w-0.5 rounded-full bg-red-500 shadow-sm sm:block"
+          className="top-0 bottom-0 w-0.5 bg-red-500 shadow-sm sm:block pointer-events-none absolute z-20 hidden rounded-full"
           style={{
             left: `calc(6.75rem + (100% - 6.75rem) * ${nowPosition / 100})`,
           }}
         >
-          <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-red-500" />
+          <div className="-top-1.5 h-2.5 w-2.5 bg-red-500 absolute left-1/2 -translate-x-1/2 rounded-full" />
         </div>
       </>
     );
@@ -762,26 +762,26 @@ const TimezoneVisualizer = ({
 
     const content = (
       <div
-        className={`flex h-8 items-center justify-center sm:justify-start sm:gap-2 ${dayOffsetLabel ? "cursor-help" : ""}`}
+        className={`h-8 sm:justify-start sm:gap-2 flex items-center justify-center ${dayOffsetLabel ? "cursor-help" : ""}`}
       >
         <div className="relative">
           <div
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground sm:h-7 sm:w-7 sm:text-xs"
+            className="h-6 w-6 font-semibold sm:h-7 sm:w-7 sm:text-xs flex shrink-0 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground"
             title={member.name}
           >
             {member.name.charAt(0).toUpperCase()}
           </div>
           {isSelected && members.length > 1 && (
-            <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-foreground sm:h-3 sm:w-3" />
+            <div className="-top-0.5 -right-0.5 h-2.5 w-2.5 sm:h-3 sm:w-3 absolute rounded-full border-2 border-background bg-foreground" />
           )}
           {dayOffset !== 0 && (
-            <div className="absolute -right-1 -bottom-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-amber-950 sm:h-4 sm:w-4 sm:text-[9px] dark:bg-amber-500 dark:text-amber-950">
+            <div className="-right-1 -bottom-0.5 h-3.5 w-3.5 bg-amber-400 font-bold text-amber-950 sm:h-4 sm:w-4 sm:text-[9px] dark:bg-amber-500 dark:text-amber-950 absolute flex items-center justify-center rounded-full text-[8px]">
               {dayOffset > 0 ? `+${dayOffset}` : dayOffset}
             </div>
           )}
         </div>
         <span
-          className="hidden truncate text-sm font-medium text-foreground sm:block"
+          className="text-sm font-medium sm:block hidden truncate text-foreground"
           title={member.name}
         >
           {member.name}
@@ -805,7 +805,7 @@ const TimezoneVisualizer = ({
 
   const renderOverlapBar = () => {
     return (
-      <div className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1">
+      <div className="h-8 p-1 flex gap-px overflow-hidden rounded-lg bg-secondary">
         {Array.from({ length: HOURS_IN_DAY }, (_, hour) => {
           const isFullOverlap = overlapHours[hour];
           const isCrossTeamOverlap = crossTeamOverlapHours[hour];
@@ -888,25 +888,25 @@ const TimezoneVisualizer = ({
                 }
               />
               <TooltipContent side="top">
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-0.5">
+                <div className="gap-3 flex flex-col">
+                  <div className="gap-0.5 flex flex-col">
                     <div className="font-medium text-foreground tabular-nums">
                       {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
                     </div>
                     <div className="text-xs text-muted-foreground">{overlapLabel}</div>
                   </div>
                   {availableByTeam.size > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-medium tracking-wide text-emerald-600 uppercase dark:text-emerald-400">
+                    <div className="gap-2 flex flex-col">
+                      <span className="font-medium tracking-wide text-emerald-600 dark:text-emerald-400 text-[10px] uppercase">
                         Available by team
                       </span>
                       {Array.from(availableByTeam.entries()).map(([teamName, names]) => (
                         <div
                           key={`${teamName}-available`}
-                          className="flex items-center justify-between gap-4 text-xs"
+                          className="gap-4 text-xs flex items-center justify-between"
                         >
-                          <span className="truncate font-medium text-foreground">{teamName}</span>
-                          <span className="truncate text-emerald-600 dark:text-emerald-400">
+                          <span className="font-medium truncate text-foreground">{teamName}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 truncate">
                             {names.join(", ")}
                           </span>
                         </div>
@@ -914,17 +914,17 @@ const TimezoneVisualizer = ({
                     </div>
                   )}
                   {!isFullOverlap && unavailableByTeam.size > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-medium tracking-wide text-red-600 uppercase dark:text-red-400">
+                    <div className="gap-2 flex flex-col">
+                      <span className="font-medium tracking-wide text-red-600 dark:text-red-400 text-[10px] uppercase">
                         Unavailable
                       </span>
                       {/* Teams with no one available - shown with strikethrough */}
                       {fullyUnavailableTeams.map((teamName) => (
                         <div
                           key={`${teamName}-fully-unavailable`}
-                          className="flex items-center justify-between gap-4 text-xs text-muted-foreground opacity-60"
+                          className="gap-4 text-xs flex items-center justify-between text-muted-foreground opacity-60"
                         >
-                          <span className="truncate font-medium line-through">{teamName}</span>
+                          <span className="font-medium truncate line-through">{teamName}</span>
                           <span className="truncate">
                             {unavailableByTeam.get(teamName)?.join(", ")}
                           </span>
@@ -934,9 +934,9 @@ const TimezoneVisualizer = ({
                       {partiallyUnavailableTeams.map(([teamName, names]) => (
                         <div
                           key={`${teamName}-unavailable`}
-                          className="flex items-center justify-between gap-4 text-xs text-muted-foreground"
+                          className="gap-4 text-xs flex items-center justify-between text-muted-foreground"
                         >
-                          <span className="truncate font-medium text-foreground">{teamName}</span>
+                          <span className="font-medium truncate text-foreground">{teamName}</span>
                           <span className="truncate">{names.join(", ")}</span>
                         </div>
                       ))}
@@ -979,35 +979,35 @@ const TimezoneVisualizer = ({
     const hasCrossTeamOverlap = crossTeamOverlapHours.some(Boolean);
 
     return (
-      <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
+      <div className="gap-4 text-xs flex flex-wrap items-center justify-center text-muted-foreground">
+        <div className="gap-1.5 flex items-center">
           <div className="h-3 w-3 rounded bg-foreground/80 dark:bg-accent-foreground" />
           <span>Working hours</span>
         </div>
         {isComparing && canShowOverlap && (
           <>
-            <div className="flex items-center gap-1.5">
+            <div className="gap-1.5 flex items-center">
               <div className="h-3 w-3 rounded bg-emerald-500 dark:bg-emerald-400" />
               <span>Full overlap</span>
             </div>
             {hasCrossTeamOverlap && (
-              <div className="flex items-center gap-1.5">
+              <div className="gap-1.5 flex items-center">
                 <div className="h-3 w-3 rounded bg-sky-500 dark:bg-sky-400" />
                 <span>Each team represented</span>
               </div>
             )}
             {totalPeopleSelected >= 3 && (
-              <div className="flex items-center gap-1.5">
+              <div className="gap-1.5 flex items-center">
                 <div className="h-3 w-3 rounded bg-amber-500 dark:bg-amber-400" />
                 <span>Partial overlap</span>
               </div>
             )}
           </>
         )}
-        <div className="flex items-center gap-1.5">
+        <div className="gap-1.5 flex items-center">
           <div className="flex items-center">
-            <div className="h-3 w-0.5 rounded-full bg-red-500" />
-            <div className="-ml-px h-1.5 w-1.5 rounded-full bg-red-500" />
+            <div className="h-3 w-0.5 bg-red-500 rounded-full" />
+            <div className="h-1.5 w-1.5 bg-red-500 -ml-px rounded-full" />
           </div>
           <span>Current time</span>
         </div>
@@ -1017,12 +1017,12 @@ const TimezoneVisualizer = ({
 
   return (
     <TooltipProvider delay={120}>
-      <div className="flex flex-col gap-6">
+      <div className="gap-6 flex flex-col">
         {renderTimeAxis()}
 
         <ScrollArea
           ref={sectionsContainerRef}
-          className="relative flex max-h-80 flex-col gap-4 select-none"
+          className="max-h-80 gap-4 relative flex flex-col select-none"
         >
           {renderCurrentTimeIndicator()}
 
@@ -1031,7 +1031,7 @@ const TimezoneVisualizer = ({
             const visibleRows = isCollapsed ? [] : section.rows;
 
             return (
-              <div key={section.group?.id ?? "ungrouped"} className="flex flex-col gap-3">
+              <div key={section.group?.id ?? "ungrouped"} className="gap-3 flex flex-col">
                 {section.group && (
                   <GroupHeader
                     group={section.group}
@@ -1042,7 +1042,7 @@ const TimezoneVisualizer = ({
                 )}
 
                 {!section.group && groups.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <div className="gap-2 text-xs font-medium flex items-center text-muted-foreground">
                     <span>Ungrouped</span>
                     <span>({section.rows.length})</span>
                   </div>
@@ -1050,8 +1050,8 @@ const TimezoneVisualizer = ({
 
                 {visibleRows.length > 0 && (
                   <div key={`section-${section.group?.id ?? "ungrouped"}`}>
-                    <div className="flex items-stretch gap-2 sm:gap-3">
-                      <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
+                    <div className="gap-2 sm:gap-3 flex items-stretch">
+                      <div className="w-8 gap-3 sm:w-24 flex shrink-0 flex-col">
                         {visibleRows.map(({ member, dayOffset }) =>
                           renderMemberAvatar(member, dayOffset, isMemberInCompare(member.id)),
                         )}
@@ -1063,7 +1063,7 @@ const TimezoneVisualizer = ({
                         onMouseMove={isDragging ? undefined : handleMouseMove}
                         onMouseLeave={isDragging ? undefined : handleMouseLeave}
                       >
-                        <div className="flex flex-col gap-3">
+                        <div className="gap-3 flex flex-col">
                           {visibleRows.map(({ member, hours }) => (
                             <MemberTimelineRow
                               key={member.id}
@@ -1105,10 +1105,10 @@ const TimezoneVisualizer = ({
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.15 }}
               >
-                <Card className="flex flex-col gap-4 p-4">
+                <Card className="gap-4 p-4 flex flex-col">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+                    <div className="gap-2 flex items-center">
+                      <div className="h-8 w-8 flex shrink-0 items-center justify-center rounded-lg bg-primary">
                         <Clock className="h-4 w-4 text-primary-foreground" />
                       </div>
                       <div>
@@ -1131,19 +1131,19 @@ const TimezoneVisualizer = ({
                     </Button>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="gap-2 flex flex-wrap items-center">
                     {validSelections.map((sel) => (
                       <Badge
                         key={serializeSelection(sel)}
                         variant="secondary"
-                        className="flex items-center gap-1.5 py-1 pr-1 pl-2"
+                        className="gap-1.5 py-1 pr-1 pl-2 flex items-center"
                       >
                         {sel.type === "group" && <Users className="h-3 w-3" />}
                         <span>{getSelectionName(sel)}</span>
                         <button
                           type="button"
                           onClick={() => removeSelection(sel)}
-                          className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
+                          className="ml-0.5 p-0.5 rounded-full hover:bg-muted"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -1163,12 +1163,12 @@ const TimezoneVisualizer = ({
                       }}
                     >
                       {validSelections.length === 0 ? (
-                        <SelectTrigger className="h-8 w-auto gap-1.5 border-dashed px-3 [&>svg:last-child]:hidden">
+                        <SelectTrigger className="h-8 gap-1.5 px-3 w-auto border-dashed [&>svg:last-child]:hidden">
                           <Plus className="h-4 w-4" />
                           <span className="text-sm">Add</span>
                         </SelectTrigger>
                       ) : (
-                        <SelectTrigger className="h-7 w-7 justify-center rounded-full border-dashed p-0 [&>svg:last-child]:hidden">
+                        <SelectTrigger className="h-7 w-7 p-0 justify-center rounded-full border-dashed [&>svg:last-child]:hidden">
                           <Plus className="h-4 w-4" />
                         </SelectTrigger>
                       )}
@@ -1213,7 +1213,7 @@ const TimezoneVisualizer = ({
                                       value={serializeSelection(sel)}
                                       disabled={isAlreadySelected}
                                     >
-                                      <span className="flex items-center gap-2">
+                                      <span className="gap-2 flex items-center">
                                         <Users className="h-3 w-3" />
                                         {group.name}
                                       </span>
@@ -1228,16 +1228,16 @@ const TimezoneVisualizer = ({
                   </div>
 
                   {canShowOverlap && (
-                    <div className="flex flex-col gap-3 border-t border-border pt-3">
-                      <p className="text-right text-xs text-muted-foreground tabular-nums">
+                    <div className="gap-3 pt-3 flex flex-col border-t border-border">
+                      <p className="text-xs text-right text-muted-foreground tabular-nums">
                         {renderOverlapSummary()}
                       </p>
 
-                      <div className="flex items-stretch gap-2 sm:gap-3">
-                        <div className="flex w-8 shrink-0 flex-col sm:w-24">
-                          <div className="flex h-8 items-center justify-center sm:justify-start sm:gap-2">
+                      <div className="gap-2 sm:gap-3 flex items-stretch">
+                        <div className="w-8 sm:w-24 flex shrink-0 flex-col">
+                          <div className="h-8 sm:justify-start sm:gap-2 flex items-center justify-center">
                             <OverlapStatusIcon status={overlapStatus} />
-                            <span className="hidden truncate text-sm font-medium text-foreground sm:block">
+                            <span className="text-sm font-medium sm:block hidden truncate text-foreground">
                               {overlapStatus === "none" ? "No overlap" : "Overlap"}
                             </span>
                           </div>
@@ -1247,8 +1247,8 @@ const TimezoneVisualizer = ({
                       </div>
 
                       {/* Time axis for overlap visualization */}
-                      <div className="flex gap-2 sm:gap-3">
-                        <div className="w-8 shrink-0 sm:w-24" />
+                      <div className="gap-2 sm:gap-3 flex">
+                        <div className="w-8 sm:w-24 shrink-0" />
                         <div className="flex flex-1 justify-between">
                           {TIME_AXIS_HOURS.map((hour, index, arr) => {
                             const isFirst = index === 0;
@@ -1257,7 +1257,7 @@ const TimezoneVisualizer = ({
                             return (
                               <div
                                 key={hour}
-                                className="flex flex-col gap-1"
+                                className="gap-1 flex flex-col"
                                 style={{
                                   alignItems: isFirst
                                     ? "flex-start"
@@ -1267,7 +1267,7 @@ const TimezoneVisualizer = ({
                                 }}
                               >
                                 <div className="h-1.5 w-px bg-border" />
-                                <span className="text-[10px] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
+                                <span className="sm:text-xs text-[10px] whitespace-nowrap text-muted-foreground tabular-nums">
                                   {formatHour(hour % HOURS_IN_DAY)}
                                 </span>
                               </div>
@@ -1279,7 +1279,7 @@ const TimezoneVisualizer = ({
                   )}
 
                   {!canShowOverlap && (
-                    <p className="text-center text-sm text-muted-foreground">
+                    <p className="text-sm text-center text-muted-foreground">
                       Select at least 2 people to find overlapping times
                     </p>
                   )}

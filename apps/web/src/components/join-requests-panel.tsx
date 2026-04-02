@@ -84,7 +84,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4">
+      <div className="gap-2 p-4 flex items-center rounded-xl border border-border bg-card">
         <Spinner />
         <span className="text-sm text-muted-foreground">Loading join requests…</span>
       </div>
@@ -96,20 +96,20 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   }
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20">
+    <div className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20 rounded-xl border">
       <button
         type="button"
         onClick={handleToggle}
-        className="flex w-full items-center justify-between gap-3 p-4"
+        className="gap-3 p-4 flex w-full items-center justify-between"
         aria-expanded={isExpanded}
         aria-controls="join-requests-list"
       >
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+        <div className="gap-2.5 flex items-center">
+          <div className="h-8 w-8 bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 flex items-center justify-center rounded-full">
             <Bell className="h-4 w-4" aria-hidden="true" />
           </div>
           <span className="text-sm font-medium text-foreground">Pending Join Requests</span>
-          <Badge className="border-transparent bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+          <Badge className="bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border-transparent">
             {requests.length}
           </Badge>
         </div>
@@ -121,30 +121,30 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
       </button>
 
       {isExpanded && (
-        <div id="join-requests-list" className="border-t border-amber-200 dark:border-amber-900/50">
+        <div id="join-requests-list" className="border-amber-200 dark:border-amber-900/50 border-t">
           <ScrollArea className="max-h-64">
-            <ul className="divide-y divide-amber-100 dark:divide-amber-900/30">
+            <ul className="divide-amber-100 dark:divide-amber-900/30 divide-y">
               {requests.map((request) => {
                 const isThisRequest = isPending && pendingAction?.id === request.id;
                 const isApproving = isThisRequest && pendingAction?.type === "approve";
                 const isDenying = isThisRequest && pendingAction?.type === "deny";
 
                 return (
-                  <li key={request.id} className="flex items-center gap-3 px-4 py-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                  <li key={request.id} className="gap-3 px-4 py-3 flex items-center">
+                    <div className="h-9 w-9 text-sm font-semibold flex shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                       {request.userName.charAt(0).toUpperCase()}
                     </div>
 
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-sm font-medium text-foreground">
+                    <div className="min-w-0 flex flex-1 flex-col">
+                      <span className="text-sm font-medium truncate text-foreground">
                         {request.userName}
                       </span>
-                      <span className="truncate text-xs text-muted-foreground">
+                      <span className="text-xs truncate text-muted-foreground">
                         {request.userEmail}
                       </span>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    <div className="gap-1.5 flex shrink-0 items-center">
                       <Button
                         variant="ghost"
                         size="icon-sm"
