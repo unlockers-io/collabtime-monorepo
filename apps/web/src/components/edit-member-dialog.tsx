@@ -158,7 +158,7 @@ const EditMemberForm = ({
         }}
         noValidate
       >
-        <div className="flex flex-col gap-4 py-2">
+        <div className="gap-4 py-2 flex flex-col">
           <form.Field name="name">
             {(field) => (
               <Field data-invalid={!field.state.meta.isValid}>
@@ -242,7 +242,7 @@ const EditMemberForm = ({
             </form.Field>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="gap-4 grid grid-cols-2">
             <form.Field name="workingHoursStart">
               {(field) => (
                 <Field data-invalid={!field.state.meta.isValid}>
@@ -300,9 +300,9 @@ const EditMemberForm = ({
         </div>
 
         {!isClaim && !member.userId && (
-          <div className="border-t border-border pt-4">
+          <div className="pt-4 border-t border-border">
             <FieldLabel htmlFor="invite-email">Invite User</FieldLabel>
-            <div className="flex gap-2">
+            <div className="gap-2 flex">
               <Input
                 id="invite-email"
                 type="email"
@@ -338,7 +338,7 @@ const EditMemberForm = ({
             {({ canSubmit }) => (
               <Button type="submit" disabled={isPending || !canSubmit}>
                 {isPending ? (
-                  <span className="flex items-center gap-2">
+                  <span className="gap-2 flex items-center">
                     <Spinner />
                     Saving...
                   </span>

@@ -65,9 +65,9 @@ const SignupPage = () => {
   });
 
   return (
-    <Card className="w-full max-w-md p-8">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-2 text-center">
+    <Card className="max-w-md p-8 w-full">
+      <div className="gap-8 flex flex-col">
+        <div className="gap-2 flex flex-col text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Create your account</h1>
           <p className="text-sm text-muted-foreground">Get started with Collab Time for free</p>
         </div>
@@ -78,7 +78,7 @@ const SignupPage = () => {
             e.stopPropagation();
             form.handleSubmit();
           }}
-          className="flex flex-col gap-4"
+          className="gap-4 flex flex-col"
           noValidate
         >
           <form.Field name="name">
@@ -86,7 +86,7 @@ const SignupPage = () => {
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="name">Name</FieldLabel>
                 <div className="relative">
-                  <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <User className="left-3 h-4 w-4 absolute top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="name"
                     type="text"
@@ -109,7 +109,7 @@ const SignupPage = () => {
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <div className="relative">
-                  <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Mail className="left-3 h-4 w-4 absolute top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -132,7 +132,7 @@ const SignupPage = () => {
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
                 <div className="relative">
-                  <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Lock className="left-3 h-4 w-4 absolute top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="password"
                     type="password"
@@ -156,12 +156,12 @@ const SignupPage = () => {
             {({ canSubmit }) => (
               <Button type="submit" disabled={isLoading || !canSubmit} className="w-full">
                 {isLoading ? (
-                  <span className="flex items-center gap-2">
+                  <span className="gap-2 flex items-center">
                     <Spinner />
                     Creating account...
                   </span>
                 ) : (
-                  <span className="flex items-center gap-2">
+                  <span className="gap-2 flex items-center">
                     Create account
                     <ArrowRight className="h-4 w-4" />
                   </span>
@@ -171,11 +171,11 @@ const SignupPage = () => {
           </form.Subscribe>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="text-xs text-center text-muted-foreground">
           By creating an account, you agree to our terms of service and privacy policy.
         </p>
 
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-sm text-center text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-foreground hover:underline">
             Sign in

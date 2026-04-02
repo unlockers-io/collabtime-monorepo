@@ -79,7 +79,7 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
           <Button
             variant="outline"
             type="button"
-            className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
+            className="group h-14 gap-2 flex w-full items-center justify-center border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
           />
         }
       >
@@ -96,8 +96,8 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
           noValidate
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+            <DialogTitle className="gap-3 flex items-center">
+              <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary">
                 <Users className="h-5 w-5 text-primary-foreground" />
               </div>
               Add Group
@@ -142,7 +142,7 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
               {({ canSubmit, isSubmitting }) => (
                 <Button type="submit" disabled={isSubmitting || !canSubmit}>
                   {isSubmitting ? (
-                    <span className="flex items-center gap-2">
+                    <span className="gap-2 flex items-center">
                       <Spinner />
                       Creating...
                     </span>

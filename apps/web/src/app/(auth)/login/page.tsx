@@ -59,9 +59,9 @@ const LoginPage = () => {
   });
 
   return (
-    <Card className="w-full max-w-md p-8">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-2 text-center">
+    <Card className="max-w-md p-8 w-full">
+      <div className="gap-8 flex flex-col">
+        <div className="gap-2 flex flex-col text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back</h1>
           <p className="text-sm text-muted-foreground">Sign in to your account to continue</p>
         </div>
@@ -72,7 +72,7 @@ const LoginPage = () => {
             e.stopPropagation();
             form.handleSubmit();
           }}
-          className="flex flex-col gap-4"
+          className="gap-4 flex flex-col"
           noValidate
         >
           <form.Field name="email">
@@ -80,7 +80,7 @@ const LoginPage = () => {
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <div className="relative">
-                  <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Mail className="left-3 h-4 w-4 absolute top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -103,7 +103,7 @@ const LoginPage = () => {
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
                 <div className="relative">
-                  <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Lock className="left-3 h-4 w-4 absolute top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="password"
                     type="password"
@@ -127,12 +127,12 @@ const LoginPage = () => {
             {({ canSubmit }) => (
               <Button type="submit" disabled={isLoading || !canSubmit} className="w-full">
                 {isLoading ? (
-                  <span className="flex items-center gap-2">
+                  <span className="gap-2 flex items-center">
                     <Spinner />
                     Signing in...
                   </span>
                 ) : (
-                  <span className="flex items-center gap-2">
+                  <span className="gap-2 flex items-center">
                     Sign in
                     <ArrowRight className="h-4 w-4" />
                   </span>
@@ -142,7 +142,7 @@ const LoginPage = () => {
           </form.Subscribe>
         </form>
 
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-sm text-center text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="font-medium text-foreground hover:underline">
             Sign up

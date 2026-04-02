@@ -520,13 +520,13 @@ const TeamPageClient = ({
   const membersGrid = (
     <>
       {members.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border bg-muted/50 px-6 py-12 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+        <div className="gap-4 rounded-2xl px-6 py-12 flex flex-1 flex-col items-center justify-center border-2 border-dashed border-border bg-muted/50 text-center">
+          <div className="h-14 w-14 flex items-center justify-center rounded-full bg-secondary">
             <Users className="h-6 w-6 text-muted-foreground" />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="gap-1 flex flex-col">
             <h3 className="font-semibold text-foreground">Build your team</h3>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+            <p className="max-w-sm text-sm mx-auto text-muted-foreground">
               Add team members to see their working hours and find the best times to collaborate
               across timezones.
             </p>
@@ -534,7 +534,7 @@ const TeamPageClient = ({
         </div>
       ) : (
         <ScrollArea className="max-h-150">
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4 pr-4">
+          <div className="gap-4 pr-4 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
             {isAdmin ? (
               <SortableContext items={memberIds} strategy={rectSortingStrategy}>
                 {orderedMembers.map((member) => (
@@ -575,13 +575,13 @@ const TeamPageClient = ({
   const groupsGrid = (
     <>
       {groups.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border bg-muted/50 px-6 py-12 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+        <div className="gap-4 rounded-2xl px-6 py-12 flex flex-1 flex-col items-center justify-center border-2 border-dashed border-border bg-muted/50 text-center">
+          <div className="h-14 w-14 flex items-center justify-center rounded-full bg-secondary">
             <FolderKanban className="h-6 w-6 text-muted-foreground" />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="gap-1 flex flex-col">
             <h3 className="font-semibold text-foreground">Organize with groups</h3>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+            <p className="max-w-sm text-sm mx-auto text-muted-foreground">
               Create groups to organize team members by department, project, or location. Drag and
               drop members into groups to categorize them.
             </p>
@@ -589,7 +589,7 @@ const TeamPageClient = ({
         </div>
       ) : (
         <ScrollArea className="max-h-150">
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4 pr-4">
+          <div className="gap-4 pr-4 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
             {isAdmin ? (
               <SortableContext items={groupIds} strategy={rectSortingStrategy}>
                 {orderedGroups.map((group) => (
@@ -625,12 +625,12 @@ const TeamPageClient = ({
   );
 
   const mainContent = (
-    <div className="min-h-screen w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
+    <div className="px-4 py-6 sm:px-6 lg:px-8 xl:px-12 min-h-screen w-full">
       <motion.main
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="mx-auto flex w-full max-w-450 flex-col gap-6"
+        className="max-w-450 gap-6 mx-auto flex w-full flex-col"
       >
         {/* Header */}
         <Nav
@@ -669,10 +669,10 @@ const TeamPageClient = ({
               delay: 0.1,
               ease: [0.16, 1, 0.3, 1],
             }}
-            className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+            className="rounded-2xl shadow-sm overflow-hidden border border-border bg-card"
           >
-            <div className="flex flex-col gap-0.5 border-b border-border px-4 py-3 sm:px-6 sm:py-4">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <div className="gap-0.5 px-4 py-3 sm:px-6 sm:py-4 flex flex-col border-b border-border">
+              <h2 className="gap-2 text-sm font-semibold flex items-center text-foreground">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 Working Hours Overview
               </h2>
@@ -694,16 +694,16 @@ const TeamPageClient = ({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-1 gap-6 xl:grid-cols-2"
+          className="gap-6 xl:grid-cols-2 grid grid-cols-1"
         >
           {/* Team Members */}
-          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <section className="gap-4 rounded-2xl p-5 shadow-sm flex flex-col border border-border bg-card">
             <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <h2 className="gap-2 text-lg font-semibold flex items-center">
                 <Users className="h-5 w-5 text-muted-foreground" />
                 Team Members
               </h2>
-              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
+              <span className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-secondary text-muted-foreground tabular-nums">
                 {members.length}
               </span>
             </div>
@@ -711,7 +711,7 @@ const TeamPageClient = ({
             {membersGrid}
 
             {isAdmin ? (
-              <div className="flex flex-col gap-2">
+              <div className="gap-2 flex flex-col">
                 <AddMemberDialog
                   teamId={teamId}
                   groups={groups}
@@ -722,7 +722,7 @@ const TeamPageClient = ({
                 <JoinRequestsPanel teamId={teamId} />
               </div>
             ) : !isMember ? (
-              <div className="flex items-center justify-between rounded-xl border border-border bg-muted/50 px-4 py-3">
+              <div className="px-4 py-3 flex items-center justify-between rounded-xl border border-border bg-muted/50">
                 {!isAuthenticated ? (
                   <>
                     <p className="text-sm text-muted-foreground">Sign in to request access</p>
@@ -760,20 +760,20 @@ const TeamPageClient = ({
                 )}
               </div>
             ) : (
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-sm text-center text-muted-foreground">
                 You are a member of this team
               </p>
             )}
           </section>
 
           {/* Groups */}
-          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <section className="gap-4 rounded-2xl p-5 shadow-sm flex flex-col border border-border bg-card">
             <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <h2 className="gap-2 text-lg font-semibold flex items-center">
                 <FolderKanban className="h-5 w-5 text-muted-foreground" />
                 Groups
               </h2>
-              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
+              <span className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-secondary text-muted-foreground tabular-nums">
                 {groups.length}
               </span>
             </div>

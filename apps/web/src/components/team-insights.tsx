@@ -136,36 +136,36 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+    <div className="gap-4 rounded-2xl p-4 shadow-sm sm:p-5 flex flex-col border border-border bg-card">
+      <div className="gap-2 text-sm font-semibold flex items-center text-foreground">
         <Users className="h-4 w-4 text-muted-foreground" />
         Team Status
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="gap-4 sm:grid-cols-2 lg:grid-cols-3 grid">
         {/* Online Now */}
-        <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+        <div className="gap-2.5 p-3.5 flex flex-col rounded-xl bg-secondary">
+          <div className="gap-2 flex items-center">
+            <div className="h-6 w-6 bg-green-100 dark:bg-green-900/30 flex items-center justify-center rounded-full">
               <Circle className="h-2.5 w-2.5 fill-green-500 text-green-500" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Online Now</span>
-            <span className="ml-auto rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 tabular-nums dark:bg-green-900/40 dark:text-green-400">
+            <span className="bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400 ml-auto rounded-full tabular-nums">
               {onlineMembers.length}
             </span>
           </div>
           {onlineMembers.length > 0 ? (
             <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
-              <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
+              <div className="gap-1.5 px-1 py-0.5 flex flex-wrap">
                 {onlineMembers.map(({ member }) => {
                   const groupName = getGroupName(member.groupId);
                   return (
                     <Badge
                       key={member.id}
-                      className="cursor-help bg-background text-foreground shadow-sm"
+                      className="shadow-sm cursor-help bg-background text-foreground"
                       title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      <span className="h-1.5 w-1.5 bg-green-500 rounded-full" />
                       {member.name}
                     </Badge>
                   );
@@ -178,30 +178,30 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
         </div>
 
         {/* Coming Soon */}
-        <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+        <div className="gap-2.5 p-3.5 flex flex-col rounded-xl bg-secondary">
+          <div className="gap-2 flex items-center">
+            <div className="h-6 w-6 bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center rounded-full">
               <Sunrise className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Starting Soon</span>
-            <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 tabular-nums dark:bg-amber-900/40 dark:text-amber-400">
+            <span className="bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 ml-auto rounded-full tabular-nums">
               {comingSoonMembers.length}
             </span>
           </div>
           {comingSoonMembers.length > 0 ? (
             <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
-              <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
+              <div className="gap-1.5 px-1 py-0.5 flex flex-wrap">
                 {comingSoonMembers.map(({ member, hoursUntilStart }) => {
                   const groupName = getGroupName(member.groupId);
 
                   return (
                     <Badge
                       key={member.id}
-                      className="cursor-help bg-background shadow-sm"
+                      className="shadow-sm cursor-help bg-background"
                       title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
                       <span className="text-xs font-medium text-foreground">{member.name}</span>
-                      <span className="text-xs text-amber-600 tabular-nums dark:text-amber-400">
+                      <span className="text-xs text-amber-600 dark:text-amber-400 tabular-nums">
                         in {hoursUntilStart}h
                       </span>
                     </Badge>
@@ -217,30 +217,30 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
         </div>
 
         {/* Leaving Soon */}
-        <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5 sm:col-span-2 lg:col-span-1">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+        <div className="gap-2.5 p-3.5 sm:col-span-2 lg:col-span-1 flex flex-col rounded-xl bg-secondary">
+          <div className="gap-2 flex items-center">
+            <div className="h-6 w-6 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center rounded-full">
               <Clock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Wrapping Up</span>
-            <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 tabular-nums dark:bg-blue-900/40 dark:text-blue-400">
+            <span className="bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 ml-auto rounded-full tabular-nums">
               {leavingSoonMembers.length}
             </span>
           </div>
           {leavingSoonMembers.length > 0 ? (
             <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
-              <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
+              <div className="gap-1.5 px-1 py-0.5 flex flex-wrap">
                 {leavingSoonMembers.map(({ member, hoursUntilEnd }) => {
                   const groupName = getGroupName(member.groupId);
 
                   return (
                     <Badge
                       key={member.id}
-                      className="cursor-help bg-background shadow-sm"
+                      className="shadow-sm cursor-help bg-background"
                       title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
                       <span className="text-xs font-medium text-foreground">{member.name}</span>
-                      <span className="text-xs text-blue-600 tabular-nums dark:text-blue-400">
+                      <span className="text-xs text-blue-600 dark:text-blue-400 tabular-nums">
                         {hoursUntilEnd}h left
                       </span>
                     </Badge>
