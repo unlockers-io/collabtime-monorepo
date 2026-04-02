@@ -12,7 +12,11 @@ export const metadata = {
 
 const NotFound = () => {
   return (
-    <ViewTransition enter="fade-in" exit="fade-out">
+    <ViewTransition
+      enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      default="none"
+    >
       <div className="px-4 py-10 sm:px-6 flex flex-1 items-center justify-center">
         <main className="max-w-xl w-full">
           <Card className="p-6 sm:p-8">
@@ -30,7 +34,7 @@ const NotFound = () => {
                 you typed a URL, it may have drifted into a parallel timezone.
               </p>
 
-              <Link href="/" className="w-full">
+              <Link href="/" transitionTypes={["nav-back"]} className="w-full">
                 <Button className="w-full">
                   <Home className="h-4 w-4" />
                   Back to home

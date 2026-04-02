@@ -65,7 +65,11 @@ const SignupPage = () => {
   });
 
   return (
-    <ViewTransition enter="fade-in" exit="fade-out">
+    <ViewTransition
+      enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      default="none"
+    >
       <Card className="max-w-md p-8 w-full">
         <div className="gap-8 flex flex-col">
           <div className="gap-2 flex flex-col text-center">
@@ -183,7 +187,11 @@ const SignupPage = () => {
 
           <div className="text-sm text-center text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-foreground hover:underline">
+            <Link
+              href="/login"
+              transitionTypes={["nav-forward"]}
+              className="font-medium text-foreground hover:underline"
+            >
               Sign in
             </Link>
           </div>

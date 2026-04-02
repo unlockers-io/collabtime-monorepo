@@ -13,6 +13,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
       <header className="px-4 py-6 sm:px-6 flex" style={{ viewTransitionName: "site-header" }}>
         <Link
           href="/"
+          transitionTypes={["nav-back"]}
           className="gap-2 text-sm font-medium flex items-center text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />

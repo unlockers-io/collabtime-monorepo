@@ -97,7 +97,11 @@ const TeamPage = async ({ params }: TeamPageProps) => {
   const teamStatus: TeamStatus = session ? await getTeamStatus(session.user.id, teamId) : "none";
 
   return (
-    <ViewTransition enter="fade-in" exit="fade-out">
+    <ViewTransition
+      enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      default="none"
+    >
       <TeamPageClient teamId={teamId} isAuthenticated={Boolean(session)} teamStatus={teamStatus} />
     </ViewTransition>
   );

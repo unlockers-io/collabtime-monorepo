@@ -13,7 +13,11 @@ const SettingsPage = async () => {
   }
 
   return (
-    <ViewTransition enter="fade-in" exit="fade-out">
+    <ViewTransition
+      enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      default="none"
+    >
       <SettingsClient
         user={{
           id: session.user.id,

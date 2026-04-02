@@ -121,7 +121,11 @@ const Home = () => {
   };
 
   return (
-    <ViewTransition enter="fade-in" exit="fade-out">
+    <ViewTransition
+      enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      default="none"
+    >
       <div className="flex flex-1 flex-col">
         <Nav />
 
@@ -160,6 +164,7 @@ const Home = () => {
               <div className="gap-3 flex w-full flex-col items-center">
                 <Link
                   href="/signup"
+                  transitionTypes={["nav-forward"]}
                   className={cn(buttonVariants({ size: "lg" }), "sm:w-auto sm:min-w-72 w-full")}
                 >
                   Get Started
@@ -167,7 +172,11 @@ const Home = () => {
                 </Link>
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{" "}
-                  <Link href="/login" className="font-medium text-foreground hover:underline">
+                  <Link
+                    href="/login"
+                    transitionTypes={["nav-forward"]}
+                    className="font-medium text-foreground hover:underline"
+                  >
                     Sign in
                   </Link>
                 </p>
@@ -290,7 +299,11 @@ const Home = () => {
                         transition={{ duration: 0.2 }}
                         className="group p-3 flex items-center justify-between rounded-xl border border-border bg-card transition-colors hover:border-input"
                       >
-                        <Link href={`/${team.teamId}`} className="gap-3 flex flex-1 items-center">
+                        <Link
+                          href={`/${team.teamId}`}
+                          transitionTypes={["nav-forward"]}
+                          className="gap-3 flex flex-1 items-center"
+                        >
                           <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-secondary">
                             <Users className="h-4 w-4 text-muted-foreground" />
                           </div>
