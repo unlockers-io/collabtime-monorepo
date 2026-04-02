@@ -30,7 +30,7 @@ const NotFound = () => {
                 you typed a URL, it may have drifted into a parallel timezone.
               </p>
 
-              <Link href="/" className="w-full">
+              <Link href="/" transitionTypes={["nav-back"]} className="w-full">
                 <Button className="w-full">
                   <Home className="h-4 w-4" />
                   Back to home

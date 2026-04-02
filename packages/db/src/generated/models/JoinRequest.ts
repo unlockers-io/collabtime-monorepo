@@ -165,7 +165,7 @@ export type JoinRequestGroupByOutputType = {
   _max: JoinRequestMaxAggregateOutputType | null
 }
 
-type GetJoinRequestGroupByPayload<T extends JoinRequestGroupByArgs> = Prisma.PrismaPromise<
+export type GetJoinRequestGroupByPayload<T extends JoinRequestGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<JoinRequestGroupByOutputType, T['by']> &
       {

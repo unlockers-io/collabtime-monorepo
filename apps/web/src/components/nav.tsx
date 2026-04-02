@@ -38,6 +38,7 @@ import { ModeToggle } from "./mode-toggle";
 const NavLogo = ({ showTitle = true }: { showTitle?: boolean }) => (
   <Link
     href="/"
+    transitionTypes={["nav-back"]}
     className="gap-3 flex items-center text-foreground transition-opacity hover:opacity-80"
     aria-label={!showTitle ? "Go to homepage" : undefined}
   >
@@ -183,6 +184,7 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
               render={
                 <Link
                   href="/login"
+                  transitionTypes={["nav-forward"]}
                   className={cn(
                     buttonVariants({ variant: "outline" }),
                     "gap-2 flex cursor-pointer items-center",
@@ -199,7 +201,13 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              render={<Link href="/settings" className="gap-2 flex items-center" />}
+              render={
+                <Link
+                  href="/settings"
+                  transitionTypes={["nav-forward"]}
+                  className="gap-2 flex items-center"
+                />
+              }
             >
               <Settings className="h-4 w-4" />
               Settings
@@ -286,6 +294,7 @@ const MobileMenu = ({
             {!isAuthenticated && (
               <Link
                 href="/login"
+                transitionTypes={["nav-forward"]}
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
                   "gap-2 flex items-center justify-start",
@@ -299,6 +308,7 @@ const MobileMenu = ({
             {isAuthenticated && (
               <Link
                 href="/settings"
+                transitionTypes={["nav-forward"]}
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
                   "gap-2 flex items-center justify-start",
@@ -428,11 +438,19 @@ const Nav = (props: NavProps) => {
       <div className="gap-2 flex items-center">
         <ModeToggle />
         {isAuthenticated ? (
-          <Link href="/settings" className={buttonVariants({ variant: "outline" })}>
+          <Link
+            href="/settings"
+            transitionTypes={["nav-forward"]}
+            className={buttonVariants({ variant: "outline" })}
+          >
             <Settings className="h-4 w-4" />
           </Link>
         ) : (
-          <Link href="/login" className={buttonVariants({ variant: "outline" })}>
+          <Link
+            href="/login"
+            transitionTypes={["nav-forward"]}
+            className={buttonVariants({ variant: "outline" })}
+          >
             <LogIn className="h-4 w-4" />
           </Link>
         )}
