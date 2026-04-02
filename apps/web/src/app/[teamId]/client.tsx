@@ -680,7 +680,6 @@ const TeamPageClient = ({
                     <p className="text-sm text-muted-foreground">Sign in to request access</p>
                     <Link
                       href={`/login?redirect=/${teamId}`}
-                      transitionTypes={["nav-forward"]}
                       className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
                     >
                       <LogIn className="mr-2 h-4 w-4" />

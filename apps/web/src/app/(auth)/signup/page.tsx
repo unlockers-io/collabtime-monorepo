@@ -183,11 +183,7 @@ const SignupPage = () => {
 
           <div className="text-sm text-center text-muted-foreground">
             Already have an account?{" "}
-            <Link
-              href="/login"
-              transitionTypes={["nav-forward"]}
-              className="font-medium text-foreground hover:underline"
-            >
+            <Link href="/login" className="font-medium text-foreground hover:underline">
               Sign in
             </Link>
           </div>
