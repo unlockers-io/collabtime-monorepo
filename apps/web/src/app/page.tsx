@@ -10,7 +10,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Nav } from "@/components/nav";
-import { acceptInvitation, createTeam, declineInvitation } from "@/lib/actions";
+import { acceptInvitation, declineInvitation } from "@/lib/actions/invitation-actions";
+import { createTeam } from "@/lib/actions/team-create";
 import { useSession } from "@/lib/auth-client";
 import { getUserTimezone } from "@/lib/timezones";
 import type { PendingInvitation } from "@/types";

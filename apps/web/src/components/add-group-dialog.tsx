@@ -21,7 +21,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { createGroup } from "@/lib/actions";
+import { createGroup } from "@/lib/actions/group-actions";
 import type { TeamGroup } from "@/types";
 
 type AddGroupDialogProps = {

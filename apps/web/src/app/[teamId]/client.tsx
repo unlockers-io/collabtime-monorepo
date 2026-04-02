@@ -1,25 +1,11 @@
 "use client";
 
-import {
-  DndContext,
-  DragOverlay,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-  sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable";
+import { type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { Button, buttonVariants, cn, ScrollArea, Spinner } from "@repo/ui";
 import { Clock, FolderKanban, LogIn, UserPlus, Users } from "lucide-react";
 import { motion } from "motion/react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -37,16 +23,16 @@ import { SortableMemberCard } from "@/components/sortable-member-card";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
-import {
-  updateTeamName,
-  updateMember,
-  reorderMembers,
-  reorderGroups,
-  requestToJoin,
-} from "@/lib/actions";
+import { reorderGroups } from "@/lib/actions/group-actions";
+import { requestToJoin } from "@/lib/actions/join-requests";
+import { updateTeamName, updateMember, reorderMembers } from "@/lib/actions/member-actions";
 import { useSession } from "@/lib/auth-client";
 import { useRealtime } from "@/lib/realtime-client";
 import type { TeamGroup, TeamMember, TeamStatus } from "@/types";
+
+const DndWrapper = dynamic(() => import("./dnd-wrapper").then((m) => ({ default: m.DndWrapper })), {
+  ssr: false,
+});
 
 import Loading from "./loading";
 
@@ -72,6 +58,7 @@ const TeamPageClient = ({
     return stored ? new Set(JSON.parse(stored) as Array<string>) : new Set();
   });
   const [, startTransition] = useTransition();
+  const [isMemberDragging, setIsMemberDragging] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingTeamName, setEditingTeamName] = useState("");
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
@@ -88,7 +75,7 @@ const TeamPageClient = ({
       if (teamStatus !== "none" || !session?.user?.id) {
         return;
       }
-      const { getTeamMembershipRole } = await import("@/lib/actions");
+      const { getTeamMembershipRole } = await import("@/lib/actions/team-read");
       const role = await getTeamMembershipRole(teamId, session.user.id);
       if (role) {
         setTeamStatus(role);
@@ -389,35 +376,14 @@ const TeamPageClient = ({
     [isAdmin, members, groups, teamId, updateTeamCache],
   );
 
-  // DnD setup
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const [activeDragType, setActiveDragType] = useState<"member" | "group" | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) => {
-      const id = event.active.id as string;
-      if (members.some((m) => m.id === id)) {
-        setActiveDragType("member");
-        setActiveDragId(id);
-      } else if (groups.some((g) => g.id === id)) {
-        setActiveDragType("group");
-        setActiveDragId(id);
-      }
-    },
-    [members, groups],
-  );
+  const handleDragTypeChange = useCallback((dragType: "group" | "member" | null) => {
+    setIsMemberDragging(dragType === "member");
+  }, []);
 
   const handleDragEnd = useCallback(
-    async (event: DragEndEvent) => {
+    async (event: DragEndEvent, dragType: "group" | "member" | null) => {
+      setIsMemberDragging(false);
       const { active, over } = event;
-      const currentDragType = activeDragType;
-      setActiveDragId(null);
-      setActiveDragType(null);
 
       if (!over || !isAdmin) {
         return;
@@ -430,7 +396,7 @@ const TeamPageClient = ({
         return;
       }
 
-      if (currentDragType === "member") {
+      if (dragType === "member") {
         const overIsMember = orderedMembers.some((m) => m.id === overId);
         if (overIsMember) {
           const oldIndex = orderedMembers.findIndex((m) => m.id === activeId);
@@ -466,7 +432,7 @@ const TeamPageClient = ({
             handleMemberDroppedOnGroup(activeId, overId);
           }
         }
-      } else if (currentDragType === "group") {
+      } else if (dragType === "group") {
         const oldIndex = orderedGroups.findIndex((g) => g.id === activeId);
         const newIndex = orderedGroups.findIndex((g) => g.id === overId);
         if (oldIndex === -1 || newIndex === -1) {
@@ -496,22 +462,8 @@ const TeamPageClient = ({
         }
       }
     },
-    [
-      activeDragType,
-      isAdmin,
-      orderedMembers,
-      orderedGroups,
-      teamId,
-      updateTeamCache,
-      handleMemberDroppedOnGroup,
-    ],
+    [isAdmin, orderedMembers, orderedGroups, teamId, updateTeamCache, handleMemberDroppedOnGroup],
   );
-
-  const activeMember =
-    activeDragId && activeDragType === "member" ? members.find((m) => m.id === activeDragId) : null;
-
-  const activeGroup =
-    activeDragId && activeDragType === "group" ? groups.find((g) => g.id === activeDragId) : null;
 
   if (!teamData?.team) {
     return <Loading />;
@@ -599,7 +551,7 @@ const TeamPageClient = ({
                     teamId={teamId}
                     memberCount={members.filter((m) => m.groupId === group.id).length}
                     canEdit={isAdmin}
-                    isDropTarget={activeDragType === "member" && activeDragId !== null}
+                    isDropTarget={isMemberDragging}
                     onGroupUpdated={handleGroupUpdated}
                     onGroupRemoved={handleGroupRemoved}
                   />
@@ -803,11 +755,13 @@ const TeamPageClient = ({
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
+    <DndWrapper
+      members={members}
+      groups={groups}
+      teamId={teamId}
+      hasClaimedProfile={hasClaimedProfile}
       onDragEnd={handleDragEnd}
+      onDragTypeChange={handleDragTypeChange}
     >
       {realtimeReady && isMember && (
         <RealtimeSubscription
@@ -817,30 +771,7 @@ const TeamPageClient = ({
         />
       )}
       {mainContent}
-      <DragOverlay>
-        {activeMember && (
-          <MemberCard
-            member={activeMember}
-            teamId={teamId}
-            groups={groups}
-            canEdit={false}
-            hasClaimedProfile={hasClaimedProfile}
-            onMemberRemoved={() => {}}
-            onMemberUpdated={() => {}}
-          />
-        )}
-        {activeGroup && (
-          <GroupCard
-            group={activeGroup}
-            teamId={teamId}
-            memberCount={members.filter((m) => m.groupId === activeGroup.id).length}
-            canEdit={false}
-            onGroupUpdated={() => {}}
-            onGroupRemoved={() => {}}
-          />
-        )}
-      </DragOverlay>
-    </DndContext>
+    </DndWrapper>
   );
 };
 

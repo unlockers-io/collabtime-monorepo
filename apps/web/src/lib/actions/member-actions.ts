@@ -18,13 +18,13 @@ const addMember = async (
   member: Omit<TeamMember, "id" | "order">,
 ): Promise<ActionResult<{ member: TeamMember; team: Team }>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     const memberResult = TeamMemberInputSchema.safeParse(member);
     if (!memberResult.success) {
       const errorMessage = memberResult.error.issues[0]?.message ?? "Invalid member data";
       return { success: false, error: errorMessage };
     }
+
+    await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
 
@@ -40,11 +40,12 @@ const addMember = async (
 
     team.members.push(newMember);
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.memberAdded", newMember);
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.memberAdded", newMember),
+    ]);
 
     return {
       success: true,
@@ -58,8 +59,6 @@ const addMember = async (
 
 const removeMember = async (teamId: string, memberId: string): Promise<ActionResult<Team>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const memberUuidResult = UUIDSchema.safeParse(memberId);
 
@@ -69,6 +68,8 @@ const removeMember = async (teamId: string, memberId: string): Promise<ActionRes
     if (!memberUuidResult.success) {
       return { success: false, error: "Invalid member ID" };
     }
+
+    await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
 
@@ -83,11 +84,12 @@ const removeMember = async (teamId: string, memberId: string): Promise<ActionRes
 
     team.members = team.members.filter((m) => m.id !== memberId);
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.memberRemoved", { memberId });
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.memberRemoved", { memberId }),
+    ]);
 
     return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
@@ -102,8 +104,6 @@ const updateMember = async (
   updates: Partial<Omit<TeamMember, "id">>,
 ): Promise<ActionResult<Team>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const memberUuidResult = UUIDSchema.safeParse(memberId);
 
@@ -119,6 +119,8 @@ const updateMember = async (
       const errorMessage = updateResult.error.issues[0]?.message ?? "Invalid update data";
       return { success: false, error: errorMessage };
     }
+
+    await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
 
@@ -139,11 +141,12 @@ const updateMember = async (
 
     team.members[memberIndex] = updatedMember;
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember);
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember),
+    ]);
 
     return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
@@ -154,8 +157,6 @@ const updateMember = async (
 
 const updateTeamName = async (teamId: string, name: string): Promise<ActionResult<Team>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
       return { success: false, error: "Invalid team ID" };
@@ -166,6 +167,8 @@ const updateTeamName = async (teamId: string, name: string): Promise<ActionResul
       return { success: false, error: "Team name cannot be empty" };
     }
 
+    await requireTeamAdmin(teamId);
+
     const team = await getTeamRecord(teamId);
     if (!team) {
       return { success: false, error: "Team not found" };
@@ -173,13 +176,14 @@ const updateTeamName = async (teamId: string, name: string): Promise<ActionResul
 
     team.name = trimmedName;
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.nameUpdated", {
-      name: trimmedName,
-    });
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.nameUpdated", {
+        name: trimmedName,
+      }),
+    ]);
 
     return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
@@ -193,8 +197,6 @@ const importMembers = async (
   members: Array<Omit<TeamMember, "id" | "order">>,
 ): Promise<ActionResult<{ imported: number; members: Array<TeamMember>; team: Team }>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     if (!Array.isArray(members) || members.length === 0) {
       return { success: false, error: "No members to import" };
     }
@@ -213,6 +215,8 @@ const importMembers = async (
       validated.push({ ...result.data, id: uuidv4(), order: 0 });
     }
 
+    await requireTeamAdmin(teamId);
+
     const team = await getTeamRecord(teamId);
     if (!team) {
       return { success: false, error: "Team not found" };
@@ -222,11 +226,12 @@ const importMembers = async (
     const orderedValidated = validated.map((m, i) => ({ ...m, order: startOrder + i }));
     team.members.push(...orderedValidated);
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.membersImported", validated);
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.membersImported", validated),
+    ]);
 
     return {
       success: true,
@@ -305,11 +310,12 @@ const updateOwnMember = async (
 
     team.members[memberIndex] = updatedMember;
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember);
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember),
+    ]);
 
     return { success: true, data: sanitizeTeam(team, session.user.id) };
   } catch (error) {
@@ -323,12 +329,12 @@ const reorderMembers = async (
   memberIds: Array<string>,
 ): Promise<ActionResult<void>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
       return { success: false, error: "Invalid team ID" };
     }
+
+    await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
     if (!team) {
@@ -347,13 +353,14 @@ const reorderMembers = async (
       order: index,
     }));
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.membersReordered", {
-      order: memberIds,
-    });
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.membersReordered", {
+        order: memberIds,
+      }),
+    ]);
 
     return { success: true, data: undefined };
   } catch (error) {

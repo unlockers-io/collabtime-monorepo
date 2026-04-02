@@ -22,33 +22,38 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
       return { success: false, error: "Invalid team ID" };
     }
 
-    const team = await getTeamRecord(teamId);
+    const [teamResult, membershipResult, requestResult] = await Promise.allSettled([
+      getTeamRecord(teamId),
+      prisma.membership.findUnique({
+        where: {
+          userId_teamId: {
+            userId: session.user.id,
+            teamId,
+          },
+        },
+      }),
+      prisma.joinRequest.findUnique({
+        where: {
+          userId_teamId: {
+            userId: session.user.id,
+            teamId,
+          },
+        },
+      }),
+    ]);
+
+    const team = teamResult.status === "fulfilled" ? teamResult.value : null;
     if (!team) {
       return { success: false, error: "Team not found" };
     }
 
-    const existingMembership = await prisma.membership.findUnique({
-      where: {
-        userId_teamId: {
-          userId: session.user.id,
-          teamId,
-        },
-      },
-    });
-
+    const existingMembership =
+      membershipResult.status === "fulfilled" ? membershipResult.value : null;
     if (existingMembership) {
       return { success: false, error: "You are already a member of this team" };
     }
 
-    const existingRequest = await prisma.joinRequest.findUnique({
-      where: {
-        userId_teamId: {
-          userId: session.user.id,
-          teamId,
-        },
-      },
-    });
-
+    const existingRequest = requestResult.status === "fulfilled" ? requestResult.value : null;
     if (existingRequest && existingRequest.status === "PENDING") {
       return { success: false, error: "You already have a pending request for this team" };
     }

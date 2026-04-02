@@ -5,7 +5,7 @@ import { Pencil, Trash2, Users } from "lucide-react";
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { removeGroup, updateGroup } from "@/lib/actions";
+import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
 import type { TeamGroup } from "@/types";
 
 type GroupCardProps = {

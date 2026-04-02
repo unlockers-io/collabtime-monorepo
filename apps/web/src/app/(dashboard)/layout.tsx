@@ -1,8 +1,7 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { Nav } from "@/components/nav";
-import { auth } from "@/lib/auth-server";
+import { getSession } from "@/lib/auth-server";
 
 // Force dynamic rendering for all dashboard pages - they require authentication
 export const dynamic = "force-dynamic";
@@ -12,9 +11,7 @@ type DashboardLayoutProps = {
 };
 
 const DashboardLayout = async ({ children }: DashboardLayoutProps) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getSession();
 
   if (!session) {
     redirect("/login");

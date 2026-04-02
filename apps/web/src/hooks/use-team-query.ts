@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getPublicTeam } from "@/lib/actions";
+import { getPublicTeam } from "@/lib/actions/team-read";
 import type { Team, TeamRole } from "@/types";
 
 type UseTeamQueryOptions = {

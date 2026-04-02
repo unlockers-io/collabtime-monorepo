@@ -27,7 +27,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
-import { addMember, inviteMember } from "@/lib/actions";
+import { inviteMember } from "@/lib/actions/invitation-actions";
+import { addMember } from "@/lib/actions/member-actions";
 import { COMMON_TIMEZONES, formatTimezoneLabel, getUserTimezone } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 import type { TeamGroup, TeamMember } from "@/types";

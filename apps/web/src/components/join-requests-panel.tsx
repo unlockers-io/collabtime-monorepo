@@ -6,7 +6,11 @@ import { Bell, Check, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { approveJoinRequest, denyJoinRequest, getPendingJoinRequests } from "@/lib/actions";
+import {
+  approveJoinRequest,
+  denyJoinRequest,
+  getPendingJoinRequests,
+} from "@/lib/actions/join-requests";
 
 type JoinRequest = {
   createdAt: Date;

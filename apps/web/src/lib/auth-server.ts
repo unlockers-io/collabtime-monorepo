@@ -3,6 +3,8 @@ import { execSync } from "node:child_process";
 import { createAuth, type Auth } from "@repo/auth/server";
 import { prisma } from "@repo/db";
 import { nextCookies } from "better-auth/next-js";
+import { headers } from "next/headers";
+import { cache } from "react";
 
 import { redis } from "./redis";
 
@@ -91,4 +93,11 @@ const auth = new Proxy({} as Auth, {
   },
 });
 
-export { auth, getAuth };
+/**
+ * Deduplicated getSession within a single RSC request via React.cache().
+ */
+const getSession = cache(async () => {
+  return auth.api.getSession({ headers: await headers() });
+});
+
+export { auth, getAuth, getSession };

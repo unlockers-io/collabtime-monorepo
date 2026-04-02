@@ -34,7 +34,12 @@ const inviteMember = async (
       return { success: false, error: "Invalid email address" };
     }
 
-    const team = await getTeamRecord(teamId);
+    const [teamResult, existingUserResult] = await Promise.allSettled([
+      getTeamRecord(teamId),
+      prisma.user.findUnique({ where: { email: trimmedEmail } }),
+    ]);
+
+    const team = teamResult.status === "fulfilled" ? teamResult.value : null;
     if (!team) {
       return { success: false, error: "Team not found" };
     }
@@ -48,10 +53,8 @@ const inviteMember = async (
       return { success: false, error: "This member slot is already claimed" };
     }
 
-    // Check if user is already a team member
-    const existingUser = await prisma.user.findUnique({
-      where: { email: trimmedEmail },
-    });
+    const existingUser =
+      existingUserResult.status === "fulfilled" ? existingUserResult.value : null;
 
     if (existingUser) {
       const existingMembership = await prisma.membership.findUnique({
