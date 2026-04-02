@@ -6,6 +6,7 @@ import { Button, buttonVariants, cn, ScrollArea, Spinner } from "@repo/ui";
 import { Clock, FolderKanban, LogIn, UserPlus, Users } from "lucide-react";
 import { motion } from "motion/react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -21,7 +22,6 @@ import { SortableGroupCard } from "@/components/sortable-group-card";
 import { SortableMemberCard } from "@/components/sortable-member-card";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
-import { TransitionLink } from "@/components/transition-link";
 import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { reorderGroups } from "@/lib/actions/group-actions";
 import { requestToJoin } from "@/lib/actions/join-requests";
@@ -678,14 +678,14 @@ const TeamPageClient = ({
                 {!isAuthenticated ? (
                   <>
                     <p className="text-sm text-muted-foreground">Sign in to request access</p>
-                    <TransitionLink
+                    <Link
                       href={`/login?redirect=/${teamId}`}
-                      transitionType="nav-forward"
+                      transitionTypes={["nav-forward"]}
                       className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
                     >
                       <LogIn className="mr-2 h-4 w-4" />
                       Sign in
-                    </TransitionLink>
+                    </Link>
                   </>
                 ) : teamStatus === "PENDING" ? (
                   <p className="text-sm text-muted-foreground">
