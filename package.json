@@ -46,7 +46,8 @@
   "packageManager": "pnpm@10.32.1",
   "pnpm": {
     "overrides": {
-      "@types/pg": "8.11.11"
+      "@types/pg": "8.11.11",
+      "next": ">=16.2.2"
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
