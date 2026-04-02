@@ -351,7 +351,10 @@ const Nav = (props: NavProps) => {
   // Centered variant - simple logo only
   if (variant === "centered") {
     return (
-      <header className="px-4 py-8 sm:px-6 flex items-center justify-center">
+      <header
+        className="px-4 py-8 sm:px-6 flex items-center justify-center"
+        style={{ viewTransitionName: "site-header" }}
+      >
         <NavLogo />
       </header>
     );
@@ -366,7 +369,7 @@ const Nav = (props: NavProps) => {
       props;
 
     return (
-      <header className="gap-4 flex flex-col">
+      <header className="gap-4 flex flex-col" style={{ viewTransitionName: "site-header" }}>
         <div className="gap-3 flex items-start justify-between">
           <div className="min-w-0 gap-3 flex items-center">
             <NavLogo showTitle={false} />
@@ -417,7 +420,10 @@ const Nav = (props: NavProps) => {
 
   // Default variant - simple nav with logo and auth
   return (
-    <header className="px-4 py-6 sm:px-6 flex items-center justify-between">
+    <header
+      className="px-4 py-6 sm:px-6 flex items-center justify-between"
+      style={{ viewTransitionName: "site-header" }}
+    >
       <NavLogo />
       <div className="gap-2 flex items-center">
         <ModeToggle />
