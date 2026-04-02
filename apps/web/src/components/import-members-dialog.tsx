@@ -21,7 +21,7 @@ import { CheckCircle, Download, Upload, Users, XCircle } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { importMembers } from "@/lib/actions";
+import { importMembers } from "@/lib/actions/member-actions";
 import { COMMON_TIMEZONES, formatTimezoneLabel, fuzzyMatchTimezone } from "@/lib/timezones";
 
 type ParsedRow = {

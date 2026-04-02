@@ -14,7 +14,7 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { EditMemberDialog } from "@/components/edit-member-dialog";
-import { removeMember } from "@/lib/actions";
+import { removeMember } from "@/lib/actions/member-actions";
 import {
   formatTimezoneLabel,
   isCurrentlyWorking,

@@ -17,8 +17,6 @@ const createGroup = async (
   input: { name: string },
 ): Promise<ActionResult<{ group: TeamGroup; team: Team }>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
       return { success: false, error: "Invalid team ID" };
@@ -29,6 +27,8 @@ const createGroup = async (
       const errorMessage = inputResult.error.issues[0]?.message ?? "Invalid group data";
       return { success: false, error: errorMessage };
     }
+
+    await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
     if (!team) {
@@ -43,11 +43,12 @@ const createGroup = async (
 
     team.groups.push(newGroup);
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.groupCreated", newGroup);
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.groupCreated", newGroup),
+    ]);
 
     return {
       success: true,
@@ -65,8 +66,6 @@ const updateGroup = async (
   updates: Partial<{ name: string }>,
 ): Promise<ActionResult<Team>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const groupUuidResult = UUIDSchema.safeParse(groupId);
 
@@ -82,6 +81,8 @@ const updateGroup = async (
       const errorMessage = updateResult.error.issues[0]?.message ?? "Invalid update data";
       return { success: false, error: errorMessage };
     }
+
+    await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
     if (!team) {
@@ -100,11 +101,12 @@ const updateGroup = async (
 
     team.groups[groupIndex] = updatedGroup;
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.groupUpdated", updatedGroup);
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.groupUpdated", updatedGroup),
+    ]);
 
     return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
@@ -115,8 +117,6 @@ const updateGroup = async (
 
 const removeGroup = async (teamId: string, groupId: string): Promise<ActionResult<Team>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     const teamUuidResult = UUIDSchema.safeParse(teamId);
     const groupUuidResult = UUIDSchema.safeParse(groupId);
 
@@ -126,6 +126,8 @@ const removeGroup = async (teamId: string, groupId: string): Promise<ActionResul
     if (!groupUuidResult.success) {
       return { success: false, error: "Invalid group ID" };
     }
+
+    await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
     if (!team) {
@@ -147,11 +149,12 @@ const removeGroup = async (teamId: string, groupId: string): Promise<ActionResul
     // Update order values for remaining groups
     team.groups = team.groups.map((g, index) => ({ ...g, order: index }));
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.groupRemoved", { groupId });
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.groupRemoved", { groupId }),
+    ]);
 
     return { success: true, data: sanitizeTeam(team) };
   } catch (error) {
@@ -165,12 +168,12 @@ const reorderGroups = async (
   groupIds: Array<string>,
 ): Promise<ActionResult<void>> => {
   try {
-    await requireTeamAdmin(teamId);
-
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
       return { success: false, error: "Invalid team ID" };
     }
+
+    await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
     if (!team) {
@@ -189,13 +192,14 @@ const reorderGroups = async (
       order: index,
     }));
 
-    await redis.set(`team:${teamId}`, JSON.stringify(team), {
-      ex: TEAM_ACTIVE_TTL_SECONDS,
-    });
-
-    await realtime.channel(`team-${teamId}`).emit("team.groupsReordered", {
-      order: groupIds,
-    });
+    await Promise.all([
+      redis.set(`team:${teamId}`, JSON.stringify(team), {
+        ex: TEAM_ACTIVE_TTL_SECONDS,
+      }),
+      realtime.channel(`team-${teamId}`).emit("team.groupsReordered", {
+        order: groupIds,
+      }),
+    ]);
 
     return { success: true, data: undefined };
   } catch (error) {

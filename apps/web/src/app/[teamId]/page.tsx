@@ -1,10 +1,9 @@
 import { prisma } from "@repo/db";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
-import { getTeamName, validateTeam } from "@/lib/actions";
-import { auth } from "@/lib/auth-server";
+import { getTeamName, validateTeam } from "@/lib/actions/team-read";
+import { getSession } from "@/lib/auth-server";
 import { isTeamRole } from "@/types";
 import type { TeamStatus } from "@/types";
 
@@ -17,13 +16,18 @@ type TeamPageProps = {
 export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metadata> => {
   const { teamId } = await params;
 
-  const exists = await validateTeam(teamId);
+  const [existsResult, teamNameResult] = await Promise.allSettled([
+    validateTeam(teamId),
+    getTeamName(teamId),
+  ]);
+
+  const exists = existsResult.status === "fulfilled" ? existsResult.value : false;
 
   if (!exists) {
     notFound();
   }
 
-  const teamName = await getTeamName(teamId);
+  const teamName = teamNameResult.status === "fulfilled" ? teamNameResult.value : null;
 
   return {
     title: teamName ?? "Team Workspace",
@@ -32,17 +36,22 @@ export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metad
 };
 
 const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus> => {
-  const membership = await prisma.membership.findUnique({
-    where: { userId_teamId: { userId, teamId } },
-  });
+  const [membershipResult, joinRequestResult] = await Promise.allSettled([
+    prisma.membership.findUnique({
+      where: { userId_teamId: { userId, teamId } },
+    }),
+    prisma.joinRequest.findUnique({
+      where: { userId_teamId: { userId, teamId } },
+    }),
+  ]);
+
+  const membership = membershipResult.status === "fulfilled" ? membershipResult.value : null;
 
   if (membership && isTeamRole(membership.role)) {
     return membership.role;
   }
 
-  const joinRequest = await prisma.joinRequest.findUnique({
-    where: { userId_teamId: { userId, teamId } },
-  });
+  const joinRequest = joinRequestResult.status === "fulfilled" ? joinRequestResult.value : null;
 
   if (joinRequest?.status === "PENDING") {
     return "PENDING";
@@ -53,19 +62,21 @@ const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus
 
 const TeamPage = async ({ params }: TeamPageProps) => {
   const { teamId } = await params;
-  const exists = await validateTeam(teamId);
+
+  const [existsResult, sessionResult, spaceResult] = await Promise.allSettled([
+    validateTeam(teamId),
+    getSession(),
+    prisma.space.findUnique({ where: { teamId } }),
+  ]);
+
+  const exists = existsResult.status === "fulfilled" ? existsResult.value : false;
 
   if (!exists) {
     notFound();
   }
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const space = await prisma.space.findUnique({
-    where: { teamId },
-  });
+  const session = sessionResult.status === "fulfilled" ? sessionResult.value : null;
+  const space = spaceResult.status === "fulfilled" ? spaceResult.value : null;
 
   if (space?.isPrivate) {
     if (!session) {
