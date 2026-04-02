@@ -1,8 +1,9 @@
 import { Card } from "@repo/ui";
 import { Button } from "@repo/ui";
 import { Home } from "lucide-react";
-import Link from "next/link";
 import { ViewTransition } from "react";
+
+import { TransitionLink } from "@/components/transition-link";
 
 export const metadata = {
   title: "404",
@@ -34,12 +35,12 @@ const NotFound = () => {
                 you typed a URL, it may have drifted into a parallel timezone.
               </p>
 
-              <Link href="/" transitionTypes={["nav-back"]} className="w-full">
+              <TransitionLink href="/" transitionType="nav-back" className="w-full">
                 <Button className="w-full">
                   <Home className="h-4 w-4" />
                   Back to home
                 </Button>
-              </Link>
+              </TransitionLink>
 
               <div className="gap-2 p-4 text-xs flex flex-col rounded-xl border border-border bg-muted text-muted-foreground">
                 <div className="font-medium text-foreground">Quick checks</div>

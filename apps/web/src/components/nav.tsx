@@ -23,11 +23,11 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { TransitionLink } from "@/components/transition-link";
 import { signOut, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
@@ -36,9 +36,9 @@ import { ModeToggle } from "./mode-toggle";
 
 // Logo component
 const NavLogo = ({ showTitle = true }: { showTitle?: boolean }) => (
-  <Link
+  <TransitionLink
     href="/"
-    transitionTypes={["nav-back"]}
+    transitionType="nav-back"
     className="gap-3 flex items-center text-foreground transition-opacity hover:opacity-80"
     aria-label={!showTitle ? "Go to homepage" : undefined}
   >
@@ -46,7 +46,7 @@ const NavLogo = ({ showTitle = true }: { showTitle?: boolean }) => (
       <Globe className="h-5 w-5 text-primary-foreground" />
     </div>
     {showTitle && <span className="text-xl font-bold tracking-tight">Collab Time</span>}
-  </Link>
+  </TransitionLink>
 );
 
 // Team title with optional editing
@@ -182,9 +182,9 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
             <DropdownMenuSeparator />
             <DropdownMenuItem
               render={
-                <Link
+                <TransitionLink
                   href="/login"
-                  transitionTypes={["nav-forward"]}
+                  transitionType="nav-forward"
                   className={cn(
                     buttonVariants({ variant: "outline" }),
                     "gap-2 flex cursor-pointer items-center",
@@ -202,9 +202,9 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
             <DropdownMenuSeparator />
             <DropdownMenuItem
               render={
-                <Link
+                <TransitionLink
                   href="/settings"
-                  transitionTypes={["nav-forward"]}
+                  transitionType="nav-forward"
                   className="gap-2 flex items-center"
                 />
               }
@@ -292,9 +292,9 @@ const MobileMenu = ({
             </div>
 
             {!isAuthenticated && (
-              <Link
+              <TransitionLink
                 href="/login"
-                transitionTypes={["nav-forward"]}
+                transitionType="nav-forward"
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
                   "gap-2 flex items-center justify-start",
@@ -302,13 +302,13 @@ const MobileMenu = ({
               >
                 <LogIn className="h-4 w-4" />
                 Sign in
-              </Link>
+              </TransitionLink>
             )}
 
             {isAuthenticated && (
-              <Link
+              <TransitionLink
                 href="/settings"
-                transitionTypes={["nav-forward"]}
+                transitionType="nav-forward"
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
                   "gap-2 flex items-center justify-start",
@@ -316,7 +316,7 @@ const MobileMenu = ({
               >
                 <Settings className="h-4 w-4" />
                 Settings
-              </Link>
+              </TransitionLink>
             )}
           </div>
         </div>
@@ -438,21 +438,21 @@ const Nav = (props: NavProps) => {
       <div className="gap-2 flex items-center">
         <ModeToggle />
         {isAuthenticated ? (
-          <Link
+          <TransitionLink
             href="/settings"
-            transitionTypes={["nav-forward"]}
+            transitionType="nav-forward"
             className={buttonVariants({ variant: "outline" })}
           >
             <Settings className="h-4 w-4" />
-          </Link>
+          </TransitionLink>
         ) : (
-          <Link
+          <TransitionLink
             href="/login"
-            transitionTypes={["nav-forward"]}
+            transitionType="nav-forward"
             className={buttonVariants({ variant: "outline" })}
           >
             <LogIn className="h-4 w-4" />
-          </Link>
+          </TransitionLink>
         )}
       </div>
     </header>

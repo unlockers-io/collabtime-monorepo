@@ -3,12 +3,12 @@
 import { Button, Field, FieldError, FieldLabel, Input, Card, Spinner } from "@repo/ui";
 import { useForm } from "@tanstack/react-form";
 import { Mail, Lock, ArrowRight } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, ViewTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { TransitionLink } from "@/components/transition-link";
 import { signIn } from "@/lib/auth-client";
 
 const loginSchema = z.object({
@@ -152,13 +152,13 @@ const LoginPage = () => {
 
           <div className="text-sm text-center text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link
+            <TransitionLink
               href="/signup"
-              transitionTypes={["nav-forward"]}
+              transitionType="nav-forward"
               className="font-medium text-foreground hover:underline"
             >
               Sign up
-            </Link>
+            </TransitionLink>
           </div>
         </div>
       </Card>

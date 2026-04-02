@@ -4,12 +4,12 @@ import { Button, buttonVariants, cn, Spinner } from "@repo/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Check, Mail, Shield, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, ViewTransition } from "react";
 import { toast } from "sonner";
 
 import { Nav } from "@/components/nav";
+import { TransitionLink } from "@/components/transition-link";
 import { acceptInvitation, declineInvitation } from "@/lib/actions/invitation-actions";
 import { createTeam } from "@/lib/actions/team-create";
 import { useSession } from "@/lib/auth-client";
@@ -162,23 +162,23 @@ const Home = () => {
               </button>
             ) : (
               <div className="gap-3 flex w-full flex-col items-center">
-                <Link
+                <TransitionLink
                   href="/signup"
-                  transitionTypes={["nav-forward"]}
+                  transitionType="nav-forward"
                   className={cn(buttonVariants({ size: "lg" }), "sm:w-auto sm:min-w-72 w-full")}
                 >
                   Get Started
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
+                </TransitionLink>
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{" "}
-                  <Link
+                  <TransitionLink
                     href="/login"
-                    transitionTypes={["nav-forward"]}
+                    transitionType="nav-forward"
                     className="font-medium text-foreground hover:underline"
                   >
                     Sign in
-                  </Link>
+                  </TransitionLink>
                 </p>
               </div>
             )}
@@ -299,9 +299,9 @@ const Home = () => {
                         transition={{ duration: 0.2 }}
                         className="group p-3 flex items-center justify-between rounded-xl border border-border bg-card transition-colors hover:border-input"
                       >
-                        <Link
+                        <TransitionLink
                           href={`/${team.teamId}`}
-                          transitionTypes={["nav-forward"]}
+                          transitionType="nav-forward"
                           className="gap-3 flex flex-1 items-center"
                         >
                           <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-secondary">
@@ -317,7 +317,7 @@ const Home = () => {
                                 : `${team.memberCount} member${team.memberCount !== 1 ? "s" : ""}`}
                             </span>
                           </div>
-                        </Link>
+                        </TransitionLink>
                         {team.role === "ADMIN" && (
                           <Shield className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                         )}
