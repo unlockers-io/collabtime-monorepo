@@ -28,4 +28,3 @@ const TransitionLink = ({ transitionType, href, onClick, ...props }: TransitionL
 };
 
 export { TransitionLink };
-export type { TransitionLinkProps };
