@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { ViewTransition } from "react";
 
 import { getSession } from "@/lib/auth-server";
 
@@ -12,13 +13,19 @@ const SettingsPage = async () => {
   }
 
   return (
-    <SettingsClient
-      user={{
-        id: session.user.id,
-        name: session.user.name ?? "",
-        email: session.user.email,
-      }}
-    />
+    <ViewTransition
+      enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      default="none"
+    >
+      <SettingsClient
+        user={{
+          id: session.user.id,
+          name: session.user.name ?? "",
+          email: session.user.email,
+        }}
+      />
+    </ViewTransition>
   );
 };
 

@@ -1,6 +1,7 @@
 import { prisma } from "@repo/db";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { ViewTransition } from "react";
 
 import { getTeamName, validateTeam } from "@/lib/actions/team-read";
 import { getSession } from "@/lib/auth-server";
@@ -96,7 +97,13 @@ const TeamPage = async ({ params }: TeamPageProps) => {
   const teamStatus: TeamStatus = session ? await getTeamStatus(session.user.id, teamId) : "none";
 
   return (
-    <TeamPageClient teamId={teamId} isAuthenticated={Boolean(session)} teamStatus={teamStatus} />
+    <ViewTransition
+      enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+      default="none"
+    >
+      <TeamPageClient teamId={teamId} isAuthenticated={Boolean(session)} teamStatus={teamStatus} />
+    </ViewTransition>
   );
 };
 

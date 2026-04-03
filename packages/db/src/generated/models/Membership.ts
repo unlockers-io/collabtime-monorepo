@@ -165,7 +165,7 @@ export type MembershipGroupByOutputType = {
   _max: MembershipMaxAggregateOutputType | null
 }
 
-type GetMembershipGroupByPayload<T extends MembershipGroupByArgs> = Prisma.PrismaPromise<
+export type GetMembershipGroupByPayload<T extends MembershipGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<MembershipGroupByOutputType, T['by']> &
       {
