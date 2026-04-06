@@ -1,7 +1,6 @@
 {
   "extends": "@repo/typescript-config/library.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "outDir": "dist",
     "rootDir": "src",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
