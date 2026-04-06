@@ -10,7 +10,7 @@ type AuthLayoutProps = {
 const AuthLayout = ({ children }: AuthLayoutProps) => {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="px-4 py-6 sm:px-6 flex" style={{ viewTransitionName: "site-header" }}>
+      <header className="px-4 py-6 sm:px-6 flex">
         <Link
           href="/"
           transitionTypes={["nav-back"]}
