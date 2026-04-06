@@ -26,7 +26,6 @@ import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { reorderGroups } from "@/lib/actions/group-actions";
 import { requestToJoin } from "@/lib/actions/join-requests";
 import { updateTeamName, updateMember, reorderMembers } from "@/lib/actions/member-actions";
-import { useSession } from "@/lib/auth-client";
 import { useRealtime } from "@/lib/realtime-client";
 import type { TeamGroup, TeamMember, TeamStatus } from "@/types";
 
@@ -40,6 +39,7 @@ type TeamPageClientProps = {
   isAuthenticated: boolean;
   teamId: string;
   teamStatus: TeamStatus;
+  userId?: string;
 };
 
 const COLLAPSED_GROUPS_KEY = "collabtime-collapsed-groups";
@@ -48,6 +48,7 @@ const TeamPageClient = ({
   teamId,
   isAuthenticated,
   teamStatus: initialStatus,
+  userId,
 }: TeamPageClientProps) => {
   const [teamStatus, setTeamStatus] = useState<TeamStatus>(initialStatus);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
@@ -67,22 +68,20 @@ const TeamPageClient = ({
   // Fetch team data with TanStack Query
   const { data: teamData, error: teamError } = useTeamQuery({ teamId });
 
-  const { data: session } = useSession();
-
   // Resolve admin status client-side when server-side session detection fails
   useEffect(() => {
     const resolveRole = async () => {
-      if (teamStatus !== "none" || !session?.user?.id) {
+      if (teamStatus !== "none" || !userId) {
         return;
       }
       const { getTeamMembershipRole } = await import("@/lib/actions/team-read");
-      const role = await getTeamMembershipRole(teamId, session.user.id);
+      const role = await getTeamMembershipRole(teamId, userId);
       if (role) {
         setTeamStatus(role);
       }
     };
     resolveRole();
-  }, [session?.user?.id, teamId, teamStatus]);
+  }, [userId, teamId, teamStatus]);
 
   const isAdmin = teamStatus === "ADMIN";
   const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
@@ -98,7 +97,7 @@ const TeamPageClient = ({
   const members = useMemo(() => teamData?.team?.members ?? [], [teamData?.team?.members]);
   const groups = useMemo(() => teamData?.team?.groups ?? [], [teamData?.team?.groups]);
 
-  const currentUserId = isMember ? session?.user?.id : undefined;
+  const currentUserId = isMember ? userId : undefined;
   const hasClaimedProfile = useMemo(
     () => Boolean(currentUserId && members.some((m) => m.userId === currentUserId)),
     [currentUserId, members],
@@ -587,6 +586,7 @@ const TeamPageClient = ({
         {/* Header */}
         <Nav
           variant="team"
+          isAuthenticated={isAuthenticated}
           teamName={displayName}
           isAdmin={isAdmin}
           isEditingName={isEditingName}
