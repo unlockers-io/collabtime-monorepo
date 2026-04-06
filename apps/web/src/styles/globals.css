@@ -13,12 +13,6 @@
   }
 }
 
-/* View Transition: Persistent Element Isolation */
-::view-transition-group(site-header),
-::view-transition-group(site-footer) {
-  animation: none;
-}
-
 /* View Transition Recipes */
 :root {
   --duration-exit: 150ms;

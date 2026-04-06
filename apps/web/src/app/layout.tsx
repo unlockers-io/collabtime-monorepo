@@ -98,10 +98,7 @@ const RootLayout = ({
       >
         <Providers>
           <div className="flex flex-1 flex-col">{children}</div>
-          <footer
-            className="px-4 py-6 text-sm border-t border-border text-muted-foreground"
-            style={{ viewTransitionName: "site-footer" }}
-          >
+          <footer className="px-4 py-6 text-sm border-t border-border text-muted-foreground">
             <div className="max-w-5xl gap-3 mx-auto flex w-full items-center justify-between">
               <span>© {new Date().getFullYear()} Collab Time. All rights reserved.</span>
               <a
