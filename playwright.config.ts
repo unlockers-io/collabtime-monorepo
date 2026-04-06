@@ -61,13 +61,14 @@ export default defineConfig({
     trace: "on-first-retry",
     video: "retain-on-failure",
   },
-  webServer: [
-    {
-      command: process.env.CI ? "pnpm --filter web start" : "pnpm run dev --filter=web",
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-      url: webUrl,
-    },
-  ],
+  webServer: process.env.CI
+    ? [
+        {
+          command: "pnpm --filter @repo/web start",
+          timeout: 120_000,
+          url: webUrl,
+        },
+      ]
+    : [],
   workers: process.env.CI ? 1 : undefined,
 });
