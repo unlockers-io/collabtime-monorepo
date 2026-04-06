@@ -4,7 +4,6 @@ import { type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { Button, buttonVariants, cn, ScrollArea, Spinner } from "@repo/ui";
 import { Clock, FolderKanban, LogIn, UserPlus, Users } from "lucide-react";
-import { motion } from "motion/react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -577,12 +576,7 @@ const TeamPageClient = ({
 
   const mainContent = (
     <div className="px-4 py-6 sm:px-6 lg:px-8 xl:px-12 min-h-screen w-full">
-      <motion.main
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="max-w-450 gap-6 mx-auto flex w-full flex-col"
-      >
+      <main className="max-w-450 gap-6 mx-auto flex w-full flex-col">
         {/* Header */}
         <Nav
           variant="team"
@@ -598,31 +592,14 @@ const TeamPageClient = ({
 
         {/* Team Insights */}
         {members.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.5,
-              delay: 0.05,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-          >
+          <section>
             <TeamInsights members={orderedMembers} groups={groups} />
-          </motion.section>
+          </section>
         )}
 
         {/* Timezone Visualizer */}
         {members.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.5,
-              delay: 0.1,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            className="rounded-2xl shadow-sm overflow-hidden border border-border bg-card"
-          >
+          <section className="rounded-2xl shadow-sm overflow-hidden border border-border bg-card">
             <div className="gap-0.5 px-4 py-3 sm:px-6 sm:py-4 flex flex-col border-b border-border">
               <h2 className="gap-2 text-sm font-semibold flex items-center text-foreground">
                 <Clock className="h-4 w-4 text-muted-foreground" />
@@ -638,16 +615,11 @@ const TeamPageClient = ({
                 onToggleGroupCollapse={toggleGroupCollapse}
               />
             </div>
-          </motion.section>
+          </section>
         )}
 
         {/* Team Members & Groups */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="gap-6 xl:grid-cols-2 grid grid-cols-1"
-        >
+        <div className="gap-6 xl:grid-cols-2 grid grid-cols-1">
           {/* Team Members */}
           <section className="gap-4 rounded-2xl p-5 shadow-sm flex flex-col border border-border bg-card">
             <div className="flex items-center justify-between">
@@ -735,8 +707,8 @@ const TeamPageClient = ({
 
             {isAdmin && <AddGroupDialog teamId={teamId} onGroupAdded={handleGroupAdded} />}
           </section>
-        </motion.div>
-      </motion.main>
+        </div>
+      </main>
     </div>
   );
 
