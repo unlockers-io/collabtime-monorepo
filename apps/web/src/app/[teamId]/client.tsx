@@ -74,14 +74,10 @@ const TeamPageClient = ({
       if (teamStatus !== "none" || !userId) {
         return;
       }
-      try {
-        const { getTeamMembershipRole } = await import("@/lib/actions/team-read");
-        const role = await getTeamMembershipRole(teamId, userId);
-        if (role) {
-          setTeamStatus(role);
-        }
-      } catch {
-        toast.error("Failed to resolve team role");
+      const { getTeamMembershipRole } = await import("@/lib/actions/team-read");
+      const role = await getTeamMembershipRole(teamId, userId);
+      if (role) {
+        setTeamStatus(role);
       }
     };
     resolveRole();

@@ -5,12 +5,7 @@ import { getSession } from "@/lib/auth-server";
 import { HomeClient } from "./home-client";
 
 const Home = async () => {
-  let session = null;
-  try {
-    session = await getSession();
-  } catch {
-    // Degrade gracefully — show unauthenticated view if session fetch fails
-  }
+  const session = await getSession();
 
   return (
     <ViewTransition
