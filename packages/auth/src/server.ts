@@ -28,7 +28,7 @@ type AuthConfig = {
 
 /**
  * Trusted origins for the auth system.
- * Includes localhost for development (portless uses *.localhost:1355) and the main production domains.
+ * Includes localhost for development (portless via OrbStack) and the main production domains.
  */
 const TRUSTED_ORIGINS = [
   "http://localhost:3000",
