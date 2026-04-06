@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "portless run --force --name collabtime.web next dev --turbopack",
+    "dev": "portless run --name collabtime.web next dev --turbopack",
     "dev:ci": "next dev",
     "build": "next build",
     "start": "next start",
