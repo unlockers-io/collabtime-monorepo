@@ -102,7 +102,12 @@ const TeamPage = async ({ params }: TeamPageProps) => {
       exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
       default="none"
     >
-      <TeamPageClient teamId={teamId} isAuthenticated={Boolean(session)} teamStatus={teamStatus} />
+      <TeamPageClient
+        teamId={teamId}
+        isAuthenticated={Boolean(session)}
+        teamStatus={teamStatus}
+        userId={session?.user?.id}
+      />
     </ViewTransition>
   );
 };
