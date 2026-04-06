@@ -28,7 +28,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { signOut, useSession } from "@/lib/auth-client";
+import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 import { CurrentTimeDisplay } from "./current-time-display";
@@ -326,7 +326,7 @@ const MobileMenu = ({
 );
 
 // Main Nav component
-type NavProps =
+type NavProps = { isAuthenticated: boolean } & (
   | { variant?: "default" | "centered" }
   | {
       isAdmin: boolean;
@@ -337,14 +337,14 @@ type NavProps =
       onSaveName: () => void;
       teamName: string;
       variant: "team";
-    };
+    }
+);
 
 const Nav = (props: NavProps) => {
-  const { data: session } = useSession();
+  const { isAuthenticated } = props;
   const [hasCopied, setHasCopied] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isAuthenticated = Boolean(session?.user);
   const variant = props.variant || "default";
 
   const handleCopyLink = async () => {
