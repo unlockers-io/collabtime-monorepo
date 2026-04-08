@@ -5,7 +5,15 @@ export { cn } from "./lib/utils";
 export { Button, buttonVariants } from "./components/button";
 export { Input } from "./components/input";
 export { Label } from "./components/label";
-export { Card } from "./components/card";
+export {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./components/card";
 export { Badge, badgeVariants } from "./components/badge";
 export { Spinner } from "./components/spinner";
 export { Textarea } from "./components/textarea";

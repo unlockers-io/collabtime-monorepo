@@ -1,8 +1,20 @@
 "use client";
 
-import { Button, Field, FieldError, FieldLabel, Input, Card, Spinner } from "@repo/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  Input,
+} from "@repo/ui";
 import { useForm } from "@tanstack/react-form";
-import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -65,126 +77,108 @@ const SignupPage = () => {
   });
 
   return (
-    <Card className="max-w-md p-8 w-full">
-      <div className="gap-8 flex flex-col">
-        <div className="gap-2 flex flex-col text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Create your account</h1>
-          <p className="text-sm text-muted-foreground">Get started with Collab Time for free</p>
-        </div>
-
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl">Create your account</CardTitle>
+        <CardDescription>Enter your details to get started with Collab Time</CardDescription>
+      </CardHeader>
+      <CardContent>
         <form
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
-          className="gap-4 flex flex-col"
           noValidate
         >
-          <form.Field name="name">
-            {(field) => (
-              <Field data-invalid={!field.state.meta.isValid}>
-                <FieldLabel htmlFor="name">Name</FieldLabel>
-                <div className="relative">
-                  <User className="left-3 h-4 w-4 absolute top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Your name"
-                    className="pl-10"
-                    autoComplete="name"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    aria-invalid={!field.state.meta.isValid}
-                  />
-                </div>
-                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )}
-          </form.Field>
+          <FieldGroup>
+            <form.Field name="name">
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <FieldLabel htmlFor="name">Full Name</FieldLabel>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="John Doe"
+                      autoComplete="name"
+                      disabled={isLoading}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            </form.Field>
 
-          <form.Field name="email">
-            {(field) => (
-              <Field data-invalid={!field.state.meta.isValid}>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <div className="relative">
-                  <Mail className="left-3 h-4 w-4 absolute top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    className="pl-10"
-                    autoComplete="email"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    aria-invalid={!field.state.meta.isValid}
-                  />
-                </div>
-                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )}
-          </form.Field>
+            <form.Field name="email">
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="m@example.com"
+                      autoComplete="email"
+                      disabled={isLoading}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            </form.Field>
 
-          <form.Field name="password">
-            {(field) => (
-              <Field data-invalid={!field.state.meta.isValid}>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
-                <div className="relative">
-                  <Lock className="left-3 h-4 w-4 absolute top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="At least 8 characters"
-                    className="pl-10"
-                    autoComplete="new-password"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    aria-invalid={!field.state.meta.isValid}
-                  />
-                </div>
-                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )}
-          </form.Field>
+            <form.Field name="password">
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <Input
+                      id="password"
+                      type="password"
+                      autoComplete="new-password"
+                      disabled={isLoading}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : (
+                      <FieldDescription>Must be at least 8 characters long.</FieldDescription>
+                    )}
+                  </Field>
+                );
+              }}
+            </form.Field>
 
-          <form.Subscribe
-            selector={(state) => ({
-              canSubmit: state.canSubmit,
-              isSubmitting: state.isSubmitting,
-            })}
-          >
-            {({ canSubmit }) => (
-              <Button type="submit" disabled={isLoading || !canSubmit} className="w-full">
-                {isLoading ? (
-                  <span className="gap-2 flex items-center">
-                    <Spinner />
-                    Creating account...
-                  </span>
-                ) : (
-                  <span className="gap-2 flex items-center">
-                    Create account
-                    <ArrowRight className="h-4 w-4" />
-                  </span>
+            <Field>
+              <form.Subscribe selector={(state) => state.canSubmit}>
+                {(canSubmit) => (
+                  <Button type="submit" disabled={isLoading || !canSubmit}>
+                    {isLoading ? "Creating account..." : "Create account"}
+                  </Button>
                 )}
-              </Button>
-            )}
-          </form.Subscribe>
+              </form.Subscribe>
+              <FieldDescription className="text-center">
+                Already have an account? <Link href="/login">Sign in</Link>
+              </FieldDescription>
+            </Field>
+          </FieldGroup>
         </form>
-
-        <p className="text-xs text-center text-muted-foreground">
-          By creating an account, you agree to our terms of service and privacy policy.
-        </p>
-
-        <div className="text-sm text-center text-muted-foreground">
-          Already have an account?{" "}
-          <Link href="/login" className="font-medium text-foreground hover:underline">
-            Sign in
-          </Link>
-        </div>
-      </div>
+      </CardContent>
     </Card>
   );
 };
