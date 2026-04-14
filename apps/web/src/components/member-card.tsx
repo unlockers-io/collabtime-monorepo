@@ -1,14 +1,14 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
+import { Spinner } from "@repo/ui/components/spinner";
 import {
-  Button,
-  Spinner,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@repo/ui";
-import { Badge } from "@repo/ui";
+} from "@repo/ui/components/tooltip";
+import { Badge } from "@repo/ui/components/badge";
 import { Hand, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";

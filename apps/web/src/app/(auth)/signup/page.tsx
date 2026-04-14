@@ -1,19 +1,21 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
 import {
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+} from "@repo/ui/components/card";
+import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-  Input,
-} from "@repo/ui";
+} from "@repo/ui/components/field";
+import { Input } from "@repo/ui/components/input";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

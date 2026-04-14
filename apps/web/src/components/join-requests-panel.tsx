@@ -1,6 +1,9 @@
 "use client";
 
-import { Badge, Button, ScrollArea, Spinner } from "@repo/ui";
+import { Badge } from "@repo/ui/components/badge";
+import { Button } from "@repo/ui/components/button";
+import { ScrollArea } from "@repo/ui/components/scroll-area";
+import { Spinner } from "@repo/ui/components/spinner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useState, useTransition } from "react";

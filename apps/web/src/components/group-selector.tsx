@@ -1,6 +1,12 @@
 "use client";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/components/select";
 import React from "react";
 
 import type { TeamGroup } from "@/types";

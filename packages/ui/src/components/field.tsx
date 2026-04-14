@@ -20,12 +20,12 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
         role="group"
         data-orientation={orientation}
         className={cn(
-          "ui:group/field ui:flex ui:w-full ui:gap-3 ui:[&>*]:w-full ui:[&>.sr-only]:w-auto",
-          "ui:data-[invalid=true]:text-red-600 ui:dark:data-[invalid=true]:text-red-400",
-          orientation === "vertical" && "ui:flex-col",
+          "group/field flex w-full gap-3 [&>*]:w-full [&>.sr-only]:w-auto",
+          "data-[invalid=true]:text-red-600 dark:data-[invalid=true]:text-red-400",
+          orientation === "vertical" && "flex-col",
           orientation === "horizontal" &&
-            "ui:flex-row ui:items-center ui:has-[>[data-slot=field-content]]:items-start ui:[&>[data-slot=field-label]]:flex-auto",
-          orientation === "responsive" && "ui:flex-col ui:sm:flex-row ui:sm:items-center",
+            "flex-row items-center has-[>[data-slot=field-content]]:items-start [&>[data-slot=field-label]]:flex-auto",
+          orientation === "responsive" && "flex-col sm:flex-row sm:items-center",
           className,
         )}
         {...props}
@@ -41,7 +41,7 @@ const FieldGroup = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
       ref={ref}
       data-slot="field-group"
       className={cn(
-        "ui:group/field-group ui:flex ui:w-full ui:flex-col ui:gap-7 ui:[&>[data-slot=field-group]]:gap-4",
+        "group/field-group flex w-full flex-col gap-7 [&>[data-slot=field-group]]:gap-4",
         className,
       )}
       {...props}
@@ -59,9 +59,9 @@ const FieldLabel = React.forwardRef<
       ref={ref}
       data-slot="field-label"
       className={cn(
-        "ui:group/field-label ui:flex ui:w-fit ui:items-center ui:gap-2 ui:text-sm ui:leading-snug ui:font-medium ui:text-foreground",
-        "ui:group-data-[invalid=true]/field:text-destructive",
-        "ui:group-data-[disabled=true]:pointer-events-none ui:group-data-[disabled=true]:opacity-50",
+        "group/field-label flex w-fit items-center gap-2 text-sm leading-snug font-medium text-foreground",
+        "group-data-[invalid=true]/field:text-destructive",
+        "group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50",
         className,
       )}
       {...props}
@@ -75,7 +75,7 @@ const FieldContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
     <div
       ref={ref}
       data-slot="field-content"
-      className={cn("ui:flex ui:flex-col ui:gap-2", className)}
+      className={cn("flex flex-col gap-2", className)}
       {...props}
     />
   ),
@@ -90,7 +90,7 @@ const FieldDescription = React.forwardRef<
     <p
       ref={ref}
       data-slot="field-description"
-      className={cn("ui:text-xs ui:text-muted-foreground", className)}
+      className={cn("text-xs text-muted-foreground", className)}
       {...props}
     />
   );
@@ -125,7 +125,7 @@ const FieldError = React.forwardRef<HTMLParagraphElement, FieldErrorProps>(
       <p
         ref={ref}
         data-slot="field-error"
-        className={cn("ui:text-xs ui:font-medium ui:text-destructive", className)}
+        className={cn("text-xs font-medium text-destructive", className)}
         {...props}
       >
         {message}
@@ -142,7 +142,7 @@ const FieldSet = React.forwardRef<
   <fieldset
     ref={ref}
     data-slot="field-set"
-    className={cn("ui:flex ui:flex-col ui:gap-4", className)}
+    className={cn("flex flex-col gap-4", className)}
     {...props}
   />
 ));
@@ -153,7 +153,7 @@ const FieldLegend = React.forwardRef<HTMLLegendElement, React.HTMLAttributes<HTM
     <legend
       ref={ref}
       data-slot="field-legend"
-      className={cn("ui:text-sm ui:font-semibold ui:text-foreground", className)}
+      className={cn("text-sm font-semibold text-foreground", className)}
       {...props}
     />
   ),
@@ -167,7 +167,7 @@ const FieldTitle = React.forwardRef<
   <p
     ref={ref}
     data-slot="field-title"
-    className={cn("ui:text-sm ui:font-medium ui:text-foreground", className)}
+    className={cn("text-sm font-medium text-foreground", className)}
     {...props}
   />
 ));
@@ -178,7 +178,7 @@ const FieldSeparator = React.forwardRef<HTMLHRElement, React.HTMLAttributes<HTML
     <hr
       ref={ref}
       data-slot="field-separator"
-      className={cn("ui:border-border", className)}
+      className={cn("border-border", className)}
       {...props}
     />
   ),

@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -9,14 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  ScrollArea,
-  Spinner,
-  Textarea,
+} from "@repo/ui/components/dialog";
+import { ScrollArea } from "@repo/ui/components/scroll-area";
+import { Spinner } from "@repo/ui/components/spinner";
+import { Textarea } from "@repo/ui/components/textarea";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@repo/ui";
+} from "@repo/ui/components/tooltip";
 import { CheckCircle, Download, Upload, Users, XCircle } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";

@@ -2,7 +2,10 @@
 
 import { type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
-import { Button, buttonVariants, cn, ScrollArea, Spinner } from "@repo/ui";
+import { Button, buttonVariants } from "@repo/ui/components/button";
+import { ScrollArea } from "@repo/ui/components/scroll-area";
+import { Spinner } from "@repo/ui/components/spinner";
+import { cn } from "@repo/ui/lib/utils";
 import { Clock, FolderKanban, LogIn, UserPlus, Users } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";

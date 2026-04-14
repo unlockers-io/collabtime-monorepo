@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -9,12 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  Field,
-  FieldError,
-  FieldLabel,
-  Input,
-  Spinner,
-} from "@repo/ui";
+} from "@repo/ui/components/dialog";
+import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
+import { Input } from "@repo/ui/components/input";
+import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { Users } from "lucide-react";
 import { useState } from "react";

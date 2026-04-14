@@ -1,24 +1,24 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Field,
-  FieldError,
-  FieldLabel,
-  Input,
+} from "@repo/ui/components/dialog";
+import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
+import { Input } from "@repo/ui/components/input";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Spinner,
-} from "@repo/ui";
+} from "@repo/ui/components/select";
+import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { Mail } from "lucide-react";
 import { useState, useTransition } from "react";

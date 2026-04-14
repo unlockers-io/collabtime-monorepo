@@ -1,6 +1,8 @@
 "use client";
 
-import { Button, buttonVariants, cn, Spinner } from "@repo/ui";
+import { Button, buttonVariants } from "@repo/ui/components/button";
+import { Spinner } from "@repo/ui/components/spinner";
+import { cn } from "@repo/ui/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Check, Mail, Shield, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";

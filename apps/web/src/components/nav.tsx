@@ -1,14 +1,13 @@
 "use client";
 
+import { Button, buttonVariants } from "@repo/ui/components/button";
 import {
-  Button,
-  buttonVariants,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@repo/ui";
+} from "@repo/ui/components/dropdown-menu";
 import {
   Check,
   Copy,

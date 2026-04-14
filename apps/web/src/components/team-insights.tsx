@@ -1,6 +1,7 @@
 "use client";
 
-import { ScrollArea, Badge } from "@repo/ui";
+import { Badge } from "@repo/ui/components/badge";
+import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
 

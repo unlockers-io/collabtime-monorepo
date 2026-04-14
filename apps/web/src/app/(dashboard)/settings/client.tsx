@@ -1,6 +1,10 @@
 "use client";
 
-import { Button, Card, Input, Label, Spinner } from "@repo/ui";
+import { Button } from "@repo/ui/components/button";
+import { Card } from "@repo/ui/components/card";
+import { Input } from "@repo/ui/components/input";
+import { Label } from "@repo/ui/components/label";
+import { Spinner } from "@repo/ui/components/spinner";
 import { User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

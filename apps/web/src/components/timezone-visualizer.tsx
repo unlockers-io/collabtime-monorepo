@@ -1,10 +1,10 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/badge";
+import { Button } from "@repo/ui/components/button";
+import { Card } from "@repo/ui/components/card";
+import { ScrollArea } from "@repo/ui/components/scroll-area";
 import {
-  Badge,
-  Button,
-  Card,
-  ScrollArea,
   Select,
   SelectContent,
   SelectGroup,
@@ -12,11 +12,13 @@ import {
   SelectLabel,
   SelectSeparator,
   SelectTrigger,
+} from "@repo/ui/components/select";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@repo/ui";
+} from "@repo/ui/components/tooltip";
 import { Check, ChevronRight, Clock, Minus, Plus, Users, X } from "lucide-react";
 import { AnimatePresence, motion, useMotionValue, animate } from "motion/react";
 import { useTheme } from "next-themes";

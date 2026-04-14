@@ -1,6 +1,9 @@
 "use client";
 
-import { Button, Input, Spinner, cn } from "@repo/ui";
+import { Button } from "@repo/ui/components/button";
+import { Input } from "@repo/ui/components/input";
+import { Spinner } from "@repo/ui/components/spinner";
+import { cn } from "@repo/ui/lib/utils";
 import { Pencil, Trash2, Users } from "lucide-react";
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
