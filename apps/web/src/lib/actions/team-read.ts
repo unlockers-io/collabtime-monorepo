@@ -2,6 +2,7 @@
 
 import { prisma } from "@repo/db";
 import { headers } from "next/headers";
+import { cache } from "react";
 
 import { auth } from "@/lib/auth-server";
 import { getTeamRole } from "@/lib/team-auth";
@@ -70,7 +71,9 @@ const getPublicTeam = async (
   }
 };
 
-const validateTeam = async (teamId: string): Promise<boolean> => {
+// Wrapped in `cache()` so generateMetadata + the page render share one lookup
+// per request. Both functions are called from both entry points.
+const validateTeam = cache(async (teamId: string): Promise<boolean> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -87,9 +90,9 @@ const validateTeam = async (teamId: string): Promise<boolean> => {
     console.error("Failed to validate team:", error);
     return false;
   }
-};
+});
 
-const getTeamName = async (teamId: string): Promise<string | null> => {
+const getTeamName = cache(async (teamId: string): Promise<string | null> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -108,7 +111,7 @@ const getTeamName = async (teamId: string): Promise<string | null> => {
     console.error("Failed to get team name:", error);
     return null;
   }
-};
+});
 
 export { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam };
 
