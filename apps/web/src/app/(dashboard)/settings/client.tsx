@@ -55,18 +55,18 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
   };
 
   return (
-    <div className="max-w-3xl px-4 py-8 mx-auto">
-      <div className="gap-8 flex flex-col">
-        <div className="gap-1 flex flex-col">
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
           <p className="text-sm text-muted-foreground">Manage your account</p>
         </div>
 
-        <div className="gap-6 flex flex-col">
+        <div className="flex flex-col gap-6">
           {/* Profile Section */}
-          <Card className="gap-6 p-6 flex flex-col">
-            <div className="gap-3 flex items-center">
-              <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-secondary">
+          <Card className="flex flex-col gap-6 p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
                 <User className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
@@ -75,10 +75,10 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
               </div>
             </div>
 
-            <div className="gap-4 flex flex-col">
-              <div className="gap-2 flex flex-col">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="name">Name</Label>
-                <div className="gap-2 flex">
+                <div className="flex gap-2">
                   <Input
                     id="name"
                     value={name}
@@ -95,7 +95,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
                 </div>
               </div>
 
-              <div className="gap-2 flex flex-col">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" value={user.email} disabled className="bg-secondary" />
                 <p className="text-xs text-muted-foreground">Email cannot be changed</p>

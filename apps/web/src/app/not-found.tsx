@@ -1,5 +1,5 @@
-import { Card } from "@repo/ui/components/card";
 import { Button } from "@repo/ui/components/button";
+import { Card } from "@repo/ui/components/card";
 import { Home } from "lucide-react";
 import Link from "next/link";
 
@@ -11,13 +11,13 @@ export const metadata = {
 
 const NotFound = () => {
   return (
-    <div className="px-4 py-10 sm:px-6 flex flex-1 items-center justify-center">
-      <main className="max-w-xl w-full">
+    <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
+      <main className="w-full max-w-xl">
         <Card className="p-6 sm:p-8">
-          <div className="gap-4 flex flex-col">
-            <div className="gap-4 flex items-start justify-between">
-              <div className="gap-3 flex items-center">
-                <h1 className="text-xl font-bold tracking-tight sm:text-2xl text-foreground">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                   This team doesn&apos;t exist
                 </h1>
               </div>
@@ -35,9 +35,9 @@ const NotFound = () => {
               </Button>
             </Link>
 
-            <div className="gap-2 p-4 text-xs flex flex-col rounded-xl border border-border bg-muted text-muted-foreground">
+            <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-4 text-xs text-muted-foreground">
               <div className="font-medium text-foreground">Quick checks</div>
-              <ul className="space-y-1 pl-4 list-disc">
+              <ul className="list-disc space-y-1 pl-4">
                 <li>Double-check the team ID in the address bar.</li>
                 <li>Ask an admin for a fresh link if you&apos;re locked out.</li>
                 <li>Start a new team from the home page.</li>

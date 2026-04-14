@@ -37,10 +37,10 @@ import { ModeToggle } from "./mode-toggle";
 const NavLogo = ({ showTitle = true }: { showTitle?: boolean }) => (
   <Link
     href="/"
-    className="gap-3 flex items-center text-foreground transition-opacity hover:opacity-80"
+    className="flex items-center gap-3 text-foreground transition-opacity hover:opacity-80"
     aria-label={!showTitle ? "Go to homepage" : undefined}
   >
-    <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-primary">
+    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
       <Globe className="h-5 w-5 text-primary-foreground" />
     </div>
     {showTitle && <span className="text-xl font-bold tracking-tight">Collab Time</span>}
@@ -77,7 +77,7 @@ const TeamTitle = ({
 
   if (!isAdmin) {
     return (
-      <h1 className="text-xl font-bold tracking-tight sm:text-2xl truncate">
+      <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
         {teamName || "Team Workspace"}
       </h1>
     );
@@ -93,14 +93,14 @@ const TeamTitle = ({
         onKeyDown={handleKeyDown}
         autoFocus
         placeholder="Team name…"
-        className="h-9 max-w-48 px-3 text-base font-bold tracking-tight sm:text-lg w-full rounded-lg border border-input bg-background text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none"
+        className="h-9 w-full max-w-48 rounded-lg border border-input bg-background px-3 text-base font-bold tracking-tight text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:text-lg"
       />
     );
   }
 
   return (
-    <button onClick={onEdit} className="group min-w-0 gap-2 flex items-center">
-      <h1 className="text-xl font-bold tracking-tight sm:text-2xl truncate">
+    <button onClick={onEdit} className="group flex min-w-0 items-center gap-2">
+      <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
         {teamName || "Team Workspace"}
       </h1>
       <Pencil
@@ -131,7 +131,7 @@ const CopyLinkButton = ({
       onMobileClose?.();
     }}
   >
-    <span className="gap-2 flex items-center">
+    <span className="flex items-center gap-2">
       {hasCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
       {hasCopied ? "Copied!" : "Copy Link"}
     </span>
@@ -184,7 +184,7 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
                   href="/login"
                   className={cn(
                     buttonVariants({ variant: "outline" }),
-                    "gap-2 flex cursor-pointer items-center",
+                    "flex cursor-pointer items-center gap-2",
                   )}
                 />
               }
@@ -198,14 +198,14 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              render={<Link href="/settings" className="gap-2 flex items-center" />}
+              render={<Link href="/settings" className="flex items-center gap-2" />}
             >
               <Settings className="h-4 w-4" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleSignOut}
-              className="gap-2 flex cursor-pointer items-center"
+              className="flex cursor-pointer items-center gap-2"
             >
               <LogOut className="h-4 w-4" />
               Sign out
@@ -240,11 +240,11 @@ const MobileMenu = ({
         animate={{ opacity: 1, height: "auto" }}
         exit={{ opacity: 0, height: 0 }}
         transition={{ duration: 0.2 }}
-        className="sm:hidden overflow-hidden"
+        className="overflow-hidden sm:hidden"
       >
-        <div className="gap-2 p-3 flex flex-col rounded-xl border border-border bg-card">
+        <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
           {/* Role badge */}
-          <div className="gap-2 px-3 py-2 flex items-center rounded-lg bg-muted">
+          <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
             {isAdmin ? (
               <Shield className="h-4 w-4 text-muted-foreground" />
             ) : (
@@ -258,7 +258,7 @@ const MobileMenu = ({
             </div>
           </div>
 
-          <div className="gap-1 flex flex-col">
+          <div className="flex flex-col gap-1">
             <Button
               variant="ghost"
               className="justify-start"
@@ -267,7 +267,7 @@ const MobileMenu = ({
                 onClose();
               }}
             >
-              <span className="gap-2 flex items-center">
+              <span className="flex items-center gap-2">
                 {hasCopied ? (
                   <Check className="h-4 w-4 text-green-600" />
                 ) : (
@@ -277,7 +277,7 @@ const MobileMenu = ({
               </span>
             </Button>
 
-            <div className="px-4 py-2 flex items-center justify-between rounded-lg">
+            <div className="flex items-center justify-between rounded-lg px-4 py-2">
               <span className="text-sm text-foreground">Theme</span>
               <ModeToggle />
             </div>
@@ -287,7 +287,7 @@ const MobileMenu = ({
                 href="/login"
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
-                  "gap-2 flex items-center justify-start",
+                  "flex items-center justify-start gap-2",
                 )}
               >
                 <LogIn className="h-4 w-4" />
@@ -300,7 +300,7 @@ const MobileMenu = ({
                 href="/settings"
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
-                  "gap-2 flex items-center justify-start",
+                  "flex items-center justify-start gap-2",
                 )}
               >
                 <Settings className="h-4 w-4" />
@@ -350,7 +350,7 @@ const Nav = (props: NavProps) => {
   // Centered variant - simple logo only
   if (variant === "centered") {
     return (
-      <header className="px-4 py-8 sm:px-6 flex items-center justify-center">
+      <header className="flex items-center justify-center px-4 py-8 sm:px-6">
         <NavLogo />
       </header>
     );
@@ -365,9 +365,9 @@ const Nav = (props: NavProps) => {
       props;
 
     return (
-      <header className="gap-4 flex flex-col">
-        <div className="gap-3 flex items-start justify-between">
-          <div className="min-w-0 gap-3 flex items-center">
+      <header className="flex flex-col gap-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <NavLogo showTitle={false} />
             <TeamTitle
               teamName={teamName}
@@ -381,7 +381,7 @@ const Nav = (props: NavProps) => {
           </div>
 
           {/* Desktop actions */}
-          <div className="gap-2 sm:flex hidden items-center">
+          <div className="hidden items-center gap-2 sm:flex">
             <CurrentTimeDisplay />
             <CopyLinkButton hasCopied={hasCopied} onCopy={handleCopyLink} />
             <ModeToggle />
@@ -389,7 +389,7 @@ const Nav = (props: NavProps) => {
           </div>
 
           {/* Mobile menu toggle */}
-          <div className="gap-2 sm:hidden flex items-center">
+          <div className="flex items-center gap-2 sm:hidden">
             <Button
               variant="outline"
               size="icon"
@@ -416,9 +416,9 @@ const Nav = (props: NavProps) => {
 
   // Default variant - simple nav with logo and auth
   return (
-    <header className="px-4 py-6 sm:px-6 flex items-center justify-between">
+    <header className="flex items-center justify-between px-4 py-6 sm:px-6">
       <NavLogo />
-      <div className="gap-2 flex items-center">
+      <div className="flex items-center gap-2">
         <ModeToggle />
         {isAuthenticated ? (
           <Link href="/settings" className={buttonVariants({ variant: "outline" })}>

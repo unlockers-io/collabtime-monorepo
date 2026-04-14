@@ -3,22 +3,23 @@
   "ignoreBinaries": ["portless"],
   "ignoreDependencies": [
     "eslint-plugin-*",
-    "@tailwindcss/postcss",
     "oxlint-config-awesomeness",
-    "tw-animate-css",
     "postcss",
+    "postcss-load-config",
     "react-scan",
-    "@repo/tailwind-config",
     "tailwindcss",
     "jsdom",
-    "@vitest/coverage-v8",
+    "shadcn",
     "@testing-library/user-event"
   ],
-  "ignore": ["packages/db/src/generated/**", "packages/ui/src/styles/globals.css"],
-  "exclude": ["unresolved"],
+  "ignore": ["packages/db/src/generated/**"],
+  "exclude": ["unresolved", "exports"],
   "workspaces": {
     ".": {
       "entry": ["tests/e2e/**/*.{ts,tsx}"]
+    },
+    "packages/ui": {
+      "entry": ["src/components/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}"]
     }
   }
 }

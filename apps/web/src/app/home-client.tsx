@@ -126,11 +126,11 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
     <div className="flex flex-1 flex-col">
       <Nav isAuthenticated={isAuthenticated} />
 
-      <main className="max-w-lg gap-10 px-4 py-8 sm:gap-12 sm:px-6 mx-auto flex w-full flex-1 flex-col items-center justify-center">
-        <div className="gap-6 flex flex-col items-center text-center">
-          <div className="gap-2 sm:gap-3 flex flex-col">
+      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-4 py-8 sm:gap-12 sm:px-6">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="flex flex-col gap-2 sm:gap-3">
             <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">Collab Time</h1>
-            <p className="max-w-sm text-base leading-relaxed sm:text-lg text-muted-foreground">
+            <p className="max-w-sm text-base leading-relaxed text-muted-foreground sm:text-lg">
               Visualize your team&apos;s working hours across timezones. Find the perfect moment to
               connect.
             </p>
@@ -138,12 +138,12 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         </div>
 
         {/* CTA Section */}
-        <div className="gap-4 flex w-full flex-col items-center">
+        <div className="flex w-full flex-col items-center gap-4">
           {isAuthenticated ? (
             <button
               onClick={handleCreateTeam}
               disabled={isCreating}
-              className="group h-12 gap-2 px-6 text-base font-semibold sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg flex w-full items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+              className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg"
             >
               {isCreating ? (
                 <>
@@ -153,15 +153,15 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
               ) : (
                 <>
                   Create Team Workspace
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </>
               )}
             </button>
           ) : (
-            <div className="gap-3 flex w-full flex-col items-center">
+            <div className="flex w-full flex-col items-center gap-3">
               <Link
                 href="/signup"
-                className={cn(buttonVariants({ size: "lg" }), "sm:w-auto sm:min-w-72 w-full")}
+                className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto sm:min-w-72")}
               >
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -188,14 +188,14 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                 delay: 0.2,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="gap-3 flex w-full flex-col"
+              className="flex w-full flex-col gap-3"
             >
-              <div className="gap-2 flex items-center">
+              <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <h2 className="text-sm font-medium text-muted-foreground">Pending Invitations</h2>
               </div>
 
-              <div className="gap-2 flex flex-col">
+              <div className="flex flex-col gap-2">
                 <AnimatePresence mode="popLayout">
                   {invitations.map((invitation) => {
                     const isProcessing = processingInvitations.has(invitation.id);
@@ -207,10 +207,10 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="p-3 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5"
+                        className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-3"
                       >
-                        <div className="gap-3 flex items-center">
-                          <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-primary/10">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                             <Mail className="h-4 w-4 text-primary" />
                           </div>
                           <div className="flex flex-col">
@@ -222,7 +222,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                             </span>
                           </div>
                         </div>
-                        <div className="gap-1 flex items-center">
+                        <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -273,13 +273,13 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                 delay: 0.3,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="gap-3 flex w-full flex-col"
+              className="flex w-full flex-col gap-3"
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-medium text-muted-foreground">My Teams</h2>
               </div>
 
-              <div className="gap-2 flex flex-col">
+              <div className="flex flex-col gap-2">
                 <AnimatePresence mode="popLayout">
                   {myTeams.map((team) => (
                     <motion.div
@@ -289,10 +289,10 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="group p-3 flex items-center justify-between rounded-xl border border-border bg-card transition-colors hover:border-input"
+                      className="group flex items-center justify-between rounded-xl border border-border bg-card p-3 transition-colors hover:border-input"
                     >
-                      <Link href={`/${team.teamId}`} className="gap-3 flex flex-1 items-center">
-                        <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-secondary">
+                      <Link href={`/${team.teamId}`} className="flex flex-1 items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
                           <Users className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <div className="flex flex-col">

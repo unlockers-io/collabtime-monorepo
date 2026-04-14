@@ -88,13 +88,13 @@ const GroupCard = ({
   return (
     <div
       className={cn(
-        "group min-h-45 gap-3 rounded-2xl p-4 flex h-full flex-col border-2 transition-all",
+        "group flex h-full min-h-45 flex-col gap-3 rounded-2xl border-2 p-4 transition-all",
         isDropTarget ? "border-foreground bg-muted" : "border-transparent bg-secondary",
       )}
     >
       {/* Top row: Icon and Actions */}
       <div className="flex items-start justify-between">
-        <div className="h-12 w-12 flex items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <Users className="h-6 w-6" />
         </div>
 
@@ -105,7 +105,7 @@ const GroupCard = ({
             size="icon-sm"
             onClick={handleRemove}
             disabled={isPending}
-            className="hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
             aria-label={`Remove group ${group.name}`}
           >
             {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
@@ -114,7 +114,7 @@ const GroupCard = ({
       </div>
 
       {/* Group info - stacked vertically */}
-      <div className="gap-2 flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col gap-2">
         {canEdit && isEditing ? (
           <Input
             type="text"
@@ -129,20 +129,20 @@ const GroupCard = ({
           <button
             type="button"
             onClick={handleStartEditing}
-            className="group/name gap-1.5 flex items-center text-left"
+            className="group/name flex items-center gap-1.5 text-left"
           >
             <span className="font-semibold text-foreground">{group.name}</span>
             <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/name:opacity-100" />
           </button>
         ) : (
-          <div className="gap-1.5 flex items-center text-left">
+          <div className="flex items-center gap-1.5 text-left">
             <span className="font-semibold text-foreground">{group.name}</span>
           </div>
         )}
 
         {/* Member count badge */}
         <div className="mt-auto">
-          <span className="gap-1.5 px-2.5 py-1 text-xs font-medium inline-flex items-center rounded-full bg-muted text-muted-foreground tabular-nums">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground tabular-nums">
             <Users className="h-3 w-3" />
             {memberCount} {memberCount === 1 ? "member" : "members"}
           </span>
