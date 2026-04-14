@@ -129,7 +129,9 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-4 py-8 sm:gap-12 sm:px-6">
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex flex-col gap-2 sm:gap-3">
-            <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">Collab Time</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+              Collab Time
+            </h1>
             <p className="max-w-sm text-base leading-relaxed text-muted-foreground sm:text-lg">
               Visualize your team&apos;s working hours across timezones. Find the perfect moment to
               connect.

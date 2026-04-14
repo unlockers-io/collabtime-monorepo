@@ -105,7 +105,7 @@ const GroupCard = ({
             size="icon-sm"
             onClick={handleRemove}
             disabled={isPending}
-            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
             aria-label={`Remove group ${group.name}`}
           >
             {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
