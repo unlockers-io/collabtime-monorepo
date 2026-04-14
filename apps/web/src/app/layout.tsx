@@ -79,6 +79,13 @@ const RootLayout = ({
 }>) => {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t||t==='system')&&matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`,
+          }}
+        />
+      </head>
       {process.env.NODE_ENV === "development" && !process.env.CI && (
         <>
           <script
@@ -98,8 +105,8 @@ const RootLayout = ({
       >
         <Providers>
           <div className="flex flex-1 flex-col">{children}</div>
-          <footer className="px-4 py-6 text-sm border-t border-border text-muted-foreground">
-            <div className="max-w-5xl gap-3 mx-auto flex w-full items-center justify-between">
+          <footer className="px-4 py-6 sm:px-6 lg:px-8 xl:px-12 text-sm border-t border-border text-muted-foreground">
+            <div className="max-w-450 gap-3 mx-auto flex w-full items-center justify-between">
               <span>© {new Date().getFullYear()} Collab Time. All rights reserved.</span>
               <a
                 href="https://github.com/unlockers-io/collabtime-monorepo"
