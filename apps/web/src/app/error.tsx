@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useEffect } from "react";
 
@@ -14,24 +15,26 @@ const Error = ({ error, reset }: ErrorProps) => {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6">
+    <div className="flex min-h-dvh flex-col items-center justify-center px-6">
       <main className="flex w-full max-w-md flex-col items-center gap-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10">
-          <AlertCircle className="h-7 w-7 text-destructive" />
+        <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10">
+          <AlertCircle className="size-5 text-destructive" />
         </div>
 
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-foreground">Something went wrong</h1>
-          <p className="text-muted-foreground">An unexpected error occurred. Please try again.</p>
+          <h1 className="max-w-[24ch] text-2xl font-semibold tracking-tight text-balance">
+            Something went wrong
+          </h1>
+          <p className="max-w-[48ch] text-sm text-pretty text-muted-foreground">
+            An unexpected error occurred. Please try again — if it keeps happening, refresh the page
+            or come back in a few minutes.
+          </p>
         </div>
 
-        <button
-          onClick={reset}
-          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 font-medium text-primary-foreground transition-all hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-        >
-          <RefreshCw className="h-4.5 w-4.5" />
-          Try Again
-        </button>
+        <Button onClick={reset}>
+          <RefreshCw className="size-4" />
+          Try again
+        </Button>
       </main>
     </div>
   );

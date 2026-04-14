@@ -129,7 +129,7 @@ const MemberCard = ({
                 size="icon-sm"
                 onClick={handleRemove}
                 disabled={isPending}
-                className="text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 aria-label={`Remove ${member.name}`}
               >
                 {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
