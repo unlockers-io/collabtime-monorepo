@@ -1,41 +1,41 @@
 const Loading = () => {
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8 xl:px-12 min-h-screen w-full">
-      <main className="max-w-450 gap-6 mx-auto flex w-full flex-col">
+    <div className="min-h-screen w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
+      <main className="mx-auto flex w-full max-w-450 flex-col gap-6">
         {/* Header Skeleton */}
-        <header className="gap-4 flex flex-col">
-          <div className="gap-3 flex items-start justify-between">
-            <div className="min-w-0 gap-3 flex items-center">
+        <header className="flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="h-9 w-9 animate-pulse rounded-lg bg-muted" />
               <div className="h-7 w-40 animate-pulse rounded-lg bg-muted" />
             </div>
-            <div className="gap-2 sm:flex hidden items-center">
+            <div className="hidden items-center gap-2 sm:flex">
               <div className="h-9 w-36 animate-pulse rounded-lg bg-muted" />
               <div className="h-9 w-24 animate-pulse rounded-lg bg-muted" />
               <div className="h-9 w-9 animate-pulse rounded-lg bg-muted" />
               <div className="h-9 w-9 animate-pulse rounded-lg bg-muted" />
             </div>
-            <div className="sm:hidden flex items-center">
+            <div className="flex items-center sm:hidden">
               <div className="h-10 w-10 animate-pulse rounded-lg bg-muted" />
             </div>
           </div>
         </header>
 
         {/* Team Insights Skeleton */}
-        <div className="gap-4 rounded-2xl p-4 shadow-sm sm:p-5 flex flex-col border border-border bg-card">
-          <div className="gap-2 flex items-center">
+        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="flex items-center gap-2">
             <div className="h-4 w-4 animate-pulse rounded bg-muted" />
             <div className="h-4 w-24 animate-pulse rounded bg-muted" />
           </div>
-          <div className="gap-4 sm:grid-cols-2 lg:grid-cols-3 grid">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="gap-2.5 p-3.5 flex flex-col rounded-xl bg-secondary">
-                <div className="gap-2 flex items-center">
+              <div key={i} className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
+                <div className="flex items-center gap-2">
                   <div className="h-6 w-6 animate-pulse rounded-full bg-muted" />
                   <div className="h-3 w-20 animate-pulse rounded bg-muted" />
-                  <div className="h-5 w-6 animate-pulse ml-auto rounded-full bg-muted" />
+                  <div className="ml-auto h-5 w-6 animate-pulse rounded-full bg-muted" />
                 </div>
-                <div className="gap-1.5 px-1 py-0.5 flex flex-wrap">
+                <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
                   {[0, 1].map((j) => (
                     <div key={j} className="h-6 w-16 animate-pulse rounded-full bg-muted" />
                   ))}
@@ -46,13 +46,13 @@ const Loading = () => {
         </div>
 
         {/* Timezone Visualizer Skeleton */}
-        <div className="rounded-2xl shadow-sm overflow-hidden border border-border bg-card">
-          <div className="gap-0.5 px-4 py-3 sm:px-6 sm:py-4 flex flex-col border-b border-border">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex flex-col gap-0.5 border-b border-border px-4 py-3 sm:px-6 sm:py-4">
             <div className="h-4 w-48 animate-pulse rounded bg-muted" />
             <div className="h-3 w-36 animate-pulse rounded bg-muted" />
           </div>
-          <div className="gap-6 p-4 sm:p-6 flex flex-col">
-            <div className="gap-3 flex items-center">
+          <div className="flex flex-col gap-6 p-4 sm:p-6">
+            <div className="flex items-center gap-3">
               <div className="w-28" />
               <div className="flex flex-1 justify-between">
                 {[0, 1, 2, 3, 4].map((i) => (
@@ -60,14 +60,14 @@ const Loading = () => {
                 ))}
               </div>
             </div>
-            <div className="gap-3 flex flex-col">
+            <div className="flex flex-col gap-3">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="gap-3 flex items-center">
-                  <div className="w-28 gap-2 flex items-center">
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex w-28 items-center gap-2">
                     <div className="h-7 w-7 animate-pulse rounded-full bg-muted" />
                     <div className="h-4 w-16 animate-pulse rounded bg-muted" />
                   </div>
-                  <div className="h-8 animate-pulse flex-1 rounded-lg bg-muted" />
+                  <div className="h-8 flex-1 animate-pulse rounded-lg bg-muted" />
                 </div>
               ))}
             </div>
@@ -75,57 +75,57 @@ const Loading = () => {
         </div>
 
         {/* Team Members & Groups */}
-        <div className="gap-6 xl:grid-cols-2 grid grid-cols-1">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           {/* Team Members Section Skeleton */}
-          <section className="gap-4 rounded-2xl p-5 shadow-sm flex flex-col border border-border bg-card">
+          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between">
-              <div className="gap-2 flex items-center">
+              <div className="flex items-center gap-2">
                 <div className="h-5 w-5 animate-pulse rounded bg-muted" />
                 <div className="h-6 w-32 animate-pulse rounded bg-muted" />
               </div>
               <div className="h-5 w-8 animate-pulse rounded-full bg-muted" />
             </div>
-            <div className="gap-4 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
               {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="min-h-45 gap-3 rounded-2xl p-4 shadow-sm flex h-full flex-col border border-border bg-card"
+                  className="flex h-full min-h-45 flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"
                 >
                   <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
-                  <div className="gap-1.5 flex flex-1 flex-col">
+                  <div className="flex flex-1 flex-col gap-1.5">
                     <div className="h-5 w-24 animate-pulse rounded bg-muted" />
                     <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-                    <div className="gap-1 mt-auto flex flex-col">
+                    <div className="mt-auto flex flex-col gap-1">
                       <div className="h-3 w-28 animate-pulse rounded bg-muted" />
                       <div className="h-3 w-20 animate-pulse rounded bg-muted" />
                     </div>
-                    <div className="gap-1.5 flex flex-wrap">
+                    <div className="flex flex-wrap gap-1.5">
                       <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="h-10 animate-pulse w-full rounded-lg bg-muted" />
+            <div className="h-10 w-full animate-pulse rounded-lg bg-muted" />
           </section>
 
           {/* Groups Section Skeleton */}
-          <section className="gap-4 rounded-2xl p-5 shadow-sm flex flex-col border border-border bg-card">
+          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between">
-              <div className="gap-2 flex items-center">
+              <div className="flex items-center gap-2">
                 <div className="h-5 w-5 animate-pulse rounded bg-muted" />
                 <div className="h-6 w-20 animate-pulse rounded bg-muted" />
               </div>
               <div className="h-5 w-8 animate-pulse rounded-full bg-muted" />
             </div>
-            <div className="gap-4 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
               {[0, 1].map((i) => (
                 <div
                   key={i}
-                  className="min-h-45 gap-3 rounded-2xl p-4 flex h-full flex-col border-2 border-transparent bg-secondary"
+                  className="flex h-full min-h-45 flex-col gap-3 rounded-2xl border-2 border-transparent bg-secondary p-4"
                 >
                   <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
-                  <div className="gap-2 flex flex-1 flex-col">
+                  <div className="flex flex-1 flex-col gap-2">
                     <div className="h-5 w-24 animate-pulse rounded bg-muted" />
                     <div className="mt-auto">
                       <div className="h-6 w-24 animate-pulse rounded-full bg-muted" />
@@ -134,7 +134,7 @@ const Loading = () => {
                 </div>
               ))}
             </div>
-            <div className="h-10 animate-pulse w-full rounded-lg bg-muted" />
+            <div className="h-10 w-full animate-pulse rounded-lg bg-muted" />
           </section>
         </div>
       </main>

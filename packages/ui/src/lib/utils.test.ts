@@ -19,21 +19,4 @@ describe("cn", () => {
   it("handles empty input", () => {
     expect(cn()).toBe("");
   });
-
-  it("strips ui: prefix for tailwind merge deduplication", () => {
-    // Classes with ui: prefix should be treated as equivalent to unprefixed
-    const result = cn("ui:p-4", "ui:p-2");
-    expect(result).toBe("ui:p-2");
-  });
-
-  it("keeps both ui: prefixed and non-prefixed classes", () => {
-    // The ui: prefix scoping means prefixed and non-prefixed are distinct
-    const result = cn("p-4", "ui:p-2");
-    expect(result).toBe("p-4 ui:p-2");
-  });
-
-  it("handles mixed ui: and regular classes", () => {
-    const result = cn("ui:text-red-500", "flex", "ui:text-blue-500");
-    expect(result).toBe("flex ui:text-blue-500");
-  });
 });

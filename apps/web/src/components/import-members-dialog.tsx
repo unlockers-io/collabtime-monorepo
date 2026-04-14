@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -9,14 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  ScrollArea,
-  Spinner,
-  Textarea,
+} from "@repo/ui/components/dialog";
+import { ScrollArea } from "@repo/ui/components/scroll-area";
+import { Spinner } from "@repo/ui/components/spinner";
+import { Textarea } from "@repo/ui/components/textarea";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@repo/ui";
+} from "@repo/ui/components/tooltip";
 import { CheckCircle, Download, Upload, Users, XCircle } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -283,7 +285,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
           <Button
             variant="outline"
             type="button"
-            className="group h-9 gap-2 flex w-full items-center justify-center text-muted-foreground"
+            className="group flex h-9 w-full items-center justify-center gap-2 text-muted-foreground"
           />
         }
       >
@@ -295,8 +297,8 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
         {open && (
           <>
             <DialogHeader>
-              <DialogTitle className="gap-3 flex items-center">
-                <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary">
+              <DialogTitle className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
                   <Users className="h-5 w-5 text-primary-foreground" />
                 </div>
                 Import Members
@@ -308,7 +310,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
             </DialogHeader>
 
             {rows === null ? (
-              <div className="gap-4 py-2 flex flex-col">
+              <div className="flex flex-col gap-4 py-2">
                 {/* Drop zone */}
                 <button
                   type="button"
@@ -319,7 +321,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                   }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
-                  className={`gap-3 px-6 py-8 flex flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition-colors ${
+                  className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
                     isDragging
                       ? "border-primary bg-primary/5"
                       : "border-border bg-muted/50 hover:border-muted-foreground hover:bg-muted"
@@ -342,7 +344,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                   />
                 </button>
 
-                <div className="gap-3 flex items-center">
+                <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-border" />
                   <span className="text-xs text-muted-foreground">or paste below</span>
                   <div className="h-px flex-1 bg-border" />
@@ -352,7 +354,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
                   placeholder={`name,timezone,title,work_start,work_end\nAlice Johnson,America/New_York,Engineering Lead,9,17`}
-                  className="h-32 font-mono text-xs resize-none"
+                  className="h-32 resize-none font-mono text-xs"
                   spellCheck={false}
                 />
 
@@ -360,7 +362,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                   <button
                     type="button"
                     onClick={handleDownloadTemplate}
-                    className="gap-1.5 text-xs flex items-center text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                   >
                     <Download className="h-3.5 w-3.5" />
                     Download template
@@ -371,16 +373,16 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                 </div>
               </div>
             ) : (
-              <div className="gap-3 py-2 flex flex-col">
-                <div className="gap-3 text-sm flex items-center">
+              <div className="flex flex-col gap-3 py-2">
+                <div className="flex items-center gap-3 text-sm">
                   {validCount > 0 && (
-                    <span className="gap-1.5 font-medium text-green-600 dark:text-green-400 flex items-center">
+                    <span className="flex items-center gap-1.5 font-medium text-green-600 dark:text-green-400">
                       <CheckCircle className="h-4 w-4" />
                       {validCount} valid
                     </span>
                   )}
                   {invalidCount > 0 && (
-                    <span className="gap-1.5 flex items-center text-destructive">
+                    <span className="flex items-center gap-1.5 text-destructive">
                       <XCircle className="h-4 w-4" />
                       {invalidCount} will be skipped
                     </span>
@@ -389,22 +391,22 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
 
                 <ScrollArea className="max-h-80 rounded-lg border border-border">
                   <TooltipProvider delay={200}>
-                    <table className="text-sm w-full">
-                      <thead className="top-0 backdrop-blur-sm sticky bg-muted/80">
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
                         <tr className="border-b border-border">
-                          <th className="px-3 py-2 text-xs font-medium text-left text-muted-foreground">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
                             #
                           </th>
-                          <th className="px-3 py-2 text-xs font-medium text-left text-muted-foreground">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
                             Name
                           </th>
-                          <th className="px-3 py-2 text-xs font-medium text-left text-muted-foreground">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
                             Timezone
                           </th>
-                          <th className="px-3 py-2 text-xs font-medium text-left text-muted-foreground">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
                             Title
                           </th>
-                          <th className="px-3 py-2 text-xs font-medium text-left text-muted-foreground">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
                             Hours
                           </th>
                           <th className="px-3 py-2" />
@@ -489,7 +491,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                   </Button>
                   <Button onClick={handleImport} disabled={isImporting || validCount === 0}>
                     {isImporting ? (
-                      <span className="gap-2 flex items-center">
+                      <span className="flex items-center gap-2">
                         <Spinner />
                         Importing…
                       </span>

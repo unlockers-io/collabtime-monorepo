@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -9,17 +9,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  Field,
-  FieldError,
-  FieldLabel,
-  Input,
+} from "@repo/ui/components/dialog";
+import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
+import { Input } from "@repo/ui/components/input";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Spinner,
-} from "@repo/ui";
+} from "@repo/ui/components/select";
+import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
@@ -149,8 +149,8 @@ const AddMemberForm = ({
       noValidate
     >
       <DialogHeader>
-        <DialogTitle className="gap-3 flex items-center">
-          <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary">
+        <DialogTitle className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
             <UserPlus className="h-5 w-5 text-primary-foreground" />
           </div>
           Add Team Member
@@ -160,7 +160,7 @@ const AddMemberForm = ({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="gap-4 py-4 flex flex-col">
+      <div className="flex flex-col gap-4 py-4">
         <form.Field name="name">
           {(field) => (
             <Field data-invalid={!field.state.meta.isValid}>
@@ -270,7 +270,7 @@ const AddMemberForm = ({
           </form.Field>
         )}
 
-        <div className="gap-4 grid grid-cols-2">
+        <div className="grid grid-cols-2 gap-4">
           <form.Field name="workingHoursStart">
             {(field) => (
               <Field data-invalid={!field.state.meta.isValid}>
@@ -353,7 +353,7 @@ const AddMemberForm = ({
           {({ canSubmit, isSubmitting }) => (
             <Button type="submit" disabled={isSubmitting || !canSubmit}>
               {isSubmitting ? (
-                <span className="gap-2 flex items-center">
+                <span className="flex items-center gap-2">
                   <Spinner />
                   Adding...
                 </span>
@@ -383,7 +383,7 @@ const AddMemberDialog = ({
           <Button
             variant="outline"
             type="button"
-            className="group h-14 gap-2 flex w-full items-center justify-center border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
+            className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
           />
         }
       >

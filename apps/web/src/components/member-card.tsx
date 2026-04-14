@@ -1,14 +1,14 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/badge";
+import { Button } from "@repo/ui/components/button";
+import { Spinner } from "@repo/ui/components/spinner";
 import {
-  Button,
-  Spinner,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@repo/ui";
-import { Badge } from "@repo/ui";
+} from "@repo/ui/components/tooltip";
 import { Hand, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -97,24 +97,24 @@ const MemberCard = ({
 
   return (
     <>
-      <div className="group min-h-45 gap-3 rounded-2xl p-4 shadow-sm hover:shadow-md flex h-full flex-col border border-border bg-card transition-all hover:border-input">
+      <div className="group flex h-full min-h-45 flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-input hover:shadow-md">
         {/* Top row: Avatar and Actions */}
         <div className="flex items-start justify-between">
           {/* Avatar with status */}
           <div className="relative">
-            <div className="h-12 w-12 text-base font-semibold flex items-center justify-center rounded-full bg-muted text-muted-foreground dark:bg-primary dark:text-primary-foreground">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-base font-semibold text-muted-foreground dark:bg-primary dark:text-primary-foreground">
               {member.name.charAt(0).toUpperCase()}
             </div>
             {isAvailable && (
-              <span className="-right-0.5 -bottom-0.5 h-4 w-4 bg-green-500 absolute flex items-center justify-center rounded-full border-2 border-background">
-                <span className="animate-ping bg-green-400 absolute inline-flex h-full w-full rounded-full opacity-50" />
+              <span className="absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-green-500">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
               </span>
             )}
           </div>
 
           {/* Actions */}
           {canEdit && (
-            <div className="gap-0.5 flex items-center opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -129,7 +129,7 @@ const MemberCard = ({
                 size="icon-sm"
                 onClick={handleRemove}
                 disabled={isPending}
-                className="hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 text-muted-foreground"
+                className="text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                 aria-label={`Remove ${member.name}`}
               >
                 {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
@@ -151,12 +151,12 @@ const MemberCard = ({
         </div>
 
         {/* Info - stacked vertically */}
-        <div className="gap-1.5 flex flex-1 flex-col">
-          <div className="gap-0.5 flex flex-col">
-            <span className="gap-1.5 font-semibold flex items-center text-foreground">
+        <div className="flex flex-1 flex-col gap-1.5">
+          <div className="flex flex-col gap-0.5">
+            <span className="flex items-center gap-1.5 font-semibold text-foreground">
               {member.name}
               {isOwnProfile && (
-                <Badge variant="secondary" className="text-xs border-transparent">
+                <Badge variant="secondary" className="border-transparent text-xs">
                   You
                 </Badge>
               )}
@@ -165,7 +165,7 @@ const MemberCard = ({
           </div>
 
           {/* Timezone and hours */}
-          <div className="gap-1 text-xs mt-auto flex flex-col text-muted-foreground">
+          <div className="mt-auto flex flex-col gap-1 text-xs text-muted-foreground">
             <span className="truncate">{formatTimezoneLabel(member.timezone)}</span>
             <span>
               {formatHour(member.workingHoursStart)} – {formatHour(member.workingHoursEnd)}
@@ -173,18 +173,18 @@ const MemberCard = ({
           </div>
 
           {/* Status badges */}
-          <div className="gap-1.5 flex flex-wrap">
+          <div className="flex flex-wrap gap-1.5">
             {isAvailable ? (
-              <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-transparent">
-                <span className="h-1.5 w-1.5 bg-green-500 rounded-full" />
+              <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
                 Available
               </Badge>
             ) : (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger render={<span />}>
-                    <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 cursor-help border-transparent">
-                      <span className="h-1.5 w-1.5 bg-amber-500 rounded-full" />
+                    <Badge className="cursor-help border-transparent bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                       Not Available
                     </Badge>
                   </TooltipTrigger>

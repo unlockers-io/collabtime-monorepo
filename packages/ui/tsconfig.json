@@ -1,11 +1,12 @@
 {
   "extends": "@repo/typescript-config/library.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@repo/ui/*": ["./src/*"]
+    }
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["."],
+  "exclude": ["node_modules"]
 }
