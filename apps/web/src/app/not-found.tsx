@@ -1,4 +1,4 @@
-import { Button } from "@repo/ui/components/button";
+import { buttonVariants } from "@repo/ui/components/button";
 import { Card } from "@repo/ui/components/card";
 import { Home } from "lucide-react";
 import Link from "next/link";
@@ -24,11 +24,9 @@ const NotFound = () => {
               typed a URL, it may have drifted into a parallel timezone.
             </p>
 
-            <Link className="w-full" href="/">
-              <Button className="w-full">
-                <Home className="size-4" />
-                Back to home
-              </Button>
+            <Link className={buttonVariants({ className: "w-full" })} href="/">
+              <Home className="size-4" />
+              Back to home
             </Link>
 
             <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-4 text-sm text-muted-foreground">
