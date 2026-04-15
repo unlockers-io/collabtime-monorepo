@@ -7,54 +7,49 @@ import { Label } from "./label";
 type FieldProps = React.HTMLAttributes<HTMLDivElement> & {
   "data-invalid"?: boolean;
   orientation?: "vertical" | "horizontal" | "responsive";
+  ref?: React.Ref<HTMLDivElement>;
 };
 
-const Field = React.forwardRef<HTMLDivElement, FieldProps>(
-  ({ className, orientation = "vertical", ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        data-slot="field"
-        role="group"
-        data-orientation={orientation}
-        className={cn(
-          "group/field flex w-full gap-3 [&>*]:w-full [&>.sr-only]:w-auto",
-          "data-[invalid=true]:text-destructive",
-          orientation === "vertical" && "flex-col",
-          orientation === "horizontal" &&
-            "flex-row items-center has-[>[data-slot=field-content]]:items-start [&>[data-slot=field-label]]:flex-auto",
-          orientation === "responsive" && "flex-col sm:flex-row sm:items-center",
-          className,
-        )}
-        {...props}
-      />
-    );
-  },
-);
-Field.displayName = "Field";
-
-const FieldGroup = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+const Field = ({ className, orientation = "vertical", ref, ...props }: FieldProps) => {
+  return (
     <div
       ref={ref}
-      data-slot="field-group"
+      data-slot="field"
+      role="group"
+      data-orientation={orientation}
       className={cn(
-        "group/field-group flex w-full flex-col gap-7 [&>[data-slot=field-group]]:gap-4",
+        "group/field flex w-full gap-3 [&>*]:w-full [&>.sr-only]:w-auto",
+        "data-[invalid=true]:text-destructive",
+        orientation === "vertical" && "flex-col",
+        orientation === "horizontal" &&
+          "flex-row items-center has-[>[data-slot=field-content]]:items-start [&>[data-slot=field-label]]:flex-auto",
+        orientation === "responsive" && "flex-col sm:flex-row sm:items-center",
         className,
       )}
       {...props}
     />
-  ),
-);
-FieldGroup.displayName = "FieldGroup";
+  );
+};
 
-const FieldLabel = React.forwardRef<
-  React.ElementRef<typeof Label>,
-  React.ComponentPropsWithoutRef<typeof Label>
->(({ className, ...props }, ref) => {
+const FieldGroup = ({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) => (
+  <div
+    ref={ref}
+    data-slot="field-group"
+    className={cn(
+      "group/field-group flex w-full flex-col gap-7 [&>[data-slot=field-group]]:gap-4",
+      className,
+    )}
+    {...props}
+  />
+);
+
+const FieldLabel = ({ className, ...props }: React.ComponentProps<typeof Label>) => {
   return (
     <Label
-      ref={ref}
       data-slot="field-label"
       className={cn(
         "group/field-label flex w-fit items-center gap-2 text-sm leading-snug font-medium text-foreground",
@@ -65,25 +60,26 @@ const FieldLabel = React.forwardRef<
       {...props}
     />
   );
-});
-FieldLabel.displayName = "FieldLabel";
+};
 
-const FieldContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      data-slot="field-content"
-      className={cn("flex flex-col gap-2", className)}
-      {...props}
-    />
-  ),
+const FieldContent = ({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) => (
+  <div
+    ref={ref}
+    data-slot="field-content"
+    className={cn("flex flex-col gap-2", className)}
+    {...props}
+  />
 );
-FieldContent.displayName = "FieldContent";
 
-const FieldDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => {
+const FieldDescription = ({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLParagraphElement> & { ref?: React.Ref<HTMLParagraphElement> }) => {
   return (
     <p
       ref={ref}
@@ -92,96 +88,92 @@ const FieldDescription = React.forwardRef<
       {...props}
     />
   );
-});
-FieldDescription.displayName = "FieldDescription";
+};
 
 type FieldErrorProps = React.HTMLAttributes<HTMLParagraphElement> & {
   errors?: Array<unknown>;
+  ref?: React.Ref<HTMLParagraphElement>;
 };
 
-const FieldError = React.forwardRef<HTMLParagraphElement, FieldErrorProps>(
-  ({ className, errors, children, ...props }, ref) => {
-    const message =
-      children ??
-      errors
-        ?.filter(Boolean)
-        .map((e) =>
-          typeof e === "string"
-            ? e
-            : typeof e === "object" && e !== null && "message" in e
-              ? (e as { message: string }).message
-              : String(e),
-        )
-        .filter(Boolean)
-        .at(0);
+const FieldError = ({ className, errors, children, ref, ...props }: FieldErrorProps) => {
+  const message =
+    children ??
+    errors
+      ?.filter(Boolean)
+      .map((e) =>
+        typeof e === "string"
+          ? e
+          : typeof e === "object" && e !== null && "message" in e
+            ? (e as { message: string }).message
+            : String(e),
+      )
+      .filter(Boolean)
+      .at(0);
 
-    if (!message) {
-      return null;
-    }
+  if (!message) {
+    return null;
+  }
 
-    return (
-      <p
-        ref={ref}
-        data-slot="field-error"
-        className={cn("text-xs font-medium text-destructive", className)}
-        {...props}
-      >
-        {message}
-      </p>
-    );
-  },
-);
-FieldError.displayName = "FieldError";
+  return (
+    <p
+      ref={ref}
+      data-slot="field-error"
+      className={cn("text-xs font-medium text-destructive", className)}
+      {...props}
+    >
+      {message}
+    </p>
+  );
+};
 
-const FieldSet = React.forwardRef<
-  HTMLFieldSetElement,
-  React.FieldsetHTMLAttributes<HTMLFieldSetElement>
->(({ className, ...props }, ref) => (
+const FieldSet = ({
+  className,
+  ref,
+  ...props
+}: React.FieldsetHTMLAttributes<HTMLFieldSetElement> & {
+  ref?: React.Ref<HTMLFieldSetElement>;
+}) => (
   <fieldset
     ref={ref}
     data-slot="field-set"
     className={cn("flex flex-col gap-4", className)}
     {...props}
   />
-));
-FieldSet.displayName = "FieldSet";
-
-const FieldLegend = React.forwardRef<HTMLLegendElement, React.HTMLAttributes<HTMLLegendElement>>(
-  ({ className, ...props }, ref) => (
-    <legend
-      ref={ref}
-      data-slot="field-legend"
-      className={cn("text-sm font-semibold text-foreground", className)}
-      {...props}
-    />
-  ),
 );
-FieldLegend.displayName = "FieldLegend";
 
-const FieldTitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
+const FieldLegend = ({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLLegendElement> & { ref?: React.Ref<HTMLLegendElement> }) => (
+  <legend
+    ref={ref}
+    data-slot="field-legend"
+    className={cn("text-sm font-semibold text-foreground", className)}
+    {...props}
+  />
+);
+
+const FieldTitle = ({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLParagraphElement> & { ref?: React.Ref<HTMLParagraphElement> }) => (
   <p
     ref={ref}
     data-slot="field-title"
     className={cn("text-sm font-medium text-foreground", className)}
     {...props}
   />
-));
-FieldTitle.displayName = "FieldTitle";
-
-const FieldSeparator = React.forwardRef<HTMLHRElement, React.HTMLAttributes<HTMLHRElement>>(
-  ({ className, ...props }, ref) => (
-    <hr
-      ref={ref}
-      data-slot="field-separator"
-      className={cn("border-border", className)}
-      {...props}
-    />
-  ),
 );
-FieldSeparator.displayName = "FieldSeparator";
+
+const FieldSeparator = ({
+  className,
+  ref,
+  ...props
+}: React.HTMLAttributes<HTMLHRElement> & { ref?: React.Ref<HTMLHRElement> }) => (
+  <hr ref={ref} data-slot="field-separator" className={cn("border-border", className)} {...props} />
+);
 
 export {
   Field,
