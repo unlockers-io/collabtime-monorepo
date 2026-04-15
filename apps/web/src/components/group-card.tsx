@@ -88,7 +88,7 @@ const GroupCard = ({
   return (
     <div
       className={cn(
-        "group flex h-full min-h-45 flex-col gap-3 rounded-2xl border-2 p-4 transition-all",
+        "group flex h-full min-h-45 flex-col gap-3 rounded-2xl border-2 p-4 transition-colors",
         isDropTarget ? "border-foreground bg-muted" : "border-transparent bg-secondary",
       )}
     >
