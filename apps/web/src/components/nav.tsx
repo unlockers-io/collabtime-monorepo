@@ -132,7 +132,7 @@ const CopyLinkButton = ({
     }}
   >
     <span className="flex items-center gap-2">
-      {hasCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+      {hasCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
       {hasCopied ? "Copied!" : "Copy Link"}
     </span>
   </Button>
@@ -269,7 +269,7 @@ const MobileMenu = ({
             >
               <span className="flex items-center gap-2">
                 {hasCopied ? (
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-success" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}

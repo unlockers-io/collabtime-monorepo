@@ -147,11 +147,11 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
         {/* Online Now */}
         <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <Circle className="h-2.5 w-2.5 fill-green-500 text-green-500" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/20">
+              <Circle className="h-2.5 w-2.5 fill-success text-success" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Online Now</span>
-            <span className="ml-auto rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 tabular-nums dark:bg-green-900/40 dark:text-green-400">
+            <span className="ml-auto rounded-full bg-success/20 px-2 py-0.5 text-xs font-semibold text-success tabular-nums">
               {onlineMembers.length}
             </span>
           </div>
@@ -166,7 +166,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
                       className="cursor-help bg-background text-foreground shadow-sm"
                       title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-success" />
                       {member.name}
                     </Badge>
                   );
@@ -220,11 +220,11 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
         {/* Leaving Soon */}
         <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-              <Clock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-info/20">
+              <Clock className="h-3.5 w-3.5 text-info" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Wrapping Up</span>
-            <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 tabular-nums dark:bg-blue-900/40 dark:text-blue-400">
+            <span className="ml-auto rounded-full bg-info/20 px-2 py-0.5 text-xs font-semibold text-info tabular-nums">
               {leavingSoonMembers.length}
             </span>
           </div>
@@ -241,9 +241,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
                       title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
                       <span className="text-xs font-medium text-foreground">{member.name}</span>
-                      <span className="text-xs text-blue-600 tabular-nums dark:text-blue-400">
-                        {hoursUntilEnd}h left
-                      </span>
+                      <span className="text-xs text-info tabular-nums">{hoursUntilEnd}h left</span>
                     </Badge>
                   );
                 })}

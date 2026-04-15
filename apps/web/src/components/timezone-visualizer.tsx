@@ -259,9 +259,9 @@ type OverlapStatusIconProps = {
 const OverlapStatusIcon = memo(function OverlapStatusIcon({ status }: OverlapStatusIconProps) {
   const iconConfigs = {
     none: {
-      bgClass: "bg-red-100 dark:bg-red-900/30",
+      bgClass: "bg-destructive/15",
       icon: X,
-      iconClass: "text-red-600 dark:text-red-400",
+      iconClass: "text-destructive",
     },
     partial: {
       bgClass: "bg-warning/20",
@@ -269,14 +269,14 @@ const OverlapStatusIcon = memo(function OverlapStatusIcon({ status }: OverlapSta
       iconClass: "text-warning",
     },
     full: {
-      bgClass: "bg-emerald-100 dark:bg-emerald-900/30",
+      bgClass: "bg-success/20",
       icon: Check,
-      iconClass: "text-emerald-600 dark:text-emerald-400",
+      iconClass: "text-success",
     },
     mixed: {
-      bgClass: "bg-emerald-100 dark:bg-emerald-900/30",
+      bgClass: "bg-success/20",
       icon: Check,
-      iconClass: "text-emerald-600 dark:text-emerald-400",
+      iconClass: "text-success",
     },
   } as const;
 
@@ -739,21 +739,21 @@ const TimezoneVisualizer = ({
     return (
       <>
         <div
-          className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 rounded-full bg-red-500 shadow-sm sm:hidden"
+          className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 rounded-full bg-destructive shadow-sm sm:hidden"
           style={{
             left: `calc(2.5rem + (100% - 2.5rem) * ${nowPosition / 100})`,
           }}
         >
-          <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-red-500" />
+          <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-destructive" />
         </div>
         {/* Desktop */}
         <div
-          className="pointer-events-none absolute top-0 bottom-0 z-20 hidden w-0.5 rounded-full bg-red-500 shadow-sm sm:block"
+          className="pointer-events-none absolute top-0 bottom-0 z-20 hidden w-0.5 rounded-full bg-destructive shadow-sm sm:block"
           style={{
             left: `calc(6.75rem + (100% - 6.75rem) * ${nowPosition / 100})`,
           }}
         >
-          <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-red-500" />
+          <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-destructive" />
         </div>
       </>
     );
@@ -815,9 +815,9 @@ const TimezoneVisualizer = ({
           const hasAnyOverlap = isFullOverlap || isPartialOverlap || isCrossTeamOverlap;
 
           const colorClass = isFullOverlap
-            ? "bg-emerald-500 dark:bg-emerald-400"
+            ? "bg-success"
             : isCrossTeamOverlap
-              ? "bg-sky-500 dark:bg-sky-400"
+              ? "bg-info"
               : isPartialOverlap
                 ? "bg-warning"
                 : "bg-muted";
@@ -899,7 +899,7 @@ const TimezoneVisualizer = ({
                   </div>
                   {availableByTeam.size > 0 && (
                     <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-medium tracking-wide text-emerald-600 uppercase dark:text-emerald-400">
+                      <span className="text-[10px] font-medium tracking-wide text-success uppercase">
                         Available by team
                       </span>
                       {Array.from(availableByTeam.entries()).map(([teamName, names]) => (
@@ -908,16 +908,14 @@ const TimezoneVisualizer = ({
                           className="flex items-center justify-between gap-4 text-xs"
                         >
                           <span className="truncate font-medium text-foreground">{teamName}</span>
-                          <span className="truncate text-emerald-600 dark:text-emerald-400">
-                            {names.join(", ")}
-                          </span>
+                          <span className="truncate text-success">{names.join(", ")}</span>
                         </div>
                       ))}
                     </div>
                   )}
                   {!isFullOverlap && unavailableByTeam.size > 0 && (
                     <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-medium tracking-wide text-red-600 uppercase dark:text-red-400">
+                      <span className="text-[10px] font-medium tracking-wide text-destructive uppercase">
                         Unavailable
                       </span>
                       {/* Teams with no one available - shown with strikethrough */}
@@ -989,12 +987,12 @@ const TimezoneVisualizer = ({
         {isComparing && canShowOverlap && (
           <>
             <div className="flex items-center gap-1.5">
-              <div className="h-3 w-3 rounded bg-emerald-500 dark:bg-emerald-400" />
+              <div className="h-3 w-3 rounded bg-success" />
               <span>Full overlap</span>
             </div>
             {hasCrossTeamOverlap && (
               <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded bg-sky-500 dark:bg-sky-400" />
+                <div className="h-3 w-3 rounded bg-info" />
                 <span>Each team represented</span>
               </div>
             )}
@@ -1008,8 +1006,8 @@ const TimezoneVisualizer = ({
         )}
         <div className="flex items-center gap-1.5">
           <div className="flex items-center">
-            <div className="h-3 w-0.5 rounded-full bg-red-500" />
-            <div className="-ml-px h-1.5 w-1.5 rounded-full bg-red-500" />
+            <div className="h-3 w-0.5 rounded-full bg-destructive" />
+            <div className="-ml-px h-1.5 w-1.5 rounded-full bg-destructive" />
           </div>
           <span>Current time</span>
         </div>

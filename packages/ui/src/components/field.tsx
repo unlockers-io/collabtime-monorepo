@@ -19,7 +19,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
         data-orientation={orientation}
         className={cn(
           "group/field flex w-full gap-3 [&>*]:w-full [&>.sr-only]:w-auto",
-          "data-[invalid=true]:text-red-600 dark:data-[invalid=true]:text-red-400",
+          "data-[invalid=true]:text-destructive",
           orientation === "vertical" && "flex-col",
           orientation === "horizontal" &&
             "flex-row items-center has-[>[data-slot=field-content]]:items-start [&>[data-slot=field-label]]:flex-auto",

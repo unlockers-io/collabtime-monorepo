@@ -155,7 +155,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
                         size="icon-sm"
                         onClick={() => handleApprove(request.id)}
                         disabled={isThisRequest}
-                        className="text-green-600 hover:bg-green-100 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-900/30 dark:hover:text-green-300"
+                        className="text-success hover:bg-success/10 hover:text-success"
                         aria-label={`Approve ${request.userName}`}
                       >
                         {isApproving ? <Spinner /> : <Check className="h-4 w-4" />}
@@ -165,7 +165,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
                         size="icon-sm"
                         onClick={() => handleDeny(request.id)}
                         disabled={isThisRequest}
-                        className="text-red-600 hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         aria-label={`Deny ${request.userName}`}
                       >
                         {isDenying ? <Spinner /> : <X className="h-4 w-4" />}
