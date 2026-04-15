@@ -10,7 +10,7 @@ import {
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
 import { Hand, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { EditMemberDialog } from "@/components/edit-member-dialog";
@@ -21,6 +21,7 @@ import {
   getMinutesUntilAvailable,
   formatTimeUntilAvailable,
 } from "@/lib/timezones";
+import { useHalfMinuteTick } from "@/lib/use-tick";
 import { formatHour } from "@/lib/utils";
 import type { TeamGroup, TeamMember } from "@/types";
 
@@ -46,40 +47,23 @@ const MemberCard = ({
   onMemberUpdated,
 }: MemberCardProps) => {
   const [isPending, startTransition] = useTransition();
-  const [isAvailable, setIsAvailable] = useState(false);
-  const [minutesUntilAvailable, setMinutesUntilAvailable] = useState(0);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
 
   const isOwnProfile = Boolean(currentUserId && member.userId === currentUserId);
   const canClaim = Boolean(currentUserId && !member.userId && !hasClaimedProfile);
 
-  useEffect(() => {
-    const checkAvailability = () => {
-      const available = isCurrentlyWorking(
-        member.timezone,
-        member.workingHoursStart,
-        member.workingHoursEnd,
-      );
-      setIsAvailable(available);
-
-      if (!available) {
-        setMinutesUntilAvailable(
-          getMinutesUntilAvailable(
-            member.timezone,
-            member.workingHoursStart,
-            member.workingHoursEnd,
-          ),
-        );
-      } else {
-        setMinutesUntilAvailable(0);
-      }
-    };
-
-    checkAvailability();
-    const interval = setInterval(checkAvailability, 60_000);
-    return () => clearInterval(interval);
-  }, [member.timezone, member.workingHoursStart, member.workingHoursEnd]);
+  // Re-render every 30s; derive availability during render instead of mirroring
+  // it into state via an effect (https://react.dev/learn/you-might-not-need-an-effect).
+  useHalfMinuteTick();
+  const isAvailable = isCurrentlyWorking(
+    member.timezone,
+    member.workingHoursStart,
+    member.workingHoursEnd,
+  );
+  const minutesUntilAvailable = isAvailable
+    ? 0
+    : getMinutesUntilAvailable(member.timezone, member.workingHoursStart, member.workingHoursEnd);
 
   const handleRemove = () => {
     if (!canEdit) {

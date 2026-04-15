@@ -12,7 +12,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import { GroupCard } from "@/components/group-card";
 import { MemberCard } from "@/components/member-card";
@@ -45,32 +45,26 @@ const DndWrapper = ({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) => {
-      const id = event.active.id as string;
-      if (members.some((m) => m.id === id)) {
-        setActiveDragType("member");
-        setActiveDragId(id);
-        onDragTypeChange?.("member");
-      } else if (groups.some((g) => g.id === id)) {
-        setActiveDragType("group");
-        setActiveDragId(id);
-        onDragTypeChange?.("group");
-      }
-    },
-    [members, groups, onDragTypeChange],
-  );
+  const handleDragStart = (event: DragStartEvent) => {
+    const id = event.active.id as string;
+    if (members.some((m) => m.id === id)) {
+      setActiveDragType("member");
+      setActiveDragId(id);
+      onDragTypeChange?.("member");
+    } else if (groups.some((g) => g.id === id)) {
+      setActiveDragType("group");
+      setActiveDragId(id);
+      onDragTypeChange?.("group");
+    }
+  };
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const currentDragType = activeDragType;
-      setActiveDragId(null);
-      setActiveDragType(null);
-      onDragTypeChange?.(null);
-      onDragEnd(event, currentDragType);
-    },
-    [activeDragType, onDragEnd, onDragTypeChange],
-  );
+  const handleDragEnd = (event: DragEndEvent) => {
+    const currentDragType = activeDragType;
+    setActiveDragId(null);
+    setActiveDragType(null);
+    onDragTypeChange?.(null);
+    onDragEnd(event, currentDragType);
+  };
 
   const activeMember =
     activeDragId && activeDragType === "member" ? members.find((m) => m.id === activeDragId) : null;
