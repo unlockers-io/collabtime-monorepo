@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { TeamRecord } from "@/types";
-
 import { createTestMember, createTestTeamRecord, VALID_UUID } from "./test-helpers";
 
 vi.mock("../redis", () => ({
@@ -95,8 +93,7 @@ describe("getTeamRecord", () => {
 
   it("backfills empty groups array when missing", async () => {
     const team = createTestTeamRecord();
-    const teamWithoutGroups = { ...team } as TeamRecord & { groups?: unknown };
-    delete teamWithoutGroups.groups;
+    const { groups: _, ...teamWithoutGroups } = team;
     mockedRedisGet.mockResolvedValue(JSON.stringify(teamWithoutGroups));
 
     const result = await getTeamRecord(VALID_UUID);
@@ -105,8 +102,7 @@ describe("getTeamRecord", () => {
 
   it("backfills empty members array when missing", async () => {
     const team = createTestTeamRecord();
-    const teamWithoutMembers = { ...team } as TeamRecord & { members?: unknown };
-    delete teamWithoutMembers.members;
+    const { members: _, ...teamWithoutMembers } = team;
     mockedRedisGet.mockResolvedValue(JSON.stringify(teamWithoutMembers));
 
     const result = await getTeamRecord(VALID_UUID);

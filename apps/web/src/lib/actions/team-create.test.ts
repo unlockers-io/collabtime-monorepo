@@ -68,7 +68,9 @@ describe("createTeam", () => {
     await createTeam(TEST_TIMEZONE);
 
     const redisCall = vi.mocked(redis.set).mock.calls[0];
-    const storedTeam = JSON.parse(redisCall[1] as string);
+    const storedTeam = JSON.parse(redisCall[1] as string) as {
+      members: Array<Record<string, unknown>>;
+    };
 
     expect(storedTeam.members).toHaveLength(1);
     expect(storedTeam.members[0]).toMatchObject({

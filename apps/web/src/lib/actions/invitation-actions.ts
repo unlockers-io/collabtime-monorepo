@@ -1,16 +1,12 @@
 "use server";
 
 import { prisma } from "@repo/db";
-import { z } from "zod";
 
 import { sendInvitationEmail } from "@/lib/email";
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
-import type { PendingInvitation } from "@/types";
 
 import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
 import { UUIDSchema } from "../validation";
-
-const TeamCacheSchema = z.object({ name: z.string().optional() });
 
 import { getTeamRecord } from "./helpers";
 import type { ActionResult } from "./types";
@@ -110,50 +106,6 @@ const inviteMember = async (
   } catch (error) {
     console.error("Failed to invite member:", error);
     return { success: false, error: "Failed to send invitation" };
-  }
-};
-
-const getMyInvitations = async (): Promise<ActionResult<Array<PendingInvitation>>> => {
-  try {
-    const session = await requireAuth();
-
-    const invitations = await prisma.invitation.findMany({
-      where: {
-        email: session.user.email,
-        status: "PENDING",
-      },
-      include: {
-        invitedBy: {
-          select: { name: true, email: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const results = await Promise.allSettled(
-      invitations.map(async (inv) => {
-        const data = await redis.get<string>(`team:${inv.teamId}`);
-        const parsed = data
-          ? TeamCacheSchema.safeParse(typeof data === "string" ? JSON.parse(data) : data)
-          : null;
-        const team = parsed?.success ? parsed.data : null;
-
-        return {
-          id: inv.id,
-          teamId: inv.teamId,
-          memberId: inv.memberId,
-          teamName: team?.name || "Unknown Team",
-          inviterName: inv.invitedBy.name || inv.invitedBy.email.split("@")[0] || "Someone",
-        };
-      }),
-    );
-
-    const data = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
-
-    return { success: true, data };
-  } catch (error) {
-    console.error("Failed to get invitations:", error);
-    return { success: false, error: "Failed to get invitations" };
   }
 };
 

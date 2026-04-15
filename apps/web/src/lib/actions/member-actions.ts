@@ -7,10 +7,9 @@ import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 import type { Team, TeamMember } from "@/types";
 
 import { realtime } from "../realtime";
-import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
 import { TeamMemberInputSchema, TeamMemberUpdateSchema, UUIDSchema } from "../validation";
 
-import { getTeamRecord, sanitizeTeam } from "./helpers";
+import { getTeamRecord, persistTeam, sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
 const addMember = async (
@@ -41,9 +40,7 @@ const addMember = async (
     team.members.push(newMember);
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.memberAdded", newMember),
     ]);
 
@@ -85,9 +82,7 @@ const removeMember = async (teamId: string, memberId: string): Promise<ActionRes
     team.members = team.members.filter((m) => m.id !== memberId);
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.memberRemoved", { memberId }),
     ]);
 
@@ -142,9 +137,7 @@ const updateMember = async (
     team.members[memberIndex] = updatedMember;
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember),
     ]);
 
@@ -177,9 +170,7 @@ const updateTeamName = async (teamId: string, name: string): Promise<ActionResul
     team.name = trimmedName;
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.nameUpdated", {
         name: trimmedName,
       }),
@@ -227,9 +218,7 @@ const importMembers = async (
     team.members.push(...orderedValidated);
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.membersImported", validated),
     ]);
 
@@ -311,9 +300,7 @@ const updateOwnMember = async (
     team.members[memberIndex] = updatedMember;
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember),
     ]);
 
@@ -354,9 +341,7 @@ const reorderMembers = async (
     }));
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.membersReordered", {
         order: memberIds,
       }),

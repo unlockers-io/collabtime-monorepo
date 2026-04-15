@@ -33,6 +33,7 @@ vi.mock("../realtime", () => ({
 
 vi.mock("./helpers", () => ({
   getTeamRecord: vi.fn(),
+  persistTeam: vi.fn(),
   sanitizeTeam: vi.fn((t: unknown) => t),
 }));
 
@@ -41,9 +42,8 @@ vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 import { prisma } from "@repo/db";
 
 import { realtime } from "../realtime";
-import { redis } from "../redis";
 
-import { getTeamRecord } from "./helpers";
+import { getTeamRecord, persistTeam } from "./helpers";
 import {
   addMember,
   importMembers,
@@ -57,7 +57,7 @@ import {
 const mockedGetTeamRecord = vi.mocked(getTeamRecord);
 const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
 const mockedRequireAuth = vi.mocked(requireAuth);
-const mockedRedisSet = vi.mocked(redis.set);
+const mockedPersistTeam = vi.mocked(persistTeam);
 const mockedChannel = vi.mocked(realtime.channel);
 const mockedFindUnique = vi.mocked(prisma.membership.findUnique);
 
@@ -84,8 +84,7 @@ describe("addMember", () => {
 
     const result = await addMember(VALID_UUID, validMemberInput as never);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Failed to add member");
+    expect(result).toEqual({ success: false, error: "Failed to add member" });
   });
 
   it("returns error when team not found", async () => {
@@ -93,8 +92,7 @@ describe("addMember", () => {
 
     const result = await addMember(VALID_UUID, validMemberInput as never);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team not found");
+    expect(result).toEqual({ success: false, error: "Team not found" });
   });
 
   it("assigns order equal to team.members.length", async () => {
@@ -117,9 +115,7 @@ describe("addMember", () => {
 
     await addMember(VALID_UUID, validMemberInput as never);
 
-    expect(mockedRedisSet).toHaveBeenCalledWith(`team:${VALID_UUID}`, expect.any(String), {
-      ex: 100,
-    });
+    expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
     expect(mockEmit).toHaveBeenCalledWith(
       "team.memberAdded",
       expect.objectContaining({ name: "Alice" }),
@@ -133,8 +129,7 @@ describe("removeMember", () => {
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team not found");
+    expect(result).toEqual({ success: false, error: "Team not found" });
   });
 
   it("returns error when member not found", async () => {
@@ -143,8 +138,7 @@ describe("removeMember", () => {
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Member not found");
+    expect(result).toEqual({ success: false, error: "Member not found" });
   });
 
   it("filters out member and emits memberRemoved", async () => {
@@ -170,8 +164,7 @@ describe("updateMember", () => {
       name: "Bob",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Member not found");
+    expect(result).toEqual({ success: false, error: "Member not found" });
   });
 
   it("updates member at correct index", async () => {
@@ -182,7 +175,7 @@ describe("updateMember", () => {
 
     await updateMember(VALID_UUID, VALID_UUID_3, { name: "Charlie" });
 
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].name).toBe("Alice");
     expect(savedTeam.members[1].name).toBe("Charlie");
   });
@@ -195,15 +188,14 @@ describe("updateTeamName", () => {
 
     await updateTeamName(VALID_UUID, "  My Team  ");
 
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.name).toBe("My Team");
   });
 
   it("rejects empty name after trimming", async () => {
     const result = await updateTeamName(VALID_UUID, "   ");
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team name cannot be empty");
+    expect(result).toEqual({ success: false, error: "Team name cannot be empty" });
   });
 
   it("truncates name to 100 characters", async () => {
@@ -213,7 +205,7 @@ describe("updateTeamName", () => {
 
     await updateTeamName(VALID_UUID, longName);
 
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.name.length).toBe(100);
   });
 });
@@ -222,8 +214,7 @@ describe("importMembers", () => {
   it("rejects empty array", async () => {
     const result = await importMembers(VALID_UUID, []);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("No members to import");
+    expect(result).toEqual({ success: false, error: "No members to import" });
   });
 
   it("rejects more than 100 members", async () => {
@@ -234,8 +225,10 @@ describe("importMembers", () => {
 
     const result = await importMembers(VALID_UUID, members as never);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Cannot import more than 100 members at once");
+    expect(result).toEqual({
+      success: false,
+      error: "Cannot import more than 100 members at once",
+    });
   });
 
   it("assigns orders starting from existing member count", async () => {
@@ -249,7 +242,7 @@ describe("importMembers", () => {
     ]);
 
     expect(result.success).toBe(true);
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     // Existing member at index 0, imported start at order 1
     expect(savedTeam.members[1].order).toBe(1);
     expect(savedTeam.members[2].order).toBe(2);
@@ -260,8 +253,7 @@ describe("importMembers", () => {
 
     const result = await importMembers(VALID_UUID, [validMemberInput as never]);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team not found");
+    expect(result).toEqual({ success: false, error: "Team not found" });
   });
 });
 
@@ -292,8 +284,7 @@ describe("updateOwnMember", () => {
       name: "X",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("You are not a member of this team");
+    expect(result).toEqual({ success: false, error: "You are not a member of this team" });
   });
 
   it("returns error when member not found in team record", async () => {
@@ -304,8 +295,7 @@ describe("updateOwnMember", () => {
       name: "X",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Member not found");
+    expect(result).toEqual({ success: false, error: "Member not found" });
   });
 
   it("rejects editing another user's member record", async () => {
@@ -318,8 +308,10 @@ describe("updateOwnMember", () => {
       name: "Hacked",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("You can only edit your own member record");
+    expect(result).toEqual({
+      success: false,
+      error: "You can only edit your own member record",
+    });
   });
 
   it("allows editing own member record (userId matches)", async () => {
@@ -333,7 +325,7 @@ describe("updateOwnMember", () => {
     });
 
     expect(result.success).toBe(true);
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].name).toBe("New Name");
   });
 
@@ -348,7 +340,7 @@ describe("updateOwnMember", () => {
     });
 
     expect(result.success).toBe(true);
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].userId).toBe("user-123");
   });
 
@@ -369,7 +361,7 @@ describe("updateOwnMember", () => {
       groupId: VALID_UUID_3,
     } as never);
 
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].groupId).toBeUndefined();
   });
 
@@ -380,8 +372,7 @@ describe("updateOwnMember", () => {
       name: "X",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Failed to update member");
+    expect(result).toEqual({ success: false, error: "Failed to update member" });
   });
 });
 
@@ -391,8 +382,7 @@ describe("reorderMembers", () => {
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2]);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team not found");
+    expect(result).toEqual({ success: false, error: "Team not found" });
   });
 
   it("rejects when member IDs do not match existing members", async () => {
@@ -403,8 +393,7 @@ describe("reorderMembers", () => {
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2, "nonexistent-id"]);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Invalid member order");
+    expect(result).toEqual({ success: false, error: "Invalid member order" });
   });
 
   it("rejects when member count does not match", async () => {
@@ -415,8 +404,7 @@ describe("reorderMembers", () => {
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2]);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Invalid member order");
+    expect(result).toEqual({ success: false, error: "Invalid member order" });
   });
 
   it("updates order values based on new positions", async () => {
@@ -428,7 +416,7 @@ describe("reorderMembers", () => {
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_3, VALID_UUID_2]);
 
     expect(result.success).toBe(true);
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].id).toBe(VALID_UUID_3);
     expect(savedTeam.members[0].order).toBe(0);
     expect(savedTeam.members[1].id).toBe(VALID_UUID_2);
