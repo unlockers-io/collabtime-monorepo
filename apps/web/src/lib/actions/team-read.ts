@@ -113,8 +113,6 @@ const getTeamName = cache(async (teamId: string): Promise<string | null> => {
   }
 });
 
-export { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam };
-
 const getTeamMembershipRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
@@ -135,3 +133,5 @@ const getTeamMembershipRole = async (teamId: string, userId: string): Promise<Te
     return null;
   }
 };
+
+export { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam };
