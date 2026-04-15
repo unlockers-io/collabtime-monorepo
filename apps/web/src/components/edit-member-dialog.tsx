@@ -369,17 +369,15 @@ const EditMemberDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        {open && (
-          <EditMemberForm
-            key={member.id}
-            member={member}
-            teamId={teamId}
-            groups={groups}
-            mode={mode}
-            onOpenChange={onOpenChange}
-            onMemberUpdated={onMemberUpdated}
-          />
-        )}
+        <EditMemberForm
+          key={member.id}
+          member={member}
+          teamId={teamId}
+          groups={groups}
+          mode={mode}
+          onOpenChange={onOpenChange}
+          onMemberUpdated={onMemberUpdated}
+        />
       </DialogContent>
     </Dialog>
   );

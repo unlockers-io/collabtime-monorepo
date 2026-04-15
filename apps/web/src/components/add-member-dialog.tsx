@@ -375,9 +375,20 @@ const AddMemberDialog = ({
   isFirstMember,
 }: AddMemberDialogProps) => {
   const [open, setOpen] = useState(isFirstMember);
+  // Bumped after close animation completes so the next open gets a fresh form
+  // without unmounting mid-animation (which caused a visible close flicker).
+  const [instanceId, setInstanceId] = useState(0);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+      onOpenChangeComplete={(nextOpen) => {
+        if (!nextOpen) {
+          setInstanceId((n) => n + 1);
+        }
+      }}
+    >
       <DialogTrigger
         render={
           <Button
@@ -391,15 +402,14 @@ const AddMemberDialog = ({
         <span className="font-medium">Add Team Member</span>
       </DialogTrigger>
       <DialogContent className="max-w-md">
-        {open && (
-          <AddMemberForm
-            teamId={teamId}
-            groups={groups}
-            isFirstMember={isFirstMember}
-            onOpenChange={setOpen}
-            onMemberAdded={onMemberAdded}
-          />
-        )}
+        <AddMemberForm
+          key={instanceId}
+          teamId={teamId}
+          groups={groups}
+          isFirstMember={isFirstMember}
+          onOpenChange={setOpen}
+          onMemberAdded={onMemberAdded}
+        />
       </DialogContent>
     </Dialog>
   );
