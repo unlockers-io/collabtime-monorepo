@@ -106,8 +106,8 @@ const MemberCard = ({
               {member.name.charAt(0).toUpperCase()}
             </div>
             {isAvailable && (
-              <span className="absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-green-500">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
+              <span className="absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-success">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-50" />
               </span>
             )}
           </div>
@@ -175,8 +175,8 @@ const MemberCard = ({
           {/* Status badges */}
           <div className="flex flex-wrap gap-1.5">
             {isAvailable ? (
-              <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+              <Badge className="border-transparent bg-success/20 text-success">
+                <span className="h-1.5 w-1.5 rounded-full bg-success" />
                 Available
               </Badge>
             ) : (

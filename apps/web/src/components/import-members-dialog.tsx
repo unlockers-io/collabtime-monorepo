@@ -376,7 +376,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
               <div className="flex flex-col gap-3 py-2">
                 <div className="flex items-center gap-3 text-sm">
                   {validCount > 0 && (
-                    <span className="flex items-center gap-1.5 font-medium text-green-600 dark:text-green-400">
+                    <span className="flex items-center gap-1.5 font-medium text-success">
                       <CheckCircle className="h-4 w-4" />
                       {validCount} valid
                     </span>
@@ -452,7 +452,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                               </td>
                               <td className="px-3 py-2">
                                 {isValid ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  <CheckCircle className="h-4 w-4 text-success" />
                                 ) : (
                                   <Tooltip>
                                     <TooltipTrigger

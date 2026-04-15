@@ -133,9 +133,8 @@ const RootLayout = ({
                 cancelButton: "text-muted-foreground hover:bg-accent",
                 closeButton: "text-muted-foreground hover:text-foreground",
                 success: "border border-warning/40 bg-popover text-popover-foreground shadow-lg",
-                error:
-                  "border border-red-400/50 bg-popover text-popover-foreground shadow-lg dark:border-red-400/40",
-                info: "border border-sky-400/40 bg-popover text-popover-foreground shadow-lg dark:border-sky-300/30",
+                error: "border border-destructive/50 bg-popover text-popover-foreground shadow-lg",
+                info: "border border-info/40 bg-popover text-popover-foreground shadow-lg",
                 warning: "border border-warning/50 bg-popover text-popover-foreground shadow-lg",
               },
             }}
