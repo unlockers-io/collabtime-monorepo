@@ -65,13 +65,11 @@ const getRealtime = () => {
   return _realtime;
 };
 
-const isRealtimeAvailable = () => getRealtime() !== null;
-
 // Type inference from the schema — use non-null type for the proxy facade
 type RealtimeInstance = Exclude<ReturnType<typeof createRealtime>, null>;
 type RealtimeEvents = InferRealtimeEvents<RealtimeInstance>;
 
-// Legacy export for backwards compatibility - now a getter proxy
+// Lazy-initialized proxy — defers Realtime construction to first access
 const realtime = new Proxy({} as RealtimeInstance, {
   get(_, prop) {
     const instance = getRealtime();
