@@ -56,7 +56,6 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
         setOpen(false);
         onGroupAdded(result.data.group);
         toast.success(`Group "${value.name}" created`);
-        form.reset();
       } else {
         toast.error(result.error);
       }
@@ -71,7 +70,17 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      onOpenChangeComplete={(nextOpen) => {
+        // Reset after the close animation completes to avoid input re-render
+        // flicker during fade-out.
+        if (!nextOpen) {
+          form.reset();
+        }
+      }}
+    >
       <DialogTrigger
         render={
           <Button
