@@ -3,10 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { requireTeamAdmin } from "@/lib/team-auth";
 
 import { realtime } from "../realtime";
-import { redis } from "../redis";
 
 import { createGroup, removeGroup, reorderGroups, updateGroup } from "./group-actions";
-import { getTeamRecord, sanitizeTeam } from "./helpers";
+import { getTeamRecord, persistTeam, sanitizeTeam } from "./helpers";
 import {
   createTestGroup,
   createTestMember,
@@ -24,12 +23,16 @@ vi.mock("../redis", () => ({
 vi.mock("../realtime", () => ({
   realtime: { channel: vi.fn(() => ({ emit: vi.fn(() => Promise.resolve()) })) },
 }));
-vi.mock("./helpers", () => ({ getTeamRecord: vi.fn(), sanitizeTeam: vi.fn((t: unknown) => t) }));
+vi.mock("./helpers", () => ({
+  getTeamRecord: vi.fn(),
+  persistTeam: vi.fn(),
+  sanitizeTeam: vi.fn((t: unknown) => t),
+}));
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
 const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
 const mockedGetTeamRecord = vi.mocked(getTeamRecord);
-const mockedRedisSet = vi.mocked(redis.set);
+const mockedPersistTeam = vi.mocked(persistTeam);
 const mockedRealtimeChannel = vi.mocked(realtime.channel);
 
 describe("createGroup", () => {
@@ -90,9 +93,7 @@ describe("createGroup", () => {
 
     await createGroup(VALID_UUID, { name: "Design" });
 
-    expect(mockedRedisSet).toHaveBeenCalledWith(`team:${VALID_UUID}`, expect.any(String), {
-      ex: 100,
-    });
+    expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
     expect(mockedRealtimeChannel).toHaveBeenCalledWith(`team-${VALID_UUID}`);
     expect(mockEmit).toHaveBeenCalledWith(
       "team.groupCreated",
@@ -144,7 +145,7 @@ describe("updateGroup", () => {
     const result = await updateGroup(VALID_UUID, VALID_UUID_2, { name: "Product" });
 
     expect(result.success).toBe(true);
-    expect(mockedRedisSet).toHaveBeenCalled();
+    expect(mockedPersistTeam).toHaveBeenCalled();
     expect(mockEmit).toHaveBeenCalledWith(
       "team.groupUpdated",
       expect.objectContaining({ name: "Product" }),
@@ -246,9 +247,7 @@ describe("removeGroup", () => {
 
     await removeGroup(VALID_UUID, VALID_UUID_2);
 
-    expect(mockedRedisSet).toHaveBeenCalledWith(`team:${VALID_UUID}`, expect.any(String), {
-      ex: 100,
-    });
+    expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
     expect(mockEmit).toHaveBeenCalledWith("team.groupRemoved", { groupId: VALID_UUID_2 });
   });
 });
@@ -327,9 +326,7 @@ describe("reorderGroups", () => {
 
     await reorderGroups(VALID_UUID, ["g2", "g1"]);
 
-    expect(mockedRedisSet).toHaveBeenCalledWith(`team:${VALID_UUID}`, expect.any(String), {
-      ex: 100,
-    });
+    expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
     expect(mockEmit).toHaveBeenCalledWith("team.groupsReordered", { order: ["g2", "g1"] });
   });
 });

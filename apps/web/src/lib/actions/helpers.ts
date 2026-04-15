@@ -1,6 +1,6 @@
 import type { Team, TeamRecord } from "@/types";
 
-import { redis } from "../redis";
+import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
 import { UUIDSchema } from "../validation";
 
 const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
@@ -46,4 +46,8 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
   }
 };
 
-export { getTeamRecord, sanitizeTeam };
+const persistTeam = async (teamId: string, team: TeamRecord): Promise<void> => {
+  await redis.set(`team:${teamId}`, JSON.stringify(team), { ex: TEAM_ACTIVE_TTL_SECONDS });
+};
+
+export { getTeamRecord, persistTeam, sanitizeTeam };

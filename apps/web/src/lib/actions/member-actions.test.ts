@@ -33,6 +33,7 @@ vi.mock("../realtime", () => ({
 
 vi.mock("./helpers", () => ({
   getTeamRecord: vi.fn(),
+  persistTeam: vi.fn(),
   sanitizeTeam: vi.fn((t: unknown) => t),
 }));
 
@@ -41,9 +42,8 @@ vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 import { prisma } from "@repo/db";
 
 import { realtime } from "../realtime";
-import { redis } from "../redis";
 
-import { getTeamRecord } from "./helpers";
+import { getTeamRecord, persistTeam } from "./helpers";
 import {
   addMember,
   importMembers,
@@ -57,7 +57,7 @@ import {
 const mockedGetTeamRecord = vi.mocked(getTeamRecord);
 const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
 const mockedRequireAuth = vi.mocked(requireAuth);
-const mockedRedisSet = vi.mocked(redis.set);
+const mockedPersistTeam = vi.mocked(persistTeam);
 const mockedChannel = vi.mocked(realtime.channel);
 const mockedFindUnique = vi.mocked(prisma.membership.findUnique);
 
@@ -117,9 +117,7 @@ describe("addMember", () => {
 
     await addMember(VALID_UUID, validMemberInput as never);
 
-    expect(mockedRedisSet).toHaveBeenCalledWith(`team:${VALID_UUID}`, expect.any(String), {
-      ex: 100,
-    });
+    expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
     expect(mockEmit).toHaveBeenCalledWith(
       "team.memberAdded",
       expect.objectContaining({ name: "Alice" }),
@@ -182,7 +180,7 @@ describe("updateMember", () => {
 
     await updateMember(VALID_UUID, VALID_UUID_3, { name: "Charlie" });
 
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].name).toBe("Alice");
     expect(savedTeam.members[1].name).toBe("Charlie");
   });
@@ -195,7 +193,7 @@ describe("updateTeamName", () => {
 
     await updateTeamName(VALID_UUID, "  My Team  ");
 
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.name).toBe("My Team");
   });
 
@@ -213,7 +211,7 @@ describe("updateTeamName", () => {
 
     await updateTeamName(VALID_UUID, longName);
 
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.name.length).toBe(100);
   });
 });
@@ -249,7 +247,7 @@ describe("importMembers", () => {
     ]);
 
     expect(result.success).toBe(true);
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     // Existing member at index 0, imported start at order 1
     expect(savedTeam.members[1].order).toBe(1);
     expect(savedTeam.members[2].order).toBe(2);
@@ -333,7 +331,7 @@ describe("updateOwnMember", () => {
     });
 
     expect(result.success).toBe(true);
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].name).toBe("New Name");
   });
 
@@ -348,7 +346,7 @@ describe("updateOwnMember", () => {
     });
 
     expect(result.success).toBe(true);
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].userId).toBe("user-123");
   });
 
@@ -369,7 +367,7 @@ describe("updateOwnMember", () => {
       groupId: VALID_UUID_3,
     } as never);
 
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].groupId).toBeUndefined();
   });
 
@@ -428,7 +426,7 @@ describe("reorderMembers", () => {
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_3, VALID_UUID_2]);
 
     expect(result.success).toBe(true);
-    const savedTeam = JSON.parse(mockedRedisSet.mock.calls[0][1] as string);
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
     expect(savedTeam.members[0].id).toBe(VALID_UUID_3);
     expect(savedTeam.members[0].order).toBe(0);
     expect(savedTeam.members[1].id).toBe(VALID_UUID_2);

@@ -6,10 +6,9 @@ import { requireTeamAdmin } from "@/lib/team-auth";
 import type { Team, TeamGroup } from "@/types";
 
 import { realtime } from "../realtime";
-import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
 import { TeamGroupInputSchema, TeamGroupUpdateSchema, UUIDSchema } from "../validation";
 
-import { getTeamRecord, sanitizeTeam } from "./helpers";
+import { getTeamRecord, persistTeam, sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
 const createGroup = async (
@@ -44,9 +43,7 @@ const createGroup = async (
     team.groups.push(newGroup);
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.groupCreated", newGroup),
     ]);
 
@@ -102,9 +99,7 @@ const updateGroup = async (
     team.groups[groupIndex] = updatedGroup;
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.groupUpdated", updatedGroup),
     ]);
 
@@ -150,9 +145,7 @@ const removeGroup = async (teamId: string, groupId: string): Promise<ActionResul
     team.groups = team.groups.map((g, index) => ({ ...g, order: index }));
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.groupRemoved", { groupId }),
     ]);
 
@@ -193,9 +186,7 @@ const reorderGroups = async (
     }));
 
     await Promise.all([
-      redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_ACTIVE_TTL_SECONDS,
-      }),
+      persistTeam(teamId, team),
       realtime.channel(`team-${teamId}`).emit("team.groupsReordered", {
         order: groupIds,
       }),
