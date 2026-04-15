@@ -1,46 +1,25 @@
-import { buttonVariants } from "@repo/ui/components/button";
-import { Card } from "@repo/ui/components/card";
-import { Home } from "lucide-react";
+import { Button } from "@repo/ui/components/button";
 import Link from "next/link";
 
 export const metadata = {
-  title: "404",
-  description:
-    "This page doesn't exist (or this team ID can't be found). Head back home and create a new team.",
+  title: "Page not found",
+  description: "The page you're looking for doesn't exist or has moved.",
 };
 
 const NotFound = () => {
   return (
-    <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
-      <main className="w-full max-w-xl">
-        <Card className="p-6 sm:p-8">
-          <div className="flex flex-col gap-4">
-            <h1 className="max-w-[28ch] text-xl font-semibold tracking-tight text-balance text-foreground sm:text-2xl">
-              This team doesn&apos;t exist
-            </h1>
-
-            <p className="max-w-[60ch] text-sm text-pretty text-muted-foreground">
-              If you were trying to open a team, the ID might be wrong (or the link expired). If you
-              typed a URL, it may have drifted into a parallel timezone.
-            </p>
-
-            <Link className={buttonVariants({ className: "w-full" })} href="/">
-              <Home className="size-4" />
-              Back to home
-            </Link>
-
-            <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-4 text-sm text-muted-foreground">
-              <div className="font-medium text-foreground">Quick checks</div>
-              <ul className="list-disc space-y-1 pl-4" role="list">
-                <li>Double-check the team ID in the address bar.</li>
-                <li>Ask an admin for a fresh link if you&apos;re locked out.</li>
-                <li>Start a new team from the home page.</li>
-              </ul>
-            </div>
-          </div>
-        </Card>
-      </main>
-    </div>
+    <main className="flex min-h-screen flex-1 items-center justify-center px-4 py-10 sm:px-6">
+      <div className="flex max-w-xl flex-col items-center gap-4 text-center">
+        <p className="text-7xl font-semibold tracking-tight text-foreground sm:text-8xl">404</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-balance text-foreground sm:text-3xl">
+          Page not found
+        </h1>
+        <p className="max-w-[60ch] text-sm text-pretty text-muted-foreground">
+          The page you&apos;re looking for doesn&apos;t exist or has moved.
+        </p>
+        <Button render={<Link href="/" />}>Go home</Button>
+      </div>
+    </main>
   );
 };
 
