@@ -19,7 +19,6 @@ type SortableGroupCardProps = {
 const SortableGroupCard = (props: SortableGroupCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: props.group.id,
-    animateLayoutChanges: () => false,
   });
 
   const style = {

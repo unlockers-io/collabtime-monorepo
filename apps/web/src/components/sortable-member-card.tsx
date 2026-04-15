@@ -20,7 +20,6 @@ type SortableMemberCardProps = {
 const SortableMemberCard = (props: SortableMemberCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: props.member.id,
-    animateLayoutChanges: () => false,
   });
 
   const style = {
