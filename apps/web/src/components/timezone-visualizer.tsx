@@ -264,9 +264,9 @@ const OverlapStatusIcon = memo(function OverlapStatusIcon({ status }: OverlapSta
       iconClass: "text-red-600 dark:text-red-400",
     },
     partial: {
-      bgClass: "bg-amber-100 dark:bg-amber-900/30",
+      bgClass: "bg-warning/20",
       icon: Minus,
-      iconClass: "text-amber-600 dark:text-amber-400",
+      iconClass: "text-warning",
     },
     full: {
       bgClass: "bg-emerald-100 dark:bg-emerald-900/30",
@@ -777,7 +777,7 @@ const TimezoneVisualizer = ({
             <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-foreground sm:h-3 sm:w-3" />
           )}
           {dayOffset !== 0 && (
-            <div className="absolute -right-1 -bottom-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-amber-950 sm:h-4 sm:w-4 sm:text-[9px] dark:bg-amber-500 dark:text-amber-950">
+            <div className="absolute -right-1 -bottom-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-warning text-[8px] font-bold text-warning-foreground sm:h-4 sm:w-4 sm:text-[9px]">
               {dayOffset > 0 ? `+${dayOffset}` : dayOffset}
             </div>
           )}
@@ -819,7 +819,7 @@ const TimezoneVisualizer = ({
             : isCrossTeamOverlap
               ? "bg-sky-500 dark:bg-sky-400"
               : isPartialOverlap
-                ? "bg-amber-500 dark:bg-amber-400"
+                ? "bg-warning"
                 : "bg-muted";
 
           if (!hasAnyOverlap) {
@@ -1000,7 +1000,7 @@ const TimezoneVisualizer = ({
             )}
             {totalPeopleSelected >= 3 && (
               <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded bg-amber-500 dark:bg-amber-400" />
+                <div className="h-3 w-3 rounded bg-warning" />
                 <span>Partial overlap</span>
               </div>
             )}

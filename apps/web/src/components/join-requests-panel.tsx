@@ -103,7 +103,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   }
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20">
+    <div className="rounded-xl border border-warning/40 bg-warning/10">
       <button
         type="button"
         onClick={handleToggle}
@@ -112,13 +112,11 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
         aria-controls="join-requests-list"
       >
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20 text-warning">
             <Bell className="h-4 w-4" aria-hidden="true" />
           </div>
           <span className="text-sm font-medium text-foreground">Pending Join Requests</span>
-          <Badge className="border-transparent bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
-            {requests.length}
-          </Badge>
+          <Badge className="border-transparent bg-warning/30 text-warning">{requests.length}</Badge>
         </div>
         {isExpanded ? (
           <ChevronUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -128,9 +126,9 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
       </button>
 
       {isExpanded && (
-        <div id="join-requests-list" className="border-t border-amber-200 dark:border-amber-900/50">
+        <div id="join-requests-list" className="border-t border-warning/40">
           <ScrollArea className="max-h-64">
-            <ul className="divide-y divide-amber-100 dark:divide-amber-900/30">
+            <ul className="divide-y divide-warning/20">
               {requests.map((request) => {
                 const isThisRequest = isPending && pendingAction?.id === request.id;
                 const isApproving = isThisRequest && pendingAction?.type === "approve";

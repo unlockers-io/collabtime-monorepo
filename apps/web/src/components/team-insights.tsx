@@ -181,11 +181,11 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
         {/* Coming Soon */}
         <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-              <Sunrise className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-warning/20">
+              <Sunrise className="h-3.5 w-3.5 text-warning" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Starting Soon</span>
-            <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 tabular-nums dark:bg-amber-900/40 dark:text-amber-400">
+            <span className="ml-auto rounded-full bg-warning/20 px-2 py-0.5 text-xs font-semibold text-warning tabular-nums">
               {comingSoonMembers.length}
             </span>
           </div>
@@ -202,7 +202,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
                       title={groupName ? `${member.name} (${groupName})` : member.name}
                     >
                       <span className="text-xs font-medium text-foreground">{member.name}</span>
-                      <span className="text-xs text-amber-600 tabular-nums dark:text-amber-400">
+                      <span className="text-xs text-warning tabular-nums">
                         in {hoursUntilStart}h
                       </span>
                     </Badge>
