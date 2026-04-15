@@ -84,8 +84,7 @@ describe("addMember", () => {
 
     const result = await addMember(VALID_UUID, validMemberInput as never);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Failed to add member");
+    expect(result).toEqual({ success: false, error: "Failed to add member" });
   });
 
   it("returns error when team not found", async () => {
@@ -93,8 +92,7 @@ describe("addMember", () => {
 
     const result = await addMember(VALID_UUID, validMemberInput as never);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team not found");
+    expect(result).toEqual({ success: false, error: "Team not found" });
   });
 
   it("assigns order equal to team.members.length", async () => {
@@ -131,8 +129,7 @@ describe("removeMember", () => {
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team not found");
+    expect(result).toEqual({ success: false, error: "Team not found" });
   });
 
   it("returns error when member not found", async () => {
@@ -141,8 +138,7 @@ describe("removeMember", () => {
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Member not found");
+    expect(result).toEqual({ success: false, error: "Member not found" });
   });
 
   it("filters out member and emits memberRemoved", async () => {
@@ -168,8 +164,7 @@ describe("updateMember", () => {
       name: "Bob",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Member not found");
+    expect(result).toEqual({ success: false, error: "Member not found" });
   });
 
   it("updates member at correct index", async () => {
@@ -200,8 +195,7 @@ describe("updateTeamName", () => {
   it("rejects empty name after trimming", async () => {
     const result = await updateTeamName(VALID_UUID, "   ");
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team name cannot be empty");
+    expect(result).toEqual({ success: false, error: "Team name cannot be empty" });
   });
 
   it("truncates name to 100 characters", async () => {
@@ -220,8 +214,7 @@ describe("importMembers", () => {
   it("rejects empty array", async () => {
     const result = await importMembers(VALID_UUID, []);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("No members to import");
+    expect(result).toEqual({ success: false, error: "No members to import" });
   });
 
   it("rejects more than 100 members", async () => {
@@ -232,8 +225,10 @@ describe("importMembers", () => {
 
     const result = await importMembers(VALID_UUID, members as never);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Cannot import more than 100 members at once");
+    expect(result).toEqual({
+      success: false,
+      error: "Cannot import more than 100 members at once",
+    });
   });
 
   it("assigns orders starting from existing member count", async () => {
@@ -258,8 +253,7 @@ describe("importMembers", () => {
 
     const result = await importMembers(VALID_UUID, [validMemberInput as never]);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team not found");
+    expect(result).toEqual({ success: false, error: "Team not found" });
   });
 });
 
@@ -290,8 +284,7 @@ describe("updateOwnMember", () => {
       name: "X",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("You are not a member of this team");
+    expect(result).toEqual({ success: false, error: "You are not a member of this team" });
   });
 
   it("returns error when member not found in team record", async () => {
@@ -302,8 +295,7 @@ describe("updateOwnMember", () => {
       name: "X",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Member not found");
+    expect(result).toEqual({ success: false, error: "Member not found" });
   });
 
   it("rejects editing another user's member record", async () => {
@@ -316,8 +308,10 @@ describe("updateOwnMember", () => {
       name: "Hacked",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("You can only edit your own member record");
+    expect(result).toEqual({
+      success: false,
+      error: "You can only edit your own member record",
+    });
   });
 
   it("allows editing own member record (userId matches)", async () => {
@@ -378,8 +372,7 @@ describe("updateOwnMember", () => {
       name: "X",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Failed to update member");
+    expect(result).toEqual({ success: false, error: "Failed to update member" });
   });
 });
 
@@ -389,8 +382,7 @@ describe("reorderMembers", () => {
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2]);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Team not found");
+    expect(result).toEqual({ success: false, error: "Team not found" });
   });
 
   it("rejects when member IDs do not match existing members", async () => {
@@ -401,8 +393,7 @@ describe("reorderMembers", () => {
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2, "nonexistent-id"]);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Invalid member order");
+    expect(result).toEqual({ success: false, error: "Invalid member order" });
   });
 
   it("rejects when member count does not match", async () => {
@@ -413,8 +404,7 @@ describe("reorderMembers", () => {
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2]);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Invalid member order");
+    expect(result).toEqual({ success: false, error: "Invalid member order" });
   });
 
   it("updates order values based on new positions", async () => {
