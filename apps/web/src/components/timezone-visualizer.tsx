@@ -22,15 +22,7 @@ import {
 import { Check, ChevronRight, Clock, Minus, Plus, Users, X } from "lucide-react";
 import { AnimatePresence, motion, useMotionValue, animate } from "motion/react";
 import { useTheme } from "next-themes";
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { useDragToScroll } from "@/hooks/use-drag-to-scroll";
 import {
@@ -146,21 +138,11 @@ type HourBlockProps = {
   viewerTimezone: string;
 };
 
-const HourBlock = memo(function HourBlock({
-  hour,
-  isWorking,
-  memberTimezone,
-  viewerTimezone,
-}: HourBlockProps) {
+const HourBlock = ({ hour, isWorking, memberTimezone, viewerTimezone }: HourBlockProps) => {
   // Convert the displayed hour (in viewer's timezone) back to member's local time
   const memberHour = convertHourToTimezone(hour, viewerTimezone, memberTimezone);
   const memberNextHour = (memberHour + 1) % HOURS_IN_DAY;
-
-  // Get timezone abbreviation for the member
-  const memberTzAbbrev = useMemo(
-    () => formatTimezoneAbbreviation(memberTimezone),
-    [memberTimezone],
-  );
+  const memberTzAbbrev = formatTimezoneAbbreviation(memberTimezone);
 
   return (
     <Tooltip>
@@ -190,7 +172,7 @@ const HourBlock = memo(function HourBlock({
       </TooltipContent>
     </Tooltip>
   );
-});
+};
 
 type MemberTimelineRowProps = {
   hours: Array<boolean>;
@@ -201,28 +183,26 @@ type MemberTimelineRowProps = {
   viewerTimezone: string;
 };
 
-const MemberTimelineRow = memo(function MemberTimelineRow({
+const MemberTimelineRow = ({
   memberId,
   hours,
   isDark,
   memberTimezone,
   viewerTimezone,
-}: MemberTimelineRowProps) {
-  return (
-    <div key={memberId} className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1">
-      {hours.map((isWorking, hour) => (
-        <HourBlock
-          key={hour}
-          hour={hour}
-          isWorking={isWorking}
-          isDark={isDark}
-          memberTimezone={memberTimezone}
-          viewerTimezone={viewerTimezone}
-        />
-      ))}
-    </div>
-  );
-});
+}: MemberTimelineRowProps) => (
+  <div key={memberId} className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1">
+    {hours.map((isWorking, hour) => (
+      <HourBlock
+        key={hour}
+        hour={hour}
+        isWorking={isWorking}
+        isDark={isDark}
+        memberTimezone={memberTimezone}
+        viewerTimezone={viewerTimezone}
+      />
+    ))}
+  </div>
+);
 
 type GroupHeaderProps = {
   group: TeamGroup;
@@ -231,56 +211,34 @@ type GroupHeaderProps = {
   rowCount: number;
 };
 
-const GroupHeader = memo(function GroupHeader({
-  group,
-  rowCount,
-  isCollapsed,
-  onToggle,
-}: GroupHeaderProps) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="-ml-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-    >
-      <ChevronRight
-        className={`h-3 w-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
-      />
-      <span>{group.name}</span>
-      <span className="text-muted-foreground">({rowCount})</span>
-    </button>
-  );
-});
+const GroupHeader = ({ group, rowCount, isCollapsed, onToggle }: GroupHeaderProps) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    className="-ml-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+  >
+    <ChevronRight
+      className={`h-3 w-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
+    />
+    <span>{group.name}</span>
+    <span className="text-muted-foreground">({rowCount})</span>
+  </button>
+);
 
 type OverlapStatusIconProps = {
   status: OverlapStatus;
 };
 
-const OverlapStatusIcon = memo(function OverlapStatusIcon({ status }: OverlapStatusIconProps) {
-  const iconConfigs = {
-    none: {
-      bgClass: "bg-destructive/15",
-      icon: X,
-      iconClass: "text-destructive",
-    },
-    partial: {
-      bgClass: "bg-warning/20",
-      icon: Minus,
-      iconClass: "text-warning",
-    },
-    full: {
-      bgClass: "bg-success/20",
-      icon: Check,
-      iconClass: "text-success",
-    },
-    mixed: {
-      bgClass: "bg-success/20",
-      icon: Check,
-      iconClass: "text-success",
-    },
-  } as const;
+// Hoisted to module scope: identity is stable across renders.
+const ICON_CONFIGS = {
+  none: { bgClass: "bg-destructive/15", icon: X, iconClass: "text-destructive" },
+  partial: { bgClass: "bg-warning/20", icon: Minus, iconClass: "text-warning" },
+  full: { bgClass: "bg-success/20", icon: Check, iconClass: "text-success" },
+  mixed: { bgClass: "bg-success/20", icon: Check, iconClass: "text-success" },
+} as const;
 
-  const config = iconConfigs[status];
+const OverlapStatusIcon = ({ status }: OverlapStatusIconProps) => {
+  const config = ICON_CONFIGS[status];
   const Icon = config.icon;
 
   return (
@@ -290,27 +248,23 @@ const OverlapStatusIcon = memo(function OverlapStatusIcon({ status }: OverlapSta
       <Icon className={`h-3 w-3 ${config.iconClass} sm:h-3.5 sm:w-3.5`} />
     </div>
   );
-});
+};
 
 type FindMeetingTimeButtonProps = {
   onClick: () => void;
 };
 
-const FindMeetingTimeButton = memo(function FindMeetingTimeButton({
-  onClick,
-}: FindMeetingTimeButtonProps) {
-  return (
-    <Button
-      variant="outline"
-      type="button"
-      className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
-      onClick={onClick}
-    >
-      <Clock className="h-5 w-5 transition-transform group-hover:scale-110" />
-      <span className="font-medium">Find Best Meeting Time</span>
-    </Button>
-  );
-});
+const FindMeetingTimeButton = ({ onClick }: FindMeetingTimeButtonProps) => (
+  <Button
+    variant="outline"
+    type="button"
+    className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
+    onClick={onClick}
+  >
+    <Clock className="h-5 w-5 transition-transform group-hover:scale-110" />
+    <span className="font-medium">Find Best Meeting Time</span>
+  </Button>
+);
 
 const TimezoneVisualizer = ({
   members,
@@ -564,7 +518,7 @@ const TimezoneVisualizer = ({
   }, [overlapHours, partialOverlapHours]);
 
   // ---- Callbacks ----
-  const handleHourBlockClick = useCallback((hour: number) => {
+  const handleHourBlockClick = (hour: number) => {
     if (selectedTimeBlockTimeoutRef.current) {
       clearTimeout(selectedTimeBlockTimeoutRef.current);
       selectedTimeBlockTimeoutRef.current = null;
@@ -579,14 +533,9 @@ const TimezoneVisualizer = ({
         selectedTimeBlockTimeoutRef.current = null;
       }, PULSE_DURATION_MS);
     }
-  }, []);
+  };
 
-  const handleHourBlockClickRef = useRef(handleHourBlockClick);
-  useEffect(() => {
-    handleHourBlockClickRef.current = handleHourBlockClick;
-  }, [handleHourBlockClick]);
-
-  const addSelection = useCallback((sel: Selection) => {
+  const addSelection = (sel: Selection) => {
     setCompareSelections((prev) => {
       const key = serializeSelection(sel);
       if (prev.some((s) => serializeSelection(s) === key)) {
@@ -594,83 +543,71 @@ const TimezoneVisualizer = ({
       }
       return [...prev, sel];
     });
-  }, []);
+  };
 
-  const removeSelection = useCallback((sel: Selection) => {
+  const removeSelection = (sel: Selection) => {
     setCompareSelections((prev) => {
       const key = serializeSelection(sel);
       return prev.filter((s) => serializeSelection(s) !== key);
     });
-  }, []);
+  };
 
-  const getSelectionName = useCallback(
-    (sel: Selection): string => {
-      if (sel.type === "member") {
-        return members.find((m) => m.id === sel.id)?.name ?? "Unknown";
+  const getSelectionName = (sel: Selection): string => {
+    if (sel.type === "member") {
+      return members.find((m) => m.id === sel.id)?.name ?? "Unknown";
+    }
+    return groups.find((g) => g.id === sel.id)?.name ?? "Unknown";
+  };
+
+  const isSelectionSelected = (sel: Selection): boolean => {
+    const key = serializeSelection(sel);
+    return validSelections.some((s) => serializeSelection(s) === key);
+  };
+
+  const isMemberInCompare = (memberId: string): boolean => {
+    if (!isComparing || validSelections.length === 0) {
+      return false;
+    }
+
+    for (const sel of validSelections) {
+      if (sel.type === "member" && sel.id === memberId) {
+        return true;
       }
-      return groups.find((g) => g.id === sel.id)?.name ?? "Unknown";
-    },
-    [members, groups],
-  );
-
-  const isSelectionSelected = useCallback(
-    (sel: Selection): boolean => {
-      const key = serializeSelection(sel);
-      return validSelections.some((s) => serializeSelection(s) === key);
-    },
-    [validSelections],
-  );
-
-  const isMemberInCompare = useCallback(
-    (memberId: string): boolean => {
-      if (!isComparing || validSelections.length === 0) {
-        return false;
-      }
-
-      for (const sel of validSelections) {
-        if (sel.type === "member" && sel.id === memberId) {
+      if (sel.type === "group") {
+        const member = members.find((m) => m.id === memberId);
+        if (member?.groupId === sel.id) {
           return true;
         }
-        if (sel.type === "group") {
-          const member = members.find((m) => m.id === memberId);
-          if (member?.groupId === sel.id) {
-            return true;
-          }
-        }
       }
-      return false;
-    },
-    [isComparing, validSelections, members],
-  );
+    }
+    return false;
+  };
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!timelineRef.current || !sectionsContainerRef.current) {
-        return;
-      }
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!timelineRef.current || !sectionsContainerRef.current) {
+      return;
+    }
 
-      const containerRect = sectionsContainerRef.current.getBoundingClientRect();
-      const relativeX = e.clientX - containerRect.left;
+    const containerRect = sectionsContainerRef.current.getBoundingClientRect();
+    const relativeX = e.clientX - containerRect.left;
 
-      lineX.set(relativeX);
+    lineX.set(relativeX);
 
-      if (!isHoveringRef.current) {
-        isHoveringRef.current = true;
-        animate(lineOpacity, 1, { duration: 0.1 });
-      }
+    if (!isHoveringRef.current) {
+      isHoveringRef.current = true;
+      animate(lineOpacity, 1, { duration: 0.1 });
+    }
 
-      if (lineDebounceRef.current) {
-        clearTimeout(lineDebounceRef.current);
-      }
+    if (lineDebounceRef.current) {
+      clearTimeout(lineDebounceRef.current);
+    }
 
-      lineDebounceRef.current = setTimeout(() => {
-        animate(lineOpacity, 0, { duration: 0.2 });
-      }, HOVER_HIDE_DELAY_MS);
-    },
-    [lineX, lineOpacity],
-  );
+    lineDebounceRef.current = setTimeout(() => {
+      animate(lineOpacity, 0, { duration: 0.2 });
+    }, HOVER_HIDE_DELAY_MS);
+  };
 
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseLeave = () => {
     isHoveringRef.current = false;
 
     if (lineDebounceRef.current) {
@@ -679,16 +616,16 @@ const TimezoneVisualizer = ({
     }
 
     animate(lineOpacity, 0, { duration: 0.15 });
-  }, [lineOpacity]);
+  };
 
-  const closeComparePanel = useCallback(() => {
+  const closeComparePanel = () => {
     setIsComparing(false);
     setCompareSelections([]);
-  }, []);
+  };
 
-  const openComparePanel = useCallback(() => {
+  const openComparePanel = () => {
     setIsComparing(true);
-  }, []);
+  };
 
   useEffect(() => {
     return () => {

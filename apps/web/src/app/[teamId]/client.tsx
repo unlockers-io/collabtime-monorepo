@@ -9,7 +9,7 @@ import { cn } from "@repo/ui/lib/utils";
 import { Clock, FolderKanban, LogIn, UserPlus, Users } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { AddGroupDialog } from "@/components/add-group-dialog";
@@ -28,6 +28,7 @@ import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { reorderGroups } from "@/lib/actions/group-actions";
 import { requestToJoin } from "@/lib/actions/join-requests";
 import { updateTeamName, updateMember, reorderMembers } from "@/lib/actions/member-actions";
+import { getTeamMembershipRole } from "@/lib/actions/team-read";
 import { useRealtime } from "@/lib/realtime-client";
 import type { TeamGroup, TeamMember, TeamStatus } from "@/types";
 
@@ -72,17 +73,14 @@ const TeamPageClient = ({
 
   // Resolve admin status client-side when server-side session detection fails
   useEffect(() => {
-    const resolveRole = async () => {
-      if (teamStatus !== "none" || !userId) {
-        return;
-      }
-      const { getTeamMembershipRole } = await import("@/lib/actions/team-read");
-      const role = await getTeamMembershipRole(teamId, userId);
+    if (teamStatus !== "none" || !userId) {
+      return;
+    }
+    void getTeamMembershipRole(teamId, userId).then((role) => {
       if (role) {
         setTeamStatus(role);
       }
-    };
-    resolveRole();
+    });
   }, [userId, teamId, teamStatus]);
 
   const isAdmin = teamStatus === "ADMIN";
@@ -96,56 +94,55 @@ const TeamPageClient = ({
     }
   }, [teamError]);
 
-  const members = useMemo(() => teamData?.team?.members ?? [], [teamData?.team?.members]);
-  const groups = useMemo(() => teamData?.team?.groups ?? [], [teamData?.team?.groups]);
+  const members = teamData?.team?.members ?? [];
+  const groups = teamData?.team?.groups ?? [];
 
   const currentUserId = isMember ? userId : undefined;
-  const hasClaimedProfile = useMemo(
-    () => Boolean(currentUserId && members.some((m) => m.userId === currentUserId)),
-    [currentUserId, members],
+  const hasClaimedProfile = Boolean(
+    currentUserId && members.some((m) => m.userId === currentUserId),
   );
 
   const teamName = teamData?.team?.name ?? "";
   const displayName = isEditingName ? editingTeamName : teamName;
 
-  useEffect(() => {
-    localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify(Array.from(collapsedGroups)));
-  }, [collapsedGroups]);
-
-  const toggleGroupCollapse = useCallback(
-    (groupId: string) => {
-      setCollapsedGroups((prev) => {
-        const next = new Set(prev);
-        if (next.has(groupId)) {
-          next.delete(groupId);
-        } else {
-          const collapsedAfter = new Set([...Array.from(prev), groupId]);
-          const ungroupedCount = members.filter((m) => !m.groupId).length;
-          const visibleGroupedCount = members.filter((m) => {
-            if (!m.groupId) {
-              return false;
-            }
-            return !collapsedAfter.has(m.groupId);
-          }).length;
-          const totalVisibleAfter = ungroupedCount + visibleGroupedCount;
-          if (totalVisibleAfter > 0) {
-            next.add(groupId);
+  const toggleGroupCollapse = (groupId: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        const collapsedAfter = new Set([...Array.from(prev), groupId]);
+        const ungroupedCount = members.filter((m) => !m.groupId).length;
+        const visibleGroupedCount = members.filter((m) => {
+          if (!m.groupId) {
+            return false;
           }
+          return !collapsedAfter.has(m.groupId);
+        }).length;
+        const totalVisibleAfter = ungroupedCount + visibleGroupedCount;
+        if (totalVisibleAfter > 0) {
+          next.add(groupId);
         }
-        return next;
-      });
-    },
-    [members],
-  );
+      }
+      // Persist alongside the state update — runs in the event handler instead
+      // of mirroring via a useEffect (https://react.dev/learn/you-might-not-need-an-effect).
+      try {
+        localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify(Array.from(next)));
+      } catch {
+        // ignore quota errors
+      }
+      return next;
+    });
+  };
 
   // Realtime subscription is mounted as a separate component below,
   // gated on useRealtimeReady() so it only renders after the provider loads.
   const realtimeReady = useRealtimeReady();
 
-  const handleStartEditName = useCallback(() => {
+  const handleStartEditName = () => {
     setEditingTeamName(teamName);
     setIsEditingName(true);
-  }, [teamName]);
+  };
 
   const handleSaveName = () => {
     if (!isAdmin) {
@@ -167,9 +164,9 @@ const TeamPageClient = ({
     });
   };
 
-  const handleCancelEditName = useCallback(() => {
+  const handleCancelEditName = () => {
     setIsEditingName(false);
-  }, []);
+  };
 
   const handleRequestJoin = async () => {
     setIsRequestingJoin(true);
@@ -188,117 +185,150 @@ const TeamPageClient = ({
     }
   };
 
-  const orderedMembers = useMemo(
-    () => [...members].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
-    [members],
-  );
-
-  const orderedGroups = useMemo(() => [...groups].sort((a, b) => a.order - b.order), [groups]);
-
-  const memberIds = useMemo(() => orderedMembers.map((m) => m.id), [orderedMembers]);
-  const groupIds = useMemo(() => orderedGroups.map((g) => g.id), [orderedGroups]);
-
-  const collapsedGroupIds = useMemo(() => Array.from(collapsedGroups), [collapsedGroups]);
+  const orderedMembers = [...members].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const orderedGroups = [...groups].sort((a, b) => a.order - b.order);
+  const memberIds = orderedMembers.map((m) => m.id);
+  const groupIds = orderedGroups.map((g) => g.id);
+  const collapsedGroupIds = Array.from(collapsedGroups);
 
   // Callbacks for local state updates (realtime handles cross-user sync)
-  const handleMemberAdded = useCallback(
-    (newMember: TeamMember) => {
-      updateTeamCache(teamId, (prev) => {
-        if (!prev) {
-          return prev;
-        }
-        if (prev.team.members.some((m) => m.id === newMember.id)) {
-          return prev;
-        }
-        return {
-          ...prev,
-          team: {
-            ...prev.team,
-            members: [...prev.team.members, newMember],
-          },
-        };
-      });
-    },
-    [teamId, updateTeamCache],
-  );
+  const handleMemberAdded = (newMember: TeamMember) => {
+    updateTeamCache(teamId, (prev) => {
+      if (!prev) {
+        return prev;
+      }
+      if (prev.team.members.some((m) => m.id === newMember.id)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        team: {
+          ...prev.team,
+          members: [...prev.team.members, newMember],
+        },
+      };
+    });
+  };
 
-  const handleMemberRemoved = useCallback(
-    (memberId: string) => {
-      updateTeamCache(teamId, (prev) => {
-        if (!prev) {
-          return prev;
-        }
-        return {
-          ...prev,
-          team: {
-            ...prev.team,
-            members: prev.team.members.filter((m) => m.id !== memberId),
-          },
-        };
-      });
-    },
-    [teamId, updateTeamCache],
-  );
+  const handleMemberRemoved = (memberId: string) => {
+    updateTeamCache(teamId, (prev) => {
+      if (!prev) {
+        return prev;
+      }
+      return {
+        ...prev,
+        team: {
+          ...prev.team,
+          members: prev.team.members.filter((m) => m.id !== memberId),
+        },
+      };
+    });
+  };
 
-  const handleMemberUpdated = useCallback(
-    (updatedMember: TeamMember) => {
-      updateTeamCache(teamId, (prev) => {
-        if (!prev) {
-          return prev;
-        }
-        return {
-          ...prev,
-          team: {
-            ...prev.team,
-            members: prev.team.members.map((m) => (m.id === updatedMember.id ? updatedMember : m)),
-          },
-        };
-      });
-    },
-    [teamId, updateTeamCache],
-  );
+  const handleMemberUpdated = (updatedMember: TeamMember) => {
+    updateTeamCache(teamId, (prev) => {
+      if (!prev) {
+        return prev;
+      }
+      return {
+        ...prev,
+        team: {
+          ...prev.team,
+          members: prev.team.members.map((m) => (m.id === updatedMember.id ? updatedMember : m)),
+        },
+      };
+    });
+  };
 
-  const handleGroupAdded = useCallback(
-    (newGroup: TeamGroup) => {
-      updateTeamCache(teamId, (prev) => {
-        if (!prev) {
-          return prev;
-        }
-        if (prev.team.groups.some((g) => g.id === newGroup.id)) {
-          return prev;
-        }
-        return {
-          ...prev,
-          team: {
-            ...prev.team,
-            groups: [...prev.team.groups, newGroup],
-          },
-        };
-      });
-    },
-    [teamId, updateTeamCache],
-  );
+  const handleGroupAdded = (newGroup: TeamGroup) => {
+    updateTeamCache(teamId, (prev) => {
+      if (!prev) {
+        return prev;
+      }
+      if (prev.team.groups.some((g) => g.id === newGroup.id)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        team: {
+          ...prev.team,
+          groups: [...prev.team.groups, newGroup],
+        },
+      };
+    });
+  };
 
-  const handleGroupUpdated = useCallback(
-    (updatedGroup: TeamGroup) => {
-      updateTeamCache(teamId, (prev) => {
-        if (!prev) {
-          return prev;
-        }
-        return {
-          ...prev,
-          team: {
-            ...prev.team,
-            groups: prev.team.groups.map((g) => (g.id === updatedGroup.id ? updatedGroup : g)),
-          },
-        };
-      });
-    },
-    [teamId, updateTeamCache],
-  );
+  const handleGroupUpdated = (updatedGroup: TeamGroup) => {
+    updateTeamCache(teamId, (prev) => {
+      if (!prev) {
+        return prev;
+      }
+      return {
+        ...prev,
+        team: {
+          ...prev.team,
+          groups: prev.team.groups.map((g) => (g.id === updatedGroup.id ? updatedGroup : g)),
+        },
+      };
+    });
+  };
 
-  const handleGroupRemoved = useCallback(
-    (groupId: string) => {
+  const handleGroupRemoved = (groupId: string) => {
+    updateTeamCache(teamId, (prev) => {
+      if (!prev) {
+        return prev;
+      }
+      return {
+        ...prev,
+        team: {
+          ...prev.team,
+          groups: prev.team.groups.filter((g) => g.id !== groupId),
+          members: prev.team.members.map((m) =>
+            m.groupId === groupId ? { ...m, groupId: undefined } : m,
+          ),
+        },
+      };
+    });
+  };
+
+  const handleMemberDroppedOnGroup = async (memberId: string, groupId: string) => {
+    if (!isAdmin) {
+      toast.error("Admin access required");
+      return;
+    }
+
+    const member = members.find((m) => m.id === memberId);
+    if (!member) {
+      return;
+    }
+
+    if (member.groupId === groupId) {
+      return;
+    }
+
+    const previousGroupId = member.groupId;
+
+    // Optimistic update
+    updateTeamCache(teamId, (prev) => {
+      if (!prev) {
+        return prev;
+      }
+      return {
+        ...prev,
+        team: {
+          ...prev.team,
+          members: prev.team.members.map((m) => (m.id === memberId ? { ...m, groupId } : m)),
+        },
+      };
+    });
+
+    const result = await updateMember(teamId, memberId, { groupId });
+
+    if (result.success) {
+      const group = groups.find((g) => g.id === groupId);
+      toast.success(`${member.name} added to ${group?.name ?? "group"}`);
+    } else {
+      // Revert on failure
       updateTeamCache(teamId, (prev) => {
         if (!prev) {
           return prev;
@@ -307,164 +337,101 @@ const TeamPageClient = ({
           ...prev,
           team: {
             ...prev.team,
-            groups: prev.team.groups.filter((g) => g.id !== groupId),
             members: prev.team.members.map((m) =>
-              m.groupId === groupId ? { ...m, groupId: undefined } : m,
+              m.id === memberId ? { ...m, groupId: previousGroupId } : m,
             ),
           },
         };
       });
-    },
-    [teamId, updateTeamCache],
-  );
+      toast.error(result.error);
+    }
+  };
 
-  const handleMemberDroppedOnGroup = useCallback(
-    async (memberId: string, groupId: string) => {
-      if (!isAdmin) {
-        toast.error("Admin access required");
-        return;
-      }
-
-      const member = members.find((m) => m.id === memberId);
-      if (!member) {
-        return;
-      }
-
-      if (member.groupId === groupId) {
-        return;
-      }
-
-      const previousGroupId = member.groupId;
-
-      // Optimistic update
-      updateTeamCache(teamId, (prev) => {
-        if (!prev) {
-          return prev;
-        }
-        return {
-          ...prev,
-          team: {
-            ...prev.team,
-            members: prev.team.members.map((m) => (m.id === memberId ? { ...m, groupId } : m)),
-          },
-        };
-      });
-
-      const result = await updateMember(teamId, memberId, { groupId });
-
-      if (result.success) {
-        const group = groups.find((g) => g.id === groupId);
-        toast.success(`${member.name} added to ${group?.name ?? "group"}`);
-      } else {
-        // Revert on failure
-        updateTeamCache(teamId, (prev) => {
-          if (!prev) {
-            return prev;
-          }
-          return {
-            ...prev,
-            team: {
-              ...prev.team,
-              members: prev.team.members.map((m) =>
-                m.id === memberId ? { ...m, groupId: previousGroupId } : m,
-              ),
-            },
-          };
-        });
-        toast.error(result.error);
-      }
-    },
-    [isAdmin, members, groups, teamId, updateTeamCache],
-  );
-
-  const handleDragTypeChange = useCallback((dragType: "group" | "member" | null) => {
+  const handleDragTypeChange = (dragType: "group" | "member" | null) => {
     setIsMemberDragging(dragType === "member");
-  }, []);
+  };
 
-  const handleDragEnd = useCallback(
-    async (event: DragEndEvent, dragType: "group" | "member" | null) => {
-      setIsMemberDragging(false);
-      const { active, over } = event;
+  const handleDragEnd = async (event: DragEndEvent, dragType: "group" | "member" | null) => {
+    setIsMemberDragging(false);
+    const { active, over } = event;
 
-      if (!over || !isAdmin) {
-        return;
-      }
+    if (!over || !isAdmin) {
+      return;
+    }
 
-      const activeId = active.id as string;
-      const overId = over.id as string;
+    const activeId = active.id as string;
+    const overId = over.id as string;
 
-      if (activeId === overId) {
-        return;
-      }
+    if (activeId === overId) {
+      return;
+    }
 
-      if (dragType === "member") {
-        const overIsMember = orderedMembers.some((m) => m.id === overId);
-        if (overIsMember) {
-          const oldIndex = orderedMembers.findIndex((m) => m.id === activeId);
-          const newIndex = orderedMembers.findIndex((m) => m.id === overId);
-          if (oldIndex === -1 || newIndex === -1) {
-            return;
-          }
-
-          const newOrder = arrayMove(orderedMembers, oldIndex, newIndex);
-          const newIds = newOrder.map((m) => m.id);
-
-          updateTeamCache(teamId, (prev) => {
-            if (!prev) {
-              return prev;
-            }
-            const map = new Map(prev.team.members.map((m) => [m.id, m]));
-            return {
-              ...prev,
-              team: {
-                ...prev.team,
-                members: newIds.map((id, i) => ({ ...map.get(id)!, order: i })),
-              },
-            };
-          });
-
-          const result = await reorderMembers(teamId, newIds);
-          if (!result.success) {
-            toast.error(result.error);
-          }
-        } else {
-          const overIsGroup = orderedGroups.some((g) => g.id === overId);
-          if (overIsGroup) {
-            handleMemberDroppedOnGroup(activeId, overId);
-          }
-        }
-      } else if (dragType === "group") {
-        const oldIndex = orderedGroups.findIndex((g) => g.id === activeId);
-        const newIndex = orderedGroups.findIndex((g) => g.id === overId);
+    if (dragType === "member") {
+      const overIsMember = orderedMembers.some((m) => m.id === overId);
+      if (overIsMember) {
+        const oldIndex = orderedMembers.findIndex((m) => m.id === activeId);
+        const newIndex = orderedMembers.findIndex((m) => m.id === overId);
         if (oldIndex === -1 || newIndex === -1) {
           return;
         }
 
-        const newOrder = arrayMove(orderedGroups, oldIndex, newIndex);
-        const newIds = newOrder.map((g) => g.id);
+        const newOrder = arrayMove(orderedMembers, oldIndex, newIndex);
+        const newIds = newOrder.map((m) => m.id);
 
         updateTeamCache(teamId, (prev) => {
           if (!prev) {
             return prev;
           }
-          const map = new Map(prev.team.groups.map((g) => [g.id, g]));
+          const map = new Map(prev.team.members.map((m) => [m.id, m]));
           return {
             ...prev,
             team: {
               ...prev.team,
-              groups: newIds.map((id, i) => ({ ...map.get(id)!, order: i })),
+              members: newIds.map((id, i) => ({ ...map.get(id)!, order: i })),
             },
           };
         });
 
-        const result = await reorderGroups(teamId, newIds);
+        const result = await reorderMembers(teamId, newIds);
         if (!result.success) {
           toast.error(result.error);
         }
+      } else {
+        const overIsGroup = orderedGroups.some((g) => g.id === overId);
+        if (overIsGroup) {
+          handleMemberDroppedOnGroup(activeId, overId);
+        }
       }
-    },
-    [isAdmin, orderedMembers, orderedGroups, teamId, updateTeamCache, handleMemberDroppedOnGroup],
-  );
+    } else if (dragType === "group") {
+      const oldIndex = orderedGroups.findIndex((g) => g.id === activeId);
+      const newIndex = orderedGroups.findIndex((g) => g.id === overId);
+      if (oldIndex === -1 || newIndex === -1) {
+        return;
+      }
+
+      const newOrder = arrayMove(orderedGroups, oldIndex, newIndex);
+      const newIds = newOrder.map((g) => g.id);
+
+      updateTeamCache(teamId, (prev) => {
+        if (!prev) {
+          return prev;
+        }
+        const map = new Map(prev.team.groups.map((g) => [g.id, g]));
+        return {
+          ...prev,
+          team: {
+            ...prev.team,
+            groups: newIds.map((id, i) => ({ ...map.get(id)!, order: i })),
+          },
+        };
+      });
+
+      const result = await reorderGroups(teamId, newIds);
+      if (!result.success) {
+        toast.error(result.error);
+      }
+    }
+  };
 
   if (!teamData?.team) {
     return <Loading />;

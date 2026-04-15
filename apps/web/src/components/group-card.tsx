@@ -5,7 +5,7 @@ import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
 import { Pencil, Trash2, Users } from "lucide-react";
-import { useCallback, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
@@ -34,12 +34,12 @@ const GroupCard = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState("");
 
-  const handleStartEditing = useCallback(() => {
+  const handleStartEditing = () => {
     setEditingName(group.name);
     setIsEditing(true);
-  }, [group.name]);
+  };
 
-  const handleSave = useCallback(() => {
+  const handleSave = () => {
     if (!canEdit) {
       return;
     }
@@ -60,7 +60,7 @@ const GroupCard = ({
         toast.error(result.error);
       }
     });
-  }, [canEdit, editingName, group, teamId, onGroupUpdated]);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {

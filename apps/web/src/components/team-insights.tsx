@@ -3,9 +3,10 @@
 import { Badge } from "@repo/ui/components/badge";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
-import { useMemo, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
+import { useHalfMinuteTick } from "@/lib/use-tick";
 import type { TeamGroup, TeamMember } from "@/types";
 
 const SOON_THRESHOLD_HOURS = 2;
@@ -24,13 +25,6 @@ const useClientValue = <T,>(clientValue: () => T, serverValue: T): T => {
   return useSyncExternalStore(emptySubscribe, clientValue, () => serverValue);
 };
 
-const tickSubscribe = (callback: () => void) => {
-  const interval = setInterval(callback, 30_000);
-  return () => clearInterval(interval);
-};
-const getTickSnapshot = () => Date.now();
-const getTickServerSnapshot = () => 0;
-
 type MemberStatus = {
   hoursUntilEnd: number | null;
   hoursUntilStart: number | null;
@@ -40,14 +34,14 @@ type MemberStatus = {
 
 const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => {
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
-  const tick = useSyncExternalStore(tickSubscribe, getTickSnapshot, getTickServerSnapshot);
+  // Re-render every 30s for live status. React Compiler memoizes the
+  // computations below.
+  useHalfMinuteTick();
 
-  const memberStatuses = useMemo((): Array<MemberStatus> => {
+  const memberStatuses = ((): Array<MemberStatus> => {
     if (!viewerTimezone) {
       return [];
     }
-    // Include tick in the dependency to trigger recalculation every 30 seconds
-    void tick;
 
     const now = new Date();
     const formatter = new Intl.DateTimeFormat("en-US", {
@@ -100,30 +94,22 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
         hoursUntilEnd,
       };
     });
-  }, [members, viewerTimezone, tick]);
+  })();
 
-  const onlineMembers = useMemo(() => memberStatuses.filter((s) => s.isWorking), [memberStatuses]);
+  const onlineMembers = memberStatuses.filter((s) => s.isWorking);
 
-  const comingSoonMembers = useMemo(
-    () =>
-      memberStatuses
-        .filter(
-          (s) =>
-            !s.isWorking && s.hoursUntilStart !== null && s.hoursUntilStart <= SOON_THRESHOLD_HOURS,
-        )
-        .sort((a, b) => (a.hoursUntilStart ?? 0) - (b.hoursUntilStart ?? 0)),
-    [memberStatuses],
-  );
+  const comingSoonMembers = memberStatuses
+    .filter(
+      (s) =>
+        !s.isWorking && s.hoursUntilStart !== null && s.hoursUntilStart <= SOON_THRESHOLD_HOURS,
+    )
+    .sort((a, b) => (a.hoursUntilStart ?? 0) - (b.hoursUntilStart ?? 0));
 
-  const leavingSoonMembers = useMemo(
-    () =>
-      memberStatuses
-        .filter(
-          (s) => s.isWorking && s.hoursUntilEnd !== null && s.hoursUntilEnd <= SOON_THRESHOLD_HOURS,
-        )
-        .sort((a, b) => (a.hoursUntilEnd ?? 0) - (b.hoursUntilEnd ?? 0)),
-    [memberStatuses],
-  );
+  const leavingSoonMembers = memberStatuses
+    .filter(
+      (s) => s.isWorking && s.hoursUntilEnd !== null && s.hoursUntilEnd <= SOON_THRESHOLD_HOURS,
+    )
+    .sort((a, b) => (a.hoursUntilEnd ?? 0) - (b.hoursUntilEnd ?? 0));
 
   const getGroupName = (groupId?: string) => {
     if (!groupId) {
