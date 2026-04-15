@@ -175,7 +175,10 @@ const SignupPage = () => {
                 )}
               </form.Subscribe>
               <FieldDescription className="text-center">
-                Already have an account? <Link href="/login">Sign in</Link>
+                Already have an account?{" "}
+                <Link href="/login" className="text-foreground underline underline-offset-4">
+                  Sign in
+                </Link>
               </FieldDescription>
             </Field>
           </FieldGroup>

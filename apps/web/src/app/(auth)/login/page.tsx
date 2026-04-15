@@ -142,7 +142,10 @@ const LoginPage = () => {
                 )}
               </form.Subscribe>
               <FieldDescription className="text-center">
-                Don&apos;t have an account? <Link href="/signup">Sign up</Link>
+                Don&apos;t have an account?{" "}
+                <Link href="/signup" className="text-foreground underline underline-offset-4">
+                  Sign up
+                </Link>
               </FieldDescription>
             </Field>
           </FieldGroup>
