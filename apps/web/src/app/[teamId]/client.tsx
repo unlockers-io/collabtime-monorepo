@@ -7,6 +7,7 @@ import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
 import { Clock, FolderKanban, LogIn, UserPlus, Users } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -433,9 +434,7 @@ const TeamPageClient = ({
     }
   };
 
-  if (!teamData?.team) {
-    return <Loading />;
-  }
+  const isLoaded = Boolean(teamData?.team);
 
   const membersGrid = (
     <>
@@ -545,7 +544,13 @@ const TeamPageClient = ({
   );
 
   const mainContent = (
-    <div className="min-h-screen w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
+    <motion.div
+      key="content"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className="min-h-screen w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12"
+    >
       <main className="mx-auto flex w-full max-w-450 flex-col gap-6">
         {/* Header */}
         <Nav
@@ -678,42 +683,60 @@ const TeamPageClient = ({
           </section>
         </div>
       </main>
-    </div>
+    </motion.div>
+  );
+
+  const skeleton = (
+    <motion.div key="skeleton" exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+      <Loading />
+    </motion.div>
   );
 
   if (!isAdmin) {
     return (
-      <>
-        {realtimeReady && isMember && (
-          <RealtimeSubscription
-            teamId={teamId}
-            updateTeamCache={updateTeamCache}
-            lastRemovalRef={lastRemovalRef}
-          />
+      <AnimatePresence mode="wait">
+        {!isLoaded ? (
+          skeleton
+        ) : (
+          <>
+            {realtimeReady && isMember && (
+              <RealtimeSubscription
+                teamId={teamId}
+                updateTeamCache={updateTeamCache}
+                lastRemovalRef={lastRemovalRef}
+              />
+            )}
+            {mainContent}
+          </>
         )}
-        {mainContent}
-      </>
+      </AnimatePresence>
     );
   }
 
   return (
-    <DndWrapper
-      members={members}
-      groups={groups}
-      teamId={teamId}
-      hasClaimedProfile={hasClaimedProfile}
-      onDragEnd={handleDragEnd}
-      onDragTypeChange={handleDragTypeChange}
-    >
-      {realtimeReady && isMember && (
-        <RealtimeSubscription
+    <AnimatePresence mode="wait">
+      {!isLoaded ? (
+        skeleton
+      ) : (
+        <DndWrapper
+          members={members}
+          groups={groups}
           teamId={teamId}
-          updateTeamCache={updateTeamCache}
-          lastRemovalRef={lastRemovalRef}
-        />
+          hasClaimedProfile={hasClaimedProfile}
+          onDragEnd={handleDragEnd}
+          onDragTypeChange={handleDragTypeChange}
+        >
+          {realtimeReady && isMember && (
+            <RealtimeSubscription
+              teamId={teamId}
+              updateTeamCache={updateTeamCache}
+              lastRemovalRef={lastRemovalRef}
+            />
+          )}
+          {mainContent}
+        </DndWrapper>
       )}
-      {mainContent}
-    </DndWrapper>
+    </AnimatePresence>
   );
 };
 
