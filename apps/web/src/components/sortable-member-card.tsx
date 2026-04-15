@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  defaultAnimateLayoutChanges,
-  useSortable,
-  type AnimateLayoutChanges,
-} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import { MemberCard } from "@/components/member-card";
@@ -21,18 +17,10 @@ type SortableMemberCardProps = {
   teamId: string;
 };
 
-const animateLayoutChanges: AnimateLayoutChanges = (args) => {
-  const { isSorting, wasDragging } = args;
-  if (isSorting || wasDragging) {
-    return false;
-  }
-  return defaultAnimateLayoutChanges(args);
-};
-
 const SortableMemberCard = (props: SortableMemberCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: props.member.id,
-    animateLayoutChanges,
+    animateLayoutChanges: () => false,
   });
 
   const style = {
