@@ -100,7 +100,6 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
             e.stopPropagation();
             form.handleSubmit();
           }}
-          noValidate
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
