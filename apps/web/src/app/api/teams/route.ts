@@ -21,6 +21,18 @@ export const GET = async () => {
       orderBy: { createdAt: "desc" },
     });
 
+    // Fetch only the spaces the current user owns, scoped to their memberships.
+    // This lets the client render the "delete workspace" affordance without extra round-trips.
+    const ownedSpaces = await prisma.space.findMany({
+      where: {
+        ownerId: session.user.id,
+        teamId: { in: memberships.map((m) => m.teamId) },
+      },
+      select: { id: true, teamId: true },
+    });
+
+    const ownedSpaceByTeamId = new Map(ownedSpaces.map((space) => [space.teamId, space.id]));
+
     const teams = await Promise.allSettled(
       memberships.map(async (membership) => {
         const data = await redis.get<string>(`team:${membership.teamId}`);
@@ -35,6 +47,8 @@ export const GET = async () => {
           teamName: team.name || "",
           role: membership.role,
           memberCount: team.members?.length ?? 0,
+          spaceId: ownedSpaceByTeamId.get(membership.teamId) ?? null,
+          archivedAt: membership.archivedAt ? membership.archivedAt.toISOString() : null,
         };
       }),
     );

@@ -15,9 +15,11 @@ import {
   LogIn,
   LogOut,
   Menu,
+  MoreHorizontal,
   Pencil,
   Settings,
   Shield,
+  Trash2,
   User,
   X,
 } from "lucide-react";
@@ -217,6 +219,23 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
   );
 };
 
+// Workspace actions menu (owner-only, team variant)
+const WorkspaceMenu = ({ onDeleteWorkspace }: { onDeleteWorkspace: () => void }) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger
+      render={<Button variant="outline" size="icon" aria-label="Workspace actions" />}
+    >
+      <MoreHorizontal className="h-4 w-4" />
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="w-48 bg-popover">
+      <DropdownMenuItem variant="destructive" onClick={onDeleteWorkspace}>
+        <Trash2 />
+        Delete workspace
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
+
 // Mobile menu
 const MobileMenu = ({
   isOpen,
@@ -225,13 +244,17 @@ const MobileMenu = ({
   hasCopied,
   onCopy,
   onClose,
+  canDeleteWorkspace,
+  onDeleteWorkspace,
 }: {
+  canDeleteWorkspace: boolean;
   hasCopied: boolean;
   isAdmin: boolean;
   isAuthenticated: boolean;
   isOpen: boolean;
   onClose: () => void;
   onCopy: () => void;
+  onDeleteWorkspace: () => void;
 }) => (
   <AnimatePresence>
     {isOpen && (
@@ -307,6 +330,22 @@ const MobileMenu = ({
                 Settings
               </Link>
             )}
+
+            {canDeleteWorkspace && (
+              <Button
+                variant="ghost"
+                className="justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => {
+                  onDeleteWorkspace();
+                  onClose();
+                }}
+              >
+                <span className="flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Delete workspace
+                </span>
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -318,9 +357,11 @@ const MobileMenu = ({
 type NavProps = { isAuthenticated: boolean } & (
   | { variant?: "default" | "centered" }
   | {
+      canDeleteWorkspace?: boolean;
       isAdmin: boolean;
       isEditingName: boolean;
       onCancelEdit: () => void;
+      onDeleteWorkspace?: () => void;
       onEditName: () => void;
       onNameChange: (name: string) => void;
       onSaveName: () => void;
@@ -361,8 +402,21 @@ const Nav = (props: NavProps) => {
     if (props.variant !== "team") {
       return null;
     }
-    const { teamName, isAdmin, isEditingName, onEditName, onNameChange, onSaveName, onCancelEdit } =
-      props;
+    const {
+      teamName,
+      isAdmin,
+      isEditingName,
+      onEditName,
+      onNameChange,
+      onSaveName,
+      onCancelEdit,
+      canDeleteWorkspace = false,
+      onDeleteWorkspace,
+    } = props;
+
+    const handleDeleteWorkspace = () => {
+      onDeleteWorkspace?.();
+    };
 
     return (
       <header className="flex flex-col gap-4">
@@ -385,6 +439,7 @@ const Nav = (props: NavProps) => {
             <CurrentTimeDisplay />
             <CopyLinkButton hasCopied={hasCopied} onCopy={handleCopyLink} />
             <ModeToggle />
+            {canDeleteWorkspace && <WorkspaceMenu onDeleteWorkspace={handleDeleteWorkspace} />}
             <UserMenu isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
           </div>
 
@@ -409,6 +464,8 @@ const Nav = (props: NavProps) => {
           hasCopied={hasCopied}
           onCopy={handleCopyLink}
           onClose={() => setMobileMenuOpen(false)}
+          canDeleteWorkspace={canDeleteWorkspace}
+          onDeleteWorkspace={handleDeleteWorkspace}
         />
       </header>
     );

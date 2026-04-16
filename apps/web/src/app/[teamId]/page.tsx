@@ -95,12 +95,15 @@ const TeamPage = async ({ params }: TeamPageProps) => {
 
   const teamStatus: TeamStatus = session ? await getTeamStatus(session.user.id, teamId) : "none";
 
+  const isSpaceOwner = Boolean(session && space && space.ownerId === session.user.id);
+
   return (
     <TeamPageClient
       teamId={teamId}
       isAuthenticated={Boolean(session)}
       teamStatus={teamStatus}
       userId={session?.user?.id}
+      spaceId={isSpaceOwner ? (space?.id ?? null) : null}
     />
   );
 };
