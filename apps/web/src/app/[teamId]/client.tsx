@@ -63,7 +63,7 @@ const TeamPageClient = ({
     return stored ? new Set(JSON.parse(stored) as Array<string>) : new Set();
   });
   const [, startTransition] = useTransition();
-  const [isMemberDragging, setIsMemberDragging] = useState(false);
+  const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingTeamName, setEditingTeamName] = useState("");
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
@@ -349,11 +349,10 @@ const TeamPageClient = ({
   };
 
   const handleDragTypeChange = (dragType: "group" | "member" | null) => {
-    setIsMemberDragging(dragType === "member");
+    setActiveDragType(dragType);
   };
 
   const handleDragEnd = async (event: DragEndEvent, dragType: "group" | "member" | null) => {
-    setIsMemberDragging(false);
     const { active, over } = event;
 
     if (!over || !isAdmin) {
@@ -518,7 +517,7 @@ const TeamPageClient = ({
                     teamId={teamId}
                     memberCount={members.filter((m) => m.groupId === group.id).length}
                     canEdit={isAdmin}
-                    isDropTarget={isMemberDragging}
+                    isDropTarget={activeDragType === "member"}
                     onGroupUpdated={handleGroupUpdated}
                     onGroupRemoved={handleGroupRemoved}
                   />
