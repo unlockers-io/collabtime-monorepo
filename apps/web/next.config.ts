@@ -2,7 +2,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["collabtime.web.localhost"],
+  allowedDevOrigins: ["collabtime.web.localhost", "*.collabtime.web.localhost"],
   reactCompiler: true,
   transpilePackages: ["@repo/ui"],
 };
