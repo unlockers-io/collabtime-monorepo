@@ -71,9 +71,16 @@
     {
       "files": ["apps/web/src/**"],
       "rules": {
+        "import/no-namespace": "off",
         "no-console": "off",
         "perfectionist/sort-jsx-props": "off",
         "perfectionist/sort-objects": "off"
+      }
+    },
+    {
+      "files": ["**/sentry.*.config.ts"],
+      "rules": {
+        "import/no-namespace": "off"
       }
     }
   ],
