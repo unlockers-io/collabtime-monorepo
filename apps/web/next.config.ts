@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -6,4 +7,14 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@repo/ui"],
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  org: "unlockers-io",
+  project: "collabtime-web",
+  silent: false,
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  tunnelRoute: "/monitoring",
+  widenClientFileUpload: true,
+});

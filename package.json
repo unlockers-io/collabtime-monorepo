@@ -52,10 +52,10 @@
       "@parcel/watcher",
       "@prisma/client",
       "@prisma/engines",
+      "@sentry/cli",
       "@swc/core",
       "@tailwindcss/oxide",
       "esbuild",
-      "msw",
       "prisma",
       "sharp",
       "unrs-resolver"
