@@ -10,7 +10,7 @@ import {
 } from "@repo/ui/components/tooltip";
 import { cn } from "@repo/ui/lib/utils";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
-import { Fragment, useSyncExternalStore, type ReactNode } from "react";
+import { Fragment, useSyncExternalStore } from "react";
 
 import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
 import { useHalfMinuteTick } from "@/lib/use-tick";
@@ -37,20 +37,6 @@ type MemberStatus = {
   hoursUntilStart: number | null;
   isWorking: boolean;
   member: TeamMember;
-};
-
-const wrapWithTooltip = (badge: ReactNode, groupName: string | null) => {
-  if (!groupName) {
-    return badge;
-  }
-  return (
-    <Tooltip>
-      <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
-      <TooltipContent>
-        <p>{groupName}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
 };
 
 const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => {
@@ -179,7 +165,19 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
                         {member.name}
                       </Badge>
                     );
-                    return <Fragment key={member.id}>{wrapWithTooltip(badge, groupName)}</Fragment>;
+
+                    if (!groupName) {
+                      return <Fragment key={member.id}>{badge}</Fragment>;
+                    }
+
+                    return (
+                      <Tooltip key={member.id}>
+                        <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
+                        <TooltipContent>
+                          <p>{groupName}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
                   })}
                 </div>
               </TooltipProvider>
@@ -214,7 +212,19 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
                         </span>
                       </Badge>
                     );
-                    return <Fragment key={member.id}>{wrapWithTooltip(badge, groupName)}</Fragment>;
+
+                    if (!groupName) {
+                      return <Fragment key={member.id}>{badge}</Fragment>;
+                    }
+
+                    return (
+                      <Tooltip key={member.id}>
+                        <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
+                        <TooltipContent>
+                          <p>{groupName}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
                   })}
                 </div>
               </TooltipProvider>
@@ -251,7 +261,19 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
                         </span>
                       </Badge>
                     );
-                    return <Fragment key={member.id}>{wrapWithTooltip(badge, groupName)}</Fragment>;
+
+                    if (!groupName) {
+                      return <Fragment key={member.id}>{badge}</Fragment>;
+                    }
+
+                    return (
+                      <Tooltip key={member.id}>
+                        <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
+                        <TooltipContent>
+                          <p>{groupName}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
                   })}
                 </div>
               </TooltipProvider>
