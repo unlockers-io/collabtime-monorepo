@@ -2,8 +2,15 @@
 
 import { Badge } from "@repo/ui/components/badge";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@repo/ui/components/tooltip";
+import { cn } from "@repo/ui/lib/utils";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import { Fragment, useSyncExternalStore, type ReactNode } from "react";
 
 import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
 import { useHalfMinuteTick } from "@/lib/use-tick";
@@ -30,6 +37,20 @@ type MemberStatus = {
   hoursUntilStart: number | null;
   isWorking: boolean;
   member: TeamMember;
+};
+
+const wrapWithTooltip = (badge: ReactNode, groupName: string | null) => {
+  if (!groupName) {
+    return badge;
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
+      <TooltipContent>
+        <p>{groupName}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
 };
 
 const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => {
@@ -143,21 +164,25 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
           </div>
           {onlineMembers.length > 0 ? (
             <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
-              <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                {onlineMembers.map(({ member }) => {
-                  const groupName = getGroupName(member.groupId);
-                  return (
-                    <Badge
-                      key={member.id}
-                      className="cursor-help bg-background text-foreground shadow-sm"
-                      title={groupName ? `${member.name} (${groupName})` : member.name}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                      {member.name}
-                    </Badge>
-                  );
-                })}
-              </div>
+              <TooltipProvider>
+                <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
+                  {onlineMembers.map(({ member }) => {
+                    const groupName = getGroupName(member.groupId);
+                    const badge = (
+                      <Badge
+                        className={cn(
+                          "bg-background text-foreground shadow-sm",
+                          groupName && "cursor-help",
+                        )}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                        {member.name}
+                      </Badge>
+                    );
+                    return <Fragment key={member.id}>{wrapWithTooltip(badge, groupName)}</Fragment>;
+                  })}
+                </div>
+              </TooltipProvider>
             </ScrollArea>
           ) : (
             <p className="text-xs text-muted-foreground">No one is currently working</p>
@@ -177,24 +202,22 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
           </div>
           {comingSoonMembers.length > 0 ? (
             <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
-              <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                {comingSoonMembers.map(({ member, hoursUntilStart }) => {
-                  const groupName = getGroupName(member.groupId);
-
-                  return (
-                    <Badge
-                      key={member.id}
-                      className="cursor-help bg-background shadow-sm"
-                      title={groupName ? `${member.name} (${groupName})` : member.name}
-                    >
-                      <span className="text-xs font-medium text-foreground">{member.name}</span>
-                      <span className="text-xs text-warning tabular-nums">
-                        in {hoursUntilStart}h
-                      </span>
-                    </Badge>
-                  );
-                })}
-              </div>
+              <TooltipProvider>
+                <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
+                  {comingSoonMembers.map(({ member, hoursUntilStart }) => {
+                    const groupName = getGroupName(member.groupId);
+                    const badge = (
+                      <Badge className={cn("bg-background shadow-sm", groupName && "cursor-help")}>
+                        <span className="text-xs font-medium text-foreground">{member.name}</span>
+                        <span className="text-xs text-warning tabular-nums">
+                          in {hoursUntilStart}h
+                        </span>
+                      </Badge>
+                    );
+                    return <Fragment key={member.id}>{wrapWithTooltip(badge, groupName)}</Fragment>;
+                  })}
+                </div>
+              </TooltipProvider>
             </ScrollArea>
           ) : (
             <p className="text-xs text-muted-foreground">
@@ -216,22 +239,22 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
           </div>
           {leavingSoonMembers.length > 0 ? (
             <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
-              <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                {leavingSoonMembers.map(({ member, hoursUntilEnd }) => {
-                  const groupName = getGroupName(member.groupId);
-
-                  return (
-                    <Badge
-                      key={member.id}
-                      className="cursor-help bg-background shadow-sm"
-                      title={groupName ? `${member.name} (${groupName})` : member.name}
-                    >
-                      <span className="text-xs font-medium text-foreground">{member.name}</span>
-                      <span className="text-xs text-info tabular-nums">{hoursUntilEnd}h left</span>
-                    </Badge>
-                  );
-                })}
-              </div>
+              <TooltipProvider>
+                <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
+                  {leavingSoonMembers.map(({ member, hoursUntilEnd }) => {
+                    const groupName = getGroupName(member.groupId);
+                    const badge = (
+                      <Badge className={cn("bg-background shadow-sm", groupName && "cursor-help")}>
+                        <span className="text-xs font-medium text-foreground">{member.name}</span>
+                        <span className="text-xs text-info tabular-nums">
+                          {hoursUntilEnd}h left
+                        </span>
+                      </Badge>
+                    );
+                    return <Fragment key={member.id}>{wrapWithTooltip(badge, groupName)}</Fragment>;
+                  })}
+                </div>
+              </TooltipProvider>
             </ScrollArea>
           ) : (
             <p className="text-xs text-muted-foreground">
