@@ -10,11 +10,13 @@ import { Clock, FolderKanban, LogIn, UserPlus, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { AddGroupDialog } from "@/components/add-group-dialog";
 import { AddMemberDialog } from "@/components/add-member-dialog";
+import { DeleteWorkspaceDialog } from "@/components/delete-workspace-dialog";
 import { GroupCard } from "@/components/group-card";
 import { ImportMembersDialog } from "@/components/import-members-dialog";
 import { JoinRequestsPanel } from "@/components/join-requests-panel";
@@ -41,6 +43,7 @@ import Loading from "./loading";
 
 type TeamPageClientProps = {
   isAuthenticated: boolean;
+  spaceId: string | null;
   teamId: string;
   teamStatus: TeamStatus;
   userId?: string;
@@ -53,7 +56,9 @@ const TeamPageClient = ({
   isAuthenticated,
   teamStatus: initialStatus,
   userId,
+  spaceId,
 }: TeamPageClientProps) => {
+  const router = useRouter();
   const [teamStatus, setTeamStatus] = useState<TeamStatus>(initialStatus);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
@@ -67,6 +72,7 @@ const TeamPageClient = ({
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingTeamName, setEditingTeamName] = useState("");
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
+  const [isDeleteWorkspaceOpen, setIsDeleteWorkspaceOpen] = useState(false);
   const lastRemovalRef = useRef<{ id: string; ts: number }>({ id: "", ts: 0 });
 
   // Fetch team data with TanStack Query
@@ -562,6 +568,8 @@ const TeamPageClient = ({
           onNameChange={setEditingTeamName}
           onSaveName={handleSaveName}
           onCancelEdit={handleCancelEditName}
+          canDeleteWorkspace={spaceId !== null}
+          onDeleteWorkspace={() => setIsDeleteWorkspaceOpen(true)}
         />
 
         {/* Team Insights */}
@@ -682,6 +690,18 @@ const TeamPageClient = ({
           </section>
         </div>
       </main>
+
+      {spaceId !== null && (
+        <DeleteWorkspaceDialog
+          open={isDeleteWorkspaceOpen}
+          onOpenChange={setIsDeleteWorkspaceOpen}
+          spaceId={spaceId}
+          teamName={displayName}
+          onDeleted={() => {
+            router.push("/");
+          }}
+        />
+      )}
     </motion.div>
   );
 
