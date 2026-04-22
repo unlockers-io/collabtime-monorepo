@@ -8,15 +8,20 @@ let _passwordVerificationLimiter: Ratelimit | null = null;
  * Rate limiter for password verification attempts.
  * Allows 5 attempts per 15 minutes per IP + spaceId combination.
  */
-const getPasswordVerificationLimiter = (): Ratelimit => {
-  if (!_passwordVerificationLimiter) {
-    _passwordVerificationLimiter = new Ratelimit({
-      analytics: true,
-      limiter: Ratelimit.slidingWindow(5, "15 m"),
-      prefix: "ratelimit:password-verify",
-      redis: getRedis()!,
-    });
+const getPasswordVerificationLimiter = (): Ratelimit | null => {
+  if (_passwordVerificationLimiter) {
+    return _passwordVerificationLimiter;
   }
+  const redis = getRedis();
+  if (!redis) {
+    return null;
+  }
+  _passwordVerificationLimiter = new Ratelimit({
+    analytics: true,
+    limiter: Ratelimit.slidingWindow(5, "15 m"),
+    prefix: "ratelimit:password-verify",
+    redis,
+  });
   return _passwordVerificationLimiter;
 };
 
@@ -24,8 +29,10 @@ const ALLOWED_RESULT = { limit: 0, remaining: 0, reset: 0, success: true } as co
 
 // Bypasses rate limiting when Redis is unavailable (allows all requests)
 const passwordVerificationLimiter = {
-  limit: (key: string) =>
-    getRedis() ? getPasswordVerificationLimiter().limit(key) : Promise.resolve(ALLOWED_RESULT),
+  limit: (key: string) => {
+    const limiter = getPasswordVerificationLimiter();
+    return limiter ? limiter.limit(key) : Promise.resolve(ALLOWED_RESULT);
+  },
 };
 
 /**

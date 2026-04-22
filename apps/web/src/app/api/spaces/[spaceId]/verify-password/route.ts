@@ -61,8 +61,9 @@ export const POST = async (request: Request, { params }: Params) => {
 
     // Always perform password comparison if space has a password set
     // This prevents timing attacks that could reveal whether a space is private
-    const hasPassword = Boolean(space.accessPassword);
-    const isValid = hasPassword ? await compare(password, space.accessPassword!) : false;
+    const accessPassword = space.accessPassword;
+    const hasPassword = Boolean(accessPassword);
+    const isValid = accessPassword ? await compare(password, accessPassword) : false;
 
     // If not private or no password, allow access regardless of comparison result
     if (!space.isPrivate || !hasPassword) {

@@ -72,7 +72,7 @@ try {
   console.log(`  Team: test-team`);
 } catch (error) {
   console.error("Seed failed:", error);
-  process.exit(1);
+  throw error;
 } finally {
   await prisma.$disconnect();
   await pool.end();

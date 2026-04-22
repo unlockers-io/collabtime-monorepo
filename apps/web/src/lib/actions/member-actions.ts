@@ -335,10 +335,11 @@ const reorderMembers = async (
     }
 
     const memberMap = new Map(team.members.map((m) => [m.id, m]));
-    team.members = memberIds.map((id, index) => ({
-      ...memberMap.get(id)!,
-      order: index,
-    }));
+    const reorderedMembers = memberIds.flatMap((id, index) => {
+      const member = memberMap.get(id);
+      return member ? [{ ...member, order: index }] : [];
+    });
+    team.members = reorderedMembers;
 
     await Promise.all([
       persistTeam(teamId, team),

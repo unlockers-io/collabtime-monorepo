@@ -988,16 +988,17 @@ const TimezoneVisualizer = ({
           {renderCurrentTimeIndicator()}
 
           {groupedSections.map((section, sectionIndex) => {
-            const isCollapsed = section.group ? collapsedSet.has(section.group.id) : false;
+            const sectionGroup = section.group;
+            const isCollapsed = sectionGroup ? collapsedSet.has(sectionGroup.id) : false;
             const visibleRows = isCollapsed ? [] : section.rows;
 
             return (
-              <div className="flex flex-col gap-3" key={section.group?.id ?? "ungrouped"}>
-                {section.group && (
+              <div className="flex flex-col gap-3" key={sectionGroup?.id ?? "ungrouped"}>
+                {sectionGroup && (
                   <GroupHeader
-                    group={section.group}
+                    group={sectionGroup}
                     isCollapsed={isCollapsed}
-                    onToggle={() => onToggleGroupCollapse?.(section.group!.id)}
+                    onToggle={() => onToggleGroupCollapse?.(sectionGroup.id)}
                     rowCount={section.rows.length}
                   />
                 )}

@@ -9,6 +9,8 @@ export default defineConfig({
       rules: {
         // next/font/google fonts are factory calls (`Inter({...})`), not constructors
         "new-cap": "off",
+        // Inline theme bootstrap script avoids FOUC; the literal HTML is hard-coded, not user data
+        "react/no-danger": "off",
       },
     },
     {

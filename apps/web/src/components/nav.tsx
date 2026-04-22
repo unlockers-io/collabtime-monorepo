@@ -102,7 +102,7 @@ const TeamTitle = ({
   }
 
   return (
-    <button className="group flex min-w-0 items-center gap-2" onClick={onEdit}>
+    <button className="group flex min-w-0 items-center gap-2" onClick={onEdit} type="button">
       <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
         {teamName || "Team Workspace"}
       </h1>

@@ -180,10 +180,11 @@ const reorderGroups = async (
     }
 
     const groupMap = new Map(team.groups.map((g) => [g.id, g]));
-    team.groups = groupIds.map((id, index) => ({
-      ...groupMap.get(id)!,
-      order: index,
-    }));
+    const reorderedGroups = groupIds.flatMap((id, index) => {
+      const group = groupMap.get(id);
+      return group ? [{ ...group, order: index }] : [];
+    });
+    team.groups = reorderedGroups;
 
     await Promise.all([
       persistTeam(teamId, team),
