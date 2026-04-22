@@ -7,11 +7,11 @@ const VALID_UUID_3 = "770e8400-e29b-41d4-a716-446655440002";
 const createTestMember = (overrides?: Partial<TeamMember>): TeamMember => ({
   id: VALID_UUID,
   name: "Alice",
-  title: "Engineer",
-  timezone: "America/New_York",
-  workingHoursStart: 9,
-  workingHoursEnd: 17,
   order: 0,
+  timezone: "America/New_York",
+  title: "Engineer",
+  workingHoursEnd: 17,
+  workingHoursStart: 9,
   ...overrides,
 });
 
@@ -23,24 +23,24 @@ const createTestGroup = (overrides?: Partial<TeamGroup>): TeamGroup => ({
 });
 
 const createTestTeamRecord = (overrides?: Partial<TeamRecord>): TeamRecord => ({
-  id: VALID_UUID,
-  name: "Test Team",
   createdAt: "2026-01-01T00:00:00.000Z",
-  members: [],
   groups: [],
+  id: VALID_UUID,
+  members: [],
+  name: "Test Team",
   ...overrides,
 });
 
 const createMockSession = (overrides?: { email?: string; name?: string; userId?: string }) => ({
-  user: {
-    id: overrides?.userId ?? "user-123",
-    email: overrides?.email ?? "test@example.com",
-    name: overrides?.name ?? "Test User",
-  },
   session: {
+    expiresAt: new Date(Date.now() + 86_400_000),
     id: "session-123",
     userId: overrides?.userId ?? "user-123",
-    expiresAt: new Date(Date.now() + 86_400_000),
+  },
+  user: {
+    email: overrides?.email ?? "test@example.com",
+    id: overrides?.userId ?? "user-123",
+    name: overrides?.name ?? "Test User",
   },
 });
 

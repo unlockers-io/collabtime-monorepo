@@ -25,11 +25,11 @@ const useClientValue = <T,>(clientValue: () => T, serverValue: T): T =>
 const formatTime = (timestamp: number, timezone: string): string => {
   const date = new Date(timestamp);
   return date.toLocaleTimeString("en-US", {
-    timeZone: timezone,
     hour: "numeric",
+    hour12: true,
     minute: "2-digit",
     second: "2-digit",
-    hour12: true,
+    timeZone: timezone,
   });
 };
 

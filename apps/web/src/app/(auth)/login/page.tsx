@@ -43,9 +43,6 @@ const LoginPage = () => {
 
   const form = useForm({
     defaultValues,
-    validators: {
-      onSubmit: loginSchema,
-    },
     onSubmit: async ({ value }) => {
       setIsLoading(true);
 
@@ -65,10 +62,14 @@ const LoginPage = () => {
         router.push("/");
         router.refresh();
       } catch (error) {
+        // oxlint-disable-next-line no-console -- surface unexpected login errors
         console.error("[Login] Unexpected error:", error);
         toast.error("An unexpected error occurred");
         setIsLoading(false);
       }
+    },
+    validators: {
+      onSubmit: loginSchema,
     },
   });
 
@@ -80,12 +81,12 @@ const LoginPage = () => {
       </CardHeader>
       <CardContent>
         <form
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
-          noValidate
         >
           <FieldGroup>
             <form.Field name="email">
@@ -95,15 +96,15 @@ const LoginPage = () => {
                   <Field data-invalid={isInvalid || undefined}>
                     <FieldLabel htmlFor="email">Email</FieldLabel>
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="m@example.com"
+                      aria-invalid={isInvalid}
                       autoComplete="email"
                       disabled={isLoading}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      id="email"
                       onBlur={field.handleBlur}
-                      aria-invalid={isInvalid}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="m@example.com"
+                      type="email"
+                      value={field.state.value}
                     />
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>
@@ -118,14 +119,14 @@ const LoginPage = () => {
                   <Field data-invalid={isInvalid || undefined}>
                     <FieldLabel htmlFor="password">Password</FieldLabel>
                     <Input
-                      id="password"
-                      type="password"
+                      aria-invalid={isInvalid}
                       autoComplete="current-password"
                       disabled={isLoading}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      id="password"
                       onBlur={field.handleBlur}
-                      aria-invalid={isInvalid}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      type="password"
+                      value={field.state.value}
                     />
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>
@@ -136,14 +137,14 @@ const LoginPage = () => {
             <Field>
               <form.Subscribe selector={(state) => state.canSubmit}>
                 {(canSubmit) => (
-                  <Button type="submit" disabled={isLoading || !canSubmit}>
+                  <Button disabled={isLoading || !canSubmit} type="submit">
                     {isLoading ? "Signing in..." : "Sign in"}
                   </Button>
                 )}
               </form.Subscribe>
               <FieldDescription className="text-center">
                 Don&apos;t have an account?{" "}
-                <Link href="/signup" className="text-foreground underline underline-offset-4">
+                <Link className="text-foreground underline underline-offset-4" href="/signup">
                   Sign up
                 </Link>
               </FieldDescription>

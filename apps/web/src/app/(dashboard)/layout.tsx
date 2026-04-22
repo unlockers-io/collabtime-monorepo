@@ -19,7 +19,7 @@ const DashboardLayout = async ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Nav isAuthenticated={true} />
+      <Nav isAuthenticated />
       <main className="flex-1">{children}</main>
     </div>
   );

@@ -48,14 +48,14 @@ type TokenPayload = {
  * Create a signed access token for a space.
  * Token format: base64(payload).signature
  */
-const createSpaceAccessToken = async (spaceId: string, clientIp: string): Promise<string> => {
+const createSpaceAccessToken = (spaceId: string, clientIp: string): string => {
   const secret = getSigningSecret();
   const expiresAt = Date.now() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
   const payload: TokenPayload = {
-    spaceId,
     clientIp,
     expiresAt,
+    spaceId,
     version: TOKEN_VERSION,
   };
 
@@ -71,28 +71,28 @@ type VerificationResult = { payload: TokenPayload; valid: true } | { reason: str
  * Verify a space access token.
  * Checks signature, expiration, and optionally the client IP.
  */
-const verifySpaceAccessToken = async (
+const verifySpaceAccessToken = (
   token: string,
   expectedSpaceId: string,
   clientIp?: string,
-): Promise<VerificationResult> => {
+): VerificationResult => {
   try {
     const secret = getSigningSecret();
     const parts = token.split(".");
 
     if (parts.length !== 2) {
-      return { valid: false, reason: "Invalid token format" };
+      return { reason: "Invalid token format", valid: false };
     }
 
     const [payloadStr, signature] = parts;
 
     if (!payloadStr || !signature) {
-      return { valid: false, reason: "Missing token parts" };
+      return { reason: "Missing token parts", valid: false };
     }
 
     // Verify signature
     if (!verifySignature(payloadStr, signature, secret)) {
-      return { valid: false, reason: "Invalid signature" };
+      return { reason: "Invalid signature", valid: false };
     }
 
     // Decode and parse payload
@@ -101,67 +101,31 @@ const verifySpaceAccessToken = async (
 
     // Verify version
     if (payload.version !== TOKEN_VERSION) {
-      return { valid: false, reason: "Token version mismatch" };
+      return { reason: "Token version mismatch", valid: false };
     }
 
     // Verify space ID
     if (payload.spaceId !== expectedSpaceId) {
-      return { valid: false, reason: "Space ID mismatch" };
+      return { reason: "Space ID mismatch", valid: false };
     }
 
     // Verify expiration
     if (Date.now() > payload.expiresAt) {
-      return { valid: false, reason: "Token expired" };
+      return { reason: "Token expired", valid: false };
     }
 
     // Optionally verify client IP (for stricter security)
     // Note: This might cause issues with mobile users changing networks
     // Disable by not passing clientIp parameter
     if (clientIp && payload.clientIp !== clientIp) {
-      return { valid: false, reason: "IP address mismatch" };
+      return { reason: "IP address mismatch", valid: false };
     }
 
-    return { valid: true, payload };
+    return { payload, valid: true };
   } catch (error) {
     console.error("[Space Access] Token verification error:", error);
-    return { valid: false, reason: "Token verification failed" };
+    return { reason: "Token verification failed", valid: false };
   }
-};
-
-/**
- * Check if a request has valid access to a space via cookie.
- */
-const hasSpaceAccess = async (
-  request: Request,
-  spaceId: string,
-  strictIpCheck = false,
-): Promise<boolean> => {
-  const cookieHeader = request.headers.get("cookie");
-  if (!cookieHeader) {
-    return false;
-  }
-
-  const cookieName = `${SPACE_ACCESS_COOKIE_PREFIX}${spaceId}`;
-  const cookies = cookieHeader.split(";").map((c) => c.trim());
-  const accessCookie = cookies.find((c) => c.startsWith(`${cookieName}=`));
-
-  if (!accessCookie) {
-    return false;
-  }
-
-  const token = accessCookie.split("=")[1];
-  if (!token) {
-    return false;
-  }
-
-  const clientIp = strictIpCheck
-    ? (request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      request.headers.get("x-real-ip") ??
-      undefined)
-    : undefined;
-
-  const result = await verifySpaceAccessToken(token, spaceId, clientIp);
-  return result.valid;
 };
 
 export { SPACE_ACCESS_COOKIE_PREFIX, createSpaceAccessToken, verifySpaceAccessToken };

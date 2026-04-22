@@ -17,8 +17,8 @@ const envSchema = z.object({
   WEB_APP_URL: z.string().url("WEB_APP_URL must be a valid URL").optional(),
 
   // Upstash Redis (optional — app boots without Redis, features degrade gracefully)
-  UPSTASH_REDIS_REST_URL: z.string().url("UPSTASH_REDIS_REST_URL must be a valid URL").optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1, "UPSTASH_REDIS_REST_TOKEN is required").optional(),
+  UPSTASH_REDIS_REST_URL: z.string().url("UPSTASH_REDIS_REST_URL must be a valid URL").optional(),
 
   // Optional: Space access signing (falls back to BETTER_AUTH_SECRET)
   SPACE_ACCESS_SECRET: z.string().min(32).optional(),
@@ -45,7 +45,7 @@ const validateEnv = (): Env => {
       .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
       .join("\n");
 
-    console.error("❌ Invalid environment variables:\n" + errors);
+    console.error(`❌ Invalid environment variables:\n${errors}`);
     throw new Error("Invalid environment variables. See above for details.");
   }
 

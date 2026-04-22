@@ -28,8 +28,8 @@ const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
   const membership = await prisma.membership.findUnique({
     where: {
       userId_teamId: {
-        userId: session.user.id,
         teamId,
+        userId: session.user.id,
       },
     },
   });
@@ -43,8 +43,8 @@ const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
   }
 
   return {
-    userId: session.user.id,
     role: membership.role,
+    userId: session.user.id,
   };
 };
 

@@ -36,7 +36,7 @@ export const PATCH = async (request: Request, { params }: Params) => {
     const { archived } = patchSchema.parse(body);
 
     const existing = await prisma.membership.findUnique({
-      where: { userId_teamId: { userId: session.user.id, teamId } },
+      where: { userId_teamId: { teamId, userId: session.user.id } },
     });
 
     if (!existing) {
@@ -44,14 +44,14 @@ export const PATCH = async (request: Request, { params }: Params) => {
     }
 
     const updated = await prisma.membership.update({
-      where: { userId_teamId: { userId: session.user.id, teamId } },
       data: { archivedAt: archived ? new Date() : null },
+      where: { userId_teamId: { teamId, userId: session.user.id } },
     });
 
     return NextResponse.json({
       membership: {
-        teamId: updated.teamId,
         archivedAt: updated.archivedAt ? updated.archivedAt.toISOString() : null,
+        teamId: updated.teamId,
       },
     });
   } catch (error) {

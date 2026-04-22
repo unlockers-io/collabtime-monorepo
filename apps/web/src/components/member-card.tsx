@@ -37,14 +37,14 @@ type MemberCardProps = {
 };
 
 const MemberCard = ({
-  member,
-  teamId,
-  groups,
   canEdit,
   currentUserId,
+  groups,
   hasClaimedProfile,
+  member,
   onMemberRemoved,
   onMemberUpdated,
+  teamId,
 }: MemberCardProps) => {
   const [isPending, startTransition] = useTransition();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -100,21 +100,21 @@ const MemberCard = ({
           {canEdit && (
             <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
               <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setIsEditDialogOpen(true)}
-                className="text-muted-foreground hover:text-foreground"
                 aria-label={`Edit ${member.name}`}
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => setIsEditDialogOpen(true)}
+                size="icon-sm"
+                variant="ghost"
               >
                 <Pencil className="h-4 w-4" />
               </Button>
               <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={handleRemove}
-                disabled={isPending}
-                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 aria-label={`Remove ${member.name}`}
+                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                disabled={isPending}
+                onClick={handleRemove}
+                size="icon-sm"
+                variant="ghost"
               >
                 {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
               </Button>
@@ -122,11 +122,11 @@ const MemberCard = ({
           )}
           {canClaim && (
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsClaimDialogOpen(true)}
-              className="text-xs"
               aria-label={`Claim ${member.name}'s profile`}
+              className="text-xs"
+              onClick={() => setIsClaimDialogOpen(true)}
+              size="sm"
+              variant="outline"
             >
               <Hand className="mr-1 h-3.5 w-3.5" />
               That&apos;s me
@@ -140,7 +140,7 @@ const MemberCard = ({
             <span className="flex items-center gap-1.5 font-semibold text-foreground">
               {member.name}
               {isOwnProfile && (
-                <Badge variant="secondary" className="border-transparent text-xs">
+                <Badge className="border-transparent text-xs" variant="secondary">
                   You
                 </Badge>
               )}
@@ -179,7 +179,7 @@ const MemberCard = ({
               </TooltipProvider>
             )}
             {member.groupId && groups.find((g) => g.id === member.groupId) && (
-              <Badge variant="secondary" className="border-transparent">
+              <Badge className="border-transparent" variant="secondary">
                 {groups.find((g) => g.id === member.groupId)?.name}
               </Badge>
             )}
@@ -189,23 +189,23 @@ const MemberCard = ({
 
       {canEdit && (
         <EditMemberDialog
-          member={member}
-          teamId={teamId}
           groups={groups}
-          open={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
+          member={member}
           onMemberUpdated={onMemberUpdated}
+          onOpenChange={setIsEditDialogOpen}
+          open={isEditDialogOpen}
+          teamId={teamId}
         />
       )}
       {canClaim && (
         <EditMemberDialog
-          member={member}
-          teamId={teamId}
           groups={groups}
+          member={member}
           mode="claim"
-          open={isClaimDialogOpen}
-          onOpenChange={setIsClaimDialogOpen}
           onMemberUpdated={(updated) => onMemberUpdated({ ...updated, userId: currentUserId })}
+          onOpenChange={setIsClaimDialogOpen}
+          open={isClaimDialogOpen}
+          teamId={teamId}
         />
       )}
     </>

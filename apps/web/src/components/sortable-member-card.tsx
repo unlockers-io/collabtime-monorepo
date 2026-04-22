@@ -18,21 +18,21 @@ type SortableMemberCardProps = {
 };
 
 const SortableMemberCard = (props: SortableMemberCardProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, isDragging, listeners, setNodeRef, transform, transition } = useSortable({
     id: props.member.id,
   });
 
   const style = {
+    opacity: isDragging ? 0.5 : 1,
     transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
     <div
+      className={isDragging ? "cursor-grabbing" : "cursor-grab"}
       ref={setNodeRef}
       style={style}
-      className={isDragging ? "cursor-grabbing" : "cursor-grab"}
       {...attributes}
       {...listeners}
     >

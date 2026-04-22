@@ -68,7 +68,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
   };
 
   const { data: invitations = [] } = useQuery<Array<PendingInvitation>>({
-    queryKey: ["my-invitations"],
+    enabled: isAuthenticated,
     queryFn: async () => {
       const response = await fetch("/api/invitations");
       if (!response.ok) {
@@ -77,7 +77,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
       const data = (await response.json()) as { invitations: Array<PendingInvitation> };
       return data.invitations;
     },
-    enabled: isAuthenticated,
+    queryKey: ["my-invitations"],
   });
 
   const handleAcceptInvitation = async (invitation: PendingInvitation) => {
@@ -122,7 +122,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
   };
 
   const { data: myTeams = [], isLoading: isLoadingTeams } = useQuery({
-    queryKey: ["my-teams"],
+    enabled: isAuthenticated,
     queryFn: async () => {
       const response = await fetch("/api/teams");
       if (!response.ok) {
@@ -131,7 +131,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
       const data = (await response.json()) as { teams: Array<MyTeam> };
       return data.teams;
     },
-    enabled: isAuthenticated,
+    queryKey: ["my-teams"],
   });
 
   const handleCreateTeam = async () => {
@@ -207,9 +207,9 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         <div className="flex w-full flex-col items-center gap-4">
           {isAuthenticated ? (
             <button
-              onClick={handleCreateTeam}
-              disabled={isCreating}
               className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg"
+              disabled={isCreating}
+              onClick={handleCreateTeam}
             >
               {isCreating ? (
                 <>
@@ -226,15 +226,15 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
           ) : (
             <div className="flex w-full flex-col items-center gap-3">
               <Link
-                href="/signup"
                 className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto sm:min-w-72")}
+                href="/signup"
               >
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link href="/login" className="font-medium text-foreground hover:underline">
+                <Link className="font-medium text-foreground hover:underline" href="/login">
                   Sign in
                 </Link>
               </p>
@@ -246,15 +246,15 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         <AnimatePresence>
           {isAuthenticated && invitations.length > 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              className="flex w-full flex-col gap-3"
               exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: 20 }}
               transition={{
-                duration: 0.6,
                 delay: 0.2,
+                duration: 0.6,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="flex w-full flex-col gap-3"
             >
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
@@ -267,13 +267,13 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                     const isProcessing = processingInvitations.has(invitation.id);
                     return (
                       <motion.div
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-3"
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
                         key={invitation.id}
                         layout
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-3"
                       >
                         <div className="flex items-center gap-3">
                           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
@@ -290,11 +290,11 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            aria-label={`Decline invitation to ${invitation.teamName}`}
                             disabled={isProcessing}
                             onClick={() => handleDeclineInvitation(invitation)}
-                            aria-label={`Decline invitation to ${invitation.teamName}`}
+                            size="sm"
+                            variant="ghost"
                           >
                             {isProcessing ? (
                               <Spinner className="h-4 w-4" />
@@ -303,10 +303,10 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                             )}
                           </Button>
                           <Button
-                            size="sm"
+                            aria-label={`Accept invitation to ${invitation.teamName}`}
                             disabled={isProcessing}
                             onClick={() => handleAcceptInvitation(invitation)}
-                            aria-label={`Accept invitation to ${invitation.teamName}`}
+                            size="sm"
                           >
                             {isProcessing ? (
                               <Spinner className="h-4 w-4" />
@@ -331,15 +331,15 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         <AnimatePresence>
           {isAuthenticated && !isLoadingTeams && activeTeams.length > 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              className="flex w-full flex-col gap-3"
               exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: 20 }}
               transition={{
-                duration: 0.6,
                 delay: 0.3,
+                duration: 0.6,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="flex w-full flex-col gap-3"
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-medium text-muted-foreground">My Teams</h2>
@@ -351,15 +351,15 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                     const isArchivePending = processingArchive.has(team.teamId);
                     return (
                       <motion.div
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="group flex items-center justify-between rounded-xl border border-border bg-card p-3 transition-colors hover:border-input"
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
                         key={team.teamId}
                         layout
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="group flex items-center justify-between rounded-xl border border-border bg-card p-3 transition-colors hover:border-input"
                       >
-                        <Link href={`/${team.teamId}`} className="flex flex-1 items-center gap-3">
+                        <Link className="flex flex-1 items-center gap-3" href={`/${team.teamId}`}>
                           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
                             <Users className="h-4 w-4 text-muted-foreground" />
                           </div>
@@ -376,15 +376,15 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                         </Link>
                         <div className="flex items-center gap-1 pl-2">
                           {team.role === "ADMIN" && (
-                            <Shield className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                            <Shield aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                           )}
                           <DropdownMenu>
                             <DropdownMenuTrigger
                               render={
                                 <Button
-                                  variant="ghost"
-                                  size="icon-sm"
                                   aria-label={`More actions for ${team.teamName || "this workspace"}`}
+                                  size="icon-sm"
+                                  variant="ghost"
                                 />
                               }
                             >
@@ -400,7 +400,6 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                               </DropdownMenuItem>
                               {team.spaceId && (
                                 <DropdownMenuItem
-                                  variant="destructive"
                                   onClick={() => {
                                     if (!team.spaceId) {
                                       return;
@@ -410,6 +409,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                                       teamName: team.teamName,
                                     });
                                   }}
+                                  variant="destructive"
                                 >
                                   <Trash2 />
                                   Delete workspace
@@ -431,60 +431,60 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         <AnimatePresence>
           {isAuthenticated && !isLoadingTeams && archivedTeams.length > 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              className="flex w-full flex-col gap-3"
               exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: 20 }}
               transition={{
-                duration: 0.6,
                 delay: 0.4,
+                duration: 0.6,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="flex w-full flex-col gap-3"
             >
               <button
-                type="button"
-                onClick={() => setShowArchived((prev) => !prev)}
                 aria-expanded={showArchived}
                 className="flex items-center justify-between rounded-md text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                onClick={() => setShowArchived((prev) => !prev)}
+                type="button"
               >
                 <span>
                   {archivedTeams.length} archived &mdash; {showArchived ? "Hide" : "Show"}
                 </span>
                 <ChevronDown
+                  aria-hidden="true"
                   className={cn(
                     "h-4 w-4 transition-transform",
                     showArchived ? "rotate-180" : "rotate-0",
                   )}
-                  aria-hidden="true"
                 />
               </button>
 
               <AnimatePresence initial={false}>
                 {showArchived && (
                   <motion.div
-                    key="archived-list"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
+                    animate={{ height: "auto", opacity: 1 }}
                     className="flex flex-col gap-2 overflow-hidden"
+                    exit={{ height: 0, opacity: 0 }}
+                    initial={{ height: 0, opacity: 0 }}
+                    key="archived-list"
+                    transition={{ duration: 0.2 }}
                   >
                     <AnimatePresence mode="popLayout">
                       {archivedTeams.map((team) => {
                         const isArchivePending = processingArchive.has(team.teamId);
                         return (
                           <motion.div
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="group flex items-center justify-between rounded-xl border border-border bg-card/60 p-3 transition-colors hover:border-input"
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
                             key={team.teamId}
                             layout
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.2 }}
-                            className="group flex items-center justify-between rounded-xl border border-border bg-card/60 p-3 transition-colors hover:border-input"
                           >
                             <Link
-                              href={`/${team.teamId}`}
                               className="flex flex-1 items-center gap-3"
+                              href={`/${team.teamId}`}
                             >
                               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
                                 <Archive className="h-4 w-4 text-muted-foreground" />
@@ -505,9 +505,9 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                                 <DropdownMenuTrigger
                                   render={
                                     <Button
-                                      variant="ghost"
-                                      size="icon-sm"
                                       aria-label={`More actions for ${team.teamName || "this workspace"}`}
+                                      size="icon-sm"
+                                      variant="ghost"
                                     />
                                   }
                                 >
@@ -523,7 +523,6 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                                   </DropdownMenuItem>
                                   {team.spaceId && (
                                     <DropdownMenuItem
-                                      variant="destructive"
                                       onClick={() => {
                                         if (!team.spaceId) {
                                           return;
@@ -533,6 +532,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                                           teamName: team.teamName,
                                         });
                                       }}
+                                      variant="destructive"
                                     >
                                       <Trash2 />
                                       Delete workspace
@@ -555,15 +555,15 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
 
       {workspaceToDelete && (
         <DeleteWorkspaceDialog
-          open={workspaceToDelete !== null}
+          onDeleted={handleWorkspaceDeleted}
           onOpenChange={(open) => {
             if (!open) {
               setWorkspaceToDelete(null);
             }
           }}
+          open={workspaceToDelete !== null}
           spaceId={workspaceToDelete.spaceId}
           teamName={workspaceToDelete.teamName}
-          onDeleted={handleWorkspaceDeleted}
         />
       )}
     </div>

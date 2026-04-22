@@ -24,7 +24,8 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { importMembers } from "@/lib/actions/member-actions";
-import { COMMON_TIMEZONES, formatTimezoneLabel, fuzzyMatchTimezone } from "@/lib/timezones";
+import type { COMMON_TIMEZONES } from "@/lib/timezones";
+import { formatTimezoneLabel, fuzzyMatchTimezone } from "@/lib/timezones";
 
 type ParsedRow = {
   errors: Array<string>;
@@ -161,14 +162,14 @@ const parseCSV = (text: string): Array<ParsedRow> => {
     }
 
     rows.push({
+      errors,
       index: i - startRow + 1,
+      matchedTimezone,
       name,
       rawTimezone,
-      matchedTimezone,
       title,
-      workingHoursStart: Number.isNaN(workStart) ? 9 : workStart,
       workingHoursEnd: Number.isNaN(workEnd) ? 17 : workEnd,
-      errors,
+      workingHoursStart: Number.isNaN(workStart) ? 9 : workStart,
     });
   }
 
@@ -183,7 +184,7 @@ const handleDownloadTemplate = () => {
   a.download = "team-members-template.csv";
   document.body.append(a);
   a.click();
-  document.body.removeChild(a);
+  a.remove();
   URL.revokeObjectURL(url);
 };
 
@@ -212,27 +213,25 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
     setRows(parseCSV(text));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) {
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => handleFileRead(ev.target?.result as string);
-    reader.readAsText(file);
-    e.target.value = "";
+    const text = await file.text();
+    handleFileRead(text);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (!file) {
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => handleFileRead(ev.target?.result as string);
-    reader.readAsText(file);
+    const text = await file.text();
+    handleFileRead(text);
   };
 
   const handlePreview = () => {
@@ -259,8 +258,8 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
         // matchedTimezone is guaranteed non-null here due to the filter above
         timezone: r.matchedTimezone as (typeof COMMON_TIMEZONES)[number],
         title: r.title,
-        workingHoursStart: r.workingHoursStart,
         workingHoursEnd: r.workingHoursEnd,
+        workingHoursStart: r.workingHoursStart,
       })),
     );
     setIsImporting(false);
@@ -279,13 +278,13 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   const invalidCount = (rows?.length ?? 0) - validCount;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogTrigger
         render={
           <Button
-            variant="outline"
-            type="button"
             className="group flex h-9 w-full items-center justify-center gap-2 text-muted-foreground"
+            type="button"
+            variant="outline"
           />
         }
       >
@@ -313,19 +312,19 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
               <div className="flex flex-col gap-4 py-2">
                 {/* Drop zone */}
                 <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleDrop}
                   className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
                     isDragging
                       ? "border-primary bg-primary/5"
                       : "border-border bg-muted/50 hover:border-muted-foreground hover:bg-muted"
                   }`}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDrop={handleDrop}
+                  type="button"
                 >
                   <Upload className="h-8 w-8 text-muted-foreground" />
                   <div>
@@ -335,12 +334,12 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                     </p>
                   </div>
                   <input
-                    ref={fileInputRef}
-                    type="file"
                     accept=".csv,text/csv,text/plain"
                     className="sr-only"
                     onChange={handleFileUpload}
+                    ref={fileInputRef}
                     tabIndex={-1}
+                    type="file"
                   />
                 </button>
 
@@ -351,18 +350,18 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                 </div>
 
                 <Textarea
-                  value={csvText}
+                  className="h-32 resize-none font-mono text-xs"
                   onChange={(e) => setCsvText(e.target.value)}
                   placeholder={`name,timezone,title,work_start,work_end\nAlice Johnson,America/New_York,Engineering Lead,9,17`}
-                  className="h-32 resize-none font-mono text-xs"
                   spellCheck={false}
+                  value={csvText}
                 />
 
                 <div className="flex items-center justify-between">
                   <button
-                    type="button"
-                    onClick={handleDownloadTemplate}
                     className="flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                    onClick={handleDownloadTemplate}
+                    type="button"
                   >
                     <Download className="h-3.5 w-3.5" />
                     Download template
@@ -417,8 +416,8 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                           const isValid = row.errors.length === 0;
                           return (
                             <tr
-                              key={row.index}
                               className={`border-b border-border last:border-0 ${isValid ? "" : "opacity-50"}`}
+                              key={row.index}
                             >
                               <td className="px-3 py-2 text-muted-foreground tabular-nums">
                                 {row.index}
@@ -477,19 +476,19 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
             <DialogFooter>
               {rows === null ? (
                 <>
-                  <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                  <Button onClick={() => handleOpenChange(false)} variant="outline">
                     Cancel
                   </Button>
-                  <Button onClick={handlePreview} disabled={!csvText.trim()}>
+                  <Button disabled={!csvText.trim()} onClick={handlePreview}>
                     Preview →
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button variant="outline" onClick={handleReset}>
+                  <Button onClick={handleReset} variant="outline">
                     ← Back
                   </Button>
-                  <Button onClick={handleImport} disabled={isImporting || validCount === 0}>
+                  <Button disabled={isImporting || validCount === 0} onClick={handleImport}>
                     {isImporting ? (
                       <span className="flex items-center gap-2">
                         <Spinner />

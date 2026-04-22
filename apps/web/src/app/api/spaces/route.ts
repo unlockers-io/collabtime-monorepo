@@ -21,8 +21,8 @@ export const GET = async () => {
     }
 
     const spaces = await prisma.space.findMany({
-      where: { ownerId: session.user.id },
       orderBy: { createdAt: "desc" },
+      where: { ownerId: session.user.id },
     });
 
     return NextResponse.json({ spaces });
@@ -64,8 +64,8 @@ export const POST = async (request: Request) => {
     // Create new space
     const space = await prisma.space.create({
       data: {
-        teamId,
         ownerId: session.user.id,
+        teamId,
       },
     });
 

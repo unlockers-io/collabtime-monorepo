@@ -1,4 +1,5 @@
 import { expect, test as setup } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 const TEST_USER = {
   email: "e2e-test@collabtime.localhost",
@@ -12,11 +13,7 @@ const STORAGE_STATE_PATH = "tests/e2e/.auth/user.json";
  * Type into a field using pressSequentially + Tab to reliably trigger
  * TanStack Form's onChange and onBlur validators.
  */
-const fillField = async (
-  page: import("@playwright/test").Page,
-  locator: import("@playwright/test").Locator,
-  value: string,
-) => {
+const fillField = async (page: Page, locator: Locator, value: string) => {
   await locator.click();
   await locator.clear();
   await locator.pressSequentially(value, { delay: 10 });

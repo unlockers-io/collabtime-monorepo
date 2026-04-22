@@ -4,8 +4,8 @@ import { createMockSession, createTestTeamRecord, VALID_UUID } from "./test-help
 
 vi.mock("@repo/db", () => ({
   prisma: {
-    space: { findUnique: vi.fn() },
     membership: { findUnique: vi.fn() },
+    space: { findUnique: vi.fn() },
   },
 }));
 vi.mock("@/lib/auth-server", () => ({ auth: { api: { getSession: vi.fn() } } }));
@@ -37,7 +37,7 @@ describe("getPublicTeam", () => {
 
     const result = await getPublicTeam(VALID_UUID);
 
-    expect(result).toEqual({ success: false, error: "Team not found" });
+    expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("blocks private team access for non-members", async () => {
@@ -46,7 +46,7 @@ describe("getPublicTeam", () => {
 
     const result = await getPublicTeam(VALID_UUID);
 
-    expect(result).toEqual({ success: false, error: "This team is private" });
+    expect(result).toEqual({ error: "This team is private", success: false });
   });
 
   it("returns team with correct role for authenticated users", async () => {
@@ -60,8 +60,8 @@ describe("getPublicTeam", () => {
     const result = await getPublicTeam(VALID_UUID);
 
     expect(result).toEqual({
+      data: { role: "ADMIN", team },
       success: true,
-      data: { team, role: "ADMIN" },
     });
   });
 });

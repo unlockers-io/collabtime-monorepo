@@ -22,9 +22,9 @@ const NO_GROUP_VALUE = "__no_group__";
 
 const GroupSelector = ({
   groups,
-  value,
   onValueChange,
   placeholder = "Select group",
+  value,
   ...triggerProps
 }: GroupSelectorProps) => {
   const handleChange = (newValue: string | null) => {
@@ -37,7 +37,7 @@ const GroupSelector = ({
   const displayLabel = value ? groups.find((g) => g.id === value)?.name : "No group";
 
   return (
-    <Select value={value ?? NO_GROUP_VALUE} onValueChange={handleChange}>
+    <Select onValueChange={handleChange} value={value ?? NO_GROUP_VALUE}>
       <SelectTrigger {...triggerProps}>
         <SelectValue placeholder={placeholder}>{displayLabel}</SelectValue>
       </SelectTrigger>

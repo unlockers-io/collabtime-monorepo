@@ -29,7 +29,7 @@ const Loading = () => {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
+              <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5" key={i}>
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 animate-pulse rounded-full bg-muted" />
                   <div className="h-3 w-20 animate-pulse rounded bg-muted" />
@@ -37,7 +37,7 @@ const Loading = () => {
                 </div>
                 <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
                   {[0, 1].map((j) => (
-                    <div key={j} className="h-6 w-16 animate-pulse rounded-full bg-muted" />
+                    <div className="h-6 w-16 animate-pulse rounded-full bg-muted" key={j} />
                   ))}
                 </div>
               </div>
@@ -56,13 +56,13 @@ const Loading = () => {
               <div className="w-28" />
               <div className="flex flex-1 justify-between">
                 {[0, 1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-3 w-12 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-12 animate-pulse rounded bg-muted" key={i} />
                 ))}
               </div>
             </div>
             <div className="flex flex-col gap-3">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="flex items-center gap-3">
+                <div className="flex items-center gap-3" key={i}>
                   <div className="flex w-28 items-center gap-2">
                     <div className="h-7 w-7 animate-pulse rounded-full bg-muted" />
                     <div className="h-4 w-16 animate-pulse rounded bg-muted" />
@@ -88,8 +88,8 @@ const Loading = () => {
             <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
               {[0, 1, 2, 3].map((i) => (
                 <div
-                  key={i}
                   className="flex h-full min-h-45 flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"
+                  key={i}
                 >
                   <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
                   <div className="flex flex-1 flex-col gap-1.5">
@@ -121,8 +121,8 @@ const Loading = () => {
             <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
               {[0, 1].map((i) => (
                 <div
-                  key={i}
                   className="flex h-full min-h-45 flex-col gap-3 rounded-2xl border-2 border-transparent bg-secondary p-4"
+                  key={i}
                 >
                   <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
                   <div className="flex flex-1 flex-col gap-2">

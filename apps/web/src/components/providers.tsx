@@ -11,42 +11,41 @@ const RealtimeReadyContext = createContext(false);
 
 const useRealtimeReady = () => useContext(RealtimeReadyContext);
 
+type RealtimeProviderComponent = React.ComponentType<{
+  api: { url: string };
+  children: ReactNode;
+}>;
+
 // @upstash/realtime does not ship "use client" in its dist files. Next.js 16
 // + Turbopack resolves `react` via react-server exports for SSR bundles, which
 // lack createContext, causing a build crash. Breaking the static import with a
 // dynamic import() inside useEffect prevents the package from entering the SSR
 // bundle entirely.
 const RealtimeMount = ({ children }: { children: ReactNode }) => {
-  const [Provider, setProvider] = useState<React.ComponentType<{
-    api: { url: string };
-    children: ReactNode;
-  }> | null>(null);
+  const [provider, setProvider] = useState<RealtimeProviderComponent | null>(null);
 
   useEffect(() => {
-    void import("@upstash/realtime/client").then((m) => {
-      setProvider(
-        () =>
-          m.RealtimeProvider as React.ComponentType<{
-            api: { url: string };
-            children: ReactNode;
-          }>,
-      );
-    });
+    const load = async () => {
+      const m = await import("@upstash/realtime/client");
+      setProvider(() => m.RealtimeProvider as RealtimeProviderComponent);
+    };
+    void load();
   }, []);
 
-  if (!Provider) {
+  if (!provider) {
     return <RealtimeReadyContext value={false}>{children}</RealtimeReadyContext>;
   }
+  const Provider = provider;
   return (
     <Provider api={{ url: "/api/realtime" }}>
-      <RealtimeReadyContext value={true}>{children}</RealtimeReadyContext>
+      <RealtimeReadyContext value>{children}</RealtimeReadyContext>
     </Provider>
   );
 };
 
 const Providers = ({ children }: ProvidersProps) => (
   <QueryProvider>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange enableSystem>
       <RealtimeMount>{children}</RealtimeMount>
     </ThemeProvider>
   </QueryProvider>

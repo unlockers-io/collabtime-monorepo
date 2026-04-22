@@ -30,12 +30,12 @@ type DndWrapperProps = {
 
 const DndWrapper = ({
   children,
-  members,
   groups,
-  teamId,
   hasClaimedProfile,
+  members,
   onDragEnd,
   onDragTypeChange,
+  teamId,
 }: DndWrapperProps) => {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
@@ -74,32 +74,32 @@ const DndWrapper = ({
 
   return (
     <DndContext
-      sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragStart={handleDragStart}
+      sensors={sensors}
     >
       {children}
       <DragOverlay>
         {activeMember && (
           <MemberCard
-            member={activeMember}
-            teamId={teamId}
-            groups={groups}
             canEdit={false}
+            groups={groups}
             hasClaimedProfile={hasClaimedProfile}
+            member={activeMember}
             onMemberRemoved={() => {}}
             onMemberUpdated={() => {}}
+            teamId={teamId}
           />
         )}
         {activeGroup && (
           <GroupCard
-            group={activeGroup}
-            teamId={teamId}
-            memberCount={members.filter((m) => m.groupId === activeGroup.id).length}
             canEdit={false}
-            onGroupUpdated={() => {}}
+            group={activeGroup}
+            memberCount={members.filter((m) => m.groupId === activeGroup.id).length}
             onGroupRemoved={() => {}}
+            onGroupUpdated={() => {}}
+            teamId={teamId}
           />
         )}
       </DragOverlay>

@@ -11,16 +11,16 @@ let _passwordVerificationLimiter: Ratelimit | null = null;
 const getPasswordVerificationLimiter = (): Ratelimit => {
   if (!_passwordVerificationLimiter) {
     _passwordVerificationLimiter = new Ratelimit({
-      redis: getRedis()!,
+      analytics: true,
       limiter: Ratelimit.slidingWindow(5, "15 m"),
       prefix: "ratelimit:password-verify",
-      analytics: true,
+      redis: getRedis()!,
     });
   }
   return _passwordVerificationLimiter;
 };
 
-const ALLOWED_RESULT = { success: true, limit: 0, remaining: 0, reset: 0 } as const;
+const ALLOWED_RESULT = { limit: 0, remaining: 0, reset: 0, success: true } as const;
 
 // Bypasses rate limiting when Redis is unavailable (allows all requests)
 const passwordVerificationLimiter = {

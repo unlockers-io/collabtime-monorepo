@@ -6,8 +6,8 @@ vi.mock("@/lib/team-auth", () => ({ requireAuth: vi.fn() }));
 vi.mock("@repo/db", () => ({
   prisma: {
     $transaction: vi.fn(),
-    space: { create: vi.fn() },
     membership: { create: vi.fn() },
+    space: { create: vi.fn() },
   },
 }));
 vi.mock("../redis", () => ({ redis: { set: vi.fn() }, TEAM_INITIAL_TTL_SECONDS: 100 }));
@@ -37,7 +37,7 @@ describe("createTeam", () => {
 
     const result = await createTeam(TEST_TIMEZONE);
 
-    expect(result).toEqual({ success: false, error: "Failed to create team" });
+    expect(result).toEqual({ error: "Failed to create team", success: false });
     spy.mockRestore();
   });
 
@@ -51,10 +51,10 @@ describe("createTeam", () => {
 
     expect(prisma.$transaction).toHaveBeenCalledWith([
       prisma.space.create({
-        data: { teamId: "test-uuid-0", isPrivate: false, ownerId: "user-123" },
+        data: { isPrivate: false, ownerId: "user-123", teamId: "test-uuid-0" },
       }),
       prisma.membership.create({
-        data: { userId: "user-123", teamId: "test-uuid-0", role: "ADMIN" },
+        data: { role: "ADMIN", teamId: "test-uuid-0", userId: "user-123" },
       }),
     ]);
   });
@@ -75,11 +75,11 @@ describe("createTeam", () => {
     expect(storedTeam.members).toHaveLength(1);
     expect(storedTeam.members[0]).toMatchObject({
       name: "Test User",
+      order: 0,
       timezone: TEST_TIMEZONE,
       userId: "user-123",
-      workingHoursStart: 9,
       workingHoursEnd: 17,
-      order: 0,
+      workingHoursStart: 9,
     });
   });
 
@@ -92,7 +92,7 @@ describe("createTeam", () => {
 
     const result = await createTeam(TEST_TIMEZONE);
 
-    expect(result).toEqual({ success: true, data: "test-uuid-0" });
+    expect(result).toEqual({ data: "test-uuid-0", success: true });
     expect(spy).toHaveBeenCalledWith(
       "Post-commit Redis cache failed (team created in Postgres):",
       expect.any(Error),
@@ -108,6 +108,6 @@ describe("createTeam", () => {
 
     const result = await createTeam(TEST_TIMEZONE);
 
-    expect(result).toEqual({ success: true, data: "test-uuid-0" });
+    expect(result).toEqual({ data: "test-uuid-0", success: true });
   });
 });

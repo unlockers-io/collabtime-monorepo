@@ -37,7 +37,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
+const AddGroupDialog = ({ onGroupAdded, teamId }: AddGroupDialogProps) => {
   const [open, setOpen] = useState(false);
 
   const defaultValues: FormValues = {
@@ -46,9 +46,6 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
 
   const form = useForm({
     defaultValues,
-    validators: {
-      onSubmit: formSchema,
-    },
     onSubmit: async ({ value }) => {
       const result = await createGroup(teamId, { name: value.name });
 
@@ -59,6 +56,9 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
       } else {
         toast.error(result.error);
       }
+    },
+    validators: {
+      onSubmit: formSchema,
     },
   });
 
@@ -71,7 +71,6 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
 
   return (
     <Dialog
-      open={open}
       onOpenChange={handleOpenChange}
       onOpenChangeComplete={(nextOpen) => {
         // Reset after the close animation completes to avoid input re-render
@@ -80,13 +79,14 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
           form.reset();
         }
       }}
+      open={open}
     >
       <DialogTrigger
         render={
           <Button
-            variant="outline"
-            type="button"
             className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
+            type="button"
+            variant="outline"
           />
         }
       >
@@ -95,12 +95,12 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <form
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
-          noValidate
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
@@ -118,12 +118,12 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
                 <Field data-invalid={!field.state.meta.isValid}>
                   <FieldLabel htmlFor="group-name">Group Name</FieldLabel>
                   <Input
+                    aria-invalid={!field.state.meta.isValid}
                     id="group-name"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="e.g., Engineering, Design, Marketing..."
                     value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    aria-invalid={!field.state.meta.isValid}
                   />
                   {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
@@ -133,10 +133,10 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
 
           <DialogFooter>
             <Button
+              disabled={form.state.isSubmitting}
+              onClick={() => setOpen(false)}
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={form.state.isSubmitting}
             >
               Cancel
             </Button>
@@ -147,7 +147,7 @@ const AddGroupDialog = ({ teamId, onGroupAdded }: AddGroupDialogProps) => {
               })}
             >
               {({ canSubmit, isSubmitting }) => (
-                <Button type="submit" disabled={isSubmitting || !canSubmit}>
+                <Button disabled={isSubmitting || !canSubmit} type="submit">
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
                       <Spinner />

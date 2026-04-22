@@ -1,5 +1,5 @@
 import { prisma } from "@repo/db";
-import bcrypt from "bcryptjs";
+import { hash } from "bcryptjs";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -9,8 +9,8 @@ import { auth } from "@/lib/auth-server";
 const updateSpaceSchema = z.object({
   isPrivate: z.boolean().optional(),
   // Use separate flag to indicate password update intent
-  updatePassword: z.boolean().optional(),
   accessPassword: z.string().min(4).max(128).optional().nullable(),
+  updatePassword: z.boolean().optional(),
 });
 
 type Params = {
@@ -45,8 +45,8 @@ export const GET = async (_request: Request, { params }: Params) => {
       space: {
         ...space,
         // Return hasPassword boolean instead of masked value to prevent sentinel value issues
-        hasPassword: Boolean(space.accessPassword),
         accessPassword: undefined,
+        hasPassword: Boolean(space.accessPassword),
       },
     });
   } catch (error) {
@@ -101,21 +101,21 @@ export const PATCH = async (request: Request, { params }: Params) => {
         updateData.accessPassword = null;
       } else if (updates.accessPassword) {
         // Setting new password
-        updateData.accessPassword = await bcrypt.hash(updates.accessPassword, 10);
+        updateData.accessPassword = await hash(updates.accessPassword, 10);
       }
     }
 
     const updatedSpace = await prisma.space.update({
-      where: { id: spaceId },
       data: updateData,
+      where: { id: spaceId },
     });
 
     return NextResponse.json({
       space: {
         ...updatedSpace,
         // Return hasPassword boolean instead of masked value
-        hasPassword: Boolean(updatedSpace.accessPassword),
         accessPassword: undefined,
+        hasPassword: Boolean(updatedSpace.accessPassword),
       },
     });
   } catch (error) {

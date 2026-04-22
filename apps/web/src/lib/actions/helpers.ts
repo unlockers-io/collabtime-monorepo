@@ -3,14 +3,26 @@ import type { Team, TeamRecord } from "@/types";
 import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
 import { UUIDSchema } from "../validation";
 
+const sanitizeMemberUserId = (
+  userId: string | undefined,
+  currentUserId: string | undefined,
+): { userId: string } | Record<string, never> => {
+  if (userId === currentUserId) {
+    return userId === undefined ? {} : { userId };
+  }
+  if (userId) {
+    return { userId: "claimed" };
+  }
+  return {};
+};
+
 const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
   const { adminPasswordHash: _, ...publicTeam } = team;
   return {
     ...publicTeam,
-    members: publicTeam.members.map(({ userId, ...member }) => ({
-      ...member,
-      ...(userId === currentUserId ? { userId } : userId ? { userId: "claimed" } : {}),
-    })),
+    members: publicTeam.members.map(({ userId, ...member }) =>
+      Object.assign(member, sanitizeMemberUserId(userId, currentUserId)),
+    ),
   };
 };
 

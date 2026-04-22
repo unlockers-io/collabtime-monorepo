@@ -64,13 +64,13 @@ const getRandomPlaceholder = () =>
   TITLE_PLACEHOLDERS[Math.floor(Math.random() * TITLE_PLACEHOLDERS.length)];
 
 const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address").or(z.literal("")),
-  title: z.string(),
-  timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
-  workingHoursStart: z.number().min(0).max(23),
-  workingHoursEnd: z.number().min(0).max(23),
   groupId: z.string(),
+  name: z.string().min(1, "Name is required"),
+  timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
+  title: z.string(),
+  workingHoursEnd: z.number().min(0).max(23),
+  workingHoursStart: z.number().min(0).max(23),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -84,36 +84,36 @@ type AddMemberFormProps = {
 };
 
 const AddMemberForm = ({
-  teamId,
   groups,
   isFirstMember,
-  onOpenChange,
   onMemberAdded,
+  onOpenChange,
+  teamId,
 }: AddMemberFormProps) => {
-  const [titlePlaceholder] = useState(getRandomPlaceholder);
+  // useState lazy init so the placeholder is stable for this dialog instance;
+  // setter is intentionally unused — the random placeholder must not change after mount
+  // oxlint-disable-next-line no-unused-vars
+  const [titlePlaceholder, setTitlePlaceholder] = useState(getRandomPlaceholder);
   const defaultTimezone = getUserTimezone() as FormValues["timezone"];
 
   const defaultValues: FormValues = {
-    name: "",
     email: "",
-    title: "",
-    timezone: defaultTimezone,
-    workingHoursStart: 9,
-    workingHoursEnd: 17,
     groupId: "",
+    name: "",
+    timezone: defaultTimezone,
+    title: "",
+    workingHoursEnd: 17,
+    workingHoursStart: 9,
   };
 
   const form = useForm({
     defaultValues,
-    validators: {
-      onSubmit: formSchema,
-    },
     onSubmit: async ({ value }) => {
       const { email: emailValue, ...memberData } = value;
       const result = await addMember(teamId, {
         ...memberData,
-        title: memberData.title || "",
         groupId: memberData.groupId || undefined,
+        title: memberData.title || "",
       });
 
       if (result.success) {
@@ -137,16 +137,19 @@ const AddMemberForm = ({
         toast.error(result.error);
       }
     },
+    validators: {
+      onSubmit: formSchema,
+    },
   });
 
   return (
     <form
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
         form.handleSubmit();
       }}
-      noValidate
     >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-3">
@@ -166,12 +169,12 @@ const AddMemberForm = ({
             <Field data-invalid={!field.state.meta.isValid}>
               <FieldLabel htmlFor="member-name">Name *</FieldLabel>
               <Input
+                aria-invalid={!field.state.meta.isValid}
                 id="member-name"
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
                 placeholder="John Doe"
                 value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                aria-invalid={!field.state.meta.isValid}
               />
               {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -183,15 +186,15 @@ const AddMemberForm = ({
             <Field data-invalid={!field.state.meta.isValid}>
               <FieldLabel htmlFor="member-email">Email (optional)</FieldLabel>
               <Input
-                id="member-email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="jane@example.com"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
                 aria-invalid={!field.state.meta.isValid}
+                autoComplete="email"
+                id="member-email"
+                inputMode="email"
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="jane@example.com"
+                type="email"
+                value={field.state.value}
               />
               <p className="text-xs text-muted-foreground">
                 Send an invitation to this email address.
@@ -206,12 +209,12 @@ const AddMemberForm = ({
             <Field data-invalid={!field.state.meta.isValid}>
               <FieldLabel htmlFor="member-title">Title (optional)</FieldLabel>
               <Input
-                id="member-title"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder={titlePlaceholder}
                 aria-invalid={!field.state.meta.isValid}
+                id="member-title"
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder={titlePlaceholder}
+                value={field.state.value}
               />
               {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
             </Field>
@@ -223,7 +226,6 @@ const AddMemberForm = ({
             <Field data-invalid={!field.state.meta.isValid}>
               <FieldLabel htmlFor="member-timezone">Timezone</FieldLabel>
               <Select
-                value={field.state.value}
                 onValueChange={(value) => {
                   if (value === null) {
                     return;
@@ -231,8 +233,9 @@ const AddMemberForm = ({
                   field.handleChange(value as FormValues["timezone"]);
                   field.handleBlur();
                 }}
+                value={field.state.value}
               >
-                <SelectTrigger id="member-timezone" aria-invalid={!field.state.meta.isValid}>
+                <SelectTrigger aria-invalid={!field.state.meta.isValid} id="member-timezone">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -254,15 +257,15 @@ const AddMemberForm = ({
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="member-group">Group (optional)</FieldLabel>
                 <GroupSelector
-                  id="member-group"
                   aria-invalid={!field.state.meta.isValid}
                   groups={groups}
-                  value={field.state.value || undefined}
+                  id="member-group"
                   onValueChange={(value) => {
                     field.handleChange(value ?? "");
                     field.handleBlur();
                   }}
                   placeholder="No group"
+                  value={field.state.value || undefined}
                 />
                 {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
@@ -276,7 +279,6 @@ const AddMemberForm = ({
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="member-work-start">Work Starts</FieldLabel>
                 <Select
-                  value={String(field.state.value)}
                   onValueChange={(value) => {
                     if (value === null) {
                       return;
@@ -284,8 +286,9 @@ const AddMemberForm = ({
                     field.handleChange(Number(value));
                     field.handleBlur();
                   }}
+                  value={String(field.state.value)}
                 >
-                  <SelectTrigger id="member-work-start" aria-invalid={!field.state.meta.isValid}>
+                  <SelectTrigger aria-invalid={!field.state.meta.isValid} id="member-work-start">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -306,7 +309,6 @@ const AddMemberForm = ({
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="member-work-end">Work Ends</FieldLabel>
                 <Select
-                  value={String(field.state.value)}
                   onValueChange={(value) => {
                     if (value === null) {
                       return;
@@ -314,8 +316,9 @@ const AddMemberForm = ({
                     field.handleChange(Number(value));
                     field.handleBlur();
                   }}
+                  value={String(field.state.value)}
                 >
-                  <SelectTrigger id="member-work-end" aria-invalid={!field.state.meta.isValid}>
+                  <SelectTrigger aria-invalid={!field.state.meta.isValid} id="member-work-end">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -336,10 +339,10 @@ const AddMemberForm = ({
       <DialogFooter>
         {!isFirstMember && (
           <Button
+            disabled={form.state.isSubmitting}
+            onClick={() => onOpenChange(false)}
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={form.state.isSubmitting}
           >
             Cancel
           </Button>
@@ -351,7 +354,7 @@ const AddMemberForm = ({
           })}
         >
           {({ canSubmit, isSubmitting }) => (
-            <Button type="submit" disabled={isSubmitting || !canSubmit}>
+            <Button disabled={isSubmitting || !canSubmit} type="submit">
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <Spinner />
@@ -369,10 +372,10 @@ const AddMemberForm = ({
 };
 
 const AddMemberDialog = ({
-  teamId,
   groups,
-  onMemberAdded,
   isFirstMember,
+  onMemberAdded,
+  teamId,
 }: AddMemberDialogProps) => {
   const [open, setOpen] = useState(isFirstMember);
   // Bumped after close animation completes so the next open gets a fresh form
@@ -381,20 +384,20 @@ const AddMemberDialog = ({
 
   return (
     <Dialog
-      open={open}
       onOpenChange={setOpen}
       onOpenChangeComplete={(nextOpen) => {
         if (!nextOpen) {
           setInstanceId((n) => n + 1);
         }
       }}
+      open={open}
     >
       <DialogTrigger
         render={
           <Button
-            variant="outline"
-            type="button"
             className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
+            type="button"
+            variant="outline"
           />
         }
       >
@@ -403,12 +406,12 @@ const AddMemberDialog = ({
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <AddMemberForm
-          key={instanceId}
-          teamId={teamId}
           groups={groups}
           isFirstMember={isFirstMember}
-          onOpenChange={setOpen}
+          key={instanceId}
           onMemberAdded={onMemberAdded}
+          onOpenChange={setOpen}
+          teamId={teamId}
         />
       </DialogContent>
     </Dialog>

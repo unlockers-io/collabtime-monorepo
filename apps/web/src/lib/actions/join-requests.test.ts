@@ -3,15 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockSession, createTestTeamRecord, VALID_UUID } from "./test-helpers";
 
 vi.mock("@/lib/team-auth", () => ({
+  getTeamRole: vi.fn(),
   requireAuth: vi.fn(),
   requireTeamAdmin: vi.fn(),
-  getTeamRole: vi.fn(),
 }));
 vi.mock("@repo/db", () => ({
   prisma: {
-    membership: { findUnique: vi.fn(), create: vi.fn() },
-    joinRequest: { findUnique: vi.fn(), findMany: vi.fn(), upsert: vi.fn(), update: vi.fn() },
     $transaction: vi.fn(),
+    joinRequest: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn(), upsert: vi.fn() },
+    membership: { create: vi.fn(), findUnique: vi.fn() },
   },
 }));
 vi.mock("../redis", () => ({
@@ -50,7 +50,7 @@ describe("requestToJoin", () => {
 
     const result = await requestToJoin(VALID_UUID);
 
-    expect(result).toEqual({ success: false, error: "Team not found" });
+    expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("returns error when already a member", async () => {
@@ -59,7 +59,7 @@ describe("requestToJoin", () => {
 
     const result = await requestToJoin(VALID_UUID);
 
-    expect(result).toEqual({ success: false, error: "You are already a member of this team" });
+    expect(result).toEqual({ error: "You are already a member of this team", success: false });
   });
 
   it("returns error when already has pending request", async () => {
@@ -70,8 +70,8 @@ describe("requestToJoin", () => {
     const result = await requestToJoin(VALID_UUID);
 
     expect(result).toEqual({
-      success: false,
       error: "You already have a pending request for this team",
+      success: false,
     });
   });
 
@@ -83,7 +83,7 @@ describe("requestToJoin", () => {
 
     const result = await requestToJoin(VALID_UUID);
 
-    expect(result).toEqual({ success: true, data: { requestId: "jr-1" } });
+    expect(result).toEqual({ data: { requestId: "jr-1" }, success: true });
     expect(prisma.joinRequest.upsert).toHaveBeenCalled();
   });
 });
@@ -91,10 +91,10 @@ describe("requestToJoin", () => {
 describe("approveJoinRequest", () => {
   const pendingRequest = {
     id: "jr-1",
-    userId: "user-456",
-    teamId: VALID_UUID,
     status: "PENDING",
-    user: { name: "Bob", email: "bob@example.com" },
+    teamId: VALID_UUID,
+    user: { email: "bob@example.com", name: "Bob" },
+    userId: "user-456",
   };
 
   it("returns error when request not found", async () => {
@@ -102,7 +102,7 @@ describe("approveJoinRequest", () => {
 
     const result = await approveJoinRequest("jr-1");
 
-    expect(result).toEqual({ success: false, error: "Join request not found" });
+    expect(result).toEqual({ error: "Join request not found", success: false });
   });
 
   it("returns error when request is not PENDING", async () => {
@@ -113,7 +113,7 @@ describe("approveJoinRequest", () => {
 
     const result = await approveJoinRequest("jr-1");
 
-    expect(result).toEqual({ success: false, error: "Join request is no longer pending" });
+    expect(result).toEqual({ error: "Join request is no longer pending", success: false });
   });
 
   it("requires admin of the request's team", async () => {
@@ -123,7 +123,7 @@ describe("approveJoinRequest", () => {
     const result = await approveJoinRequest("jr-1");
 
     expect(requireTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
-    expect(result).toEqual({ success: false, error: "Failed to approve join request" });
+    expect(result).toEqual({ error: "Failed to approve join request", success: false });
   });
 
   it("creates membership and updates status in transaction", async () => {
@@ -158,9 +158,9 @@ describe("approveJoinRequest", () => {
 describe("denyJoinRequest", () => {
   const pendingRequest = {
     id: "jr-1",
-    userId: "user-456",
-    teamId: VALID_UUID,
     status: "PENDING",
+    teamId: VALID_UUID,
+    userId: "user-456",
   };
 
   it("returns error when request not found", async () => {
@@ -168,7 +168,7 @@ describe("denyJoinRequest", () => {
 
     const result = await denyJoinRequest("jr-1");
 
-    expect(result).toEqual({ success: false, error: "Join request not found" });
+    expect(result).toEqual({ error: "Join request not found", success: false });
   });
 
   it("returns error when not PENDING", async () => {
@@ -179,7 +179,7 @@ describe("denyJoinRequest", () => {
 
     const result = await denyJoinRequest("jr-1");
 
-    expect(result).toEqual({ success: false, error: "Join request is no longer pending" });
+    expect(result).toEqual({ error: "Join request is no longer pending", success: false });
   });
 
   it("updates status to DENIED", async () => {
@@ -189,10 +189,10 @@ describe("denyJoinRequest", () => {
     const result = await denyJoinRequest("jr-1");
 
     expect(prisma.joinRequest.update).toHaveBeenCalledWith({
-      where: { id: "jr-1" },
       data: { status: "DENIED" },
+      where: { id: "jr-1" },
     });
-    expect(result).toEqual({ success: true, data: undefined });
+    expect(result).toEqual({ data: undefined, success: true });
   });
 });
 
@@ -203,33 +203,33 @@ describe("getPendingJoinRequests", () => {
     const result = await getPendingJoinRequests(VALID_UUID);
 
     expect(requireTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
-    expect(result).toEqual({ success: false, error: "Failed to get join requests" });
+    expect(result).toEqual({ error: "Failed to get join requests", success: false });
   });
 
   it("returns formatted pending requests with user info", async () => {
     const createdAt = new Date("2026-01-15");
     vi.mocked(prisma.joinRequest.findMany).mockResolvedValue([
       {
-        id: "jr-1",
-        userId: "user-456",
-        user: { id: "user-456", name: "Bob", email: "bob@example.com" },
         createdAt,
+        id: "jr-1",
+        user: { email: "bob@example.com", id: "user-456", name: "Bob" },
+        userId: "user-456",
       },
     ] as never);
 
     const result = await getPendingJoinRequests(VALID_UUID);
 
     expect(result).toEqual({
-      success: true,
       data: [
         {
+          createdAt,
           id: "jr-1",
+          userEmail: "bob@example.com",
           userId: "user-456",
           userName: "Bob",
-          userEmail: "bob@example.com",
-          createdAt,
         },
       ],
+      success: true,
     });
   });
 });
@@ -240,7 +240,7 @@ describe("getMyTeamStatus", () => {
 
     const result = await getMyTeamStatus(VALID_UUID);
 
-    expect(result).toEqual({ success: true, data: { status: "ADMIN" } });
+    expect(result).toEqual({ data: { status: "ADMIN" }, success: true });
   });
 
   it("returns PENDING when user has pending request", async () => {
@@ -249,7 +249,7 @@ describe("getMyTeamStatus", () => {
 
     const result = await getMyTeamStatus(VALID_UUID);
 
-    expect(result).toEqual({ success: true, data: { status: "PENDING" } });
+    expect(result).toEqual({ data: { status: "PENDING" }, success: true });
   });
 
   it("returns none when user has no relationship", async () => {
@@ -258,6 +258,6 @@ describe("getMyTeamStatus", () => {
 
     const result = await getMyTeamStatus(VALID_UUID);
 
-    expect(result).toEqual({ success: true, data: { status: "none" } });
+    expect(result).toEqual({ data: { status: "none" }, success: true });
   });
 });

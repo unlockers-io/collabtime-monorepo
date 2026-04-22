@@ -10,7 +10,7 @@ export default mergeConfig(
   defineConfig({
     resolve: {
       alias: {
-        "@": new URL("./src", import.meta.url).pathname,
+        "@": new URL("src", import.meta.url).pathname,
         react: resolve(monorepoRoot, "node_modules/react"),
         "react-dom": resolve(monorepoRoot, "node_modules/react-dom"),
       },

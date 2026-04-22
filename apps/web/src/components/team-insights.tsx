@@ -39,7 +39,7 @@ type MemberStatus = {
   member: TeamMember;
 };
 
-const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => {
+const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => {
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
   // Re-render every 30s for live status. React Compiler memoizes the
   // computations below.
@@ -52,9 +52,9 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
 
     const now = new Date();
     const formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone: viewerTimezone,
       hour: "numeric",
       hour12: false,
+      timeZone: viewerTimezone,
     });
     const hourPart = formatter.formatToParts(now).find((p) => p.type === "hour");
     const currentHourInViewer = hourPart ? Number.parseInt(hourPart.value, 10) : 0;
@@ -95,10 +95,10 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
       }
 
       return {
-        member,
-        isWorking: working,
-        hoursUntilStart,
         hoursUntilEnd,
+        hoursUntilStart,
+        isWorking: working,
+        member,
       };
     });
   })();
@@ -110,13 +110,13 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
       (s) =>
         !s.isWorking && s.hoursUntilStart !== null && s.hoursUntilStart <= SOON_THRESHOLD_HOURS,
     )
-    .sort((a, b) => (a.hoursUntilStart ?? 0) - (b.hoursUntilStart ?? 0));
+    .toSorted((a, b) => (a.hoursUntilStart ?? 0) - (b.hoursUntilStart ?? 0));
 
   const leavingSoonMembers = memberStatuses
     .filter(
       (s) => s.isWorking && s.hoursUntilEnd !== null && s.hoursUntilEnd <= SOON_THRESHOLD_HOURS,
     )
-    .sort((a, b) => (a.hoursUntilEnd ?? 0) - (b.hoursUntilEnd ?? 0));
+    .toSorted((a, b) => (a.hoursUntilEnd ?? 0) - (b.hoursUntilEnd ?? 0));
 
   const getGroupName = (groupId?: string) => {
     if (!groupId) {
@@ -202,7 +202,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
             <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
               <TooltipProvider>
                 <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                  {comingSoonMembers.map(({ member, hoursUntilStart }) => {
+                  {comingSoonMembers.map(({ hoursUntilStart, member }) => {
                     const groupName = getGroupName(member.groupId);
                     const badge = (
                       <Badge className={cn("bg-background shadow-sm", groupName && "cursor-help")}>
@@ -251,7 +251,7 @@ const TeamInsights = ({ members, groups = EMPTY_GROUPS }: TeamInsightsProps) => 
             <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
               <TooltipProvider>
                 <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                  {leavingSoonMembers.map(({ member, hoursUntilEnd }) => {
+                  {leavingSoonMembers.map(({ hoursUntilEnd, member }) => {
                     const groupName = getGroupName(member.groupId);
                     const badge = (
                       <Badge className={cn("bg-background shadow-sm", groupName && "cursor-help")}>

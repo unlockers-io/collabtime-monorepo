@@ -38,9 +38,9 @@ import { ModeToggle } from "./mode-toggle";
 // Logo component
 const NavLogo = ({ showTitle = true }: { showTitle?: boolean }) => (
   <Link
-    href="/"
-    className="flex items-center gap-3 text-foreground transition-opacity hover:opacity-80"
     aria-label={!showTitle ? "Go to homepage" : undefined}
+    className="flex items-center gap-3 text-foreground transition-opacity hover:opacity-80"
+    href="/"
   >
     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
       <Globe className="h-5 w-5 text-primary-foreground" />
@@ -61,13 +61,13 @@ type TeamTitleProps = {
 };
 
 const TeamTitle = ({
-  teamName,
   isAdmin,
   isEditing,
-  onEdit,
-  onChange,
-  onSave,
   onCancel,
+  onChange,
+  onEdit,
+  onSave,
+  teamName,
 }: TeamTitleProps) => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -88,20 +88,21 @@ const TeamTitle = ({
   if (isEditing) {
     return (
       <input
+        // oxlint-disable-next-line jsx-a11y/no-autofocus -- inline-edit input is mounted on user gesture; focusing immediately matches expectation
+        autoFocus
+        className="h-9 w-full max-w-48 rounded-lg border border-input bg-background px-3 text-base font-bold tracking-tight text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:text-lg"
+        onBlur={onSave}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Team name…"
         type="text"
         value={teamName}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onSave}
-        onKeyDown={handleKeyDown}
-        autoFocus
-        placeholder="Team name…"
-        className="h-9 w-full max-w-48 rounded-lg border border-input bg-background px-3 text-base font-bold tracking-tight text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:text-lg"
       />
     );
   }
 
   return (
-    <button onClick={onEdit} className="group flex min-w-0 items-center gap-2">
+    <button className="group flex min-w-0 items-center gap-2" onClick={onEdit}>
       <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
         {teamName || "Team Workspace"}
       </h1>
@@ -126,12 +127,12 @@ const CopyLinkButton = ({
   onMobileClose?: () => void;
 }) => (
   <Button
-    variant="outline"
     className="justify-start"
     onClick={() => {
       onCopy();
       onMobileClose?.();
     }}
+    variant="outline"
   >
     <span className="flex items-center gap-2">
       {hasCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
@@ -148,18 +149,20 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
     try {
       await signOut({
         fetchOptions: {
+          onError: (ctx) => {
+            // oxlint-disable-next-line no-console -- surface sign-out errors from auth client
+            console.error("Sign out error:", ctx.error);
+            toast.error("Failed to sign out");
+          },
           onSuccess: () => {
             toast.success("Signed out successfully");
             router.push("/");
             router.refresh();
           },
-          onError: (ctx) => {
-            console.error("Sign out error:", ctx.error);
-            toast.error("Failed to sign out");
-          },
         },
       });
     } catch (error) {
+      // oxlint-disable-next-line no-console -- surface unexpected sign-out errors
       console.error("Sign out error:", error);
       toast.error("Failed to sign out");
     }
@@ -168,7 +171,7 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="outline" size="icon" aria-label="Account menu" />}
+        render={<Button aria-label="Account menu" size="icon" variant="outline" />}
       >
         {isAdmin ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
       </DropdownMenuTrigger>
@@ -183,11 +186,11 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
             <DropdownMenuItem
               render={
                 <Link
-                  href="/login"
                   className={cn(
                     buttonVariants({ variant: "outline" }),
                     "flex cursor-pointer items-center gap-2",
                   )}
+                  href="/login"
                 />
               }
             >
@@ -200,14 +203,14 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              render={<Link href="/settings" className="flex items-center gap-2" />}
+              render={<Link className="flex items-center gap-2" href="/settings" />}
             >
               <Settings className="h-4 w-4" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={handleSignOut}
               className="flex cursor-pointer items-center gap-2"
+              onClick={handleSignOut}
             >
               <LogOut className="h-4 w-4" />
               Sign out
@@ -223,12 +226,12 @@ const UserMenu = ({ isAdmin, isAuthenticated }: { isAdmin: boolean; isAuthentica
 const WorkspaceMenu = ({ onDeleteWorkspace }: { onDeleteWorkspace: () => void }) => (
   <DropdownMenu>
     <DropdownMenuTrigger
-      render={<Button variant="outline" size="icon" aria-label="Workspace actions" />}
+      render={<Button aria-label="Workspace actions" size="icon" variant="outline" />}
     >
       <MoreHorizontal className="h-4 w-4" />
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" className="w-48 bg-popover">
-      <DropdownMenuItem variant="destructive" onClick={onDeleteWorkspace}>
+      <DropdownMenuItem onClick={onDeleteWorkspace} variant="destructive">
         <Trash2 />
         Delete workspace
       </DropdownMenuItem>
@@ -238,13 +241,13 @@ const WorkspaceMenu = ({ onDeleteWorkspace }: { onDeleteWorkspace: () => void })
 
 // Mobile menu
 const MobileMenu = ({
-  isOpen,
+  canDeleteWorkspace,
+  hasCopied,
   isAdmin,
   isAuthenticated,
-  hasCopied,
-  onCopy,
+  isOpen,
   onClose,
-  canDeleteWorkspace,
+  onCopy,
   onDeleteWorkspace,
 }: {
   canDeleteWorkspace: boolean;
@@ -259,11 +262,11 @@ const MobileMenu = ({
   <AnimatePresence>
     {isOpen && (
       <motion.div
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: 1, height: "auto" }}
-        exit={{ opacity: 0, height: 0 }}
-        transition={{ duration: 0.2 }}
+        animate={{ height: "auto", opacity: 1 }}
         className="overflow-hidden sm:hidden"
+        exit={{ height: 0, opacity: 0 }}
+        initial={{ height: 0, opacity: 0 }}
+        transition={{ duration: 0.2 }}
       >
         <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
           {/* Role badge */}
@@ -283,12 +286,12 @@ const MobileMenu = ({
 
           <div className="flex flex-col gap-1">
             <Button
-              variant="ghost"
               className="justify-start"
               onClick={() => {
                 onCopy();
                 onClose();
               }}
+              variant="ghost"
             >
               <span className="flex items-center gap-2">
                 {hasCopied ? (
@@ -307,11 +310,11 @@ const MobileMenu = ({
 
             {!isAuthenticated && (
               <Link
-                href="/login"
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
                   "flex items-center justify-start gap-2",
                 )}
+                href="/login"
               >
                 <LogIn className="h-4 w-4" />
                 Sign in
@@ -320,11 +323,11 @@ const MobileMenu = ({
 
             {isAuthenticated && (
               <Link
-                href="/settings"
                 className={cn(
                   buttonVariants({ variant: "ghost" }),
                   "flex items-center justify-start gap-2",
                 )}
+                href="/settings"
               >
                 <Settings className="h-4 w-4" />
                 Settings
@@ -333,12 +336,12 @@ const MobileMenu = ({
 
             {canDeleteWorkspace && (
               <Button
-                variant="ghost"
                 className="justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => {
                   onDeleteWorkspace();
                   onClose();
                 }}
+                variant="ghost"
               >
                 <span className="flex items-center gap-2">
                   <Trash2 className="h-4 w-4" />
@@ -403,15 +406,15 @@ const Nav = (props: NavProps) => {
       return null;
     }
     const {
-      teamName,
+      canDeleteWorkspace = false,
       isAdmin,
       isEditingName,
+      onCancelEdit,
+      onDeleteWorkspace,
       onEditName,
       onNameChange,
       onSaveName,
-      onCancelEdit,
-      canDeleteWorkspace = false,
-      onDeleteWorkspace,
+      teamName,
     } = props;
 
     const handleDeleteWorkspace = () => {
@@ -424,13 +427,13 @@ const Nav = (props: NavProps) => {
           <div className="flex min-w-0 items-center gap-3">
             <NavLogo showTitle={false} />
             <TeamTitle
-              teamName={teamName}
               isAdmin={isAdmin}
               isEditing={isEditingName}
-              onEdit={onEditName}
-              onChange={onNameChange}
-              onSave={onSaveName}
               onCancel={onCancelEdit}
+              onChange={onNameChange}
+              onEdit={onEditName}
+              onSave={onSaveName}
+              teamName={teamName}
             />
           </div>
 
@@ -446,11 +449,11 @@ const Nav = (props: NavProps) => {
           {/* Mobile menu toggle */}
           <div className="flex items-center gap-2 sm:hidden">
             <Button
-              variant="outline"
-              size="icon"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               className="h-10 w-10"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              size="icon"
+              variant="outline"
             >
               {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
@@ -458,13 +461,13 @@ const Nav = (props: NavProps) => {
         </div>
 
         <MobileMenu
-          isOpen={mobileMenuOpen}
+          canDeleteWorkspace={canDeleteWorkspace}
+          hasCopied={hasCopied}
           isAdmin={isAdmin}
           isAuthenticated={isAuthenticated}
-          hasCopied={hasCopied}
-          onCopy={handleCopyLink}
+          isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
-          canDeleteWorkspace={canDeleteWorkspace}
+          onCopy={handleCopyLink}
           onDeleteWorkspace={handleDeleteWorkspace}
         />
       </header>
@@ -478,11 +481,11 @@ const Nav = (props: NavProps) => {
       <div className="flex items-center gap-2">
         <ModeToggle />
         {isAuthenticated ? (
-          <Link href="/settings" className={buttonVariants({ variant: "outline" })}>
+          <Link className={buttonVariants({ variant: "outline" })} href="/settings">
             <Settings className="h-4 w-4" />
           </Link>
         ) : (
-          <Link href="/login" className={buttonVariants({ variant: "outline" })}>
+          <Link className={buttonVariants({ variant: "outline" })} href="/login">
             <LogIn className="h-4 w-4" />
           </Link>
         )}

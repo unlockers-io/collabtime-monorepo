@@ -24,10 +24,10 @@ describe("UUIDSchema", () => {
 describe("TeamMemberInputSchema", () => {
   const validMember = {
     name: "Alice",
-    title: "Engineer",
     timezone: "America/New_York" as const,
-    workingHoursStart: 9,
+    title: "Engineer",
     workingHoursEnd: 17,
+    workingHoursStart: 9,
   };
 
   it("accepts valid member input", () => {

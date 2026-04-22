@@ -19,16 +19,16 @@ export const GET = async () => {
     }
 
     const invitations = await prisma.invitation.findMany({
+      include: {
+        invitedBy: {
+          select: { email: true, name: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
       where: {
         email: session.user.email,
         status: "PENDING",
       },
-      include: {
-        invitedBy: {
-          select: { name: true, email: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
     });
 
     const results = await Promise.allSettled(
@@ -41,10 +41,10 @@ export const GET = async () => {
 
         return {
           id: inv.id,
-          teamId: inv.teamId,
-          memberId: inv.memberId,
-          teamName: team?.name || "Unknown Team",
           inviterName: inv.invitedBy.name || inv.invitedBy.email.split("@")[0] || "Someone",
+          memberId: inv.memberId,
+          teamId: inv.teamId,
+          teamName: team?.name || "Unknown Team",
         };
       }),
     );

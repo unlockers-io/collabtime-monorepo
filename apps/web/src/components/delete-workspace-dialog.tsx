@@ -22,11 +22,11 @@ type DeleteWorkspaceDialogProps = {
 };
 
 const DeleteWorkspaceDialog = ({
-  open,
+  onDeleted,
   onOpenChange,
+  open,
   spaceId,
   teamName,
-  onDeleted,
 }: DeleteWorkspaceDialogProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -63,7 +63,7 @@ const DeleteWorkspaceDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Delete this workspace?</DialogTitle>
@@ -74,14 +74,14 @@ const DeleteWorkspaceDialog = ({
 
         <DialogFooter>
           <Button
+            disabled={isDeleting}
+            onClick={() => onOpenChange(false)}
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isDeleting}
           >
             Cancel
           </Button>
-          <Button type="button" variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+          <Button disabled={isDeleting} onClick={handleDelete} type="button" variant="destructive">
             {isDeleting ? (
               <span className="flex items-center gap-2">
                 <Spinner />

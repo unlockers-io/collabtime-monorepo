@@ -32,10 +32,10 @@ const getTimezoneOffset = (timezone: string): number => {
 
 const getCurrentTimeInTimezone = (timezone: string): string => {
   return new Date().toLocaleTimeString("en-US", {
-    timeZone: timezone,
     hour: "numeric",
-    minute: "2-digit",
     hour12: true,
+    minute: "2-digit",
+    timeZone: timezone,
   });
 };
 
@@ -61,6 +61,7 @@ const formatTimezoneLabel = (timezone: string, includeCurrentTime = false): stri
 };
 
 const getUserTimezone = (): string => {
+  // oxlint-disable-next-line new-cap -- Intl.DateTimeFormat() is callable without `new`
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 };
 
@@ -88,9 +89,9 @@ const isCurrentlyWorking = (
   const now = new Date();
   const currentHour = Number.parseInt(
     now.toLocaleString("en-US", {
-      timeZone: timezone,
       hour: "numeric",
       hour12: false,
+      timeZone: timezone,
     }),
     10,
   );
@@ -133,16 +134,16 @@ const getMinutesUntilAvailable = (
   const now = new Date();
   const currentHour = Number.parseInt(
     now.toLocaleString("en-US", {
-      timeZone: timezone,
       hour: "numeric",
       hour12: false,
+      timeZone: timezone,
     }),
     10,
   );
   const currentMinute = Number.parseInt(
     now.toLocaleString("en-US", {
-      timeZone: timezone,
       minute: "numeric",
+      timeZone: timezone,
     }),
     10,
   );
@@ -213,8 +214,9 @@ const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | 
   // then compute its UTC offset for closest-match lookup.
   let inputOffset: number;
   try {
-    // Intl.DateTimeFormat constructor throws RangeError for invalid timeZone values
-    new Intl.DateTimeFormat("en", { timeZone: trimmed });
+    // Intl.DateTimeFormat throws RangeError for invalid timeZone values
+    // oxlint-disable-next-line new-cap -- Intl.DateTimeFormat() is callable without `new`
+    Intl.DateTimeFormat("en", { timeZone: trimmed });
     inputOffset = getTimezoneOffset(trimmed);
   } catch {
     return null;

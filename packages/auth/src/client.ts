@@ -1,5 +1,5 @@
 // Re-export client functions from better-auth
-import { createAuthClient } from "better-auth/react";
+import type { createAuthClient } from "better-auth/react";
 
 export { createAuthClient as createBetterAuthClient } from "better-auth/react";
 

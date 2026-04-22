@@ -1,19 +1,20 @@
 import "server-only";
 
-import { Realtime, InferRealtimeEvents } from "@upstash/realtime";
+import type { InferRealtimeEvents } from "@upstash/realtime";
+import { Realtime } from "@upstash/realtime";
 import z from "zod/v4";
 
 import { getRedis } from "./redis";
 
 const TeamMemberSchema = z.object({
+  groupId: z.string().optional(),
   id: z.string(),
   name: z.string(),
-  title: z.string(),
-  timezone: z.string(),
-  workingHoursStart: z.number(),
-  workingHoursEnd: z.number(),
-  groupId: z.string().optional(),
   order: z.number(),
+  timezone: z.string(),
+  title: z.string(),
+  workingHoursEnd: z.number(),
+  workingHoursStart: z.number(),
 });
 
 const TeamGroupSchema = z.object({
@@ -24,16 +25,16 @@ const TeamGroupSchema = z.object({
 
 const schema = {
   team: {
-    memberAdded: TeamMemberSchema,
-    memberRemoved: z.object({ memberId: z.string() }),
-    memberUpdated: TeamMemberSchema,
-    membersImported: z.array(TeamMemberSchema),
-    membersReordered: z.object({ order: z.array(z.string()) }),
-    nameUpdated: z.object({ name: z.string() }),
     groupCreated: TeamGroupSchema,
-    groupUpdated: TeamGroupSchema,
     groupRemoved: z.object({ groupId: z.string() }),
     groupsReordered: z.object({ order: z.array(z.string()) }),
+    groupUpdated: TeamGroupSchema,
+    memberAdded: TeamMemberSchema,
+    memberRemoved: z.object({ memberId: z.string() }),
+    membersImported: z.array(TeamMemberSchema),
+    membersReordered: z.object({ order: z.array(z.string()) }),
+    memberUpdated: TeamMemberSchema,
+    nameUpdated: z.object({ name: z.string() }),
   },
 } as const;
 
@@ -46,11 +47,11 @@ const createRealtime = () => {
     return null;
   }
   return new Realtime({
-    schema,
-    redis: redisInstance,
     history: {
       maxLength: 10,
     },
+    redis: redisInstance,
+    schema,
   });
 };
 

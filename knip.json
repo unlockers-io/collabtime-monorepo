@@ -3,7 +3,6 @@
   "ignoreBinaries": ["portless"],
   "ignoreDependencies": [
     "eslint-plugin-*",
-    "oxlint-config-awesomeness",
     "postcss",
     "postcss-load-config",
     "react-scan",

@@ -30,18 +30,18 @@ export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metad
   const teamName = teamNameResult.status === "fulfilled" ? teamNameResult.value : null;
 
   return {
-    title: teamName ?? "Team Workspace",
     description: `Working hours and overlap view for ${teamName}.`,
+    title: teamName ?? "Team Workspace",
   };
 };
 
 const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus> => {
   const [membershipResult, joinRequestResult] = await Promise.allSettled([
     prisma.membership.findUnique({
-      where: { userId_teamId: { userId, teamId } },
+      where: { userId_teamId: { teamId, userId } },
     }),
     prisma.joinRequest.findUnique({
-      where: { userId_teamId: { userId, teamId } },
+      where: { userId_teamId: { teamId, userId } },
     }),
   ]);
 
@@ -85,7 +85,7 @@ const TeamPage = async ({ params }: TeamPageProps) => {
 
     // Authenticated but not a member — block access to private teams
     const membership = await prisma.membership.findUnique({
-      where: { userId_teamId: { userId: session.user.id, teamId } },
+      where: { userId_teamId: { teamId, userId: session.user.id } },
     });
 
     if (!membership) {
@@ -99,11 +99,11 @@ const TeamPage = async ({ params }: TeamPageProps) => {
 
   return (
     <TeamPageClient
-      teamId={teamId}
       isAuthenticated={Boolean(session)}
+      spaceId={isSpaceOwner ? (space?.id ?? null) : null}
+      teamId={teamId}
       teamStatus={teamStatus}
       userId={session?.user?.id}
-      spaceId={isSpaceOwner ? (space?.id ?? null) : null}
     />
   );
 };

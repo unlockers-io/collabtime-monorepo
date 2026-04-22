@@ -13,10 +13,6 @@ type FieldProps = React.HTMLAttributes<HTMLDivElement> & {
 const Field = ({ className, orientation = "vertical", ref, ...props }: FieldProps) => {
   return (
     <div
-      ref={ref}
-      data-slot="field"
-      role="group"
-      data-orientation={orientation}
       className={cn(
         "group/field flex w-full gap-3 [&>*]:w-full [&>.sr-only]:w-auto",
         "data-[invalid=true]:text-destructive",
@@ -26,6 +22,10 @@ const Field = ({ className, orientation = "vertical", ref, ...props }: FieldProp
         orientation === "responsive" && "flex-col sm:flex-row sm:items-center",
         className,
       )}
+      data-orientation={orientation}
+      data-slot="field"
+      ref={ref}
+      role="group"
       {...props}
     />
   );
@@ -37,12 +37,12 @@ const FieldGroup = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) => (
   <div
-    ref={ref}
-    data-slot="field-group"
     className={cn(
       "group/field-group flex w-full flex-col gap-7 [&>[data-slot=field-group]]:gap-4",
       className,
     )}
+    data-slot="field-group"
+    ref={ref}
     {...props}
   />
 );
@@ -50,13 +50,13 @@ const FieldGroup = ({
 const FieldLabel = ({ className, ...props }: React.ComponentProps<typeof Label>) => {
   return (
     <Label
-      data-slot="field-label"
       className={cn(
         "group/field-label flex w-fit items-center gap-2 text-sm leading-snug font-medium text-foreground",
         "group-data-[invalid=true]/field:text-destructive",
         "group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50",
         className,
       )}
+      data-slot="field-label"
       {...props}
     />
   );
@@ -68,9 +68,9 @@ const FieldContent = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) => (
   <div
-    ref={ref}
-    data-slot="field-content"
     className={cn("flex flex-col gap-2", className)}
+    data-slot="field-content"
+    ref={ref}
     {...props}
   />
 );
@@ -82,9 +82,9 @@ const FieldDescription = ({
 }: React.HTMLAttributes<HTMLParagraphElement> & { ref?: React.Ref<HTMLParagraphElement> }) => {
   return (
     <p
-      ref={ref}
-      data-slot="field-description"
       className={cn("text-xs text-muted-foreground", className)}
+      data-slot="field-description"
+      ref={ref}
       {...props}
     />
   );
@@ -95,20 +95,18 @@ type FieldErrorProps = React.HTMLAttributes<HTMLParagraphElement> & {
   ref?: React.Ref<HTMLParagraphElement>;
 };
 
-const FieldError = ({ className, errors, children, ref, ...props }: FieldErrorProps) => {
-  const message =
-    children ??
-    errors
-      ?.filter(Boolean)
-      .map((e) =>
-        typeof e === "string"
-          ? e
-          : typeof e === "object" && e !== null && "message" in e
-            ? (e as { message: string }).message
-            : String(e),
-      )
-      .filter(Boolean)
-      .at(0);
+const errorToMessage = (e: unknown): string => {
+  if (typeof e === "string") {
+    return e;
+  }
+  if (typeof e === "object" && e !== null && "message" in e) {
+    return (e as { message: string }).message;
+  }
+  return String(e);
+};
+
+const FieldError = ({ children, className, errors, ref, ...props }: FieldErrorProps) => {
+  const message = children ?? errors?.map(errorToMessage).find(Boolean);
 
   if (!message) {
     return null;
@@ -116,9 +114,9 @@ const FieldError = ({ className, errors, children, ref, ...props }: FieldErrorPr
 
   return (
     <p
-      ref={ref}
-      data-slot="field-error"
       className={cn("text-xs font-medium text-destructive", className)}
+      data-slot="field-error"
+      ref={ref}
       {...props}
     >
       {message}
@@ -134,9 +132,9 @@ const FieldSet = ({
   ref?: React.Ref<HTMLFieldSetElement>;
 }) => (
   <fieldset
-    ref={ref}
-    data-slot="field-set"
     className={cn("flex flex-col gap-4", className)}
+    data-slot="field-set"
+    ref={ref}
     {...props}
   />
 );
@@ -147,9 +145,9 @@ const FieldLegend = ({
   ...props
 }: React.HTMLAttributes<HTMLLegendElement> & { ref?: React.Ref<HTMLLegendElement> }) => (
   <legend
-    ref={ref}
-    data-slot="field-legend"
     className={cn("text-sm font-semibold text-foreground", className)}
+    data-slot="field-legend"
+    ref={ref}
     {...props}
   />
 );
@@ -160,9 +158,9 @@ const FieldTitle = ({
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement> & { ref?: React.Ref<HTMLParagraphElement> }) => (
   <p
-    ref={ref}
-    data-slot="field-title"
     className={cn("text-sm font-medium text-foreground", className)}
+    data-slot="field-title"
+    ref={ref}
     {...props}
   />
 );
@@ -172,7 +170,7 @@ const FieldSeparator = ({
   ref,
   ...props
 }: React.HTMLAttributes<HTMLHRElement> & { ref?: React.Ref<HTMLHRElement> }) => (
-  <hr ref={ref} data-slot="field-separator" className={cn("border-border", className)} {...props} />
+  <hr className={cn("border-border", className)} data-slot="field-separator" ref={ref} {...props} />
 );
 
 export {

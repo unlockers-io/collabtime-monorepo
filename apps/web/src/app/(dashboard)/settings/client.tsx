@@ -39,6 +39,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
       });
 
       if (error) {
+        // oxlint-disable-next-line no-console -- surface auth client errors during settings save
         console.error("[Settings] Failed to update name:", error);
         toast.error(error.message ?? "Failed to update name");
         return;
@@ -47,6 +48,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
       toast.success("Name updated successfully");
       router.refresh();
     } catch (error) {
+      // oxlint-disable-next-line no-console -- surface unexpected errors during settings save
       console.error("[Settings] Unexpected error updating name:", error);
       toast.error("Failed to update name");
     } finally {
@@ -81,13 +83,13 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
                 <div className="flex gap-2">
                   <Input
                     id="name"
-                    value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your name"
+                    value={name}
                   />
                   <Button
-                    onClick={handleSaveName}
                     disabled={isSaving || name.trim() === user.name}
+                    onClick={handleSaveName}
                     variant="outline"
                   >
                     {isSaving ? <Spinner /> : "Save"}
@@ -97,7 +99,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" value={user.email} disabled className="bg-secondary" />
+                <Input className="bg-secondary" disabled id="email" value={user.email} />
                 <p className="text-xs text-muted-foreground">Email cannot be changed</p>
               </div>
             </div>

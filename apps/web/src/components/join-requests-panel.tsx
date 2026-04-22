@@ -39,7 +39,6 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   const queryClient = useQueryClient();
 
   const { data: requests = [], isLoading } = useQuery({
-    queryKey: joinRequestsQueryKey(teamId),
     queryFn: async () => {
       const result = await getPendingJoinRequests(teamId);
       if (!result.success) {
@@ -47,6 +46,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
       }
       return result.data as Array<JoinRequest>;
     },
+    queryKey: joinRequestsQueryKey(teamId),
   });
 
   const invalidateRequests = () => {
@@ -105,28 +105,28 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   return (
     <div className="rounded-xl border border-warning/40 bg-warning/10">
       <button
-        type="button"
-        onClick={handleToggle}
-        className="flex w-full items-center justify-between gap-3 p-4"
-        aria-expanded={isExpanded}
         aria-controls="join-requests-list"
+        aria-expanded={isExpanded}
+        className="flex w-full items-center justify-between gap-3 p-4"
+        onClick={handleToggle}
+        type="button"
       >
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20 text-warning">
-            <Bell className="h-4 w-4" aria-hidden="true" />
+            <Bell aria-hidden="true" className="h-4 w-4" />
           </div>
           <span className="text-sm font-medium text-foreground">Pending Join Requests</span>
           <Badge className="border-transparent bg-warning/30 text-warning">{requests.length}</Badge>
         </div>
         {isExpanded ? (
-          <ChevronUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <ChevronUp aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
         )}
       </button>
 
       {isExpanded && (
-        <div id="join-requests-list" className="border-t border-warning/40">
+        <div className="border-t border-warning/40" id="join-requests-list">
           <ScrollArea className="max-h-64">
             <ul className="divide-y divide-warning/20">
               {requests.map((request) => {
@@ -135,7 +135,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
                 const isDenying = isThisRequest && pendingAction?.type === "deny";
 
                 return (
-                  <li key={request.id} className="flex items-center gap-3 px-4 py-3">
+                  <li className="flex items-center gap-3 px-4 py-3" key={request.id}>
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                       {request.userName.charAt(0).toUpperCase()}
                     </div>
@@ -151,22 +151,22 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
 
                     <div className="flex shrink-0 items-center gap-1.5">
                       <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => handleApprove(request.id)}
-                        disabled={isThisRequest}
-                        className="text-success hover:bg-success/10 hover:text-success"
                         aria-label={`Approve ${request.userName}`}
+                        className="text-success hover:bg-success/10 hover:text-success"
+                        disabled={isThisRequest}
+                        onClick={() => handleApprove(request.id)}
+                        size="icon-sm"
+                        variant="ghost"
                       >
                         {isApproving ? <Spinner /> : <Check className="h-4 w-4" />}
                       </Button>
                       <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => handleDeny(request.id)}
-                        disabled={isThisRequest}
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         aria-label={`Deny ${request.userName}`}
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        disabled={isThisRequest}
+                        onClick={() => handleDeny(request.id)}
+                        size="icon-sm"
+                        variant="ghost"
                       >
                         {isDenying ? <Spinner /> : <X className="h-4 w-4" />}
                       </Button>

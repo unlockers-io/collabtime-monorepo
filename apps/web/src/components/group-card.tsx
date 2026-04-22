@@ -22,13 +22,13 @@ type GroupCardProps = {
 };
 
 const GroupCard = ({
-  group,
-  teamId,
-  memberCount,
   canEdit,
+  group,
   isDropTarget = false,
-  onGroupUpdated,
+  memberCount,
   onGroupRemoved,
+  onGroupUpdated,
+  teamId,
 }: GroupCardProps) => {
   const [isPending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
@@ -100,13 +100,13 @@ const GroupCard = ({
 
         {canEdit && (
           <Button
+            aria-label={`Remove group ${group.name}`}
+            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            disabled={isPending}
+            onClick={handleRemove}
+            size="icon-sm"
             type="button"
             variant="ghost"
-            size="icon-sm"
-            onClick={handleRemove}
-            disabled={isPending}
-            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-            aria-label={`Remove group ${group.name}`}
           >
             {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
           </Button>
@@ -115,30 +115,39 @@ const GroupCard = ({
 
       {/* Group info - stacked vertically */}
       <div className="flex flex-1 flex-col gap-2">
-        {canEdit && isEditing ? (
-          <Input
-            type="text"
-            value={editingName}
-            onChange={(e) => setEditingName(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            className="h-9 text-sm font-medium"
-          />
-        ) : canEdit ? (
-          <button
-            type="button"
-            onClick={handleStartEditing}
-            className="group/name flex items-center gap-1.5 text-left"
-          >
-            <span className="font-semibold text-foreground">{group.name}</span>
-            <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/name:opacity-100" />
-          </button>
-        ) : (
-          <div className="flex items-center gap-1.5 text-left">
-            <span className="font-semibold text-foreground">{group.name}</span>
-          </div>
-        )}
+        {(() => {
+          if (canEdit && isEditing) {
+            return (
+              <Input
+                // oxlint-disable-next-line jsx-a11y/no-autofocus -- inline-edit input is mounted on user gesture; focusing immediately matches expectation
+                autoFocus
+                className="h-9 text-sm font-medium"
+                onBlur={handleSave}
+                onChange={(e) => setEditingName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                type="text"
+                value={editingName}
+              />
+            );
+          }
+          if (canEdit) {
+            return (
+              <button
+                className="group/name flex items-center gap-1.5 text-left"
+                onClick={handleStartEditing}
+                type="button"
+              >
+                <span className="font-semibold text-foreground">{group.name}</span>
+                <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/name:opacity-100" />
+              </button>
+            );
+          }
+          return (
+            <div className="flex items-center gap-1.5 text-left">
+              <span className="font-semibold text-foreground">{group.name}</span>
+            </div>
+          );
+        })()}
 
         {/* Member count badge */}
         <div className="mt-auto">

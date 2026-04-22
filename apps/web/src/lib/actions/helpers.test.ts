@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as ValidationModule from "../validation";
+
 import { createTestMember, createTestTeamRecord, VALID_UUID } from "./test-helpers";
 
 vi.mock("../redis", () => ({
@@ -7,7 +9,7 @@ vi.mock("../redis", () => ({
 }));
 
 vi.mock("../validation", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../validation")>();
+  const actual = await importOriginal<typeof ValidationModule>();
   return actual;
 });
 

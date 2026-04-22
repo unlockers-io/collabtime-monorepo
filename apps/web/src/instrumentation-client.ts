@@ -2,13 +2,13 @@
 // The added config here will be used whenever a users loads a page in their browser.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
-import * as Sentry from "@sentry/nextjs";
+import { captureRouterTransitionStart, init, replayIntegration } from "@sentry/nextjs";
 
-Sentry.init({
+init({
   dsn: "https://bd738ae5e6e5e0cef0d00e240b17601b@o4507617812938752.ingest.us.sentry.io/4511229832396800",
 
   // Add optional integrations for additional features
-  integrations: [Sentry.replayIntegration()],
+  integrations: [replayIntegration()],
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 1,
@@ -28,4 +28,4 @@ Sentry.init({
   sendDefaultPii: true,
 });
 
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+export const onRouterTransitionStart = captureRouterTransitionStart;

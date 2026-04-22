@@ -62,7 +62,7 @@ describe("getTeamRole", () => {
     mockedFindMembership.mockResolvedValue({ role: "ADMIN" } as never);
 
     const result = await getTeamRole("team-1");
-    expect(result).toEqual({ userId: "user-1", role: "ADMIN" });
+    expect(result).toEqual({ role: "ADMIN", userId: "user-1" });
   });
 
   it("returns userId and role for valid MEMBER", async () => {
@@ -70,7 +70,7 @@ describe("getTeamRole", () => {
     mockedFindMembership.mockResolvedValue({ role: "MEMBER" } as never);
 
     const result = await getTeamRole("team-1");
-    expect(result).toEqual({ userId: "user-1", role: "MEMBER" });
+    expect(result).toEqual({ role: "MEMBER", userId: "user-1" });
   });
 });
 
@@ -113,7 +113,7 @@ describe("requireAuth", () => {
   });
 
   it("returns session when authenticated", async () => {
-    const session = { user: { id: "user-1", email: "test@test.com" } };
+    const session = { user: { email: "test@test.com", id: "user-1" } };
     mockedGetSession.mockResolvedValue(session as never);
 
     const result = await requireAuth();

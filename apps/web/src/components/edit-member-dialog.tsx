@@ -54,23 +54,23 @@ type EditMemberFormProps = {
 };
 
 const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  title: z.string(),
-  timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
-  workingHoursStart: z.number().min(0).max(23),
-  workingHoursEnd: z.number().min(0).max(23),
   groupId: z.string(),
+  name: z.string().min(1, "Name is required"),
+  timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
+  title: z.string(),
+  workingHoursEnd: z.number().min(0).max(23),
+  workingHoursStart: z.number().min(0).max(23),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 const EditMemberForm = ({
-  member,
-  teamId,
   groups,
+  member,
   mode,
-  onOpenChange,
   onMemberUpdated,
+  onOpenChange,
+  teamId,
 }: EditMemberFormProps) => {
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
@@ -97,19 +97,16 @@ const EditMemberForm = ({
   };
 
   const defaultValues: FormValues = {
-    name: member.name,
-    title: member.title ?? "",
-    timezone: member.timezone as FormValues["timezone"],
-    workingHoursStart: member.workingHoursStart,
-    workingHoursEnd: member.workingHoursEnd,
     groupId: member.groupId ?? "",
+    name: member.name,
+    timezone: member.timezone as FormValues["timezone"],
+    title: member.title ?? "",
+    workingHoursEnd: member.workingHoursEnd,
+    workingHoursStart: member.workingHoursStart,
   };
 
   const form = useForm({
     defaultValues,
-    validators: {
-      onSubmit: formSchema,
-    },
     onSubmit: ({ value }) => {
       startTransition(async () => {
         const { groupId: _stripped, ...claimSafeData } = value;
@@ -120,8 +117,8 @@ const EditMemberForm = ({
             })
           : await updateMember(teamId, member.id, {
               ...value,
-              title: value.title || "",
               groupId: value.groupId || undefined,
+              title: value.title || "",
             });
         if (!result.success) {
           toast.error(result.error);
@@ -133,10 +130,13 @@ const EditMemberForm = ({
         onMemberUpdated({
           ...member,
           ...value,
-          title: value.title || "",
           groupId: value.groupId || undefined,
+          title: value.title || "",
         });
       });
+    },
+    validators: {
+      onSubmit: formSchema,
     },
   });
 
@@ -152,12 +152,12 @@ const EditMemberForm = ({
       </DialogHeader>
 
       <form
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
           form.handleSubmit();
         }}
-        noValidate
       >
         <div className="flex flex-col gap-4 py-2">
           <form.Field name="name">
@@ -165,12 +165,12 @@ const EditMemberForm = ({
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="edit-name">Name</FieldLabel>
                 <Input
+                  aria-invalid={!field.state.meta.isValid}
                   id="edit-name"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="John Doe"
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  aria-invalid={!field.state.meta.isValid}
                 />
                 {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
@@ -182,12 +182,12 @@ const EditMemberForm = ({
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="edit-title">Title (optional)</FieldLabel>
                 <Input
-                  id="edit-title"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="Software Engineer"
                   aria-invalid={!field.state.meta.isValid}
+                  id="edit-title"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Software Engineer"
+                  value={field.state.value}
                 />
                 {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
               </Field>
@@ -199,13 +199,13 @@ const EditMemberForm = ({
               <Field data-invalid={!field.state.meta.isValid}>
                 <FieldLabel htmlFor="edit-timezone">Timezone</FieldLabel>
                 <Select
-                  value={field.state.value}
                   onValueChange={(value) => {
                     field.handleChange(value as FormValues["timezone"]);
                     field.handleBlur();
                   }}
+                  value={field.state.value}
                 >
-                  <SelectTrigger id="edit-timezone" aria-invalid={!field.state.meta.isValid}>
+                  <SelectTrigger aria-invalid={!field.state.meta.isValid} id="edit-timezone">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -227,15 +227,15 @@ const EditMemberForm = ({
                 <Field data-invalid={!field.state.meta.isValid}>
                   <FieldLabel htmlFor="edit-group">Group</FieldLabel>
                   <GroupSelector
-                    id="edit-group"
                     aria-invalid={!field.state.meta.isValid}
                     groups={groups}
-                    value={field.state.value || undefined}
+                    id="edit-group"
                     onValueChange={(value) => {
                       field.handleChange(value ?? "");
                       field.handleBlur();
                     }}
                     placeholder="No group"
+                    value={field.state.value || undefined}
                   />
                   {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
@@ -249,13 +249,13 @@ const EditMemberForm = ({
                 <Field data-invalid={!field.state.meta.isValid}>
                   <FieldLabel htmlFor="edit-work-start">Work Starts</FieldLabel>
                   <Select
-                    value={String(field.state.value)}
                     onValueChange={(value) => {
                       field.handleChange(Number(value));
                       field.handleBlur();
                     }}
+                    value={String(field.state.value)}
                   >
-                    <SelectTrigger id="edit-work-start" aria-invalid={!field.state.meta.isValid}>
+                    <SelectTrigger aria-invalid={!field.state.meta.isValid} id="edit-work-start">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -276,13 +276,13 @@ const EditMemberForm = ({
                 <Field data-invalid={!field.state.meta.isValid}>
                   <FieldLabel htmlFor="edit-work-end">Work Ends</FieldLabel>
                   <Select
-                    value={String(field.state.value)}
                     onValueChange={(value) => {
                       field.handleChange(Number(value));
                       field.handleBlur();
                     }}
+                    value={String(field.state.value)}
                   >
-                    <SelectTrigger id="edit-work-end" aria-invalid={!field.state.meta.isValid}>
+                    <SelectTrigger aria-invalid={!field.state.meta.isValid} id="edit-work-end">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -305,20 +305,20 @@ const EditMemberForm = ({
             <FieldLabel htmlFor="invite-email">Invite User</FieldLabel>
             <div className="flex gap-2">
               <Input
-                id="invite-email"
-                type="email"
-                inputMode="email"
                 autoComplete="email"
-                placeholder="jane@example.com"
-                value={inviteEmail}
+                id="invite-email"
+                inputMode="email"
                 onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="jane@example.com"
+                type="email"
+                value={inviteEmail}
               />
               <Button
-                type="button"
-                variant="outline"
                 aria-label="Send invitation"
                 disabled={isInviting || !inviteEmail}
                 onClick={handleSendInvitation}
+                type="button"
+                variant="outline"
               >
                 {isInviting ? <Spinner /> : <Mail className="h-4 w-4" />}
               </Button>
@@ -328,28 +328,35 @@ const EditMemberForm = ({
 
         <DialogFooter>
           <Button
+            disabled={isPending}
+            onClick={() => onOpenChange(false)}
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isPending}
           >
             Cancel
           </Button>
           <form.Subscribe selector={(state) => ({ canSubmit: state.canSubmit })}>
-            {({ canSubmit }) => (
-              <Button type="submit" disabled={isPending || !canSubmit}>
-                {isPending ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner />
-                    Saving...
-                  </span>
-                ) : isClaim ? (
-                  "Claim Profile"
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
-            )}
+            {({ canSubmit }) => {
+              const renderLabel = () => {
+                if (isPending) {
+                  return (
+                    <span className="flex items-center gap-2">
+                      <Spinner />
+                      Saving...
+                    </span>
+                  );
+                }
+                if (isClaim) {
+                  return "Claim Profile";
+                }
+                return "Save Changes";
+              };
+              return (
+                <Button disabled={isPending || !canSubmit} type="submit">
+                  {renderLabel()}
+                </Button>
+              );
+            }}
           </form.Subscribe>
         </DialogFooter>
       </form>
@@ -358,25 +365,25 @@ const EditMemberForm = ({
 };
 
 const EditMemberDialog = ({
-  member,
-  teamId,
   groups,
+  member,
   mode = "admin",
-  open,
-  onOpenChange,
   onMemberUpdated,
+  onOpenChange,
+  open,
+  teamId,
 }: EditMemberDialogProps) => {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-md">
         <EditMemberForm
+          groups={groups}
           key={member.id}
           member={member}
-          teamId={teamId}
-          groups={groups}
           mode={mode}
-          onOpenChange={onOpenChange}
           onMemberUpdated={onMemberUpdated}
+          onOpenChange={onOpenChange}
+          teamId={teamId}
         />
       </DialogContent>
     </Dialog>

@@ -21,7 +21,7 @@ const teamQueryKeys = {
 
 const useTeamQuery = ({ teamId }: UseTeamQueryOptions) => {
   return useQuery<TeamQueryData | null>({
-    queryKey: teamQueryKeys.team(teamId),
+    enabled: true,
     queryFn: async () => {
       const result = await getPublicTeam(teamId);
       if (!result.success) {
@@ -29,11 +29,11 @@ const useTeamQuery = ({ teamId }: UseTeamQueryOptions) => {
       }
 
       return {
-        team: result.data.team,
         role: result.data.role,
+        team: result.data.team,
       };
     },
-    enabled: true,
+    queryKey: teamQueryKeys.team(teamId),
     refetchInterval: 2 * 60 * 1000,
   });
 };

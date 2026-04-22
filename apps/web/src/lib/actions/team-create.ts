@@ -20,16 +20,16 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
     await prisma.$transaction([
       prisma.space.create({
         data: {
-          teamId,
           isPrivate: false,
           ownerId: session.user.id,
+          teamId,
         },
       }),
       prisma.membership.create({
         data: {
-          userId: session.user.id,
-          teamId,
           role: "ADMIN",
+          teamId,
+          userId: session.user.id,
         },
       }),
     ]);
@@ -39,20 +39,20 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
       const creatorMember: TeamMember = {
         id: uuidv4(),
         name: session.user.name ?? "",
+        order: 0,
         timezone,
         title: "",
-        workingHoursStart: 9,
-        workingHoursEnd: 17,
-        order: 0,
         userId: session.user.id,
+        workingHoursEnd: 17,
+        workingHoursStart: 9,
       };
 
       const team: TeamRecord = {
-        id: teamId,
-        name: "",
         createdAt: new Date().toISOString(),
-        members: [creatorMember],
         groups: [],
+        id: teamId,
+        members: [creatorMember],
+        name: "",
       };
 
       await redis.set(`team:${teamId}`, JSON.stringify(team), {
@@ -62,10 +62,10 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
       console.error("Post-commit Redis cache failed (team created in Postgres):", cacheError);
     }
 
-    return { success: true, data: teamId };
+    return { data: teamId, success: true };
   } catch (error) {
     console.error("Failed to create team:", error);
-    return { success: false, error: "Failed to create team" };
+    return { error: "Failed to create team", success: false };
   }
 };
 

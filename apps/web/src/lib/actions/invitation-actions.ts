@@ -22,12 +22,12 @@ const inviteMember = async (
 
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
+      return { error: "Invalid team ID", success: false };
     }
 
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      return { success: false, error: "Invalid email address" };
+      return { error: "Invalid email address", success: false };
     }
 
     const [teamResult, existingUserResult] = await Promise.allSettled([
@@ -37,16 +37,16 @@ const inviteMember = async (
 
     const team = teamResult.status === "fulfilled" ? teamResult.value : null;
     if (!team) {
-      return { success: false, error: "Team not found" };
+      return { error: "Team not found", success: false };
     }
 
     const member = team.members.find((m) => m.id === memberId);
     if (!member) {
-      return { success: false, error: "Member not found" };
+      return { error: "Member not found", success: false };
     }
 
     if (member.userId) {
-      return { success: false, error: "This member slot is already claimed" };
+      return { error: "This member slot is already claimed", success: false };
     }
 
     const existingUser =
@@ -56,35 +56,35 @@ const inviteMember = async (
       const existingMembership = await prisma.membership.findUnique({
         where: {
           userId_teamId: {
-            userId: existingUser.id,
             teamId,
+            userId: existingUser.id,
           },
         },
       });
 
       if (existingMembership) {
-        return { success: false, error: "This user is already a member of the team" };
+        return { error: "This user is already a member of the team", success: false };
       }
     }
 
     // Upsert invitation (re-sends if previously declined)
     const invitation = await prisma.invitation.upsert({
+      create: {
+        email: trimmedEmail,
+        invitedById: session.user.id,
+        memberId,
+        teamId,
+      },
+      update: {
+        invitedById: session.user.id,
+        memberId,
+        status: "PENDING",
+      },
       where: {
         email_teamId: {
           email: trimmedEmail,
           teamId,
         },
-      },
-      update: {
-        memberId,
-        status: "PENDING",
-        invitedById: session.user.id,
-      },
-      create: {
-        email: trimmedEmail,
-        teamId,
-        memberId,
-        invitedById: session.user.id,
       },
     });
 
@@ -93,19 +93,19 @@ const inviteMember = async (
     const webAppUrl = process.env.WEB_APP_URL || process.env.BETTER_AUTH_URL || "";
     try {
       emailSent = await sendInvitationEmail({
-        to: trimmedEmail,
-        teamName: team.name,
         inviterName: session.user.name || session.user.email.split("@")[0] || "Someone",
+        teamName: team.name,
         teamUrl: webAppUrl,
+        to: trimmedEmail,
       });
     } catch (emailError) {
       console.error("[Invitation] Failed to send email:", emailError);
     }
 
-    return { success: true, data: { invitationId: invitation.id, emailSent } };
+    return { data: { emailSent, invitationId: invitation.id }, success: true };
   } catch (error) {
     console.error("Failed to invite member:", error);
-    return { success: false, error: "Failed to send invitation" };
+    return { error: "Failed to send invitation", success: false };
   }
 };
 
@@ -120,23 +120,23 @@ const acceptInvitation = async (
     });
 
     if (!invitation) {
-      return { success: false, error: "Invitation not found" };
+      return { error: "Invitation not found", success: false };
     }
 
     if (invitation.email !== session.user.email) {
-      return { success: false, error: "This invitation is not for you" };
+      return { error: "This invitation is not for you", success: false };
     }
 
     if (invitation.status !== "PENDING") {
-      return { success: false, error: "This invitation is no longer pending" };
+      return { error: "This invitation is no longer pending", success: false };
     }
 
     // Check for existing membership
     const existingMembership = await prisma.membership.findUnique({
       where: {
         userId_teamId: {
-          userId: session.user.id,
           teamId: invitation.teamId,
+          userId: session.user.id,
         },
       },
     });
@@ -144,23 +144,23 @@ const acceptInvitation = async (
     if (existingMembership) {
       // Already a member — just mark invitation as accepted
       await prisma.invitation.update({
-        where: { id: invitationId },
         data: { status: "ACCEPTED" },
+        where: { id: invitationId },
       });
-      return { success: true, data: { teamId: invitation.teamId } };
+      return { data: { teamId: invitation.teamId }, success: true };
     }
 
     // Create membership + update invitation atomically
     await prisma.$transaction([
       prisma.invitation.update({
-        where: { id: invitationId },
         data: { status: "ACCEPTED" },
+        where: { id: invitationId },
       }),
       prisma.membership.create({
         data: {
-          userId: session.user.id,
-          teamId: invitation.teamId,
           role: "MEMBER",
+          teamId: invitation.teamId,
+          userId: session.user.id,
         },
       }),
     ]);
@@ -181,10 +181,10 @@ const acceptInvitation = async (
       console.error("Failed to claim member slot in Redis:", cacheError);
     }
 
-    return { success: true, data: { teamId: invitation.teamId } };
+    return { data: { teamId: invitation.teamId }, success: true };
   } catch (error) {
     console.error("Failed to accept invitation:", error);
-    return { success: false, error: "Failed to accept invitation" };
+    return { error: "Failed to accept invitation", success: false };
   }
 };
 
@@ -197,26 +197,26 @@ const declineInvitation = async (invitationId: string): Promise<ActionResult<voi
     });
 
     if (!invitation) {
-      return { success: false, error: "Invitation not found" };
+      return { error: "Invitation not found", success: false };
     }
 
     if (invitation.email !== session.user.email) {
-      return { success: false, error: "This invitation is not for you" };
+      return { error: "This invitation is not for you", success: false };
     }
 
     if (invitation.status !== "PENDING") {
-      return { success: false, error: "This invitation is no longer pending" };
+      return { error: "This invitation is no longer pending", success: false };
     }
 
     await prisma.invitation.update({
-      where: { id: invitationId },
       data: { status: "DECLINED" },
+      where: { id: invitationId },
     });
 
-    return { success: true, data: undefined };
+    return { data: undefined, success: true };
   } catch (error) {
     console.error("Failed to decline invitation:", error);
-    return { success: false, error: "Failed to decline invitation" };
+    return { error: "Failed to decline invitation", success: false };
   }
 };
 

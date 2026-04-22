@@ -25,7 +25,7 @@ const getPublicTeam = async (
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
+      return { error: "Invalid team ID", success: false };
     }
 
     const space = await prisma.space.findUnique({
@@ -33,19 +33,19 @@ const getPublicTeam = async (
     });
 
     if (!space) {
-      return { success: false, error: "Team not found" };
+      return { error: "Team not found", success: false };
     }
 
     if (space.isPrivate) {
       const teamRole = await getTeamRole(teamId);
       if (!teamRole) {
-        return { success: false, error: "This team is private" };
+        return { error: "This team is private", success: false };
       }
     }
 
     const team = await getTeamRecord(teamId);
     if (!team) {
-      return { success: false, error: "Team not found" };
+      return { error: "Team not found", success: false };
     }
 
     const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
@@ -54,7 +54,7 @@ const getPublicTeam = async (
     let role: TeamRole = "MEMBER";
     if (userId) {
       const membership = await prisma.membership.findUnique({
-        where: { userId_teamId: { userId, teamId } },
+        where: { userId_teamId: { teamId, userId } },
       });
       if (membership && isTeamRole(membership.role)) {
         role = membership.role;
@@ -62,12 +62,12 @@ const getPublicTeam = async (
     }
 
     return {
+      data: { role, team: sanitizeTeam(team, userId) },
       success: true,
-      data: { team: sanitizeTeam(team, userId), role },
     };
   } catch (error) {
     console.error("Failed to fetch public team:", error);
-    return { success: false, error: "Failed to fetch team" };
+    return { error: "Failed to fetch team", success: false };
   }
 };
 
@@ -81,8 +81,8 @@ const validateTeam = cache(async (teamId: string): Promise<boolean> => {
     }
 
     const space = await prisma.space.findUnique({
-      where: { teamId },
       select: { id: true },
+      where: { teamId },
     });
 
     return space !== null;
@@ -121,7 +121,7 @@ const getTeamMembershipRole = async (teamId: string, userId: string): Promise<Te
     }
 
     const membership = await prisma.membership.findUnique({
-      where: { userId_teamId: { userId, teamId } },
+      where: { userId_teamId: { teamId, userId } },
     });
 
     if (membership && isTeamRole(membership.role)) {

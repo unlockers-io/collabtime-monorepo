@@ -35,6 +35,7 @@ import { getTeamMembershipRole } from "@/lib/actions/team-read";
 import { useRealtime } from "@/lib/realtime-client";
 import type { TeamGroup, TeamMember, TeamStatus } from "@/types";
 
+// oxlint-disable-next-line promise/prefer-await-to-then -- next/dynamic requires .then() to remap a named export onto `default`
 const DndWrapper = dynamic(() => import("./dnd-wrapper").then((m) => ({ default: m.DndWrapper })), {
   ssr: false,
 });
@@ -52,11 +53,11 @@ type TeamPageClientProps = {
 const COLLAPSED_GROUPS_KEY = "collabtime-collapsed-groups";
 
 const TeamPageClient = ({
-  teamId,
   isAuthenticated,
+  spaceId,
+  teamId,
   teamStatus: initialStatus,
   userId,
-  spaceId,
 }: TeamPageClientProps) => {
   const router = useRouter();
   const [teamStatus, setTeamStatus] = useState<TeamStatus>(initialStatus);
@@ -83,11 +84,13 @@ const TeamPageClient = ({
     if (teamStatus !== "none" || !userId) {
       return;
     }
-    void getTeamMembershipRole(teamId, userId).then((role) => {
+    const resolveRole = async () => {
+      const role = await getTeamMembershipRole(teamId, userId);
       if (role) {
         setTeamStatus(role);
       }
-    });
+    };
+    void resolveRole();
   }, [userId, teamId, teamStatus]);
 
   const isAdmin = teamStatus === "ADMIN";
@@ -118,7 +121,7 @@ const TeamPageClient = ({
       if (next.has(groupId)) {
         next.delete(groupId);
       } else {
-        const collapsedAfter = new Set([...Array.from(prev), groupId]);
+        const collapsedAfter = new Set([...prev, groupId]);
         const ungroupedCount = members.filter((m) => !m.groupId).length;
         const visibleGroupedCount = members.filter((m) => {
           if (!m.groupId) {
@@ -134,7 +137,7 @@ const TeamPageClient = ({
       // Persist alongside the state update — runs in the event handler instead
       // of mirroring via a useEffect (https://react.dev/learn/you-might-not-need-an-effect).
       try {
-        localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify(Array.from(next)));
+        localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...next]));
       } catch {
         // ignore quota errors
       }
@@ -192,11 +195,11 @@ const TeamPageClient = ({
     }
   };
 
-  const orderedMembers = [...members].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  const orderedGroups = [...groups].sort((a, b) => a.order - b.order);
+  const orderedMembers = [...members].toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const orderedGroups = [...groups].toSorted((a, b) => a.order - b.order);
   const memberIds = orderedMembers.map((m) => m.id);
   const groupIds = orderedGroups.map((g) => g.id);
-  const collapsedGroupIds = Array.from(collapsedGroups);
+  const collapsedGroupIds = [...collapsedGroups];
 
   // Callbacks for local state updates (realtime handles cross-user sync)
   const handleMemberAdded = (newMember: TeamMember) => {
@@ -463,30 +466,30 @@ const TeamPageClient = ({
               <SortableContext items={memberIds} strategy={rectSortingStrategy}>
                 {orderedMembers.map((member) => (
                   <SortableMemberCard
-                    key={member.id}
-                    member={member}
-                    teamId={teamId}
-                    groups={groups}
                     canEdit={isAdmin}
                     currentUserId={currentUserId}
+                    groups={groups}
                     hasClaimedProfile={hasClaimedProfile}
+                    key={member.id}
+                    member={member}
                     onMemberRemoved={handleMemberRemoved}
                     onMemberUpdated={handleMemberUpdated}
+                    teamId={teamId}
                   />
                 ))}
               </SortableContext>
             ) : (
               orderedMembers.map((member) => (
                 <MemberCard
-                  key={member.id}
-                  member={member}
-                  teamId={teamId}
-                  groups={groups}
                   canEdit={false}
                   currentUserId={currentUserId}
+                  groups={groups}
                   hasClaimedProfile={hasClaimedProfile}
+                  key={member.id}
+                  member={member}
                   onMemberRemoved={handleMemberRemoved}
                   onMemberUpdated={handleMemberUpdated}
+                  teamId={teamId}
                 />
               ))
             )}
@@ -518,27 +521,27 @@ const TeamPageClient = ({
               <SortableContext items={groupIds} strategy={rectSortingStrategy}>
                 {orderedGroups.map((group) => (
                   <SortableGroupCard
-                    key={group.id}
-                    group={group}
-                    teamId={teamId}
-                    memberCount={members.filter((m) => m.groupId === group.id).length}
                     canEdit={isAdmin}
+                    group={group}
                     isDropTarget={activeDragType === "member"}
-                    onGroupUpdated={handleGroupUpdated}
+                    key={group.id}
+                    memberCount={members.filter((m) => m.groupId === group.id).length}
                     onGroupRemoved={handleGroupRemoved}
+                    onGroupUpdated={handleGroupUpdated}
+                    teamId={teamId}
                   />
                 ))}
               </SortableContext>
             ) : (
               orderedGroups.map((group) => (
                 <GroupCard
-                  key={group.id}
-                  group={group}
-                  teamId={teamId}
-                  memberCount={members.filter((m) => m.groupId === group.id).length}
                   canEdit={false}
-                  onGroupUpdated={handleGroupUpdated}
+                  group={group}
+                  key={group.id}
+                  memberCount={members.filter((m) => m.groupId === group.id).length}
                   onGroupRemoved={handleGroupRemoved}
+                  onGroupUpdated={handleGroupUpdated}
+                  teamId={teamId}
                 />
               ))
             )}
@@ -550,32 +553,32 @@ const TeamPageClient = ({
 
   const mainContent = (
     <motion.div
-      key="content"
-      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
       className="min-h-screen w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12"
+      initial={{ opacity: 0 }}
+      key="content"
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
       <main className="mx-auto flex w-full max-w-450 flex-col gap-6">
         {/* Header */}
         <Nav
-          variant="team"
-          isAuthenticated={isAuthenticated}
-          teamName={displayName}
+          canDeleteWorkspace={spaceId !== null}
           isAdmin={isAdmin}
+          isAuthenticated={isAuthenticated}
           isEditingName={isEditingName}
+          onCancelEdit={handleCancelEditName}
+          onDeleteWorkspace={() => setIsDeleteWorkspaceOpen(true)}
           onEditName={handleStartEditName}
           onNameChange={setEditingTeamName}
           onSaveName={handleSaveName}
-          onCancelEdit={handleCancelEditName}
-          canDeleteWorkspace={spaceId !== null}
-          onDeleteWorkspace={() => setIsDeleteWorkspaceOpen(true)}
+          teamName={displayName}
+          variant="team"
         />
 
         {/* Team Insights */}
         {members.length > 0 && (
           <section>
-            <TeamInsights members={orderedMembers} groups={groups} />
+            <TeamInsights groups={groups} members={orderedMembers} />
           </section>
         )}
 
@@ -591,9 +594,9 @@ const TeamPageClient = ({
             </div>
             <div className="p-4 sm:p-6">
               <TimezoneVisualizer
-                members={orderedMembers}
-                groups={groups}
                 collapsedGroupIds={collapsedGroupIds}
+                groups={groups}
+                members={orderedMembers}
                 onToggleGroupCollapse={toggleGroupCollapse}
               />
             </div>
@@ -616,44 +619,60 @@ const TeamPageClient = ({
 
             {membersGrid}
 
-            {isAdmin ? (
-              <div className="flex flex-col gap-2">
-                <AddMemberDialog
-                  teamId={teamId}
-                  groups={groups}
-                  onMemberAdded={handleMemberAdded}
-                  isFirstMember={members.length === 0}
-                />
-                <ImportMembersDialog teamId={teamId} />
-                <JoinRequestsPanel teamId={teamId} />
-              </div>
-            ) : !isMember ? (
-              <div className="flex items-center justify-between rounded-xl border border-border bg-muted/50 px-4 py-3">
-                {!isAuthenticated ? (
-                  <>
-                    <p className="text-sm text-muted-foreground">Sign in to request access</p>
-                    <Link
-                      href={`/login?redirect=/${teamId}`}
-                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                    >
-                      <LogIn className="mr-2 h-4 w-4" />
-                      Sign in
-                    </Link>
-                  </>
-                ) : teamStatus === "PENDING" ? (
-                  <p className="text-sm text-muted-foreground">
-                    Your join request is pending admin approval.
+            {(() => {
+              if (isAdmin) {
+                return (
+                  <div className="flex flex-col gap-2">
+                    <AddMemberDialog
+                      groups={groups}
+                      isFirstMember={members.length === 0}
+                      onMemberAdded={handleMemberAdded}
+                      teamId={teamId}
+                    />
+                    <ImportMembersDialog teamId={teamId} />
+                    <JoinRequestsPanel teamId={teamId} />
+                  </div>
+                );
+              }
+              if (isMember) {
+                return (
+                  <p className="text-center text-sm text-muted-foreground">
+                    You are a member of this team
                   </p>
-                ) : (
+                );
+              }
+              const renderJoinPrompt = () => {
+                if (!isAuthenticated) {
+                  return (
+                    <>
+                      <p className="text-sm text-muted-foreground">Sign in to request access</p>
+                      <Link
+                        className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+                        href={`/login?redirect=/${teamId}`}
+                      >
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Sign in
+                      </Link>
+                    </>
+                  );
+                }
+                if (teamStatus === "PENDING") {
+                  return (
+                    <p className="text-sm text-muted-foreground">
+                      Your join request is pending admin approval.
+                    </p>
+                  );
+                }
+                return (
                   <>
                     <p className="text-sm text-muted-foreground">
                       Request access to edit this team
                     </p>
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRequestJoin}
                       disabled={isRequestingJoin}
+                      onClick={handleRequestJoin}
+                      size="sm"
+                      variant="outline"
                     >
                       {isRequestingJoin ? (
                         <Spinner className="mr-2 h-4 w-4" />
@@ -663,13 +682,14 @@ const TeamPageClient = ({
                       Request to Join
                     </Button>
                   </>
-                )}
-              </div>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground">
-                You are a member of this team
-              </p>
-            )}
+                );
+              };
+              return (
+                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/50 px-4 py-3">
+                  {renderJoinPrompt()}
+                </div>
+              );
+            })()}
           </section>
 
           {/* Groups */}
@@ -686,27 +706,27 @@ const TeamPageClient = ({
 
             {groupsGrid}
 
-            {isAdmin && <AddGroupDialog teamId={teamId} onGroupAdded={handleGroupAdded} />}
+            {isAdmin && <AddGroupDialog onGroupAdded={handleGroupAdded} teamId={teamId} />}
           </section>
         </div>
       </main>
 
       {spaceId !== null && (
         <DeleteWorkspaceDialog
-          open={isDeleteWorkspaceOpen}
-          onOpenChange={setIsDeleteWorkspaceOpen}
-          spaceId={spaceId}
-          teamName={displayName}
           onDeleted={() => {
             router.push("/");
           }}
+          onOpenChange={setIsDeleteWorkspaceOpen}
+          open={isDeleteWorkspaceOpen}
+          spaceId={spaceId}
+          teamName={displayName}
         />
       )}
     </motion.div>
   );
 
   const skeleton = (
-    <motion.div key="skeleton" exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+    <motion.div exit={{ opacity: 0 }} key="skeleton" transition={{ duration: 0.2 }}>
       <Loading />
     </motion.div>
   );
@@ -720,9 +740,9 @@ const TeamPageClient = ({
           <>
             {realtimeReady && isMember && (
               <RealtimeSubscription
+                lastRemovalRef={lastRemovalRef}
                 teamId={teamId}
                 updateTeamCache={updateTeamCache}
-                lastRemovalRef={lastRemovalRef}
               />
             )}
             {mainContent}
@@ -738,18 +758,18 @@ const TeamPageClient = ({
         skeleton
       ) : (
         <DndWrapper
-          members={members}
           groups={groups}
-          teamId={teamId}
           hasClaimedProfile={hasClaimedProfile}
+          members={members}
           onDragEnd={handleDragEnd}
           onDragTypeChange={handleDragTypeChange}
+          teamId={teamId}
         >
           {realtimeReady && isMember && (
             <RealtimeSubscription
+              lastRemovalRef={lastRemovalRef}
               teamId={teamId}
               updateTeamCache={updateTeamCache}
-              lastRemovalRef={lastRemovalRef}
             />
           )}
           {mainContent}
@@ -766,9 +786,9 @@ type RealtimeSubscriptionProps = {
 };
 
 const RealtimeSubscription = ({
+  lastRemovalRef,
   teamId,
   updateTeamCache,
-  lastRemovalRef,
 }: RealtimeSubscriptionProps) => {
   useRealtime({
     channels: [`team-${teamId}`],
@@ -784,7 +804,7 @@ const RealtimeSubscription = ({
       "team.groupRemoved",
       "team.groupsReordered",
     ],
-    onData({ event, data }) {
+    onData({ data, event }) {
       if (event === "team.memberAdded") {
         const newMember = data as TeamMember;
         updateTeamCache(teamId, (prev) => {
@@ -881,7 +901,7 @@ const RealtimeSubscription = ({
               members: order
                 .map((id, index) => {
                   const member = map.get(id);
-                  return member ? { ...member, order: index } : null;
+                  return member ? Object.assign(member, { order: index }) : null;
                 })
                 .filter(Boolean) as Array<TeamMember>,
             },
@@ -960,7 +980,7 @@ const RealtimeSubscription = ({
               groups: order
                 .map((id, index) => {
                   const group = map.get(id);
-                  return group ? { ...group, order: index } : null;
+                  return group ? Object.assign(group, { order: index }) : null;
                 })
                 .filter(Boolean) as Array<TeamGroup>,
             },

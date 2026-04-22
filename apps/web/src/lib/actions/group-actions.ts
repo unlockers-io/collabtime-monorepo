@@ -18,20 +18,20 @@ const createGroup = async (
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
+      return { error: "Invalid team ID", success: false };
     }
 
     const inputResult = TeamGroupInputSchema.safeParse(input);
     if (!inputResult.success) {
       const errorMessage = inputResult.error.issues[0]?.message ?? "Invalid group data";
-      return { success: false, error: errorMessage };
+      return { error: errorMessage, success: false };
     }
 
     await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
     if (!team) {
-      return { success: false, error: "Team not found" };
+      return { error: "Team not found", success: false };
     }
 
     const newGroup: TeamGroup = {
@@ -48,12 +48,12 @@ const createGroup = async (
     ]);
 
     return {
+      data: { group: newGroup, team: sanitizeTeam(team) },
       success: true,
-      data: { team: sanitizeTeam(team), group: newGroup },
     };
   } catch (error) {
     console.error("Failed to create group:", error);
-    return { success: false, error: "Failed to create group" };
+    return { error: "Failed to create group", success: false };
   }
 };
 
@@ -67,28 +67,28 @@ const updateGroup = async (
     const groupUuidResult = UUIDSchema.safeParse(groupId);
 
     if (!teamUuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
+      return { error: "Invalid team ID", success: false };
     }
     if (!groupUuidResult.success) {
-      return { success: false, error: "Invalid group ID" };
+      return { error: "Invalid group ID", success: false };
     }
 
     const updateResult = TeamGroupUpdateSchema.safeParse(updates);
     if (!updateResult.success) {
       const errorMessage = updateResult.error.issues[0]?.message ?? "Invalid update data";
-      return { success: false, error: errorMessage };
+      return { error: errorMessage, success: false };
     }
 
     await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
     if (!team) {
-      return { success: false, error: "Team not found" };
+      return { error: "Team not found", success: false };
     }
 
     const groupIndex = team.groups.findIndex((g) => g.id === groupId);
     if (groupIndex === -1) {
-      return { success: false, error: "Group not found" };
+      return { error: "Group not found", success: false };
     }
 
     const updatedGroup = {
@@ -103,10 +103,10 @@ const updateGroup = async (
       realtime.channel(`team-${teamId}`).emit("team.groupUpdated", updatedGroup),
     ]);
 
-    return { success: true, data: sanitizeTeam(team) };
+    return { data: sanitizeTeam(team), success: true };
   } catch (error) {
     console.error("Failed to update group:", error);
-    return { success: false, error: "Failed to update group" };
+    return { error: "Failed to update group", success: false };
   }
 };
 
@@ -116,22 +116,22 @@ const removeGroup = async (teamId: string, groupId: string): Promise<ActionResul
     const groupUuidResult = UUIDSchema.safeParse(groupId);
 
     if (!teamUuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
+      return { error: "Invalid team ID", success: false };
     }
     if (!groupUuidResult.success) {
-      return { success: false, error: "Invalid group ID" };
+      return { error: "Invalid group ID", success: false };
     }
 
     await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
     if (!team) {
-      return { success: false, error: "Team not found" };
+      return { error: "Team not found", success: false };
     }
 
     const groupExists = team.groups.some((g) => g.id === groupId);
     if (!groupExists) {
-      return { success: false, error: "Group not found" };
+      return { error: "Group not found", success: false };
     }
 
     team.groups = team.groups.filter((g) => g.id !== groupId);
@@ -149,10 +149,10 @@ const removeGroup = async (teamId: string, groupId: string): Promise<ActionResul
       realtime.channel(`team-${teamId}`).emit("team.groupRemoved", { groupId }),
     ]);
 
-    return { success: true, data: sanitizeTeam(team) };
+    return { data: sanitizeTeam(team), success: true };
   } catch (error) {
     console.error("Failed to remove group:", error);
-    return { success: false, error: "Failed to remove group" };
+    return { error: "Failed to remove group", success: false };
   }
 };
 
@@ -163,20 +163,20 @@ const reorderGroups = async (
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
-      return { success: false, error: "Invalid team ID" };
+      return { error: "Invalid team ID", success: false };
     }
 
     await requireTeamAdmin(teamId);
 
     const team = await getTeamRecord(teamId);
     if (!team) {
-      return { success: false, error: "Team not found" };
+      return { error: "Team not found", success: false };
     }
 
     const existingIds = new Set(team.groups.map((g) => g.id));
     const inputIds = new Set(groupIds);
     if (inputIds.size !== existingIds.size || !groupIds.every((id) => existingIds.has(id))) {
-      return { success: false, error: "Invalid group order" };
+      return { error: "Invalid group order", success: false };
     }
 
     const groupMap = new Map(team.groups.map((g) => [g.id, g]));
@@ -192,10 +192,10 @@ const reorderGroups = async (
       }),
     ]);
 
-    return { success: true, data: undefined };
+    return { data: undefined, success: true };
   } catch (error) {
     console.error("Failed to reorder groups:", error);
-    return { success: false, error: "Failed to reorder groups" };
+    return { error: "Failed to reorder groups", success: false };
   }
 };
 

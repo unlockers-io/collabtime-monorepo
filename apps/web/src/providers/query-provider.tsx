@@ -8,13 +8,16 @@ type QueryProviderProps = {
 };
 
 const QueryProvider = ({ children }: QueryProviderProps) => {
-  const [queryClient] = useState(
+  // useState (not useMemo) so the QueryClient instance is stable across re-renders;
+  // setter is unused by design
+  // oxlint-disable-next-line no-unused-vars
+  const [queryClient, setQueryClient] = useState(
     () =>
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // 1 minute
             refetchOnWindowFocus: true,
+            staleTime: 60 * 1000, // 1 minute
           },
         },
       }),

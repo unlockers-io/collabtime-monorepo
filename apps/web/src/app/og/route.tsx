@@ -4,7 +4,8 @@ export const runtime = "edge";
 
 const loadGoogleFont = async (font: string, weight: number, text: string) => {
   const url = `https://fonts.googleapis.com/css2?family=${font}:wght@${weight}&text=${encodeURIComponent(text)}`;
-  const css = await (await fetch(url)).text();
+  const cssResponse = await fetch(url);
+  const css = await cssResponse.text();
   const resource = css.match(/src: url\((.+)\) format\('(opentype|truetype)'\)/);
 
   if (resource) {
@@ -36,39 +37,39 @@ const GET = async () => {
   return new ImageResponse(
     <div
       style={{
-        height: "100%",
-        width: "100%",
+        alignItems: "center",
+        backgroundColor: "#0a0a0a",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#0a0a0a",
         fontFamily: "Geist Mono",
+        height: "100%",
+        justifyContent: "center",
+        width: "100%",
       }}
     >
       {/* Globe icon */}
       <div
         style={{
-          display: "flex",
-          width: 96,
-          height: 96,
           alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 24,
           backgroundColor: "#fafafa",
+          borderRadius: 24,
+          display: "flex",
+          height: 96,
+          justifyContent: "center",
           marginBottom: 32,
+          width: 96,
         }}
       >
         <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
           fill="none"
+          height="48"
           stroke="#0a0a0a"
-          strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          strokeWidth="1.5"
+          viewBox="0 0 24 24"
+          width="48"
+          xmlns="http://www.w3.org/2000/svg"
         >
           <circle cx="12" cy="12" r="10" />
           <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
@@ -79,11 +80,11 @@ const GET = async () => {
       {/* Title */}
       <div
         style={{
-          fontSize: 64,
-          fontFamily: "Geist Mono Bold",
           color: "#fafafa",
-          marginBottom: 16,
+          fontFamily: "Geist Mono Bold",
+          fontSize: 64,
           letterSpacing: "-0.025em",
+          marginBottom: 16,
         }}
       >
         {title}
@@ -92,33 +93,33 @@ const GET = async () => {
       {/* Subtitle */}
       <div
         style={{
-          fontSize: 24,
-          fontFamily: "Geist Mono",
           color: "#a3a3a3",
-          textAlign: "center",
+          fontFamily: "Geist Mono",
+          fontSize: 24,
           maxWidth: 600,
+          textAlign: "center",
         }}
       >
         {subtitle}
       </div>
     </div>,
     {
-      width: 1200,
-      height: 630,
       fonts: [
         {
-          name: "Geist Mono Bold",
           data: fontBold,
+          name: "Geist Mono Bold",
           style: "normal",
           weight: 700,
         },
         {
-          name: "Geist Mono",
           data: fontRegular,
+          name: "Geist Mono",
           style: "normal",
           weight: 400,
         },
       ],
+      height: 630,
+      width: 1200,
     },
   );
 };

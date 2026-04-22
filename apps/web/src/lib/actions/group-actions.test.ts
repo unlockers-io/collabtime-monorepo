@@ -47,7 +47,7 @@ describe("createGroup", () => {
 
     const result = await createGroup(VALID_UUID, { name: "Design" });
 
-    expect(result).toEqual({ success: false, error: "Failed to create group" });
+    expect(result).toEqual({ error: "Failed to create group", success: false });
     consoleSpy.mockRestore();
   });
 
@@ -56,7 +56,7 @@ describe("createGroup", () => {
 
     const result = await createGroup(VALID_UUID, { name: "Design" });
 
-    expect(result).toEqual({ success: false, error: "Team not found" });
+    expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("assigns order based on existing group count", async () => {
@@ -114,7 +114,7 @@ describe("updateGroup", () => {
 
     const result = await updateGroup(VALID_UUID, VALID_UUID_2, { name: "New Name" });
 
-    expect(result).toEqual({ success: false, error: "Failed to update group" });
+    expect(result).toEqual({ error: "Failed to update group", success: false });
     consoleSpy.mockRestore();
   });
 
@@ -123,7 +123,7 @@ describe("updateGroup", () => {
 
     const result = await updateGroup(VALID_UUID, VALID_UUID_2, { name: "New Name" });
 
-    expect(result).toEqual({ success: false, error: "Team not found" });
+    expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("returns error when group is not found", async () => {
@@ -132,7 +132,7 @@ describe("updateGroup", () => {
 
     const result = await updateGroup(VALID_UUID, VALID_UUID_3, { name: "New Name" });
 
-    expect(result).toEqual({ success: false, error: "Group not found" });
+    expect(result).toEqual({ error: "Group not found", success: false });
   });
 
   it("calls redis.set and realtime.emit on success", async () => {
@@ -165,7 +165,7 @@ describe("removeGroup", () => {
 
     const result = await removeGroup(VALID_UUID, VALID_UUID_2);
 
-    expect(result).toEqual({ success: false, error: "Failed to remove group" });
+    expect(result).toEqual({ error: "Failed to remove group", success: false });
     consoleSpy.mockRestore();
   });
 
@@ -174,7 +174,7 @@ describe("removeGroup", () => {
 
     const result = await removeGroup(VALID_UUID, VALID_UUID_2);
 
-    expect(result).toEqual({ success: false, error: "Team not found" });
+    expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("returns error when group is not found", async () => {
@@ -183,7 +183,7 @@ describe("removeGroup", () => {
 
     const result = await removeGroup(VALID_UUID, VALID_UUID_2);
 
-    expect(result).toEqual({ success: false, error: "Group not found" });
+    expect(result).toEqual({ error: "Group not found", success: false });
   });
 
   it("unassigns members belonging to the removed group", async () => {
@@ -191,9 +191,9 @@ describe("removeGroup", () => {
     const team = createTestTeamRecord({
       groups: [createTestGroup({ id: groupId })],
       members: [
-        createTestMember({ id: "m1", groupId }),
-        createTestMember({ id: "m2", groupId: VALID_UUID_3 }),
-        createTestMember({ id: "m3", groupId: undefined }),
+        createTestMember({ groupId, id: "m1" }),
+        createTestMember({ groupId: VALID_UUID_3, id: "m2" }),
+        createTestMember({ groupId: undefined, id: "m3" }),
       ],
     });
     mockedGetTeamRecord.mockResolvedValue(team);
@@ -264,7 +264,7 @@ describe("reorderGroups", () => {
 
     const result = await reorderGroups(VALID_UUID, ["g1"]);
 
-    expect(result).toEqual({ success: false, error: "Failed to reorder groups" });
+    expect(result).toEqual({ error: "Failed to reorder groups", success: false });
     consoleSpy.mockRestore();
   });
 
@@ -273,7 +273,7 @@ describe("reorderGroups", () => {
 
     const result = await reorderGroups(VALID_UUID, ["g1"]);
 
-    expect(result).toEqual({ success: false, error: "Team not found" });
+    expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("returns error when group IDs do not match existing groups", async () => {
@@ -284,7 +284,7 @@ describe("reorderGroups", () => {
 
     const result = await reorderGroups(VALID_UUID, ["g1", "g3"]);
 
-    expect(result).toEqual({ success: false, error: "Invalid group order" });
+    expect(result).toEqual({ error: "Invalid group order", success: false });
   });
 
   it("returns error when group IDs count mismatches", async () => {
@@ -295,7 +295,7 @@ describe("reorderGroups", () => {
 
     const result = await reorderGroups(VALID_UUID, ["g1"]);
 
-    expect(result).toEqual({ success: false, error: "Invalid group order" });
+    expect(result).toEqual({ error: "Invalid group order", success: false });
   });
 
   it("updates order values based on new positions", async () => {

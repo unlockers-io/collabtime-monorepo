@@ -1,5 +1,5 @@
 import { prisma } from "@repo/db";
-import bcrypt from "bcryptjs";
+import { compare } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -22,9 +22,9 @@ export const POST = async (request: Request, { params }: Params) => {
     // Rate limit by IP + spaceId combination to prevent brute force attacks
     const rateLimitKey = `${clientIp}:${spaceId}`;
     const {
-      success: rateLimitSuccess,
       remaining,
       reset,
+      success: rateLimitSuccess,
     } = await passwordVerificationLimiter.limit(rateLimitKey);
 
     if (!rateLimitSuccess) {
@@ -32,12 +32,12 @@ export const POST = async (request: Request, { params }: Params) => {
       return NextResponse.json(
         { error: "Too many attempts. Please try again later." },
         {
-          status: 429,
           headers: {
             "Retry-After": String(retryAfterSeconds),
             "X-RateLimit-Remaining": "0",
             "X-RateLimit-Reset": String(reset),
           },
+          status: 429,
         },
       );
     }
@@ -46,13 +46,13 @@ export const POST = async (request: Request, { params }: Params) => {
     const { password } = verifyPasswordSchema.parse(body);
 
     const space = await prisma.space.findUnique({
-      where: { id: spaceId },
       select: {
-        id: true,
-        teamId: true,
-        isPrivate: true,
         accessPassword: true,
+        id: true,
+        isPrivate: true,
+        teamId: true,
       },
+      where: { id: spaceId },
     });
 
     if (!space) {
@@ -62,7 +62,7 @@ export const POST = async (request: Request, { params }: Params) => {
     // Always perform password comparison if space has a password set
     // This prevents timing attacks that could reveal whether a space is private
     const hasPassword = Boolean(space.accessPassword);
-    const isValid = hasPassword ? await bcrypt.compare(password, space.accessPassword!) : false;
+    const isValid = hasPassword ? await compare(password, space.accessPassword!) : false;
 
     // If not private or no password, allow access regardless of comparison result
     if (!space.isPrivate || !hasPassword) {
@@ -73,16 +73,16 @@ export const POST = async (request: Request, { params }: Params) => {
       return NextResponse.json(
         { error: "Incorrect password" },
         {
-          status: 401,
           headers: {
             "X-RateLimit-Remaining": String(remaining),
           },
+          status: 401,
         },
       );
     }
 
     // Create signed access token bound to the client IP
-    const accessToken = await createSpaceAccessToken(spaceId, clientIp);
+    const accessToken = createSpaceAccessToken(spaceId, clientIp);
 
     // Create response with signed access cookie
     const response = NextResponse.json({
@@ -93,9 +93,9 @@ export const POST = async (request: Request, { params }: Params) => {
     // Set a signed cookie to remember access for 7 days
     response.cookies.set(`${SPACE_ACCESS_COOKIE_PREFIX}${spaceId}`, accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     });
 
     return response;

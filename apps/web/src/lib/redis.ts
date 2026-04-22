@@ -18,7 +18,7 @@ const getRedis = (): Redis | null => {
     return null;
   }
 
-  _redis = new Redis({ url, token });
+  _redis = new Redis({ token, url });
   return _redis;
 };
 
@@ -56,8 +56,5 @@ const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60; // 60 days
 
 // TTL for teams with members (2 years)
 const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2; // 2 years
-
-// TTL for sessions (24 hours)
-const SESSION_TTL_SECONDS = 60 * 60 * 24;
 
 export { redis, getRedis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };

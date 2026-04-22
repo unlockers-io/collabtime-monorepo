@@ -14,9 +14,9 @@ const SettingsPage = async () => {
   return (
     <SettingsClient
       user={{
+        email: session.user.email,
         id: session.user.id,
         name: session.user.name ?? "",
-        email: session.user.email,
       }}
     />
   );
