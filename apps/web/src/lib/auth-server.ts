@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 import { createAuth, type Auth } from "@repo/auth/server";
 import { prisma } from "@repo/db";
@@ -8,17 +8,16 @@ import { cache } from "react";
 
 import { redis } from "./redis";
 
-/**
- * Resolve the app URL, preferring portless in development.
- * Falls back to BETTER_AUTH_URL or localhost:3000.
- */
 const resolveAppUrl = (): string => {
   if (process.env.NODE_ENV === "production" || process.env.CI) {
     return process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
   }
 
   try {
-    return execSync("portless get collabtime.web").toString().trim();
+    return execFileSync("portless", ["get", "collabtime.web"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
   } catch {
     return process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
   }
@@ -42,6 +41,9 @@ const getAuthConfig = () => {
     ...(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
       ? {
           secondaryStorage: {
+            delete: async (key: string) => {
+              await redis.del(key);
+            },
             get: async (key: string) => {
               const value = await redis.get(key);
               if (value === null || value === undefined) {
@@ -56,14 +58,7 @@ const getAuthConfig = () => {
               return String(value);
             },
             set: async (key: string, value: string, ttl?: number) => {
-              if (ttl) {
-                await redis.setex(key, ttl, value);
-              } else {
-                await redis.set(key, value);
-              }
-            },
-            delete: async (key: string) => {
-              await redis.del(key);
+              await (ttl ? redis.setex(key, ttl, value) : redis.set(key, value));
             },
           },
         }

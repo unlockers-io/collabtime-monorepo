@@ -33,7 +33,7 @@
     "typescript": "^6.0.2"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
+    "!(*.d).{ts,tsx,js,jsx}": [
       "oxlint"
     ],
     "*.{ts,tsx,js,jsx,json,md}": [

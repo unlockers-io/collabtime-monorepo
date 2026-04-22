@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 import { defineConfig, devices } from "@playwright/test";
 
@@ -8,7 +8,10 @@ const getPortlessUrl = (name: string) => {
   }
 
   try {
-    return execSync(`portless get ${name}`).toString().trim();
+    return execFileSync("portless", ["get", name], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
   } catch {
     return undefined;
   }
