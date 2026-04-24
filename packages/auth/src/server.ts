@@ -98,6 +98,9 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
 
     plugins: [...(config.extraPlugins ?? [])],
 
+    // Divergent from sibling repos' `NODE_ENV === "production"` pattern — collabtime is deployed
+    // serverless where in-memory rate limiting resets on every cold start (worse than no limit at all
+    // because it'd appear non-deterministic). Only enable when we have a distributed counter (Upstash).
     rateLimit: {
       enabled: !!config.secondaryStorage,
       max: 100,
