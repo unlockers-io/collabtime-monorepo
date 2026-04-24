@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "workspaces": {
+    "packages": ["apps/*", "packages/*"]
+  },
+  "entry": [
+    "oxlint.config.ts",
+    "**/prisma.config.ts",
+    "packages/db/src/seed.ts",
+    "tests/e2e/**/*.{ts,tsx}"
+  ],
+  "ignorePatterns": ["packages/db/src/generated/**"],
+  "ignoreDependencies": [
+    "eslint-plugin-*",
+    "postcss",
+    "postcss-load-config",
+    "react-scan",
+    "tailwindcss",
+    "jsdom",
+    "shadcn",
+    "@testing-library/user-event",
+    "@vitest/coverage-v8",
+    "babel-plugin-react-compiler"
+  ],
+  "rules": {
+    "unused-dependencies": "warn"
+  }
+}

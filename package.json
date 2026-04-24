@@ -17,14 +17,18 @@
     "test": "turbo run test",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "knip": "knip",
+    "fallow": "fallow",
+    "fallow:dead": "fallow dead-code",
+    "fallow:dupes": "fallow dupes",
+    "fallow:health": "fallow health --score",
+    "fallow:audit": "fallow audit --base main",
     "prepare": "husky"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@upstash/redis": "^1.37.0",
+    "fallow": "^2.48.4",
     "husky": "^9.1.7",
-    "knip": "^6.4.1",
     "lint-staged": "^16.4.0",
     "oxfmt": "^0.45.0",
     "oxlint": "^1.60.0",
@@ -56,6 +60,7 @@
       "@swc/core",
       "@tailwindcss/oxide",
       "esbuild",
+      "fallow",
       "prisma",
       "sharp",
       "unrs-resolver"
