@@ -61,6 +61,7 @@ logs/
 
 # agent output
 agents/
+.fallow/
 
 # backup files
 *.backup
