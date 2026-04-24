@@ -374,6 +374,9 @@ const EditMemberDialog = ({
   teamId,
 }: EditMemberDialogProps) => {
   return (
+    // Controlled: open state lives in MemberCard so the trigger button can
+    // sit in the card header while the dialog renders as a sibling, and so
+    // the form can close programmatically once the mutation resolves.
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-md">
         <EditMemberForm

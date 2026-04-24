@@ -278,6 +278,8 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   const invalidCount = (rows?.length ?? 0) - validCount;
 
   return (
+    // Controlled: needs programmatic close on successful import and to reset
+    // CSV/parsed-rows state when the dialog closes.
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogTrigger
         render={

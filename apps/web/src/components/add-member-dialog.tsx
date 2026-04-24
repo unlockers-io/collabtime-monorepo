@@ -383,6 +383,9 @@ const AddMemberDialog = ({
   const [instanceId, setInstanceId] = useState(0);
 
   return (
+    // Controlled: opens automatically when the team has no members yet
+    // (isFirstMember), needs programmatic close on submit success, and
+    // re-keys the form after the close animation completes.
     <Dialog
       onOpenChange={setOpen}
       onOpenChangeComplete={(nextOpen) => {

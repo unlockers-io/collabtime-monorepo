@@ -63,6 +63,10 @@ const DeleteWorkspaceDialog = ({
   };
 
   return (
+    // Controlled: open state is owned by the parent so it can pass workspace
+    // identity (spaceId + name) alongside the open flag from row-level
+    // dropdown menu items, and so closing can be blocked while a delete is in
+    // flight.
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent className="max-w-md">
         <DialogHeader>

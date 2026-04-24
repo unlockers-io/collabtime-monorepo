@@ -70,6 +70,8 @@ const AddGroupDialog = ({ onGroupAdded, teamId }: AddGroupDialogProps) => {
   };
 
   return (
+    // Controlled: needs programmatic close on successful submit and to reset
+    // form state on the open transition (and again after the close animation).
     <Dialog
       onOpenChange={handleOpenChange}
       onOpenChangeComplete={(nextOpen) => {
