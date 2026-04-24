@@ -20,7 +20,6 @@ import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { signUp } from "@/lib/auth-client";
@@ -39,6 +38,9 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 const SignupPage = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  // Form-level error surfaced inline above the submit button — toasts on focused
+  // auth screens disappear before users can read them and compete with field labels.
+  const [formError, setFormError] = useState<string | null>(null);
 
   const defaultValues: SignupFormValues = {
     email: "",
@@ -50,6 +52,7 @@ const SignupPage = () => {
     defaultValues,
     onSubmit: async ({ value }) => {
       setIsLoading(true);
+      setFormError(null);
 
       try {
         const result = await signUp.email({
@@ -59,18 +62,17 @@ const SignupPage = () => {
         });
 
         if (result.error) {
-          toast.error(result.error.message ?? "Failed to create account");
+          setFormError(result.error.message ?? "Failed to create account");
           setIsLoading(false);
           return;
         }
 
-        toast.success("Account created successfully!");
         router.push("/");
         router.refresh();
       } catch (error) {
         // oxlint-disable-next-line no-console -- surface unexpected signup errors
         console.error("[Signup] Unexpected error:", error);
-        toast.error("An unexpected error occurred");
+        setFormError("An unexpected error occurred");
         setIsLoading(false);
       }
     },
@@ -166,6 +168,12 @@ const SignupPage = () => {
                 );
               }}
             </form.Field>
+
+            {formError && (
+              <Field data-invalid>
+                <FieldError>{formError}</FieldError>
+              </Field>
+            )}
 
             <Field>
               <form.Subscribe selector={(state) => state.canSubmit}>

@@ -20,7 +20,6 @@ import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { signIn } from "@/lib/auth-client";
@@ -35,6 +34,9 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const LoginPage = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  // Form-level error surfaced inline above the submit button — toasts on focused
+  // auth screens disappear before users can read them and compete with field labels.
+  const [formError, setFormError] = useState<string | null>(null);
 
   const defaultValues: LoginFormValues = {
     email: "",
@@ -45,6 +47,7 @@ const LoginPage = () => {
     defaultValues,
     onSubmit: async ({ value }) => {
       setIsLoading(true);
+      setFormError(null);
 
       try {
         const result = await signIn.email({
@@ -53,18 +56,17 @@ const LoginPage = () => {
         });
 
         if (result.error) {
-          toast.error(result.error.message ?? "Failed to sign in");
+          setFormError(result.error.message ?? "Failed to sign in");
           setIsLoading(false);
           return;
         }
 
-        toast.success("Welcome back!");
         router.push("/");
         router.refresh();
       } catch (error) {
         // oxlint-disable-next-line no-console -- surface unexpected login errors
         console.error("[Login] Unexpected error:", error);
-        toast.error("An unexpected error occurred");
+        setFormError("An unexpected error occurred");
         setIsLoading(false);
       }
     },
@@ -133,6 +135,12 @@ const LoginPage = () => {
                 );
               }}
             </form.Field>
+
+            {formError && (
+              <Field data-invalid>
+                <FieldError>{formError}</FieldError>
+              </Field>
+            )}
 
             <Field>
               <form.Subscribe selector={(state) => state.canSubmit}>
