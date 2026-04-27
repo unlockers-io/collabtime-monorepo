@@ -1,3 +1,4 @@
+// oxlint-disable no-console -- space access diagnostic logging; TODO migrate to structured logger
 import crypto from "node:crypto";
 
 const SPACE_ACCESS_COOKIE_PREFIX = "space-access-";

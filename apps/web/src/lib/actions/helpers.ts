@@ -1,3 +1,4 @@
+// oxlint-disable no-console -- server action diagnostic logging; TODO migrate to structured logger
 import type { Team, TeamRecord } from "@/types";
 
 import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";

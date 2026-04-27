@@ -1,3 +1,4 @@
+// oxlint-disable no-console -- server-side diagnostic logging; TODO migrate to structured logger
 import { prisma } from "@repo/db";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";

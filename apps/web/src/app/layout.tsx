@@ -8,6 +8,7 @@ import { Providers } from "@/components/providers";
 
 export const dynamic = "force-dynamic";
 
+// oxlint-disable-next-line new-cap -- next/font/google fonts are factory calls, not constructors
 const geistMono = Geist_Mono({
   display: "swap",
   subsets: ["latin"],
@@ -81,6 +82,7 @@ const RootLayout = ({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script
+          // oxlint-disable-next-line react/no-danger -- Inline theme bootstrap script avoids FOUC; literal HTML, no user data
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t||t==='system')&&matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`,
           }}

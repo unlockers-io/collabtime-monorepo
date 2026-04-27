@@ -1,39 +1,35 @@
 "use client";
 
-import { Badge } from "@repo/ui/components/badge";
-import { Button } from "@repo/ui/components/button";
-import { Card } from "@repo/ui/components/card";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-} from "@repo/ui/components/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@repo/ui/components/tooltip";
-import { Check, ChevronRight, Clock, Minus, Plus, Users, X } from "lucide-react";
-import { AnimatePresence, motion, useMotionValue, animate } from "motion/react";
+import { TooltipProvider } from "@repo/ui/components/tooltip";
+import { AnimatePresence, animate, motion, useMotionValue } from "motion/react";
 import { useTheme } from "next-themes";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useDragToScroll } from "@/hooks/use-drag-to-scroll";
-import {
-  convertHourToTimezone,
-  formatTimezoneAbbreviation,
-  getDayOffset,
-  getUserTimezone,
-} from "@/lib/timezones";
+import { getUserTimezone } from "@/lib/timezones";
 import { useHalfMinuteTick } from "@/lib/use-tick";
-import { cn, formatHour } from "@/lib/utils";
 import type { TeamGroup, TeamMember } from "@/types";
+
+import { ComparePanel } from "./timezone-visualizer/compare-panel";
+import { CurrentTimeIndicator } from "./timezone-visualizer/current-time-indicator";
+import {
+  EMPTY_COLLAPSED_IDS,
+  EMPTY_GROUPS,
+  HOVER_HIDE_DELAY_MS,
+  getCurrentTimePosition,
+  useClientValue,
+} from "./timezone-visualizer/helpers";
+import { Legend } from "./timezone-visualizer/legend";
+import { MemberAvatar } from "./timezone-visualizer/member-avatar";
+import {
+  FindMeetingTimeButton,
+  GroupHeader,
+  MemberTimelineRow,
+} from "./timezone-visualizer/subcomponents";
+import { TimeAxis } from "./timezone-visualizer/time-axis";
+import type { Selection } from "./timezone-visualizer/types";
+import { useTimezoneData } from "./timezone-visualizer/use-timezone-data";
 
 type TimezoneVisualizerProps = {
   collapsedGroupIds?: Array<string>;
@@ -41,273 +37,6 @@ type TimezoneVisualizerProps = {
   members: Array<TeamMember>;
   onToggleGroupCollapse?: (groupId: string) => void;
 };
-
-type MemberRow = {
-  dayOffset: number;
-  hours: Array<boolean>;
-  member: TeamMember;
-};
-
-type GroupedSection = {
-  group: TeamGroup | null;
-  rows: Array<MemberRow>;
-};
-
-type Selection = {
-  id: string;
-  type: "member" | "group";
-};
-
-type OverlapStatus = "none" | "partial" | "full" | "mixed";
-
-type OverlapData = {
-  crossTeamOverlapHours: Array<boolean>;
-  overlapCounts: Array<number>;
-  overlapHours: Array<boolean>;
-  partialOverlapHours: Array<boolean>;
-};
-
-const HOURS_IN_DAY = 24;
-const TIME_AXIS_HOURS = [0, 6, 12, 18, 24];
-const EMPTY_GROUPS: Array<TeamGroup> = [];
-const EMPTY_COLLAPSED_IDS: Array<string> = [];
-const HOVER_HIDE_DELAY_MS = 800;
-const EMPTY_HOURS = Array.from<boolean>({ length: HOURS_IN_DAY }).fill(false);
-const EMPTY_COUNTS = Array.from<number>({ length: HOURS_IN_DAY }).fill(0);
-
-const EMPTY_OVERLAP_DATA: OverlapData = {
-  crossTeamOverlapHours: EMPTY_HOURS,
-  overlapCounts: EMPTY_COUNTS,
-  overlapHours: EMPTY_HOURS,
-  partialOverlapHours: EMPTY_HOURS,
-};
-
-const getEdgeAlignment = (
-  isFirst: boolean,
-  isLast: boolean,
-): "flex-start" | "flex-end" | "center" => {
-  if (isFirst) {
-    return "flex-start";
-  }
-  if (isLast) {
-    return "flex-end";
-  }
-  return "center";
-};
-
-const getOverlapColorClass = (
-  isFullOverlap: boolean,
-  isCrossTeamOverlap: boolean,
-  isPartialOverlap: boolean,
-): string => {
-  if (isFullOverlap) {
-    return "bg-success";
-  }
-  if (isCrossTeamOverlap) {
-    return "bg-info";
-  }
-  if (isPartialOverlap) {
-    return "bg-warning";
-  }
-  return "bg-muted";
-};
-
-const getOverlapLabel = (
-  isFullOverlap: boolean,
-  isCrossTeamOverlap: boolean,
-  totalPeopleSelected: number,
-  hourCount: number,
-): string => {
-  if (isFullOverlap) {
-    return `All ${totalPeopleSelected} available`;
-  }
-  if (isCrossTeamOverlap) {
-    return "Each team represented";
-  }
-  return `${hourCount} of ${totalPeopleSelected} available`;
-};
-
-const getCurrentTimePosition = (timezone: string): number => {
-  const now = new Date();
-  const timeString = now.toLocaleString("en-US", {
-    hour: "numeric",
-    hour12: false,
-    minute: "numeric",
-    timeZone: timezone,
-  });
-  const [hours, minutes] = timeString.split(":").map(Number);
-  return ((hours + minutes / 60) / HOURS_IN_DAY) * 100;
-};
-
-const serializeSelection = (sel: Selection): string => `${sel.type}:${sel.id}`;
-
-const deserializeSelection = (str: string): Selection | null => {
-  const [type, id] = str.split(":");
-  if ((type === "member" || type === "group") && id) {
-    return { id, type };
-  }
-  return null;
-};
-
-const formatDayOffset = (offset: number): string | null => {
-  if (offset === 0) {
-    return null;
-  }
-  const absOffset = Math.abs(offset);
-  const suffix = absOffset > 1 ? "days" : "day";
-  return offset > 0 ? `${absOffset} ${suffix} ahead` : `${absOffset} ${suffix} behind`;
-};
-
-const getRoundedCornerClass = (hour: number): string => {
-  if (hour === 0) {
-    return "rounded-l";
-  }
-  if (hour === HOURS_IN_DAY - 1) {
-    return "rounded-r";
-  }
-  return "";
-};
-
-const emptySubscribe = () => () => {};
-
-const useClientValue = <T,>(clientValue: () => T, serverValue: T): T =>
-  useSyncExternalStore(emptySubscribe, clientValue, () => serverValue);
-
-type HourBlockProps = {
-  hour: number;
-  isDark: boolean;
-  isWorking: boolean;
-  memberTimezone: string;
-  viewerTimezone: string;
-};
-
-const HourBlock = ({ hour, isWorking, memberTimezone, viewerTimezone }: HourBlockProps) => {
-  // Convert the displayed hour (in viewer's timezone) back to member's local time
-  const memberHour = convertHourToTimezone(hour, viewerTimezone, memberTimezone);
-  const memberNextHour = (memberHour + 1) % HOURS_IN_DAY;
-  const memberTzAbbrev = formatTimezoneAbbreviation(memberTimezone);
-
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <button
-            className={cn(
-              `h-full flex-1 cursor-[inherit] ${getRoundedCornerClass(hour)}`,
-              isWorking
-                ? "bg-foreground/80 dark:bg-accent-foreground"
-                : "bg-accent transition-colors hover:bg-muted",
-            )}
-            type="button"
-          />
-        }
-      />
-
-      <TooltipContent side="top">
-        <div className="flex flex-col gap-1">
-          <span className="font-medium tabular-nums">
-            {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
-          </span>
-          <span className="text-xs text-background/70 tabular-nums">
-            {formatHour(memberHour)} – {formatHour(memberNextHour)} {memberTzAbbrev}
-          </span>
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
-
-type MemberTimelineRowProps = {
-  hours: Array<boolean>;
-  isDark: boolean;
-  memberId: string;
-  memberTimezone: string;
-  selectedBlockRef: React.RefObject<number | null>;
-  viewerTimezone: string;
-};
-
-const MemberTimelineRow = ({
-  hours,
-  isDark,
-  memberId,
-  memberTimezone,
-  viewerTimezone,
-}: MemberTimelineRowProps) => (
-  <div className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1" key={memberId}>
-    {hours.map((isWorking, hour) => (
-      <HourBlock
-        hour={hour}
-        isDark={isDark}
-        isWorking={isWorking}
-        key={hour}
-        memberTimezone={memberTimezone}
-        viewerTimezone={viewerTimezone}
-      />
-    ))}
-  </div>
-);
-
-type GroupHeaderProps = {
-  group: TeamGroup;
-  isCollapsed: boolean;
-  onToggle: () => void;
-  rowCount: number;
-};
-
-const GroupHeader = ({ group, isCollapsed, onToggle, rowCount }: GroupHeaderProps) => (
-  <button
-    className="-ml-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-    onClick={onToggle}
-    type="button"
-  >
-    <ChevronRight
-      className={`h-3 w-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
-    />
-    <span>{group.name}</span>
-    <span className="text-muted-foreground">({rowCount})</span>
-  </button>
-);
-
-type OverlapStatusIconProps = {
-  status: OverlapStatus;
-};
-
-// Hoisted to module scope: identity is stable across renders.
-const ICON_CONFIGS = {
-  full: { bgClass: "bg-success/20", icon: Check, iconClass: "text-success" },
-  mixed: { bgClass: "bg-success/20", icon: Check, iconClass: "text-success" },
-  none: { bgClass: "bg-destructive/15", icon: X, iconClass: "text-destructive" },
-  partial: { bgClass: "bg-warning/20", icon: Minus, iconClass: "text-warning" },
-} as const;
-
-const OverlapStatusIcon = ({ status }: OverlapStatusIconProps) => {
-  const config = ICON_CONFIGS[status];
-  const Icon = config.icon;
-
-  return (
-    <div
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${config.bgClass} sm:h-7 sm:w-7`}
-    >
-      <Icon className={`h-3 w-3 ${config.iconClass} sm:h-3.5 sm:w-3.5`} />
-    </div>
-  );
-};
-
-type FindMeetingTimeButtonProps = {
-  onClick: () => void;
-};
-
-const FindMeetingTimeButton = ({ onClick }: FindMeetingTimeButtonProps) => (
-  <Button
-    className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
-    onClick={onClick}
-    type="button"
-    variant="outline"
-  >
-    <Clock className="h-5 w-5 transition-transform group-hover:scale-110" />
-    <span className="font-medium">Find Best Meeting Time</span>
-  </Button>
-);
 
 const TimezoneVisualizer = ({
   collapsedGroupIds = EMPTY_COLLAPSED_IDS,
@@ -349,264 +78,26 @@ const TimezoneVisualizer = ({
   const tick = useHalfMinuteTick();
 
   const nowPosition = useMemo(() => {
-    if (!tick) {
-      return null;
-    }
-    if (!viewerTimezone) {
+    if (!tick || !viewerTimezone) {
       return null;
     }
     return getCurrentTimePosition(viewerTimezone);
   }, [viewerTimezone, tick]);
 
-  const memberRows = useMemo((): Array<MemberRow> => {
-    if (!viewerTimezone) {
-      return [];
-    }
-
-    return members.map((member) => {
-      const hours = [...EMPTY_HOURS];
-      const startInViewerTz = convertHourToTimezone(
-        member.workingHoursStart,
-        member.timezone,
-        viewerTimezone,
-      );
-      const endInViewerTz = convertHourToTimezone(
-        member.workingHoursEnd,
-        member.timezone,
-        viewerTimezone,
-      );
-
-      if (startInViewerTz <= endInViewerTz) {
-        for (let h = startInViewerTz; h < endInViewerTz; h++) {
-          hours[h] = true;
-        }
-      } else {
-        for (let h = startInViewerTz; h < HOURS_IN_DAY; h++) {
-          hours[h] = true;
-        }
-        for (let h = 0; h < endInViewerTz; h++) {
-          hours[h] = true;
-        }
-      }
-
-      const dayOffset = getDayOffset(member.timezone, viewerTimezone);
-      return { dayOffset, hours, member };
-    });
-  }, [members, viewerTimezone]);
-
-  const memberRowById = useMemo(
-    () => new Map(memberRows.map((row) => [row.member.id, row])),
-    [memberRows],
-  );
-
-  const groupNameById = useMemo(
-    () => new Map(groups.map((group) => [group.id, group.name])),
-    [groups],
-  );
-
-  const groupedSections = useMemo((): Array<GroupedSection> => {
-    if (groups.length === 0) {
-      return [{ group: null, rows: memberRows }];
-    }
-
-    const rowByMemberId = new Map(memberRows.map((row) => [row.member.id, row]));
-    const sections: Array<GroupedSection> = [];
-
-    const sortedGroups = [...groups].toSorted((a, b) => a.order - b.order);
-
-    for (const group of sortedGroups) {
-      const groupMembers = members.filter((m) => m.groupId === group.id);
-      if (groupMembers.length === 0) {
-        continue;
-      }
-
-      const rows = groupMembers
-        .map((m) => rowByMemberId.get(m.id))
-        .filter((row): row is MemberRow => row !== undefined);
-
-      sections.push({ group, rows });
-    }
-
-    const ungroupedMembers = members.filter((m) => !m.groupId);
-    if (ungroupedMembers.length > 0) {
-      const rows = ungroupedMembers
-        .map((m) => rowByMemberId.get(m.id))
-        .filter((row): row is MemberRow => row !== undefined);
-
-      sections.push({ group: null, rows });
-    }
-
-    return sections;
-  }, [groups, members, memberRows]);
-
-  const validSelections = useMemo(() => {
-    return compareSelections.filter((sel) => {
-      if (sel.type === "member") {
-        return members.some((m) => m.id === sel.id);
-      }
-      return groups.some((g) => g.id === sel.id);
-    });
-  }, [compareSelections, members, groups]);
-
-  const selectedMemberIds = useMemo(() => {
-    const ids = new Set<string>();
-
-    for (const sel of validSelections) {
-      if (sel.type === "member") {
-        ids.add(sel.id);
-        continue;
-      }
-
-      for (const member of members) {
-        if (member.groupId === sel.id) {
-          ids.add(member.id);
-        }
-      }
-    }
-
-    return ids;
-  }, [validSelections, members]);
-
-  const totalPeopleSelected = selectedMemberIds.size;
-
-  const canShowOverlap = totalPeopleSelected >= 2;
-
-  const { crossTeamOverlapHours, overlapCounts, overlapHours, partialOverlapHours } =
-    useMemo((): OverlapData => {
-      if (!canShowOverlap) {
-        return EMPTY_OVERLAP_DATA;
-      }
-
-      const allMemberHours: Array<Array<boolean>> = [];
-      const selectionCoverage: Array<Array<boolean>> = [];
-
-      for (const sel of validSelections) {
-        const selectionHours = Array.from({ length: HOURS_IN_DAY }, () => false);
-
-        if (sel.type === "member") {
-          const row = memberRowById.get(sel.id);
-          if (row) {
-            row.hours.forEach((isWorking, hour) => {
-              if (isWorking) {
-                selectionHours[hour] = true;
-              }
-            });
-          }
-        } else {
-          const groupMembers = members.filter((m) => m.groupId === sel.id);
-          for (const member of groupMembers) {
-            const row = memberRowById.get(member.id);
-            if (row) {
-              row.hours.forEach((isWorking, hour) => {
-                if (isWorking) {
-                  selectionHours[hour] = true;
-                }
-              });
-            }
-          }
-        }
-
-        selectionCoverage.push(selectionHours);
-      }
-
-      for (const memberId of selectedMemberIds) {
-        const row = memberRowById.get(memberId);
-        if (row) {
-          allMemberHours.push(row.hours);
-        }
-      }
-
-      if (allMemberHours.length < 2) {
-        return EMPTY_OVERLAP_DATA;
-      }
-
-      const totalPeople = allMemberHours.length;
-      const counts = Array.from(
-        { length: HOURS_IN_DAY },
-        (_, hour) => allMemberHours.filter((hours) => hours[hour]).length,
-      );
-
-      const full = counts.map((count) => count === totalPeople);
-      const partial = counts.map((count, hour) => count >= 2 && !full[hour]);
-      const crossTeam = counts.map((_, hour) => {
-        if (selectionCoverage.length < 2) {
-          return false;
-        }
-        return selectionCoverage.every((hours) => hours[hour]);
-      });
-
-      return {
-        crossTeamOverlapHours: crossTeam,
-        overlapCounts: counts,
-        overlapHours: full,
-        partialOverlapHours: partial,
-      };
-    }, [canShowOverlap, validSelections, memberRowById, members, selectedMemberIds]);
-
-  const overlapStatus = useMemo((): OverlapStatus => {
-    const hasFullOverlap = overlapHours.some(Boolean);
-    const hasPartialOverlap = partialOverlapHours.some(Boolean);
-
-    if (!hasFullOverlap && !hasPartialOverlap) {
-      return "none";
-    }
-    if (hasFullOverlap && hasPartialOverlap) {
-      return "mixed";
-    }
-    if (hasFullOverlap) {
-      return "full";
-    }
-    return "partial";
-  }, [overlapHours, partialOverlapHours]);
-
-  // ---- Callbacks ----
-  const addSelection = (sel: Selection) => {
-    setCompareSelections((prev) => {
-      const key = serializeSelection(sel);
-      if (prev.some((s) => serializeSelection(s) === key)) {
-        return prev;
-      }
-      return [...prev, sel];
-    });
-  };
-
-  const removeSelection = (sel: Selection) => {
-    setCompareSelections((prev) => {
-      const key = serializeSelection(sel);
-      return prev.filter((s) => serializeSelection(s) !== key);
-    });
-  };
-
-  const getSelectionName = (sel: Selection): string => {
-    if (sel.type === "member") {
-      return members.find((m) => m.id === sel.id)?.name ?? "Unknown";
-    }
-    return groups.find((g) => g.id === sel.id)?.name ?? "Unknown";
-  };
-
-  const isSelectionSelected = (sel: Selection): boolean => {
-    const key = serializeSelection(sel);
-    return validSelections.some((s) => serializeSelection(s) === key);
-  };
-
-  const isMemberInCompare = (memberId: string): boolean => {
-    if (!isComparing || validSelections.length === 0) {
-      return false;
-    }
-
-    for (const sel of validSelections) {
-      if (sel.type === "member" && sel.id === memberId) {
-        return true;
-      }
-      if (sel.type === "group") {
-        const member = members.find((m) => m.id === memberId);
-        if (member?.groupId === sel.id) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
+  const {
+    addSelection,
+    canShowOverlap,
+    groupedSections,
+    groupNameById,
+    isMemberInCompare,
+    memberRowById,
+    overlapData,
+    overlapStatus,
+    removeSelection,
+    selectedMemberIds,
+    totalPeopleSelected,
+    validSelections,
+  } = useTimezoneData({ compareSelections, groups, members, viewerTimezone });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!timelineRef.current || !sectionsContainerRef.current) {
@@ -664,328 +155,18 @@ const TimezoneVisualizer = ({
     return null;
   }
 
-  const renderTimeAxis = () => (
-    <div className="flex gap-2 sm:gap-3">
-      <div className="w-8 shrink-0 sm:w-24" />
-      <div className="flex flex-1 justify-between">
-        {TIME_AXIS_HOURS.map((hour, index, arr) => {
-          const isFirst = index === 0;
-          const isLast = index === arr.length - 1;
-
-          return (
-            <div
-              className="flex flex-col"
-              key={hour}
-              style={{
-                alignItems: getEdgeAlignment(isFirst, isLast),
-              }}
-            >
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
-                  {formatHour(hour % HOURS_IN_DAY)}
-                </span>
-                <div className="h-1.5 w-px bg-border" />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const renderCurrentTimeIndicator = () => {
-    if (nowPosition === null) {
-      return null;
-    }
-
-    return (
-      <>
-        <div
-          className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 rounded-full bg-destructive shadow-sm sm:hidden"
-          style={{
-            left: `calc(2.5rem + (100% - 2.5rem) * ${nowPosition / 100})`,
-          }}
-        >
-          <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-destructive" />
-        </div>
-        {/* Desktop */}
-        <div
-          className="pointer-events-none absolute top-0 bottom-0 z-20 hidden w-0.5 rounded-full bg-destructive shadow-sm sm:block"
-          style={{
-            left: `calc(6.75rem + (100% - 6.75rem) * ${nowPosition / 100})`,
-          }}
-        >
-          <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-destructive" />
-        </div>
-      </>
-    );
-  };
-
-  const renderMemberAvatar = (member: TeamMember, dayOffset: number, isSelected: boolean) => {
-    const dayOffsetLabel = formatDayOffset(dayOffset);
-
-    const content = (
-      <div
-        className={`flex h-8 items-center justify-center sm:justify-start sm:gap-2 ${dayOffsetLabel ? "cursor-help" : ""}`}
-      >
-        <div className="relative">
-          <div
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground sm:h-7 sm:w-7 sm:text-xs"
-            title={member.name}
-          >
-            {member.name.charAt(0).toUpperCase()}
-          </div>
-          {isSelected && members.length > 1 && (
-            <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-foreground sm:h-3 sm:w-3" />
-          )}
-          {dayOffset !== 0 && (
-            <div className="absolute -right-1 -bottom-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-warning text-[8px] font-bold text-warning-foreground sm:h-4 sm:w-4 sm:text-[9px]">
-              {dayOffset > 0 ? `+${dayOffset}` : dayOffset}
-            </div>
-          )}
-        </div>
-        <span
-          className="hidden truncate text-sm font-medium text-foreground sm:block"
-          title={member.name}
-        >
-          {member.name}
-        </span>
-      </div>
-    );
-
-    if (dayOffsetLabel) {
-      return (
-        <Tooltip key={member.id}>
-          <TooltipTrigger render={<div />}>{content}</TooltipTrigger>
-          <TooltipContent side="left">
-            <span>{dayOffsetLabel}</span>
-          </TooltipContent>
-        </Tooltip>
-      );
-    }
-
-    return <div key={member.id}>{content}</div>;
-  };
-
-  const renderOverlapBar = () => {
-    return (
-      <div className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1">
-        {Array.from({ length: HOURS_IN_DAY }, (_, hour) => {
-          const isFullOverlap = overlapHours[hour];
-          const isCrossTeamOverlap = crossTeamOverlapHours[hour];
-          const isPartialOverlap = partialOverlapHours[hour];
-          const hasAnyOverlap = isFullOverlap || isPartialOverlap || isCrossTeamOverlap;
-
-          const colorClass = getOverlapColorClass(
-            isFullOverlap,
-            isCrossTeamOverlap,
-            isPartialOverlap,
-          );
-
-          if (!hasAnyOverlap) {
-            return (
-              <Tooltip key={hour}>
-                <TooltipTrigger
-                  render={<div className={`h-6 flex-1 bg-muted ${getRoundedCornerClass(hour)}`} />}
-                />
-                <TooltipContent side="top">
-                  <div className="font-medium tabular-nums">
-                    {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
-
-          const overlapLabel = getOverlapLabel(
-            isFullOverlap,
-            isCrossTeamOverlap,
-            totalPeopleSelected,
-            overlapCounts[hour] ?? 0,
-          );
-
-          const allAvailable: Array<TeamMember> = [];
-          const allUnavailable: Array<TeamMember> = [];
-          for (const memberId of selectedMemberIds) {
-            const row = memberRowById.get(memberId);
-            if (!row) {
-              continue;
-            }
-            if (row.hours[hour]) {
-              allAvailable.push(row.member);
-            } else {
-              allUnavailable.push(row.member);
-            }
-          }
-
-          const bucketByTeam = (list: Array<TeamMember>) => {
-            const buckets = new Map<string, Array<string>>();
-            for (const member of list) {
-              const key = member.groupId
-                ? (groupNameById.get(member.groupId) ?? "Team")
-                : "Ungrouped";
-              const names = buckets.get(key) ?? [];
-              names.push(member.name);
-              buckets.set(key, names);
-            }
-            return buckets;
-          };
-
-          const availableByTeam = bucketByTeam(allAvailable);
-          const unavailableByTeam = bucketByTeam(allUnavailable);
-
-          // Identify teams where no one is available (entire team unavailable)
-          const fullyUnavailableTeams = [...unavailableByTeam.keys()].filter(
-            (teamName) => !availableByTeam.has(teamName),
-          );
-          // Teams with some members available and some unavailable
-          const partiallyUnavailableTeams = [...unavailableByTeam.entries()].filter(([teamName]) =>
-            availableByTeam.has(teamName),
-          );
-
-          return (
-            <Tooltip key={hour}>
-              <TooltipTrigger
-                render={
-                  <div className={`h-6 flex-1 ${getRoundedCornerClass(hour)} ${colorClass}`} />
-                }
-              />
-              <TooltipContent side="top">
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-0.5">
-                    <div className="font-medium text-foreground tabular-nums">
-                      {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{overlapLabel}</div>
-                  </div>
-                  {availableByTeam.size > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-medium tracking-wide text-success uppercase">
-                        Available by team
-                      </span>
-                      {[...availableByTeam.entries()].map(([teamName, names]) => (
-                        <div
-                          className="flex items-center justify-between gap-4 text-xs"
-                          key={`${teamName}-available`}
-                        >
-                          <span className="truncate font-medium text-foreground">{teamName}</span>
-                          <span className="truncate text-success">{names.join(", ")}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {!isFullOverlap && unavailableByTeam.size > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-medium tracking-wide text-destructive uppercase">
-                        Unavailable
-                      </span>
-                      {/* Teams with no one available - shown with strikethrough */}
-                      {fullyUnavailableTeams.map((teamName) => (
-                        <div
-                          className="flex items-center justify-between gap-4 text-xs text-muted-foreground opacity-60"
-                          key={`${teamName}-fully-unavailable`}
-                        >
-                          <span className="truncate font-medium line-through">{teamName}</span>
-                          <span className="truncate">
-                            {unavailableByTeam.get(teamName)?.join(", ")}
-                          </span>
-                        </div>
-                      ))}
-                      {/* Teams with some members unavailable */}
-                      {partiallyUnavailableTeams.map(([teamName, names]) => (
-                        <div
-                          className="flex items-center justify-between gap-4 text-xs text-muted-foreground"
-                          key={`${teamName}-unavailable`}
-                        >
-                          <span className="truncate font-medium text-foreground">{teamName}</span>
-                          <span className="truncate">{names.join(", ")}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const renderOverlapSummary = () => {
-    const anyOverlap = overlapHours.map((full, i) => full || partialOverlapHours[i]);
-    const start = anyOverlap.findIndex(Boolean);
-    const end = anyOverlap.lastIndexOf(true);
-
-    if (start === -1 || end === -1) {
-      return null;
-    }
-
-    const fullHoursCount = overlapHours.filter(Boolean).length;
-    const partialHoursCount = partialOverlapHours.filter(Boolean).length;
-    const endExclusive = end + 1;
-
-    return (
-      <span>
-        {formatHour(start)} – {formatHour(endExclusive % HOURS_IN_DAY)}
-        <span className="ml-1">
-          ({fullHoursCount}h full
-          {partialHoursCount > 0 ? `, ${partialHoursCount}h partial` : ""})
-        </span>
-      </span>
-    );
-  };
-
-  const renderLegend = () => {
-    const hasCrossTeamOverlap = crossTeamOverlapHours.some(Boolean);
-
-    return (
-      <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-foreground/80 dark:bg-accent-foreground" />
-          <span>Working hours</span>
-        </div>
-        {isComparing && canShowOverlap && (
-          <>
-            <div className="flex items-center gap-1.5">
-              <div className="h-3 w-3 rounded bg-success" />
-              <span>Full overlap</span>
-            </div>
-            {hasCrossTeamOverlap && (
-              <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded bg-info" />
-                <span>Each team represented</span>
-              </div>
-            )}
-            {totalPeopleSelected >= 3 && (
-              <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded bg-warning" />
-                <span>Partial overlap</span>
-              </div>
-            )}
-          </>
-        )}
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center">
-            <div className="h-3 w-0.5 rounded-full bg-destructive" />
-            <div className="-ml-px h-1.5 w-1.5 rounded-full bg-destructive" />
-          </div>
-          <span>Current time</span>
-        </div>
-      </div>
-    );
-  };
+  const hasCrossTeamOverlap = overlapData.crossTeamOverlapHours.some(Boolean);
 
   return (
     <TooltipProvider delay={120}>
       <div className="flex flex-col gap-6">
-        {renderTimeAxis()}
+        <TimeAxis />
 
         <ScrollArea
           className="relative flex max-h-80 flex-col gap-4 select-none"
           ref={sectionsContainerRef}
         >
-          {renderCurrentTimeIndicator()}
+          <CurrentTimeIndicator nowPosition={nowPosition} />
 
           {groupedSections.map((section, sectionIndex) => {
             const sectionGroup = section.group;
@@ -1014,9 +195,15 @@ const TimezoneVisualizer = ({
                   <div key={`section-${section.group?.id ?? "ungrouped"}`}>
                     <div className="flex items-stretch gap-2 sm:gap-3">
                       <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
-                        {visibleRows.map(({ dayOffset, member }) =>
-                          renderMemberAvatar(member, dayOffset, isMemberInCompare(member.id)),
-                        )}
+                        {visibleRows.map(({ dayOffset, member }) => (
+                          <MemberAvatar
+                            dayOffset={dayOffset}
+                            isSelected={isMemberInCompare(member.id, isComparing)}
+                            key={member.id}
+                            member={member}
+                            totalMembers={members.length}
+                          />
+                        ))}
                       </div>
 
                       <div
@@ -1067,187 +254,32 @@ const TimezoneVisualizer = ({
                 key="compare-panel"
                 transition={{ duration: 0.15 }}
               >
-                <Card className="flex flex-col gap-4 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
-                        <Clock className="h-4 w-4 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-foreground">
-                          Find Best Meeting Time
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          Select people or groups to compare
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                      onClick={closeComparePanel}
-                      size="sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {validSelections.map((sel) => (
-                      <Badge
-                        className="flex items-center gap-1.5 py-1 pr-1 pl-2"
-                        key={serializeSelection(sel)}
-                        variant="secondary"
-                      >
-                        {sel.type === "group" && <Users className="h-3 w-3" />}
-                        <span>{getSelectionName(sel)}</span>
-                        <button
-                          className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
-                          onClick={() => removeSelection(sel)}
-                          type="button"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-
-                    <Select
-                      onValueChange={(val) => {
-                        if (val === null) {
-                          return;
-                        }
-                        const sel = deserializeSelection(val);
-                        if (sel) {
-                          addSelection(sel);
-                        }
-                      }}
-                      value=""
-                    >
-                      {validSelections.length === 0 ? (
-                        <SelectTrigger className="h-8 w-auto gap-1.5 border-dashed px-3 [&>svg:last-child]:hidden">
-                          <Plus className="h-4 w-4" />
-                          <span className="text-sm">Add</span>
-                        </SelectTrigger>
-                      ) : (
-                        <SelectTrigger className="h-7 w-7 justify-center rounded-full border-dashed p-0 [&>svg:last-child]:hidden">
-                          <Plus className="h-4 w-4" />
-                        </SelectTrigger>
-                      )}
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Members</SelectLabel>
-                          {members.map((member) => {
-                            const sel: Selection = {
-                              id: member.id,
-                              type: "member",
-                            };
-                            const isAlreadySelected = isSelectionSelected(sel);
-
-                            return (
-                              <SelectItem
-                                disabled={isAlreadySelected}
-                                key={`member:${member.id}`}
-                                value={serializeSelection(sel)}
-                              >
-                                {member.name}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectGroup>
-                        {groups.some((g) => members.some((m) => m.groupId === g.id)) && (
-                          <>
-                            <SelectSeparator />
-                            <SelectGroup>
-                              <SelectLabel>Groups</SelectLabel>
-                              {groups
-                                .filter((g) => members.some((m) => m.groupId === g.id))
-                                .map((group) => {
-                                  const sel: Selection = {
-                                    id: group.id,
-                                    type: "group",
-                                  };
-                                  const isAlreadySelected = isSelectionSelected(sel);
-
-                                  return (
-                                    <SelectItem
-                                      disabled={isAlreadySelected}
-                                      key={`group:${group.id}`}
-                                      value={serializeSelection(sel)}
-                                    >
-                                      <span className="flex items-center gap-2">
-                                        <Users className="h-3 w-3" />
-                                        {group.name}
-                                      </span>
-                                    </SelectItem>
-                                  );
-                                })}
-                            </SelectGroup>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {canShowOverlap && (
-                    <div className="flex flex-col gap-3 border-t border-border pt-3">
-                      <p className="text-right text-xs text-muted-foreground tabular-nums">
-                        {renderOverlapSummary()}
-                      </p>
-
-                      <div className="flex items-stretch gap-2 sm:gap-3">
-                        <div className="flex w-8 shrink-0 flex-col sm:w-24">
-                          <div className="flex h-8 items-center justify-center sm:justify-start sm:gap-2">
-                            <OverlapStatusIcon status={overlapStatus} />
-                            <span className="hidden truncate text-sm font-medium text-foreground sm:block">
-                              {overlapStatus === "none" ? "No overlap" : "Overlap"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex-1">{renderOverlapBar()}</div>
-                      </div>
-
-                      {/* Time axis for overlap visualization */}
-                      <div className="flex gap-2 sm:gap-3">
-                        <div className="w-8 shrink-0 sm:w-24" />
-                        <div className="flex flex-1 justify-between">
-                          {TIME_AXIS_HOURS.map((hour, index, arr) => {
-                            const isFirst = index === 0;
-                            const isLast = index === arr.length - 1;
-
-                            return (
-                              <div
-                                className="flex flex-col gap-1"
-                                key={hour}
-                                style={{
-                                  alignItems: getEdgeAlignment(isFirst, isLast),
-                                }}
-                              >
-                                <div className="h-1.5 w-px bg-border" />
-                                <span className="text-[10px] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
-                                  {formatHour(hour % HOURS_IN_DAY)}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {!canShowOverlap && (
-                    <p className="text-center text-sm text-muted-foreground">
-                      Select at least 2 people to find overlapping times
-                    </p>
-                  )}
-                </Card>
+                <ComparePanel
+                  canShowOverlap={canShowOverlap}
+                  groupNameById={groupNameById}
+                  groups={groups}
+                  memberRowById={memberRowById}
+                  members={members}
+                  onAddSelection={(sel) => addSelection(sel, setCompareSelections)}
+                  onClose={closeComparePanel}
+                  onRemoveSelection={(sel) => removeSelection(sel, setCompareSelections)}
+                  overlapData={overlapData}
+                  overlapStatus={overlapStatus}
+                  selectedMemberIds={selectedMemberIds}
+                  totalPeopleSelected={totalPeopleSelected}
+                  validSelections={validSelections}
+                />
               </motion.div>
             )}
           </AnimatePresence>
         )}
 
-        {renderLegend()}
+        <Legend
+          canShowOverlap={canShowOverlap}
+          hasCrossTeamOverlap={hasCrossTeamOverlap}
+          isComparing={isComparing}
+          totalPeopleSelected={totalPeopleSelected}
+        />
       </div>
     </TooltipProvider>
   );

@@ -1,5 +1,6 @@
 "use server";
 
+// oxlint-disable no-console -- email send diagnostic logging; TODO migrate to structured logger
 import { Resend } from "resend";
 
 import { getEnv } from "./env";
