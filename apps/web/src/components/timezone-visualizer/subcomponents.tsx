@@ -147,4 +147,4 @@ const FindMeetingTimeButton = ({ onClick }: FindMeetingTimeButtonProps) => (
   </Button>
 );
 
-export { FindMeetingTimeButton, GroupHeader, HourBlock, MemberTimelineRow, OverlapStatusIcon };
+export { FindMeetingTimeButton, GroupHeader, MemberTimelineRow, OverlapStatusIcon };
