@@ -1,3 +1,6 @@
+// oxlint-disable perfectionist/sort-objects
+// oxlint-disable perfectionist/sort-jsx-props
+// Design system variants (size, intent, etc.) order semantically, not alphabetically
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 
