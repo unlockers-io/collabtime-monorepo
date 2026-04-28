@@ -25,7 +25,7 @@ import { z } from "zod";
 import { signIn } from "@/lib/auth-client";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
+  email: z.email("Please enter a valid email"),
   password: z.string().min(1, "Password is required"),
 });
 

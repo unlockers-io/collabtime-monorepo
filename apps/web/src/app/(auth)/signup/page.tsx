@@ -25,7 +25,7 @@ import { z } from "zod";
 import { signUp } from "@/lib/auth-client";
 
 const signupSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
+  email: z.email("Please enter a valid email"),
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
   password: z
     .string()

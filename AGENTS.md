@@ -99,7 +99,31 @@ Optional: `WEB_APP_URL`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SPACE_ACCESS_SE
 
 ## Portless (Dev URLs)
 
-Dev scripts use `portless run --name <project>.<app>`. URLs follow `http://<project>.<app>.localhost:1355`. In git worktrees, the branch is auto-prepended: `http://<branch>.<project>.<app>.localhost:1355`. Install globally: `npm install -g portless`.
+The dev server runs behind portless, which gives the app a stable HTTPS URL on `.localhost` instead of guessing port numbers. Cookies, OAuth redirects, and CORS allowlists stay valid across project switches.
+
+### Setup (one-time per machine)
+
+```bash
+npm install -g portless                # global install (or upgrade)
+sudo portless proxy start --https      # start the daemon on :443
+```
+
+The proxy auto-restarts on subsequent invocations once trusted.
+
+### URLs
+
+| Service | URL                                | Started by |
+| ------- | ---------------------------------- | ---------- |
+| `web`   | `https://collabtime.web.localhost` | `pnpm dev` |
+
+### Worktrees
+
+Branch name auto-prefixes the subdomain — no port collisions between concurrent worktrees, each gets its own auto-assigned backing port:
+
+```
+main worktree:        https://collabtime.web.localhost
+branch fix-styles:    https://fix-styles.collabtime.web.localhost
+```
 
 ## Dev Tools (Development Only)
 

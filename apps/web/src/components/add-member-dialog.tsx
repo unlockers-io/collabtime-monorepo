@@ -64,7 +64,7 @@ const getRandomPlaceholder = () =>
   TITLE_PLACEHOLDERS[Math.floor(Math.random() * TITLE_PLACEHOLDERS.length)];
 
 const formSchema = z.object({
-  email: z.string().email("Invalid email address").or(z.literal("")),
+  email: z.email("Invalid email address").or(z.literal("")),
   groupId: z.string(),
   name: z.string().min(1, "Name is required"),
   timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
