@@ -2,6 +2,7 @@
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
+import { Card } from "@repo/ui/components/card";
 import { Spinner } from "@repo/ui/components/spinner";
 import {
   Tooltip,
@@ -79,20 +80,20 @@ const MemberCard = ({
     });
   };
 
+  const memberGroupName = member.groupId ? groups.find((g) => g.id === member.groupId)?.name : null;
+
   return (
     <>
-      <div className="group flex h-full min-h-45 flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-input hover:shadow-md">
+      <Card className="group h-full gap-3 p-4 transition-shadow hover:shadow-md">
         {/* Top row: Avatar and Actions */}
         <div className="flex items-start justify-between">
           {/* Avatar with status */}
           <div className="relative">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-base font-semibold text-muted-foreground dark:bg-primary dark:text-primary-foreground">
+            <div className="flex size-12 items-center justify-center rounded-full bg-secondary text-base font-semibold text-secondary-foreground">
               {member.name.charAt(0).toUpperCase()}
             </div>
             {isAvailable && (
-              <span className="absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-success">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-50" />
-              </span>
+              <span className="absolute -right-0.5 -bottom-0.5 size-3.5 rounded-full border-2 border-card bg-success" />
             )}
           </div>
 
@@ -106,7 +107,7 @@ const MemberCard = ({
                 size="icon-sm"
                 variant="ghost"
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="size-4" />
               </Button>
               <Button
                 aria-label={`Remove ${member.name}`}
@@ -116,19 +117,19 @@ const MemberCard = ({
                 size="icon-sm"
                 variant="ghost"
               >
-                {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+                {isPending ? <Spinner /> : <Trash2 className="size-4" />}
               </Button>
             </div>
           )}
           {canClaim && (
             <Button
               aria-label={`Claim ${member.name}'s profile`}
-              className="text-xs"
+              className="gap-1.5 text-xs"
               onClick={() => setIsClaimDialogOpen(true)}
               size="sm"
               variant="outline"
             >
-              <Hand className="mr-1 h-3.5 w-3.5" />
+              <Hand className="size-3.5" />
               That&apos;s me
             </Button>
           )}
@@ -151,7 +152,7 @@ const MemberCard = ({
           {/* Timezone and hours */}
           <div className="mt-auto flex flex-col gap-1 text-xs text-muted-foreground">
             <span className="truncate">{formatTimezoneLabel(member.timezone)}</span>
-            <span>
+            <span className="tabular-nums">
               {formatHour(member.workingHoursStart)} – {formatHour(member.workingHoursEnd)}
             </span>
           </div>
@@ -159,16 +160,12 @@ const MemberCard = ({
           {/* Status badges */}
           <div className="flex flex-wrap gap-1.5">
             {isAvailable ? (
-              <Badge className="border-transparent bg-success/20 text-success">
-                <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                Available
-              </Badge>
+              <Badge variant="success">Available</Badge>
             ) : (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger render={<span />}>
-                    <Badge className="cursor-help border-transparent bg-warning/20 text-warning">
-                      <span className="h-1.5 w-1.5 rounded-full bg-warning" />
+                    <Badge className="cursor-help" variant="warning">
                       Not Available
                     </Badge>
                   </TooltipTrigger>
@@ -178,14 +175,10 @@ const MemberCard = ({
                 </Tooltip>
               </TooltipProvider>
             )}
-            {member.groupId && groups.find((g) => g.id === member.groupId) && (
-              <Badge className="border-transparent" variant="secondary">
-                {groups.find((g) => g.id === member.groupId)?.name}
-              </Badge>
-            )}
+            {memberGroupName && <Badge variant="secondary">{memberGroupName}</Badge>}
           </div>
         </div>
-      </div>
+      </Card>
 
       {canEdit && (
         <EditMemberDialog

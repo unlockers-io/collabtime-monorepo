@@ -395,17 +395,9 @@ const AddMemberDialog = ({
       }}
       open={open}
     >
-      <DialogTrigger
-        render={
-          <Button
-            className="group flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground hover:bg-muted"
-            type="button"
-            variant="outline"
-          />
-        }
-      >
-        <UserPlus className="h-5 w-5 transition-transform group-hover:scale-110" />
-        <span className="font-medium">Add Team Member</span>
+      <DialogTrigger render={<Button size="sm" type="button" />}>
+        <UserPlus className="size-4" />
+        Add Team Member
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <AddMemberForm

@@ -12,12 +12,17 @@ import { cn } from "@repo/ui/lib/utils";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
 import { Fragment, useSyncExternalStore } from "react";
 
+import {
+  SectionCard,
+  SectionCardContent,
+  SectionCardHeader,
+  SectionCardTitle,
+} from "@/components/section-card";
 import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
 import { useHalfMinuteTick } from "@/lib/use-tick";
 import type { TeamGroup, TeamMember } from "@/types";
 
 const SOON_THRESHOLD_HOURS = 2;
-const SCROLL_AREA_MAX_HEIGHT = 120;
 const EMPTY_GROUPS: Array<TeamGroup> = [];
 
 type TeamInsightsProps = {
@@ -37,6 +42,62 @@ type MemberStatus = {
   hoursUntilStart: number | null;
   isWorking: boolean;
   member: TeamMember;
+};
+
+type StatusTone = "info" | "success" | "warning";
+
+type StatusGroupProps = {
+  children: React.ReactNode;
+  className?: string;
+  count: number;
+  emptyLabel: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  iconClassName?: string;
+  label: string;
+  tone: StatusTone;
+};
+
+const TONE_TEXT: Record<StatusTone, string> = {
+  info: "text-info",
+  success: "text-success",
+  warning: "text-warning",
+};
+
+const StatusGroup = ({
+  children,
+  className,
+  count,
+  emptyLabel,
+  icon: Icon,
+  iconClassName,
+  label,
+  tone,
+}: StatusGroupProps) => {
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2.5 rounded-lg border border-border/60 bg-secondary/40 p-3.5",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <Icon className={cn("size-4 shrink-0", iconClassName ?? TONE_TEXT[tone])} />
+        <h3 className="text-xs font-medium text-muted-foreground">{label}</h3>
+        <Badge className="ml-auto tabular-nums" variant={tone}>
+          {count}
+        </Badge>
+      </div>
+      {count > 0 ? (
+        <ScrollArea className="max-h-30">
+          <TooltipProvider>
+            <div className="flex flex-wrap gap-1.5 px-1 py-0.5">{children}</div>
+          </TooltipProvider>
+        </ScrollArea>
+      ) : (
+        <p className="text-xs text-muted-foreground">{emptyLabel}</p>
+      )}
+    </div>
+  );
 };
 
 const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => {
@@ -130,162 +191,100 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <Users className="h-4 w-4 text-muted-foreground" />
-        Team Status
-      </div>
+    <SectionCard>
+      <SectionCardHeader>
+        <SectionCardTitle icon={Users}>Team Status</SectionCardTitle>
+      </SectionCardHeader>
+      <SectionCardContent>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <StatusGroup
+            count={onlineMembers.length}
+            emptyLabel="No one is currently working"
+            icon={Circle}
+            iconClassName="size-3 fill-success text-success"
+            label="Online Now"
+            tone="success"
+          >
+            {onlineMembers.map(({ member }) => {
+              const groupName = getGroupName(member.groupId);
+              const badge = (
+                <Badge className={cn(groupName && "cursor-help")} variant="success">
+                  <span className="size-1.5 rounded-full bg-success" />
+                  {member.name}
+                </Badge>
+              );
+              return groupName ? (
+                <Tooltip key={member.id}>
+                  <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
+                  <TooltipContent>
+                    <p>{groupName}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Fragment key={member.id}>{badge}</Fragment>
+              );
+            })}
+          </StatusGroup>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Online Now */}
-        <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/20">
-              <Circle className="h-2.5 w-2.5 fill-success text-success" />
-            </div>
-            <span className="text-xs font-medium text-muted-foreground">Online Now</span>
-            <span className="ml-auto rounded-full bg-success/20 px-2 py-0.5 text-xs font-semibold text-success tabular-nums">
-              {onlineMembers.length}
-            </span>
-          </div>
-          {onlineMembers.length > 0 ? (
-            <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
-              <TooltipProvider>
-                <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                  {onlineMembers.map(({ member }) => {
-                    const groupName = getGroupName(member.groupId);
-                    const badge = (
-                      <Badge
-                        className={cn(
-                          "bg-background text-foreground shadow-sm",
-                          groupName && "cursor-help",
-                        )}
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                        {member.name}
-                      </Badge>
-                    );
+          <StatusGroup
+            count={comingSoonMembers.length}
+            emptyLabel={`No one starting in the next ${SOON_THRESHOLD_HOURS} hours`}
+            icon={Sunrise}
+            label="Starting Soon"
+            tone="warning"
+          >
+            {comingSoonMembers.map(({ hoursUntilStart, member }) => {
+              const groupName = getGroupName(member.groupId);
+              const badge = (
+                <Badge className={cn(groupName && "cursor-help")} variant="warning">
+                  {member.name}
+                  <span className="text-xs tabular-nums opacity-80">in {hoursUntilStart}h</span>
+                </Badge>
+              );
+              return groupName ? (
+                <Tooltip key={member.id}>
+                  <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
+                  <TooltipContent>
+                    <p>{groupName}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Fragment key={member.id}>{badge}</Fragment>
+              );
+            })}
+          </StatusGroup>
 
-                    if (!groupName) {
-                      return <Fragment key={member.id}>{badge}</Fragment>;
-                    }
-
-                    return (
-                      <Tooltip key={member.id}>
-                        <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
-                        <TooltipContent>
-                          <p>{groupName}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              </TooltipProvider>
-            </ScrollArea>
-          ) : (
-            <p className="text-xs text-muted-foreground">No one is currently working</p>
-          )}
+          <StatusGroup
+            className="sm:col-span-2 lg:col-span-1"
+            count={leavingSoonMembers.length}
+            emptyLabel={`No one ending in the next ${SOON_THRESHOLD_HOURS} hours`}
+            icon={Clock}
+            label="Wrapping Up"
+            tone="info"
+          >
+            {leavingSoonMembers.map(({ hoursUntilEnd, member }) => {
+              const groupName = getGroupName(member.groupId);
+              const badge = (
+                <Badge className={cn(groupName && "cursor-help")} variant="info">
+                  {member.name}
+                  <span className="text-xs tabular-nums opacity-80">{hoursUntilEnd}h left</span>
+                </Badge>
+              );
+              return groupName ? (
+                <Tooltip key={member.id}>
+                  <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
+                  <TooltipContent>
+                    <p>{groupName}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Fragment key={member.id}>{badge}</Fragment>
+              );
+            })}
+          </StatusGroup>
         </div>
-
-        {/* Coming Soon */}
-        <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-warning/20">
-              <Sunrise className="h-3.5 w-3.5 text-warning" />
-            </div>
-            <span className="text-xs font-medium text-muted-foreground">Starting Soon</span>
-            <span className="ml-auto rounded-full bg-warning/20 px-2 py-0.5 text-xs font-semibold text-warning tabular-nums">
-              {comingSoonMembers.length}
-            </span>
-          </div>
-          {comingSoonMembers.length > 0 ? (
-            <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
-              <TooltipProvider>
-                <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                  {comingSoonMembers.map(({ hoursUntilStart, member }) => {
-                    const groupName = getGroupName(member.groupId);
-                    const badge = (
-                      <Badge className={cn("bg-background shadow-sm", groupName && "cursor-help")}>
-                        <span className="text-xs font-medium text-foreground">{member.name}</span>
-                        <span className="text-xs text-warning tabular-nums">
-                          in {hoursUntilStart}h
-                        </span>
-                      </Badge>
-                    );
-
-                    if (!groupName) {
-                      return <Fragment key={member.id}>{badge}</Fragment>;
-                    }
-
-                    return (
-                      <Tooltip key={member.id}>
-                        <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
-                        <TooltipContent>
-                          <p>{groupName}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              </TooltipProvider>
-            </ScrollArea>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              No one starting in the next {SOON_THRESHOLD_HOURS} hours
-            </p>
-          )}
-        </div>
-
-        {/* Leaving Soon */}
-        <div className="flex flex-col gap-2.5 rounded-xl bg-secondary p-3.5 sm:col-span-2 lg:col-span-1">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-info/20">
-              <Clock className="h-3.5 w-3.5 text-info" />
-            </div>
-            <span className="text-xs font-medium text-muted-foreground">Wrapping Up</span>
-            <span className="ml-auto rounded-full bg-info/20 px-2 py-0.5 text-xs font-semibold text-info tabular-nums">
-              {leavingSoonMembers.length}
-            </span>
-          </div>
-          {leavingSoonMembers.length > 0 ? (
-            <ScrollArea style={{ maxHeight: SCROLL_AREA_MAX_HEIGHT }}>
-              <TooltipProvider>
-                <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                  {leavingSoonMembers.map(({ hoursUntilEnd, member }) => {
-                    const groupName = getGroupName(member.groupId);
-                    const badge = (
-                      <Badge className={cn("bg-background shadow-sm", groupName && "cursor-help")}>
-                        <span className="text-xs font-medium text-foreground">{member.name}</span>
-                        <span className="text-xs text-info tabular-nums">
-                          {hoursUntilEnd}h left
-                        </span>
-                      </Badge>
-                    );
-
-                    if (!groupName) {
-                      return <Fragment key={member.id}>{badge}</Fragment>;
-                    }
-
-                    return (
-                      <Tooltip key={member.id}>
-                        <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
-                        <TooltipContent>
-                          <p>{groupName}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              </TooltipProvider>
-            </ScrollArea>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              No one ending in the next {SOON_THRESHOLD_HOURS} hours
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
+      </SectionCardContent>
+    </SectionCard>
   );
 };
 

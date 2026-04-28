@@ -1,6 +1,8 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
+import { Card } from "@repo/ui/components/card";
 import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
@@ -86,16 +88,16 @@ const GroupCard = ({
   };
 
   return (
-    <div
+    <Card
       className={cn(
-        "group flex h-full min-h-45 flex-col gap-3 rounded-2xl border-2 p-4 transition-colors",
-        isDropTarget ? "border-foreground bg-muted" : "border-transparent bg-secondary",
+        "group h-full gap-3 p-4 transition-shadow hover:shadow-md",
+        isDropTarget && "outline-2 -outline-offset-1 outline-foreground",
       )}
     >
       {/* Top row: Icon and Actions */}
       <div className="flex items-start justify-between">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <Users className="h-6 w-6" />
+        <div className="flex size-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+          <Users className="size-5" />
         </div>
 
         {canEdit && (
@@ -108,7 +110,7 @@ const GroupCard = ({
             type="button"
             variant="ghost"
           >
-            {isPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+            {isPending ? <Spinner /> : <Trash2 className="size-4" />}
           </Button>
         )}
       </div>
@@ -138,7 +140,7 @@ const GroupCard = ({
                 type="button"
               >
                 <span className="font-semibold text-foreground">{group.name}</span>
-                <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/name:opacity-100" />
+                <Pencil className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/name:opacity-100" />
               </button>
             );
           }
@@ -151,13 +153,13 @@ const GroupCard = ({
 
         {/* Member count badge */}
         <div className="mt-auto">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground tabular-nums">
-            <Users className="h-3 w-3" />
+          <Badge variant="secondary">
+            <Users className="size-3" />
             {memberCount} {memberCount === 1 ? "member" : "members"}
-          </span>
+          </Badge>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
