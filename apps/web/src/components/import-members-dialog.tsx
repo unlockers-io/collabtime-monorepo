@@ -97,17 +97,9 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
     // Controlled: needs programmatic close on successful import and to reset
     // CSV/parsed-rows state when the dialog closes.
     <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogTrigger
-        render={
-          <Button
-            className="group flex h-9 w-full items-center justify-center gap-2 text-muted-foreground"
-            type="button"
-            variant="outline"
-          />
-        }
-      >
-        <Upload className="h-4 w-4 transition-transform group-hover:scale-110" />
-        <span className="text-sm font-medium">Import from CSV</span>
+      <DialogTrigger render={<Button size="sm" type="button" variant="outline" />}>
+        <Upload className="size-4" />
+        Import from CSV
       </DialogTrigger>
 
       <DialogContent className="max-w-2xl">

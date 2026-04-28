@@ -10,9 +10,11 @@ import {
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  type DropAnimation,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { useState } from "react";
+import { CSS } from "@dnd-kit/utilities";
+import { useRef, useState } from "react";
 
 import { GroupCard } from "@/components/group-card";
 import { MemberCard } from "@/components/member-card";
@@ -39,6 +41,9 @@ const DndWrapper = ({
 }: DndWrapperProps) => {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
+  // Read synchronously by `dropAnimation.keyframes` after `onDragEnd` fires,
+  // so it must be a ref — state updates would land too late for the animation.
+  const droppedOnGroupRef = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -60,10 +65,32 @@ const DndWrapper = ({
 
   const handleDragEnd = (event: DragEndEvent) => {
     const currentDragType = activeDragType;
+    droppedOnGroupRef.current =
+      currentDragType === "member" &&
+      event.over !== null &&
+      groups.some((g) => g.id === event.over?.id);
     setActiveDragId(null);
     setActiveDragType(null);
     onDragTypeChange?.(null);
     onDragEnd(event, currentDragType);
+  };
+
+  const dropAnimation: DropAnimation = {
+    duration: 200,
+    easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+    keyframes: ({ transform }) => {
+      if (droppedOnGroupRef.current) {
+        const initial = CSS.Transform.toString(transform.initial);
+        return [
+          { opacity: 1, transform: initial },
+          { opacity: 0, transform: `${initial} scale(0.85)` },
+        ];
+      }
+      return [
+        { transform: CSS.Transform.toString(transform.initial) },
+        { transform: CSS.Transform.toString(transform.final) },
+      ];
+    },
   };
 
   const activeMember =
@@ -80,7 +107,7 @@ const DndWrapper = ({
       sensors={sensors}
     >
       {children}
-      <DragOverlay>
+      <DragOverlay dropAnimation={dropAnimation}>
         {activeMember && (
           <MemberCard
             canEdit={false}

@@ -108,12 +108,12 @@ const Nav = (props: NavProps) => {
           <div className="flex items-center gap-2 sm:hidden">
             <Button
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              className="h-10 w-10"
+              className="size-9"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               size="icon"
               variant="outline"
             >
-              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </Button>
           </div>
         </div>
@@ -140,11 +140,11 @@ const Nav = (props: NavProps) => {
         <ModeToggle />
         {isAuthenticated ? (
           <Link className={buttonVariants({ variant: "outline" })} href="/settings">
-            <Settings className="h-4 w-4" />
+            <Settings className="size-4" />
           </Link>
         ) : (
           <Link className={buttonVariants({ variant: "outline" })} href="/login">
-            <LogIn className="h-4 w-4" />
+            <LogIn className="size-4" />
           </Link>
         )}
       </div>

@@ -14,6 +14,14 @@ import { ImportMembersDialog } from "@/components/import-members-dialog";
 import { JoinRequestsPanel } from "@/components/join-requests-panel";
 import { Nav } from "@/components/nav";
 import { useRealtimeReady } from "@/components/providers";
+import {
+  SectionCard,
+  SectionCardContent,
+  SectionCardCount,
+  SectionCardFooter,
+  SectionCardHeader,
+  SectionCardTitle,
+} from "@/components/section-card";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { useTeamQuery } from "@/hooks/use-team-query";
@@ -155,7 +163,7 @@ const TeamPageClient = ({
   const mainContent = (
     <motion.div
       animate={{ opacity: 1 }}
-      className="min-h-screen w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12"
+      className="min-h-dvh w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12"
       initial={{ opacity: 0 }}
       key="content"
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
@@ -177,110 +185,99 @@ const TeamPageClient = ({
         />
 
         {/* Team Insights */}
-        {members.length > 0 && (
-          <section>
-            <TeamInsights groups={groups} members={orderedMembers} />
-          </section>
-        )}
+        {members.length > 0 && <TeamInsights groups={groups} members={orderedMembers} />}
 
         {/* Timezone Visualizer */}
         {members.length > 0 && (
-          <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-            <div className="flex flex-col gap-0.5 border-b border-border px-4 py-3 sm:px-6 sm:py-4">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Clock className="h-4 w-4 text-muted-foreground" />
+          <SectionCard>
+            <SectionCardHeader bordered>
+              <SectionCardTitle description="Times shown in your local timezone" icon={Clock}>
                 Working Hours Overview
-              </h2>
-              <p className="text-xs text-muted-foreground">Times shown in your local timezone</p>
-            </div>
-            <div className="p-4 sm:p-6">
+              </SectionCardTitle>
+            </SectionCardHeader>
+            <SectionCardContent>
               <TimezoneVisualizer
                 collapsedGroupIds={collapsedGroupIds}
                 groups={groups}
                 members={orderedMembers}
                 onToggleGroupCollapse={toggleGroupCollapse}
               />
-            </div>
-          </section>
+            </SectionCardContent>
+          </SectionCard>
         )}
 
         {/* Team Members & Groups */}
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
           {/* Team Members */}
-          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <Users className="h-5 w-5 text-muted-foreground" />
-                Team Members
-              </h2>
-              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
-                {members.length}
-              </span>
-            </div>
+          <SectionCard>
+            <SectionCardHeader>
+              <SectionCardTitle icon={Users}>Team Members</SectionCardTitle>
+              <SectionCardCount>{members.length}</SectionCardCount>
+            </SectionCardHeader>
+            <SectionCardContent className="flex flex-col gap-4">
+              <MembersGrid
+                currentUserId={currentUserId}
+                groups={groups}
+                hasClaimedProfile={hasClaimedProfile}
+                isAdmin={isAdmin}
+                onMemberRemoved={handleMemberRemoved}
+                onMemberUpdated={handleMemberUpdated}
+                orderedMembers={orderedMembers}
+                teamId={teamId}
+              />
 
-            <MembersGrid
-              currentUserId={currentUserId}
-              groups={groups}
-              hasClaimedProfile={hasClaimedProfile}
-              isAdmin={isAdmin}
-              onMemberRemoved={handleMemberRemoved}
-              onMemberUpdated={handleMemberUpdated}
-              orderedMembers={orderedMembers}
-              teamId={teamId}
-            />
-
+              {isAdmin && <JoinRequestsPanel teamId={teamId} />}
+              {!isAdmin && isMember && (
+                <p className="text-center text-sm text-muted-foreground">
+                  You are a member of this team
+                </p>
+              )}
+              {!isAdmin && !isMember && (
+                <JoinPrompt
+                  isAuthenticated={isAuthenticated}
+                  isRequestingJoin={isRequestingJoin}
+                  onRequestJoin={handleRequestJoin}
+                  teamId={teamId}
+                  teamStatus={teamStatus}
+                />
+              )}
+            </SectionCardContent>
             {isAdmin && (
-              <div className="flex flex-col gap-2">
+              <SectionCardFooter bordered className="justify-end">
+                <ImportMembersDialog teamId={teamId} />
                 <AddMemberDialog
                   groups={groups}
                   isFirstMember={members.length === 0}
                   onMemberAdded={handleMemberAdded}
                   teamId={teamId}
                 />
-                <ImportMembersDialog teamId={teamId} />
-                <JoinRequestsPanel teamId={teamId} />
-              </div>
+              </SectionCardFooter>
             )}
-            {!isAdmin && isMember && (
-              <p className="text-center text-sm text-muted-foreground">
-                You are a member of this team
-              </p>
-            )}
-            {!isAdmin && !isMember && (
-              <JoinPrompt
-                isAuthenticated={isAuthenticated}
-                isRequestingJoin={isRequestingJoin}
-                onRequestJoin={handleRequestJoin}
-                teamId={teamId}
-                teamStatus={teamStatus}
-              />
-            )}
-          </section>
+          </SectionCard>
 
           {/* Groups */}
-          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <FolderKanban className="h-5 w-5 text-muted-foreground" />
-                Groups
-              </h2>
-              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
-                {groups.length}
-              </span>
-            </div>
-
-            <GroupsGrid
-              activeDragType={activeDragType}
-              isAdmin={isAdmin}
-              members={members}
-              onGroupRemoved={handleGroupRemoved}
-              onGroupUpdated={handleGroupUpdated}
-              orderedGroups={orderedGroups}
-              teamId={teamId}
-            />
-
-            {isAdmin && <AddGroupDialog onGroupAdded={handleGroupAdded} teamId={teamId} />}
-          </section>
+          <SectionCard>
+            <SectionCardHeader>
+              <SectionCardTitle icon={FolderKanban}>Groups</SectionCardTitle>
+              <SectionCardCount>{groups.length}</SectionCardCount>
+            </SectionCardHeader>
+            <SectionCardContent>
+              <GroupsGrid
+                activeDragType={activeDragType}
+                isAdmin={isAdmin}
+                members={members}
+                onGroupRemoved={handleGroupRemoved}
+                onGroupUpdated={handleGroupUpdated}
+                orderedGroups={orderedGroups}
+                teamId={teamId}
+              />
+            </SectionCardContent>
+            {isAdmin && (
+              <SectionCardFooter bordered className="justify-end">
+                <AddGroupDialog onGroupAdded={handleGroupAdded} teamId={teamId} />
+              </SectionCardFooter>
+            )}
+          </SectionCard>
         </div>
       </main>
 
