@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthForm } from "@repo/auth/form";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -16,10 +17,8 @@ import {
   FieldLabel,
 } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { z } from "zod";
 
 import { signUp } from "@/lib/auth-client";
@@ -33,52 +32,23 @@ const signupSchema = z.object({
     .max(128, "Password is too long"),
 });
 
-type SignupFormValues = z.infer<typeof signupSchema>;
-
 const SignupPage = () => {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  // Form-level error surfaced inline above the submit button — toasts on focused
-  // auth screens disappear before users can read them and compete with field labels.
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const defaultValues: SignupFormValues = {
-    email: "",
-    name: "",
-    password: "",
-  };
-
-  const form = useForm({
-    defaultValues,
-    onSubmit: async ({ value }) => {
-      setIsLoading(true);
-      setFormError(null);
-
-      try {
-        const result = await signUp.email({
-          email: value.email,
-          name: value.name,
-          password: value.password,
-        });
-
-        if (result.error) {
-          setFormError(result.error.message ?? "Failed to create account");
-          setIsLoading(false);
-          return;
-        }
-
-        router.push("/");
-        router.refresh();
-      } catch (error) {
-        // oxlint-disable-next-line no-console -- surface unexpected signup errors
-        console.error("[Signup] Unexpected error:", error);
-        setFormError("An unexpected error occurred");
-        setIsLoading(false);
+  const { form, isLoading, rootError } = useAuthForm({
+    defaultValues: { email: "", name: "", password: "" },
+    onSubmit: async (values) => {
+      const result = await signUp.email({
+        email: values.email,
+        name: values.name,
+        password: values.password,
+      });
+      if (result.error) {
+        throw new Error(result.error.message ?? "Failed to create account");
       }
+      router.push("/");
+      router.refresh();
     },
-    validators: {
-      onSubmit: signupSchema,
-    },
+    schema: signupSchema,
   });
 
   return (
@@ -93,7 +63,7 @@ const SignupPage = () => {
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
         >
           <FieldGroup>
@@ -169,9 +139,9 @@ const SignupPage = () => {
               }}
             </form.Field>
 
-            {formError && (
+            {rootError && (
               <Field data-invalid>
-                <FieldError>{formError}</FieldError>
+                <FieldError>{rootError}</FieldError>
               </Field>
             )}
 
