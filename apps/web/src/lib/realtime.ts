@@ -39,7 +39,7 @@ const schema = {
 } as const;
 
 // Lazily initialized realtime instance
-let _realtime: ReturnType<typeof createRealtime> | null = null;
+let cachedRealtime: ReturnType<typeof createRealtime> | null = null;
 
 const createRealtime = () => {
   const redisInstance = getRedis();
@@ -60,10 +60,10 @@ const createRealtime = () => {
  * Use this instead of importing `realtime` directly.
  */
 const getRealtime = () => {
-  if (!_realtime) {
-    _realtime = createRealtime();
+  if (!cachedRealtime) {
+    cachedRealtime = createRealtime();
   }
-  return _realtime;
+  return cachedRealtime;
 };
 
 // Type inference from the schema — use non-null type for the proxy facade
