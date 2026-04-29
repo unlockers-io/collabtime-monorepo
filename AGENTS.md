@@ -42,7 +42,7 @@ pnpm monorepo with Turborepo orchestration. Node >=24, pnpm 10.32.1.
 
 ### Packages
 
-- **`@repo/ui`** — Shared component library (Tailwind + CVA). Built with tsdown. Uses `ui:` prefix for Tailwind classes. Includes TanStack Form field components (`Field`, `FieldGroup`, `FieldLabel`, `FieldError`). `cn()` uses `extendTailwindMerge` with `experimentalParseClassName` to handle `ui:` prefix.
+- **`@repo/ui`** — Shared component library (Tailwind + CVA). Built with tsdown. Includes TanStack Form field components (`Field`, `FieldGroup`, `FieldLabel`, `FieldError`).
 - **`@repo/config-vitest`** — Shared Vitest config. Exports `react.ts` and `node.ts` configs.
 - **`@repo/auth`** — Better Auth config with Stripe plugin. Exports `auth-server.ts` (server-only) and `auth-client.ts` (`"use client"`). Uses Prisma adapter.
 - **`@repo/db`** — Prisma 7 ORM with PostgreSQL. Schema at `packages/db/prisma/schema.prisma`. Uses `@prisma/adapter-pg` for serverless connection pooling. Generated client output to `packages/db/src/generated`.
