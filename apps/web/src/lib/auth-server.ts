@@ -25,7 +25,7 @@ const resolveAppUrl = (): string => {
 
 // Lazily initialized auth instance to avoid build-time errors
 // when environment variables aren't available
-let _auth: Auth | null = null;
+let cachedAuth: Auth | null = null;
 
 const getAuthConfig = () => {
   const appUrl = resolveAppUrl();
@@ -70,10 +70,10 @@ const getAuthConfig = () => {
  * Get the auth instance (lazily initialized).
  */
 const getAuth = (): Auth => {
-  if (!_auth) {
-    _auth = createAuth(prisma, getAuthConfig());
+  if (!cachedAuth) {
+    cachedAuth = createAuth(prisma, getAuthConfig());
   }
-  return _auth;
+  return cachedAuth;
 };
 
 // Proxy for backwards compatibility with existing imports

@@ -1,14 +1,14 @@
 import { Redis } from "@upstash/redis";
 
-let _redis: Redis | null = null;
+let cachedRedis: Redis | null = null;
 
 /**
  * Get the Redis client instance.
  * Uses lazy initialization to avoid build-time errors when env vars aren't available.
  */
 const getRedis = (): Redis | null => {
-  if (_redis) {
-    return _redis;
+  if (cachedRedis) {
+    return cachedRedis;
   }
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -18,8 +18,8 @@ const getRedis = (): Redis | null => {
     return null;
   }
 
-  _redis = new Redis({ token, url });
-  return _redis;
+  cachedRedis = new Redis({ token, url });
+  return cachedRedis;
 };
 
 /**

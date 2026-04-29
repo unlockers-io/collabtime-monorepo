@@ -2,27 +2,27 @@ import { Ratelimit } from "@upstash/ratelimit";
 
 import { getRedis } from "./redis";
 
-let _passwordVerificationLimiter: Ratelimit | null = null;
+let cachedPasswordVerificationLimiter: Ratelimit | null = null;
 
 /**
  * Rate limiter for password verification attempts.
  * Allows 5 attempts per 15 minutes per IP + spaceId combination.
  */
 const getPasswordVerificationLimiter = (): Ratelimit | null => {
-  if (_passwordVerificationLimiter) {
-    return _passwordVerificationLimiter;
+  if (cachedPasswordVerificationLimiter) {
+    return cachedPasswordVerificationLimiter;
   }
   const redis = getRedis();
   if (!redis) {
     return null;
   }
-  _passwordVerificationLimiter = new Ratelimit({
+  cachedPasswordVerificationLimiter = new Ratelimit({
     analytics: true,
     limiter: Ratelimit.slidingWindow(5, "15 m"),
     prefix: "ratelimit:password-verify",
     redis,
   });
-  return _passwordVerificationLimiter;
+  return cachedPasswordVerificationLimiter;
 };
 
 const ALLOWED_RESULT = { limit: 0, remaining: 0, reset: 0, success: true } as const;
