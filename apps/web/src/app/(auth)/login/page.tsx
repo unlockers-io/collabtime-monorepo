@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthForm } from "@repo/auth/form";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -16,10 +17,8 @@ import {
   FieldLabel,
 } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { z } from "zod";
 
 import { signIn } from "@/lib/auth-client";
@@ -29,50 +28,22 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
-
 const LoginPage = () => {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  // Form-level error surfaced inline above the submit button — toasts on focused
-  // auth screens disappear before users can read them and compete with field labels.
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const defaultValues: LoginFormValues = {
-    email: "",
-    password: "",
-  };
-
-  const form = useForm({
-    defaultValues,
-    onSubmit: async ({ value }) => {
-      setIsLoading(true);
-      setFormError(null);
-
-      try {
-        const result = await signIn.email({
-          email: value.email,
-          password: value.password,
-        });
-
-        if (result.error) {
-          setFormError(result.error.message ?? "Failed to sign in");
-          setIsLoading(false);
-          return;
-        }
-
-        router.push("/");
-        router.refresh();
-      } catch (error) {
-        // oxlint-disable-next-line no-console -- surface unexpected login errors
-        console.error("[Login] Unexpected error:", error);
-        setFormError("An unexpected error occurred");
-        setIsLoading(false);
+  const { form, isLoading, rootError } = useAuthForm({
+    defaultValues: { email: "", password: "" },
+    onSubmit: async (values) => {
+      const result = await signIn.email({
+        email: values.email,
+        password: values.password,
+      });
+      if (result.error) {
+        throw new Error(result.error.message ?? "Failed to sign in");
       }
+      router.push("/");
+      router.refresh();
     },
-    validators: {
-      onSubmit: loginSchema,
-    },
+    schema: loginSchema,
   });
 
   return (
@@ -87,7 +58,7 @@ const LoginPage = () => {
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
         >
           <FieldGroup>
@@ -136,9 +107,9 @@ const LoginPage = () => {
               }}
             </form.Field>
 
-            {formError && (
+            {rootError && (
               <Field data-invalid>
-                <FieldError>{formError}</FieldError>
+                <FieldError>{rootError}</FieldError>
               </Field>
             )}
 
