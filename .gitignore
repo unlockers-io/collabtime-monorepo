@@ -60,7 +60,7 @@ logs/
 *.rdb
 
 # agent output
-agents/
+/agents/
 .fallow/
 
 # backup files
