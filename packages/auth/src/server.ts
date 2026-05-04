@@ -97,7 +97,7 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
     emailAndPassword: {
       enabled: true,
       maxPasswordLength: 128,
-      minPasswordLength: 8,
+      minPasswordLength: 12,
       // requireEmailVerification activates Better Auth's enumeration-prevention
       // path — signing up with an already-registered email returns a synthetic
       // success response. onExistingUserSignUp below notifies the real account
@@ -183,15 +183,16 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
 
     plugins: [...(config.extraPlugins ?? [])],
 
-    // Divergent from sibling repos' `NODE_ENV === "production"` pattern — collabtime is deployed
-    // serverless where in-memory rate limiting resets on every cold start (worse than no limit at all
-    // because it'd appear non-deterministic). Only enable when we have a distributed counter (Upstash).
-    // CI is excluded so rapid-fire e2e signups don't hit the limit.
+    // Fleet-canonical rate-limit shape. CI runs production builds but the
+    // e2e suite hammers auth endpoints back-to-back across browsers; the
+    // limiter would 429 the suite, so it's gated off when CI is set.
+    // Falls back to database (persistent) instead of memory (non-deterministic
+    // on serverless cold starts) when secondary storage isn't configured.
     rateLimit: {
-      enabled: !!config.secondaryStorage && !process.env.CI,
+      enabled: process.env.NODE_ENV === "production" && !process.env.CI,
       max: 100,
-      storage: config.secondaryStorage ? "secondary-storage" : "memory",
-      window: 60, // 1 minute
+      storage: config.secondaryStorage ? "secondary-storage" : "database",
+      window: 60,
     },
 
     secret: betterAuthConfig.secret,
