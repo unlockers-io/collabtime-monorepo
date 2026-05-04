@@ -38,6 +38,14 @@ const getAuthConfig = () => {
     },
     // nextCookies() must be last — lets better-auth read cookies in RSC/Server Actions
     extraPlugins: [nextCookies()],
+    ...(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL
+      ? {
+          resend: {
+            apiKey: process.env.RESEND_API_KEY,
+            fromEmail: process.env.RESEND_FROM_EMAIL,
+          },
+        }
+      : {}),
     ...(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
       ? {
           secondaryStorage: {

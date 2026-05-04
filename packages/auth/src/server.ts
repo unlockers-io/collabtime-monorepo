@@ -1,4 +1,9 @@
 import type { PrismaClient } from "@repo/db";
+import {
+  sendPasswordResetEmail,
+  sendSignUpAttemptEmail,
+  sendWelcomeEmail,
+} from "@repo/transactional";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import type { BetterAuthPlugin } from "better-auth/types";
@@ -63,7 +68,7 @@ const getTrustedOrigins = (request?: Request): Array<string> => {
 };
 
 const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
-  const { betterAuth: betterAuthConfig } = config;
+  const { betterAuth: betterAuthConfig, resend } = config;
 
   return betterAuth({
     account: {
@@ -93,7 +98,80 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       enabled: true,
       maxPasswordLength: 128,
       minPasswordLength: 8,
-      requireEmailVerification: false, // Can enable later with Resend
+      // requireEmailVerification activates Better Auth's enumeration-prevention
+      // path — signing up with an already-registered email returns a synthetic
+      // success response. onExistingUserSignUp below notifies the real account
+      // holder so they're not left waiting for a verification email that won't
+      // arrive. See better-auth docs "Email Enumeration Protection".
+      onExistingUserSignUp: resend
+        ? async ({ user }) => {
+            const result = await sendSignUpAttemptEmail(
+              {
+                resetPasswordUrl: `${betterAuthConfig.webAppUrl}/recover`,
+                signInUrl: `${betterAuthConfig.webAppUrl}/login`,
+                userEmail: user.email,
+                username: user.name,
+              },
+              {
+                apiKey: resend.apiKey,
+                defaultReplyTo: resend.replyTo,
+                from: resend.fromEmail,
+              },
+            );
+            if (!result.success) {
+              // Don't throw — Better Auth's enumeration-prevention path needs
+              // to return success regardless. Log so delivery failures don't
+              // break the auth response.
+              // oxlint-disable-next-line no-console -- temporary until a structured logger lands
+              console.error("[Auth] Failed to send sign-up attempt email:", result.error);
+            }
+          }
+        : undefined,
+      // Gate on Resend availability — we physically can't send a verification
+      // email without an API key, and requiring verification under that
+      // condition would lock new users out.
+      requireEmailVerification: Boolean(resend),
+      sendResetPassword: resend
+        ? async ({ url, user }) => {
+            const result = await sendPasswordResetEmail(
+              {
+                resetUrl: url,
+                userEmail: user.email,
+                username: user.name,
+              },
+              {
+                apiKey: resend.apiKey,
+                defaultReplyTo: resend.replyTo,
+                from: resend.fromEmail,
+              },
+            );
+            if (!result.success) {
+              throw new Error(`Failed to send password reset email: ${result.error}`);
+            }
+          }
+        : undefined,
+    },
+
+    emailVerification: {
+      sendVerificationEmail: resend
+        ? async ({ url, user }) => {
+            const result = await sendWelcomeEmail(
+              {
+                userEmail: user.email,
+                username: user.name,
+                verificationUrl: url,
+              },
+              {
+                apiKey: resend.apiKey,
+                defaultReplyTo: resend.replyTo,
+                from: resend.fromEmail,
+              },
+            );
+            if (!result.success) {
+              throw new Error(`Failed to send verification email: ${result.error}`);
+            }
+          }
+        : undefined,
     },
 
     plugins: [...(config.extraPlugins ?? [])],

@@ -2,8 +2,9 @@
 
 // oxlint-disable no-console -- server action diagnostic logging; TODO migrate to structured logger
 import { prisma } from "@repo/db";
+import { sendInvitationEmail } from "@repo/transactional";
 
-import { sendInvitationEmail } from "@/lib/email";
+import { getEnv } from "@/lib/env";
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 
 import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
@@ -91,16 +92,29 @@ const inviteMember = async (
 
     // Send email (best-effort)
     let emailSent = false;
+    const apiKey = getEnv("RESEND_API_KEY");
+    const fromEmail = getEnv("RESEND_FROM_EMAIL");
     const webAppUrl = process.env.WEB_APP_URL || process.env.BETTER_AUTH_URL || "";
-    try {
-      emailSent = await sendInvitationEmail({
-        inviterName: session.user.name || session.user.email.split("@")[0] || "Someone",
-        teamName: team.name,
-        teamUrl: webAppUrl,
-        to: trimmedEmail,
-      });
-    } catch (emailError) {
-      console.error("[Invitation] Failed to send email:", emailError);
+
+    if (apiKey) {
+      const result = await sendInvitationEmail(
+        {
+          inviterName: session.user.name || session.user.email.split("@")[0] || "Someone",
+          recipientEmail: trimmedEmail,
+          teamName: team.name,
+          teamUrl: webAppUrl,
+        },
+        { apiKey, ...(fromEmail && { from: fromEmail }) },
+      );
+      emailSent = result.success;
+      if (!result.success) {
+        console.error("[Invitation] Failed to send email:", result.error);
+      }
+    } else {
+      console.warn(
+        "[Invitation] Resend not configured, skipping invitation email to:",
+        trimmedEmail,
+      );
     }
 
     return { data: { emailSent, invitationId: invitation.id }, success: true };
