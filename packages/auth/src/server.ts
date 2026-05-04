@@ -131,47 +131,54 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       // email without an API key, and requiring verification under that
       // condition would lock new users out.
       requireEmailVerification: Boolean(resend),
-      sendResetPassword: resend
-        ? async ({ url, user }) => {
-            const result = await sendPasswordResetEmail(
-              {
-                resetUrl: url,
-                userEmail: user.email,
-                username: user.name,
-              },
-              {
-                apiKey: resend.apiKey,
-                defaultReplyTo: resend.replyTo,
-                from: resend.fromEmail,
-              },
-            );
-            if (!result.success) {
-              throw new Error(`Failed to send password reset email: ${result.error}`);
-            }
-          }
-        : undefined,
+      // Always defined so the Better Auth endpoint accepts the request. The
+      // actual send only happens when Resend is configured; without it we
+      // succeed silently — the test/dev environment doesn't have email infra
+      // but the user-visible flow (form submit → redirect) still works.
+      sendResetPassword: async ({ url, user }) => {
+        if (!resend) {
+          return;
+        }
+        const result = await sendPasswordResetEmail(
+          {
+            resetUrl: url,
+            userEmail: user.email,
+            username: user.name,
+          },
+          {
+            apiKey: resend.apiKey,
+            defaultReplyTo: resend.replyTo,
+            from: resend.fromEmail,
+          },
+        );
+        if (!result.success) {
+          throw new Error(`Failed to send password reset email: ${result.error}`);
+        }
+      },
     },
 
     emailVerification: {
-      sendVerificationEmail: resend
-        ? async ({ url, user }) => {
-            const result = await sendWelcomeEmail(
-              {
-                userEmail: user.email,
-                username: user.name,
-                verificationUrl: url,
-              },
-              {
-                apiKey: resend.apiKey,
-                defaultReplyTo: resend.replyTo,
-                from: resend.fromEmail,
-              },
-            );
-            if (!result.success) {
-              throw new Error(`Failed to send verification email: ${result.error}`);
-            }
-          }
-        : undefined,
+      // Same no-op-without-Resend pattern as sendResetPassword above.
+      sendVerificationEmail: async ({ url, user }) => {
+        if (!resend) {
+          return;
+        }
+        const result = await sendWelcomeEmail(
+          {
+            userEmail: user.email,
+            username: user.name,
+            verificationUrl: url,
+          },
+          {
+            apiKey: resend.apiKey,
+            defaultReplyTo: resend.replyTo,
+            from: resend.fromEmail,
+          },
+        );
+        if (!result.success) {
+          throw new Error(`Failed to send verification email: ${result.error}`);
+        }
+      },
     },
 
     plugins: [...(config.extraPlugins ?? [])],
@@ -179,8 +186,9 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
     // Divergent from sibling repos' `NODE_ENV === "production"` pattern — collabtime is deployed
     // serverless where in-memory rate limiting resets on every cold start (worse than no limit at all
     // because it'd appear non-deterministic). Only enable when we have a distributed counter (Upstash).
+    // CI is excluded so rapid-fire e2e signups don't hit the limit.
     rateLimit: {
-      enabled: !!config.secondaryStorage,
+      enabled: !!config.secondaryStorage && !process.env.CI,
       max: 100,
       storage: config.secondaryStorage ? "secondary-storage" : "memory",
       window: 60, // 1 minute
