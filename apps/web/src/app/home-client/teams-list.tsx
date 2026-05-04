@@ -105,7 +105,7 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
                             variant="destructive"
                           >
                             <Trash2 />
-                            Delete workspace
+                            Delete
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
