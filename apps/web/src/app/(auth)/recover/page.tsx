@@ -109,13 +109,9 @@ const RecoverPage = () => {
               )}
 
               <Field>
-                <form.Subscribe selector={(state) => state.canSubmit}>
-                  {(canSubmit) => (
-                    <Button disabled={isLoading || !canSubmit} type="submit">
-                      {isLoading ? "Sending..." : "Send reset link"}
-                    </Button>
-                  )}
-                </form.Subscribe>
+                <Button disabled={isLoading} type="submit">
+                  {isLoading ? "Sending..." : "Send reset link"}
+                </Button>
                 <FieldDescription className="text-center">
                   Remembered your password?{" "}
                   <Link className="text-foreground underline underline-offset-4" href="/login">
