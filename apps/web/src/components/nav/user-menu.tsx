@@ -29,7 +29,6 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
       await signOut({
         fetchOptions: {
           onError: (ctx) => {
-            // oxlint-disable-next-line no-console -- surface sign-out errors from auth client
             console.error("Sign out error:", ctx.error);
             toast.error("Failed to sign out");
           },
@@ -41,7 +40,6 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
         },
       });
     } catch (error) {
-      // oxlint-disable-next-line no-console -- surface unexpected sign-out errors
       console.error("Sign out error:", error);
       toast.error("Failed to sign out");
     }

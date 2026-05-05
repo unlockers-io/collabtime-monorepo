@@ -10,8 +10,7 @@ type QueryProviderProps = {
 const QueryProvider = ({ children }: QueryProviderProps) => {
   // useState (not useMemo) so the QueryClient instance is stable across re-renders;
   // setter is unused by design
-  // oxlint-disable-next-line no-unused-vars
-  const [queryClient, setQueryClient] = useState(
+  const [queryClient, _setQueryClient] = useState(
     () =>
       new QueryClient({
         defaultOptions: {

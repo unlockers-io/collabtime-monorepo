@@ -1,4 +1,3 @@
-// oxlint-disable no-console -- env validation diagnostic logging; TODO migrate to structured logger
 import { z } from "zod";
 
 /**

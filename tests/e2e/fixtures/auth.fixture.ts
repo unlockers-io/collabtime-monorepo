@@ -27,7 +27,6 @@ const test = base.extend<Fixtures>({
   signupPage: async ({ page }, use) => {
     await use(new SignupPage(page));
   },
-  // oxlint-disable-next-line no-empty-pattern -- Playwright fixture requires destructured deps param
   testUser: async ({}, use) => {
     await use(TEST_USER);
   },

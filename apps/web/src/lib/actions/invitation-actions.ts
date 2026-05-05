@@ -1,6 +1,5 @@
 "use server";
 
-// oxlint-disable no-console -- server action diagnostic logging; TODO migrate to structured logger
 import { prisma } from "@repo/db";
 import { sendInvitationEmail } from "@repo/transactional";
 

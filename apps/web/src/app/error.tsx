@@ -1,6 +1,5 @@
 "use client";
 
-// oxlint-disable no-console -- client-side error boundary diagnostic logging; TODO migrate to structured logger
 import { Button } from "@repo/ui/components/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useEffect } from "react";

@@ -61,7 +61,6 @@ const formatTimezoneLabel = (timezone: string, includeCurrentTime = false): stri
 };
 
 const getUserTimezone = (): string => {
-  // oxlint-disable-next-line new-cap -- Intl.DateTimeFormat() is callable without `new`
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 };
 
@@ -215,7 +214,6 @@ const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | 
   let inputOffset: number;
   try {
     // Intl.DateTimeFormat throws RangeError for invalid timeZone values
-    // oxlint-disable-next-line new-cap -- Intl.DateTimeFormat() is callable without `new`
     Intl.DateTimeFormat("en", { timeZone: trimmed });
     inputOffset = getTimezoneOffset(trimmed);
   } catch {

@@ -1,6 +1,5 @@
 "use server";
 
-// oxlint-disable no-console -- server action diagnostic logging; TODO migrate to structured logger
 import { v4 as uuidv4 } from "uuid";
 
 import { requireTeamAdmin } from "@/lib/team-auth";

@@ -1,4 +1,3 @@
-// oxlint-disable no-console -- server-startup diagnostic logging; TODO migrate to structured logger
 /**
  * Next.js Instrumentation file.
  * Runs once when the Next.js server starts. Validates env vars and loads the

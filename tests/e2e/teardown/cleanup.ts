@@ -19,11 +19,9 @@ const cleanup = async () => {
     const keysToDelete: Array<string> = [];
 
     do {
-      // oxlint-disable-next-line no-await-in-loop -- redis scan needs the previous cursor before requesting the next page
       const [nextCursor, keys] = await redis.scan(cursor, { count: 100, match: "team:*" });
       cursor = String(nextCursor);
 
-      // oxlint-disable-next-line no-await-in-loop -- pages are scanned sequentially; values within a page are fetched in parallel
       const values = await Promise.all(keys.map((key) => redis.get(key)));
       for (const [index, value] of values.entries()) {
         // Test teams have no members initially and use "E2E" patterns
@@ -35,11 +33,9 @@ const cleanup = async () => {
 
     if (keysToDelete.length > 0) {
       await redis.del(...keysToDelete);
-      // eslint-disable-next-line no-console -- Teardown script needs visible output
       console.log(`[E2E Cleanup] Deleted ${keysToDelete.length} Redis key(s)`);
     }
   } catch (error) {
-    // eslint-disable-next-line no-console -- Teardown script needs visible output
     console.error("[E2E Cleanup] Failed to clean up:", error);
   }
 };

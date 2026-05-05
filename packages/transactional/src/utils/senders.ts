@@ -1,5 +1,3 @@
-// oxlint-disable require-await -- email sender functions present an async API for callers; React render itself is sync
-
 import * as React from "react";
 
 import { InvitationEmail } from "../emails/invitation";

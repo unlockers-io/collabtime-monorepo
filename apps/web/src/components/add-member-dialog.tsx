@@ -92,8 +92,7 @@ const AddMemberForm = ({
 }: AddMemberFormProps) => {
   // useState lazy init so the placeholder is stable for this dialog instance;
   // setter is intentionally unused — the random placeholder must not change after mount
-  // oxlint-disable-next-line no-unused-vars
-  const [titlePlaceholder, setTitlePlaceholder] = useState(getRandomPlaceholder);
+  const [titlePlaceholder, _setTitlePlaceholder] = useState(getRandomPlaceholder);
   const defaultTimezone = getUserTimezone() as FormValues["timezone"];
 
   const defaultValues: FormValues = {

@@ -121,7 +121,6 @@ const GroupCard = ({
           if (canEdit && isEditing) {
             return (
               <Input
-                // oxlint-disable-next-line jsx-a11y/no-autofocus -- inline-edit input is mounted on user gesture; focusing immediately matches expectation
                 autoFocus
                 className="h-9 text-sm font-medium"
                 onBlur={handleSave}

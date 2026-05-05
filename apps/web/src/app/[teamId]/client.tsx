@@ -39,10 +39,13 @@ import { useTeamCacheUpdaters } from "./client/use-team-cache-updaters";
 import { useTeamNameEdit } from "./client/use-team-name-edit";
 import Loading from "./loading";
 
-// oxlint-disable-next-line promise/prefer-await-to-then -- next/dynamic requires .then() to remap a named export onto `default`
-const DndWrapper = dynamic(() => import("./dnd-wrapper").then((m) => ({ default: m.DndWrapper })), {
-  ssr: false,
-});
+const DndWrapper = dynamic(
+  async () => {
+    const { DndWrapper: Component } = await import("./dnd-wrapper");
+    return Component;
+  },
+  { ssr: false },
+);
 
 type TeamPageClientProps = {
   isAuthenticated: boolean;

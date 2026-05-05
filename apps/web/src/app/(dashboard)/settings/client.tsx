@@ -39,7 +39,6 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
       });
 
       if (error) {
-        // oxlint-disable-next-line no-console -- surface auth client errors during settings save
         console.error("[Settings] Failed to update name:", error);
         toast.error(error.message ?? "Failed to update name");
         return;
@@ -48,7 +47,6 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
       toast.success("Name updated successfully");
       router.refresh();
     } catch (error) {
-      // oxlint-disable-next-line no-console -- surface unexpected errors during settings save
       console.error("[Settings] Unexpected error updating name:", error);
       toast.error("Failed to update name");
     } finally {

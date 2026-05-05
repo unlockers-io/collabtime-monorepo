@@ -42,7 +42,6 @@ const TeamTitle = ({
   if (isEditing) {
     return (
       <input
-        // oxlint-disable-next-line jsx-a11y/no-autofocus -- inline-edit input is mounted on user gesture; focusing immediately matches expectation
         autoFocus
         className="h-9 w-full max-w-48 rounded-lg border border-input bg-background px-3 text-base font-bold tracking-tight text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:text-lg"
         onBlur={onSave}
