@@ -9,9 +9,11 @@ init({
 
   // Disable in GitHub Actions builds: the tunnel route otherwise proxies
   // envelopes to Sentry's ingest endpoint, which is unreachable from GH
-  // runners and hangs Playwright's networkidle waits. Resolved at build
-  // time; Vercel builds (which don't set GITHUB_ACTIONS) keep Sentry on.
-  enabled: !process.env.GITHUB_ACTIONS,
+  // runners and hangs Playwright's networkidle waits. NEXT_PUBLIC_ prefix
+  // is required for client-bundle inlining — plain `process.env.X` is
+  // undefined at runtime in the browser. Vercel builds don't set this var,
+  // so production keeps Sentry on.
+  enabled: process.env.NEXT_PUBLIC_DISABLE_SENTRY !== "true",
 
   // Add optional integrations for additional features
   integrations: [replayIntegration()],
