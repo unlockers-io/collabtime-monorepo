@@ -7,6 +7,12 @@ import { captureRouterTransitionStart, init, replayIntegration } from "@sentry/n
 init({
   dsn: "https://bd738ae5e6e5e0cef0d00e240b17601b@o4507617812938752.ingest.us.sentry.io/4511229832396800",
 
+  // Disable in GitHub Actions builds: the tunnel route otherwise proxies
+  // envelopes to Sentry's ingest endpoint, which is unreachable from GH
+  // runners and hangs Playwright's networkidle waits. Resolved at build
+  // time; Vercel builds (which don't set GITHUB_ACTIONS) keep Sentry on.
+  enabled: !process.env.GITHUB_ACTIONS,
+
   // Add optional integrations for additional features
   integrations: [replayIntegration()],
 
