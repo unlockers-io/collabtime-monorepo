@@ -55,5 +55,4 @@ const InvitationEmail = ({
 };
 
 export { InvitationEmail };
-// fallow-ignore-next-line unused-export
 export default InvitationEmail;
