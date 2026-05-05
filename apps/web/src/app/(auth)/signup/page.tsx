@@ -19,6 +19,7 @@ import {
 import { Input } from "@repo/ui/components/input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { z } from "zod";
 
 import { signUp } from "@/lib/auth-client";
@@ -34,9 +35,14 @@ const signupSchema = z.object({
 
 const SignupPage = () => {
   const router = useRouter();
+  // Track edits since last submit so stale "user already exists" errors clear
+  // as soon as the user changes the email — see useAuthForm: rootError lives
+  // inside the hook and only resets on the next submit.
+  const [hasEditedSinceSubmit, setHasEditedSinceSubmit] = useState(false);
   const { form, isLoading, rootError } = useAuthForm({
     defaultValues: { email: "", name: "", password: "" },
     onSubmit: async (values) => {
+      setHasEditedSinceSubmit(false);
       const result = await signUp.email({
         email: values.email,
         name: values.name,
@@ -50,6 +56,7 @@ const SignupPage = () => {
     },
     schema: signupSchema,
   });
+  const visibleRootError = hasEditedSinceSubmit ? null : rootError;
 
   return (
     <Card>
@@ -102,7 +109,10 @@ const SignupPage = () => {
                       disabled={isLoading}
                       id="email"
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      onChange={(e) => {
+                        setHasEditedSinceSubmit(true);
+                        field.handleChange(e.target.value);
+                      }}
                       placeholder="m@example.com"
                       type="email"
                       value={field.state.value}
@@ -139,9 +149,9 @@ const SignupPage = () => {
               }}
             </form.Field>
 
-            {rootError && (
+            {visibleRootError && (
               <Field data-invalid>
-                <FieldError>{rootError}</FieldError>
+                <FieldError>{visibleRootError}</FieldError>
               </Field>
             )}
 

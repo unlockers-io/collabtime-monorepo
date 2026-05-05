@@ -191,7 +191,7 @@ const AddMemberForm = ({
                 inputMode="email"
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="jane@example.com"
+                placeholder="m@example.com"
                 type="email"
                 value={field.state.value}
               />

@@ -48,6 +48,7 @@ const DndWrapper = dynamic(
 );
 
 type TeamPageClientProps = {
+  isArchived: boolean;
   isAuthenticated: boolean;
   spaceId: string | null;
   teamId: string;
@@ -56,6 +57,7 @@ type TeamPageClientProps = {
 };
 
 const TeamPageClient = ({
+  isArchived,
   isAuthenticated,
   spaceId,
   teamId,
@@ -176,6 +178,7 @@ const TeamPageClient = ({
         <Nav
           canDeleteWorkspace={spaceId !== null}
           isAdmin={isAdmin}
+          isArchived={isArchived}
           isAuthenticated={isAuthenticated}
           isEditingName={isEditingName}
           onCancelEdit={handleCancelEditName}

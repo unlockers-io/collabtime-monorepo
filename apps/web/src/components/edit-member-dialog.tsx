@@ -309,7 +309,7 @@ const EditMemberForm = ({
                 id="invite-email"
                 inputMode="email"
                 onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="jane@example.com"
+                placeholder="m@example.com"
                 type="email"
                 value={inviteEmail}
               />

@@ -35,7 +35,12 @@ export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metad
   };
 };
 
-const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus> => {
+type TeamStatusResult = {
+  isArchived: boolean;
+  status: TeamStatus;
+};
+
+const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatusResult> => {
   const [membershipResult, joinRequestResult] = await Promise.allSettled([
     prisma.membership.findUnique({
       where: { userId_teamId: { teamId, userId } },
@@ -48,16 +53,16 @@ const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus
   const membership = membershipResult.status === "fulfilled" ? membershipResult.value : null;
 
   if (membership && isTeamRole(membership.role)) {
-    return membership.role;
+    return { isArchived: membership.archivedAt !== null, status: membership.role };
   }
 
   const joinRequest = joinRequestResult.status === "fulfilled" ? joinRequestResult.value : null;
 
   if (joinRequest?.status === "PENDING") {
-    return "PENDING";
+    return { isArchived: false, status: "PENDING" };
   }
 
-  return "none";
+  return { isArchived: false, status: "none" };
 };
 
 const TeamPage = async ({ params }: TeamPageProps) => {
@@ -93,12 +98,15 @@ const TeamPage = async ({ params }: TeamPageProps) => {
     }
   }
 
-  const teamStatus: TeamStatus = session ? await getTeamStatus(session.user.id, teamId) : "none";
+  const { isArchived, status: teamStatus } = session
+    ? await getTeamStatus(session.user.id, teamId)
+    : { isArchived: false, status: "none" as TeamStatus };
 
   const isSpaceOwner = Boolean(session && space && space.ownerId === session.user.id);
 
   return (
     <TeamPageClient
+      isArchived={isArchived}
       isAuthenticated={Boolean(session)}
       spaceId={isSpaceOwner ? (space?.id ?? null) : null}
       teamId={teamId}

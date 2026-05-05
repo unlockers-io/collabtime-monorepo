@@ -1,7 +1,8 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/badge";
 import { Button, buttonVariants } from "@repo/ui/components/button";
-import { LogIn, Menu, Settings, X } from "lucide-react";
+import { Archive, LogIn, Menu, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ type NavProps = { isAuthenticated: boolean } & (
   | {
       canDeleteWorkspace?: boolean;
       isAdmin: boolean;
+      isArchived?: boolean;
       isEditingName: boolean;
       onCancelEdit: () => void;
       onDeleteWorkspace?: () => void;
@@ -66,6 +68,7 @@ const Nav = (props: NavProps) => {
     const {
       canDeleteWorkspace = false,
       isAdmin,
+      isArchived = false,
       isEditingName,
       onCancelEdit,
       onDeleteWorkspace,
@@ -93,6 +96,12 @@ const Nav = (props: NavProps) => {
               onSave={onSaveName}
               teamName={teamName}
             />
+            {isArchived && (
+              <Badge variant="secondary">
+                <Archive />
+                Archived
+              </Badge>
+            )}
           </div>
 
           {/* Desktop actions */}

@@ -90,7 +90,15 @@ const LoginPage = () => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <div className="flex items-center">
+                      <FieldLabel htmlFor="password">Password</FieldLabel>
+                      <Link
+                        className="ml-auto text-sm text-foreground underline underline-offset-4"
+                        href="/recover"
+                      >
+                        Forgot your password?
+                      </Link>
+                    </div>
                     <Input
                       aria-invalid={isInvalid}
                       autoComplete="current-password"

@@ -235,12 +235,15 @@ const TimezoneVisualizer = ({
         </ScrollArea>
 
         {members.length >= 2 && (
-          <AnimatePresence mode="wait">
+          // popLayout removes the exiting child from flow so the page height
+          // grows directly from button → panel, instead of collapsing to zero
+          // mid-transition (which scroll-jumps the viewport).
+          <AnimatePresence mode="popLayout">
             {!isComparing ? (
               <motion.div
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
                 key="compare-button"
                 transition={{ duration: 0.15 }}
               >
@@ -248,9 +251,9 @@ const TimezoneVisualizer = ({
               </motion.div>
             ) : (
               <motion.div
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
                 key="compare-panel"
                 transition={{ duration: 0.15 }}
               >
