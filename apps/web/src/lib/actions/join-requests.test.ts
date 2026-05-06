@@ -18,9 +18,6 @@ vi.mock("../redis", () => ({
   redis: { get: vi.fn(), set: vi.fn() },
   TEAM_ACTIVE_TTL_SECONDS: 100,
 }));
-vi.mock("../realtime", () => ({
-  realtime: { channel: vi.fn(() => ({ emit: vi.fn(() => Promise.resolve()) })) },
-}));
 vi.mock("./helpers", () => ({ getTeamRecord: vi.fn() }));
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
@@ -140,9 +137,8 @@ describe("approveJoinRequest", () => {
     }
   });
 
-  it("adds member to Redis and emits realtime event", async () => {
+  it("adds member to Redis cache after approval", async () => {
     const { redis } = await import("../redis");
-    const { realtime } = await import("../realtime");
 
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
@@ -151,7 +147,6 @@ describe("approveJoinRequest", () => {
     await approveJoinRequest("jr-1");
 
     expect(redis.set).toHaveBeenCalled();
-    expect(realtime.channel).toHaveBeenCalledWith(`team-${VALID_UUID}`);
   });
 });
 

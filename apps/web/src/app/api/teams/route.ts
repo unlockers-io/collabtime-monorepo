@@ -35,12 +35,12 @@ export const GET = async () => {
 
     const teams = await Promise.allSettled(
       memberships.map(async (membership) => {
-        const data = await redis.get<string>(`team:${membership.teamId}`);
+        const data = await redis.get(`team:${membership.teamId}`);
         if (!data) {
           return null;
         }
 
-        const team = (typeof data === "string" ? JSON.parse(data) : data) as Team;
+        const team = JSON.parse(data) as Team;
 
         return {
           archivedAt: membership.archivedAt ? membership.archivedAt.toISOString() : null,

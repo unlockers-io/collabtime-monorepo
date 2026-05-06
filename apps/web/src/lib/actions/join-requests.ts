@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 import { getTeamRole, requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 import type { TeamMember } from "@/types";
 
-import { realtime } from "../realtime";
 import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
 import { UUIDSchema } from "../validation";
 
@@ -116,7 +115,7 @@ const approveJoinRequest = async (
       }),
     ]);
 
-    // Post-commit side effects: cache + realtime (best-effort)
+    // Post-commit cache update (best-effort)
     const memberName = joinRequest.user.name || joinRequest.user.email.split("@")[0] || "Unknown";
     const team = await getTeamRecord(joinRequest.teamId);
     const newMember: TeamMember = {
@@ -133,13 +132,15 @@ const approveJoinRequest = async (
     try {
       if (team) {
         team.members.push(newMember);
-        await redis.set(`team:${joinRequest.teamId}`, JSON.stringify(team), {
-          ex: TEAM_ACTIVE_TTL_SECONDS,
-        });
+        await redis.set(
+          `team:${joinRequest.teamId}`,
+          JSON.stringify(team),
+          "EX",
+          TEAM_ACTIVE_TTL_SECONDS,
+        );
       }
-      await realtime.channel(`team-${joinRequest.teamId}`).emit("team.memberAdded", newMember);
     } catch (cacheError) {
-      console.error("Post-commit cache/realtime failed (approval committed):", cacheError);
+      console.error("Post-commit cache failed (approval committed):", cacheError);
     }
 
     return { data: { memberId: newMember.id }, success: true };

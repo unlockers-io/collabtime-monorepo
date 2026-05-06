@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from "uuid";
 import { requireTeamAdmin } from "@/lib/team-auth";
 import type { Team, TeamGroup } from "@/types";
 
-import { realtime } from "../realtime";
 import { TeamGroupInputSchema, TeamGroupUpdateSchema, UUIDSchema } from "../validation";
 
 import { getTeamRecord, persistTeam, sanitizeTeam } from "./helpers";
@@ -42,10 +41,7 @@ const createGroup = async (
 
     team.groups.push(newGroup);
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.groupCreated", newGroup),
-    ]);
+    await persistTeam(teamId, team);
 
     return {
       data: { group: newGroup, team: sanitizeTeam(team) },
@@ -98,10 +94,7 @@ const updateGroup = async (
 
     team.groups[groupIndex] = updatedGroup;
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.groupUpdated", updatedGroup),
-    ]);
+    await persistTeam(teamId, team);
 
     return { data: sanitizeTeam(team), success: true };
   } catch (error) {
@@ -144,10 +137,7 @@ const removeGroup = async (teamId: string, groupId: string): Promise<ActionResul
     // Update order values for remaining groups
     team.groups = team.groups.map((g, index) => ({ ...g, order: index }));
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.groupRemoved", { groupId }),
-    ]);
+    await persistTeam(teamId, team);
 
     return { data: sanitizeTeam(team), success: true };
   } catch (error) {
@@ -186,12 +176,7 @@ const reorderGroups = async (
     });
     team.groups = reorderedGroups;
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.groupsReordered", {
-        order: groupIds,
-      }),
-    ]);
+    await persistTeam(teamId, team);
 
     return { data: undefined, success: true };
   } catch (error) {

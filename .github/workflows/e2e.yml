@@ -19,8 +19,7 @@ jobs:
       BETTER_AUTH_SECRET: test-secret-minimum-32-characters-long-for-e2e
       BETTER_AUTH_URL: http://localhost:3000
       WEB_APP_URL: http://localhost:3000
-      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
       # Disable Sentry in CI: the tunnel proxy + browser SDK can't reach
       # ingest.us.sentry.io from GH runners and hangs Playwright's
       # networkidle waits. NEXT_PUBLIC_ prefix is required so the value

@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireTeamAdmin } from "@/lib/team-auth";
 
-import { realtime } from "../realtime";
-
 import { createGroup, removeGroup, reorderGroups, updateGroup } from "./group-actions";
 import { getTeamRecord, persistTeam, sanitizeTeam } from "./helpers";
 import {
@@ -20,9 +18,6 @@ vi.mock("../redis", () => ({
   redis: { get: vi.fn(), set: vi.fn() },
   TEAM_ACTIVE_TTL_SECONDS: 100,
 }));
-vi.mock("../realtime", () => ({
-  realtime: { channel: vi.fn(() => ({ emit: vi.fn(() => Promise.resolve()) })) },
-}));
 vi.mock("./helpers", () => ({
   getTeamRecord: vi.fn(),
   persistTeam: vi.fn(),
@@ -33,7 +28,6 @@ vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
 const mockedGetTeamRecord = vi.mocked(getTeamRecord);
 const mockedPersistTeam = vi.mocked(persistTeam);
-const mockedRealtimeChannel = vi.mocked(realtime.channel);
 
 describe("createGroup", () => {
   beforeEach(() => {
@@ -85,20 +79,13 @@ describe("createGroup", () => {
     expect(team.groups[0].name).toBe("Design");
   });
 
-  it("calls redis.set and realtime.emit", async () => {
+  it("persists the new group", async () => {
     const team = createTestTeamRecord({ groups: [] });
     mockedGetTeamRecord.mockResolvedValue(team);
-    const mockEmit = vi.fn(() => Promise.resolve());
-    mockedRealtimeChannel.mockReturnValue({ emit: mockEmit } as never);
 
     await createGroup(VALID_UUID, { name: "Design" });
 
     expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
-    expect(mockedRealtimeChannel).toHaveBeenCalledWith(`team-${VALID_UUID}`);
-    expect(mockEmit).toHaveBeenCalledWith(
-      "team.groupCreated",
-      expect.objectContaining({ name: "Design" }),
-    );
   });
 });
 
@@ -135,21 +122,17 @@ describe("updateGroup", () => {
     expect(result).toEqual({ error: "Group not found", success: false });
   });
 
-  it("calls redis.set and realtime.emit on success", async () => {
+  it("persists the updated group", async () => {
     const group = createTestGroup({ id: VALID_UUID_2, name: "Engineering" });
     const team = createTestTeamRecord({ groups: [group] });
     mockedGetTeamRecord.mockResolvedValue(team);
-    const mockEmit = vi.fn(() => Promise.resolve());
-    mockedRealtimeChannel.mockReturnValue({ emit: mockEmit } as never);
 
     const result = await updateGroup(VALID_UUID, VALID_UUID_2, { name: "Product" });
 
     expect(result.success).toBe(true);
     expect(mockedPersistTeam).toHaveBeenCalled();
-    expect(mockEmit).toHaveBeenCalledWith(
-      "team.groupUpdated",
-      expect.objectContaining({ name: "Product" }),
-    );
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
+    expect(savedTeam.groups[0].name).toBe("Product");
   });
 });
 
@@ -236,19 +219,18 @@ describe("removeGroup", () => {
     }
   });
 
-  it("calls redis.set and emits team.groupRemoved", async () => {
+  it("persists the team without the removed group", async () => {
     const team = createTestTeamRecord({
       groups: [createTestGroup({ id: VALID_UUID_2 })],
       members: [],
     });
     mockedGetTeamRecord.mockResolvedValue(team);
-    const mockEmit = vi.fn(() => Promise.resolve());
-    mockedRealtimeChannel.mockReturnValue({ emit: mockEmit } as never);
 
     await removeGroup(VALID_UUID, VALID_UUID_2);
 
     expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
-    expect(mockEmit).toHaveBeenCalledWith("team.groupRemoved", { groupId: VALID_UUID_2 });
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
+    expect(savedTeam.groups).toHaveLength(0);
   });
 });
 
@@ -316,17 +298,14 @@ describe("reorderGroups", () => {
     expect(team.groups[2]).toEqual(expect.objectContaining({ id: "g2", order: 2 }));
   });
 
-  it("calls redis.set and emits team.groupsReordered", async () => {
+  it("persists the reordered groups", async () => {
     const team = createTestTeamRecord({
       groups: [createTestGroup({ id: "g1", order: 0 }), createTestGroup({ id: "g2", order: 1 })],
     });
     mockedGetTeamRecord.mockResolvedValue(team);
-    const mockEmit = vi.fn(() => Promise.resolve());
-    mockedRealtimeChannel.mockReturnValue({ emit: mockEmit } as never);
 
     await reorderGroups(VALID_UUID, ["g2", "g1"]);
 
     expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
-    expect(mockEmit).toHaveBeenCalledWith("team.groupsReordered", { order: ["g2", "g1"] });
   });
 });

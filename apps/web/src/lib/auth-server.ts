@@ -22,7 +22,7 @@ const getAuthConfig = (): AuthConfig => {
           resendApiKey: process.env.RESEND_API_KEY,
         }
       : {}),
-    ...(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ...(process.env.REDIS_URL
       ? {
           secondaryStorage: {
             delete: async (key: string) => {
