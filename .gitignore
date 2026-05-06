@@ -66,3 +66,6 @@ logs/
 # backup files
 *.backup
 *.bak
+
+# openlogs (dev-server log capture for AI agents)
+.openlogs/
