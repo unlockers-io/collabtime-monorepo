@@ -21,6 +21,11 @@ jobs:
       WEB_APP_URL: http://localhost:3000
       UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
       UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      # Disable Sentry in CI: the tunnel proxy + browser SDK can't reach
+      # ingest.us.sentry.io from GH runners and hangs Playwright's
+      # networkidle waits. NEXT_PUBLIC_ prefix is required so the value
+      # gets inlined into the client bundle at build time.
+      NEXT_PUBLIC_DISABLE_SENTRY: "true"
     services:
       postgres:
         image: postgres:16

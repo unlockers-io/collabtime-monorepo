@@ -10,7 +10,9 @@ init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
-  enabled: process.env.NODE_ENV === "production",
+  // Skip GH Actions: the tunnel can't reach Sentry's ingest endpoint and
+  // hangs Playwright tests. Vercel builds don't set GITHUB_ACTIONS.
+  enabled: process.env.NODE_ENV === "production" && !process.env.GITHUB_ACTIONS,
 
   // Adjust this value in production, or use tracesSampler for greater control
   tracesSampleRate: 1,

@@ -119,13 +119,9 @@ const ResetPasswordForm = () => {
         )}
 
         <Field>
-          <form.Subscribe selector={(state) => state.canSubmit}>
-            {(canSubmit) => (
-              <Button disabled={isLoading || !canSubmit} type="submit">
-                {isLoading ? "Resetting..." : "Reset password"}
-              </Button>
-            )}
-          </form.Subscribe>
+          <Button disabled={isLoading} type="submit">
+            {isLoading ? "Resetting..." : "Reset password"}
+          </Button>
           <FieldDescription className="text-center">
             Back to{" "}
             <Link className="text-foreground underline underline-offset-4" href="/login">
