@@ -1,6 +1,4 @@
-import { execFileSync } from "node:child_process";
-
-import { createAuth, type Auth } from "@repo/auth/server";
+import { createAuth, type Auth, type AuthConfig } from "@repo/auth/server";
 import { prisma } from "@repo/db";
 import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
@@ -8,42 +6,20 @@ import { cache } from "react";
 
 import { redis } from "./redis";
 
-const resolveAppUrl = (): string => {
-  if (process.env.NODE_ENV === "production" || process.env.CI) {
-    return process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-  }
-
-  try {
-    return execFileSync("portless", ["get", "collabtime.web"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-  }
-};
-
 // Lazily initialized auth instance to avoid build-time errors
 // when environment variables aren't available
 let cachedAuth: Auth | null = null;
 
-const getAuthConfig = () => {
-  const appUrl = resolveAppUrl();
-
+const getAuthConfig = (): AuthConfig => {
   return {
-    betterAuth: {
-      secret: process.env.BETTER_AUTH_SECRET ?? "",
-      url: appUrl,
-      webAppUrl: process.env.WEB_APP_URL ?? appUrl,
-    },
     // nextCookies() must be last — lets better-auth read cookies in RSC/Server Actions
     extraPlugins: [nextCookies()],
+    prisma,
+    secret: process.env.BETTER_AUTH_SECRET ?? "",
     ...(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL
       ? {
-          resend: {
-            apiKey: process.env.RESEND_API_KEY,
-            fromEmail: process.env.RESEND_FROM_EMAIL,
-          },
+          fromEmail: process.env.RESEND_FROM_EMAIL,
+          resendApiKey: process.env.RESEND_API_KEY,
         }
       : {}),
     ...(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
@@ -79,7 +55,7 @@ const getAuthConfig = () => {
  */
 const getAuth = (): Auth => {
   if (!cachedAuth) {
-    cachedAuth = createAuth(prisma, getAuthConfig());
+    cachedAuth = createAuth(getAuthConfig());
   }
   return cachedAuth;
 };

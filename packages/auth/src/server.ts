@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+
 import type { PrismaClient } from "@repo/db";
 import {
   sendPasswordResetEmail,
@@ -15,60 +17,69 @@ type SecondaryStorage = {
 };
 
 type AuthConfig = {
-  betterAuth: {
-    secret: string;
-    url: string;
-    webAppUrl: string;
-  };
   // Inject framework-specific plugins (e.g. nextCookies()) at the call site;
   // must be last in the plugins array
   extraPlugins?: Array<BetterAuthPlugin>;
-  resend?: {
-    apiKey: string;
-    fromEmail: string;
-    replyTo?: string;
-  };
+  fromEmail?: string;
+  prisma: PrismaClient;
+  resendApiKey?: string;
+  resendReplyTo?: string;
   secondaryStorage?: SecondaryStorage;
+  secret: string;
 };
 
-/**
- * Trusted origins for the auth system.
- * Includes localhost for development (portless via OrbStack) and the main production domains.
- */
-const TRUSTED_ORIGINS = [
-  "http://localhost:3000",
-  "https://collabtime.io",
-  "https://www.collabtime.io",
-];
-
-/**
- * Build the trusted origins list, dynamically including the request's origin
- * if it matches *.localhost (portless dev URLs).
- */
-const getTrustedOrigins = (request?: Request): Array<string> => {
-  if (!request) {
-    return TRUSTED_ORIGINS;
+const getPortlessUrl = (name: string) => {
+  if (process.env.CI) {
+    return undefined;
   }
-
-  const origin = request.headers.get("origin");
-  if (!origin) {
-    return TRUSTED_ORIGINS;
-  }
-
   try {
-    const url = new URL(origin);
-    if (url.hostname === "localhost" || url.hostname.endsWith(".localhost")) {
-      return [...TRUSTED_ORIGINS, origin];
-    }
+    return execFileSync("portless", ["get", name], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
   } catch {
-    // invalid origin URL
+    return undefined;
   }
-
-  return TRUSTED_ORIGINS;
 };
 
-const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
-  const { betterAuth: betterAuthConfig, resend } = config;
+const resolveBaseUrl = (): string => {
+  if (process.env.NODE_ENV === "production" || process.env.CI) {
+    return process.env.BETTER_AUTH_URL || "http://localhost:3000";
+  }
+  return getPortlessUrl("collabtime.web") ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+};
+
+const defaultTrustedOrigins = () => {
+  // Both `localhost` and `127.0.0.1` are loopback but Better Auth's origin
+  // check is exact-string. CI's playwright config uses `127.0.0.1` explicitly
+  // (Node ≥18 resolves `localhost` to `::1` first; servers bind to 0.0.0.0/IPv4
+  // and undici doesn't fall back), so omitting the IPv4 form rejects every
+  // request from those tests with `[Better Auth]: Invalid origin`.
+  const origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://collabtime.io",
+    "https://www.collabtime.io",
+  ];
+
+  const portlessUrl = getPortlessUrl("collabtime.web");
+  if (portlessUrl) {
+    origins.push(portlessUrl);
+  }
+
+  return origins;
+};
+
+const createAuth = (config: AuthConfig) => {
+  const {
+    extraPlugins = [],
+    fromEmail = "noreply@collabtime.com",
+    prisma,
+    resendApiKey,
+    resendReplyTo,
+    secondaryStorage,
+    secret,
+  } = config;
 
   return betterAuth({
     account: {
@@ -78,17 +89,22 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       },
     },
 
+    // Fleet-canonical shape: defaultCookieAttributes + useSecureCookies.
+    // `useSecureCookies` gates on whether BETTER_AUTH_URL is HTTPS, not on
+    // NODE_ENV — CI runs production builds (NODE_ENV=production) over HTTP,
+    // and `secure: true` over HTTP would make browsers silently drop the
+    // session cookie, killing the auth flow.
     advanced: {
       cookiePrefix: "collabtime",
       defaultCookieAttributes: {
         httpOnly: true,
         sameSite: "lax" as const,
       },
-      useSecureCookies: betterAuthConfig.url.startsWith("https://"),
+      useSecureCookies: process.env.BETTER_AUTH_URL?.startsWith("https://") === true,
     },
 
     basePath: "/api/auth",
-    baseURL: betterAuthConfig.url,
+    baseURL: resolveBaseUrl(),
 
     database: prismaAdapter(prisma, {
       provider: "postgresql",
@@ -103,20 +119,17 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       // success response. onExistingUserSignUp below notifies the real account
       // holder so they're not left waiting for a verification email that won't
       // arrive. See better-auth docs "Email Enumeration Protection".
-      onExistingUserSignUp: resend
-        ? async ({ user }) => {
+      onExistingUserSignUp: resendApiKey
+        ? async ({ user }, request) => {
+            const origin = request?.headers.get("origin") ?? "";
             const result = await sendSignUpAttemptEmail(
               {
-                resetPasswordUrl: `${betterAuthConfig.webAppUrl}/recover`,
-                signInUrl: `${betterAuthConfig.webAppUrl}/login`,
+                resetPasswordUrl: `${origin}/recover`,
+                signInUrl: `${origin}/login`,
                 userEmail: user.email,
                 username: user.name,
               },
-              {
-                apiKey: resend.apiKey,
-                defaultReplyTo: resend.replyTo,
-                from: resend.fromEmail,
-              },
+              { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },
             );
             if (!result.success) {
               // Don't throw — Better Auth's enumeration-prevention path needs
@@ -129,13 +142,13 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       // Gate on Resend availability — we physically can't send a verification
       // email without an API key, and requiring verification under that
       // condition would lock new users out.
-      requireEmailVerification: Boolean(resend),
+      requireEmailVerification: Boolean(resendApiKey),
       // Always defined so the Better Auth endpoint accepts the request. The
       // actual send only happens when Resend is configured; without it we
       // succeed silently — the test/dev environment doesn't have email infra
       // but the user-visible flow (form submit → redirect) still works.
       sendResetPassword: async ({ url, user }) => {
-        if (!resend) {
+        if (!resendApiKey) {
           return;
         }
         const result = await sendPasswordResetEmail(
@@ -144,11 +157,7 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
             userEmail: user.email,
             username: user.name,
           },
-          {
-            apiKey: resend.apiKey,
-            defaultReplyTo: resend.replyTo,
-            from: resend.fromEmail,
-          },
+          { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },
         );
         if (!result.success) {
           throw new Error(`Failed to send password reset email: ${result.error}`);
@@ -159,7 +168,7 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
     emailVerification: {
       // Same no-op-without-Resend pattern as sendResetPassword above.
       sendVerificationEmail: async ({ url, user }) => {
-        if (!resend) {
+        if (!resendApiKey) {
           return;
         }
         const result = await sendWelcomeEmail(
@@ -168,11 +177,7 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
             username: user.name,
             verificationUrl: url,
           },
-          {
-            apiKey: resend.apiKey,
-            defaultReplyTo: resend.replyTo,
-            from: resend.fromEmail,
-          },
+          { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },
         );
         if (!result.success) {
           throw new Error(`Failed to send verification email: ${result.error}`);
@@ -180,7 +185,7 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       },
     },
 
-    plugins: [...(config.extraPlugins ?? [])],
+    plugins: [...extraPlugins],
 
     // Fleet-canonical rate-limit shape. CI runs production builds but the
     // e2e suite hammers auth endpoints back-to-back across browsers; the
@@ -190,13 +195,13 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
     rateLimit: {
       enabled: process.env.NODE_ENV === "production" && !process.env.CI,
       max: 100,
-      storage: config.secondaryStorage ? "secondary-storage" : "database",
+      storage: secondaryStorage ? "secondary-storage" : "database",
       window: 60,
     },
 
-    secret: betterAuthConfig.secret,
+    secret,
 
-    ...(config.secondaryStorage && { secondaryStorage: config.secondaryStorage }),
+    ...(secondaryStorage && { secondaryStorage }),
 
     session: {
       cookieCache: {
@@ -208,11 +213,11 @@ const createAuth = (prisma: PrismaClient, config: AuthConfig) => {
       updateAge: 60 * 60 * 24, // Update session if older than 1 day
     },
 
-    trustedOrigins: getTrustedOrigins,
+    trustedOrigins: process.env.TRUSTED_ORIGINS?.split(",") || defaultTrustedOrigins(),
   });
 };
 
 type Auth = ReturnType<typeof createAuth>;
 
 export { createAuth };
-export type { Auth };
+export type { Auth, AuthConfig };
