@@ -93,7 +93,9 @@ const TeamPageClient = ({
     handleGroupUpdated,
     handleMemberAdded,
     handleMemberRemoved,
+    handleMembersImported,
     handleMemberUpdated,
+    handleTeamNameUpdated,
     updateTeamCache,
   } = useTeamCacheUpdaters(teamId);
 
@@ -120,7 +122,7 @@ const TeamPageClient = ({
     handleStartEditName,
     isEditingName,
     setEditingTeamName,
-  } = useTeamNameEdit({ isAdmin, teamId, teamName });
+  } = useTeamNameEdit({ isAdmin, onTeamNameUpdated: handleTeamNameUpdated, teamId, teamName });
 
   const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members);
 
@@ -245,7 +247,7 @@ const TeamPageClient = ({
             </SectionCardContent>
             {isAdmin && (
               <SectionCardFooter bordered className="justify-end">
-                <ImportMembersDialog teamId={teamId} />
+                <ImportMembersDialog onMembersImported={handleMembersImported} teamId={teamId} />
                 <AddMemberDialog
                   groups={groups}
                   isFirstMember={members.length === 0}

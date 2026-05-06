@@ -7,11 +7,12 @@ import { updateTeamName } from "@/lib/actions/member-actions";
 
 type UseTeamNameEditArgs = {
   isAdmin: boolean;
+  onTeamNameUpdated: (name: string) => void;
   teamId: string;
   teamName: string;
 };
 
-const useTeamNameEdit = ({ isAdmin, teamId, teamName }: UseTeamNameEditArgs) => {
+const useTeamNameEdit = ({ isAdmin, onTeamNameUpdated, teamId, teamName }: UseTeamNameEditArgs) => {
   const [, startTransition] = useTransition();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingTeamName, setEditingTeamName] = useState("");
@@ -35,7 +36,9 @@ const useTeamNameEdit = ({ isAdmin, teamId, teamName }: UseTeamNameEditArgs) => 
 
     startTransition(async () => {
       const result = await updateTeamName(teamId, trimmedName);
-      if (!result.success) {
+      if (result.success) {
+        onTeamNameUpdated(trimmedName);
+      } else {
         toast.error(result.error);
       }
     });
