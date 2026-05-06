@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Body, Container, Head, Html, Link, Preview, Section, Tailwind, Text } from "react-email";
 
-import { CollabTimeLogo } from "../components";
+import { CollabTimeLogo } from "../components/collabtime-logo";
 import { tailwindConfig } from "../styles/theme";
 
 type BaseLayoutProps = {
