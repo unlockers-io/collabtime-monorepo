@@ -48,7 +48,7 @@ const GroupsGrid = ({
 
   return (
     <ScrollArea className="max-h-150">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,320px))] gap-4 pr-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),320px))] gap-4 pr-4">
         {isAdmin ? (
           <SortableContext items={groupIds} strategy={rectSortingStrategy}>
             {orderedGroups.map((group) => (
