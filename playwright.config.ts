@@ -23,6 +23,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   fullyParallel: true,
   globalTeardown: "./tests/e2e/teardown/cleanup.ts",
+  // CI runs chromium only — 67 tests × 3 browsers × 1 worker exceeds the
+  // 30 min job budget. chromium is the canonical Playwright signal; firefox
+  // and webkit run locally and via nightly/manual workflows.
   projects: [
     { name: "setup", testMatch: /.*\.setup\.ts/ },
     {
@@ -33,22 +36,26 @@ export default defineConfig({
         storageState: "tests/e2e/.auth/user.json",
       },
     },
-    {
-      dependencies: ["setup"],
-      name: "firefox",
-      use: {
-        ...devices["Desktop Firefox"],
-        storageState: "tests/e2e/.auth/user.json",
-      },
-    },
-    {
-      dependencies: ["setup"],
-      name: "webkit",
-      use: {
-        ...devices["Desktop Safari"],
-        storageState: "tests/e2e/.auth/user.json",
-      },
-    },
+    ...(process.env.CI
+      ? []
+      : [
+          {
+            dependencies: ["setup"],
+            name: "firefox",
+            use: {
+              ...devices["Desktop Firefox"],
+              storageState: "tests/e2e/.auth/user.json",
+            },
+          },
+          {
+            dependencies: ["setup"],
+            name: "webkit",
+            use: {
+              ...devices["Desktop Safari"],
+              storageState: "tests/e2e/.auth/user.json",
+            },
+          },
+        ]),
   ],
   reporter: process.env.CI
     ? [["github"], ["list"], ["html", { open: "never" }]]
