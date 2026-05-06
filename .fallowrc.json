@@ -7,7 +7,8 @@
     "oxlint.config.ts",
     "**/prisma.config.ts",
     "packages/db/src/seed.ts",
-    "tests/e2e/**/*.{ts,tsx}"
+    "tests/e2e/**/*.{ts,tsx}",
+    "packages/transactional/src/emails/**/*.tsx"
   ],
   "ignorePatterns": ["packages/db/src/generated/**"],
   "ignoreDependencies": [
