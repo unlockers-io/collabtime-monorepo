@@ -33,10 +33,8 @@ export const GET = async () => {
 
     const results = await Promise.allSettled(
       invitations.map(async (inv) => {
-        const data = await redis.get<string>(`team:${inv.teamId}`);
-        const parsed = data
-          ? TeamCacheSchema.safeParse(typeof data === "string" ? JSON.parse(data) : data)
-          : null;
+        const data = await redis.get(`team:${inv.teamId}`);
+        const parsed = data ? TeamCacheSchema.safeParse(JSON.parse(data)) : null;
         const team = parsed?.success ? parsed.data : null;
 
         return {

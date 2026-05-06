@@ -40,6 +40,19 @@ describe("validateEnv", () => {
 
     expect(() => validateEnv()).toThrow("Invalid environment variables");
   });
+
+  // Unset GitHub Actions secrets expand to "" — must not blow up env validation.
+  it("accepts empty string for optional REDIS_URL (CI passes unset secrets as '')", () => {
+    vi.stubEnv("REDIS_URL", "");
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("throws when REDIS_URL is set to a non-URL string", () => {
+    vi.stubEnv("REDIS_URL", "not-a-url");
+
+    expect(() => validateEnv()).toThrow("Invalid environment variables");
+  });
 });
 
 describe("getEnv", () => {

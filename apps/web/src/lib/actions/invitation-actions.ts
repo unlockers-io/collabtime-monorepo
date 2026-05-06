@@ -186,9 +186,12 @@ const acceptInvitation = async (
         const memberIndex = team.members.findIndex((m) => m.id === invitation.memberId);
         if (memberIndex !== -1 && !team.members[memberIndex].userId) {
           team.members[memberIndex].userId = session.user.id;
-          await redis.set(`team:${invitation.teamId}`, JSON.stringify(team), {
-            ex: TEAM_ACTIVE_TTL_SECONDS,
-          });
+          await redis.set(
+            `team:${invitation.teamId}`,
+            JSON.stringify(team),
+            "EX",
+            TEAM_ACTIVE_TTL_SECONDS,
+          );
         }
       }
     } catch (cacheError) {

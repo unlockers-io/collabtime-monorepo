@@ -9,7 +9,7 @@ Real-time team timezone visualizer. Launching soon.
 - **Styling:** Tailwind CSS v4, Radix UI, shadcn/ui patterns
 - **Database:** Prisma 7, PostgreSQL
 - **Auth:** Better Auth + Stripe
-- **Real-time:** Upstash Redis, Upstash Realtime
+- **Cache:** Redis via ioredis (Railway-hosted)
 - **Monorepo:** Turborepo, pnpm workspaces
 - **Linting:** oxlint
 - **Formatting:** oxfmt

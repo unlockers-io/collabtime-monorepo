@@ -99,12 +99,12 @@ const getTeamName = cache(async (teamId: string): Promise<string | null> => {
       return null;
     }
 
-    const data = await redis.get<string>(`team:${teamId}`);
+    const data = await redis.get(`team:${teamId}`);
     if (!data) {
       return null;
     }
 
-    const team = (typeof data === "string" ? JSON.parse(data) : data) as { name?: string };
+    const team = JSON.parse(data) as { name?: string };
     const name = typeof team?.name === "string" ? team.name.trim() : "";
     return name.length > 0 ? name : null;
   } catch (error) {

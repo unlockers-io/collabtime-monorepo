@@ -1,31 +1,28 @@
-import { Redis } from "@upstash/redis";
+import { Redis } from "ioredis";
 
 const cleanup = async () => {
+  const url = process.env.REDIS_URL;
+
+  if (!url) {
+    return;
+  }
+
+  const redis = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
+
   try {
-    const url = process.env.UPSTASH_REDIS_REST_URL;
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-
-    if (!url || !token) {
-      return;
-    }
-
-    const redis = new Redis({ token, url });
-
     // Find and delete all Redis keys created by E2E tests.
     // Test teams use UUIDs as teamIds, stored as team:<uuid> keys.
-    // We scan for keys matching "team:*" that were created during E2E runs.
-    // In CI, the Postgres container is ephemeral so no DB cleanup needed.
+    // Filter to keys whose serialized payload references the e2e test user.
     let cursor = "0";
     const keysToDelete: Array<string> = [];
 
     do {
-      const [nextCursor, keys] = await redis.scan(cursor, { count: 100, match: "team:*" });
-      cursor = String(nextCursor);
+      const [nextCursor, keys] = await redis.scan(cursor, "MATCH", "team:*", "COUNT", 100);
+      cursor = nextCursor;
 
       const values = await Promise.all(keys.map((key) => redis.get(key)));
       for (const [index, value] of values.entries()) {
-        // Test teams have no members initially and use "E2E" patterns
-        if (value && typeof value === "string" && value.includes("e2e-test@collabtime")) {
+        if (value && value.includes("e2e-test@collabtime")) {
           keysToDelete.push(keys[index]);
         }
       }
@@ -37,6 +34,8 @@ const cleanup = async () => {
     }
   } catch (error) {
     console.error("[E2E Cleanup] Failed to clean up:", error);
+  } finally {
+    await redis.quit();
   }
 };
 

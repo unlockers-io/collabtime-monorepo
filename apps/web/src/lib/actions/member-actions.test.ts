@@ -25,12 +25,6 @@ vi.mock("../redis", () => ({
   TEAM_ACTIVE_TTL_SECONDS: 100,
 }));
 
-vi.mock("../realtime", () => ({
-  realtime: {
-    channel: vi.fn(() => ({ emit: vi.fn(() => Promise.resolve()) })),
-  },
-}));
-
 vi.mock("./helpers", () => ({
   getTeamRecord: vi.fn(),
   persistTeam: vi.fn(),
@@ -40,8 +34,6 @@ vi.mock("./helpers", () => ({
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
 import { prisma } from "@repo/db";
-
-import { realtime } from "../realtime";
 
 import { getTeamRecord, persistTeam } from "./helpers";
 import {
@@ -58,10 +50,7 @@ const mockedGetTeamRecord = vi.mocked(getTeamRecord);
 const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
 const mockedRequireAuth = vi.mocked(requireAuth);
 const mockedPersistTeam = vi.mocked(persistTeam);
-const mockedChannel = vi.mocked(realtime.channel);
 const mockedFindUnique = vi.mocked(prisma.membership.findUnique);
-
-const mockEmit = vi.fn(() => Promise.resolve());
 
 const validMemberInput = {
   name: "Alice",
@@ -74,7 +63,6 @@ const validMemberInput = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
-  mockedChannel.mockReturnValue({ emit: mockEmit } as never);
   mockedRequireTeamAdmin.mockResolvedValue(undefined as never);
 });
 
@@ -109,17 +97,13 @@ describe("addMember", () => {
     }
   });
 
-  it("pushes member to team and calls redis.set + realtime.emit", async () => {
+  it("pushes member to team and persists", async () => {
     const team = createTestTeamRecord({ members: [] });
     mockedGetTeamRecord.mockResolvedValue(team);
 
     await addMember(VALID_UUID, validMemberInput as never);
 
     expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
-    expect(mockEmit).toHaveBeenCalledWith(
-      "team.memberAdded",
-      expect.objectContaining({ name: "Alice" }),
-    );
   });
 });
 
@@ -141,7 +125,7 @@ describe("removeMember", () => {
     expect(result).toEqual({ error: "Member not found", success: false });
   });
 
-  it("filters out member and emits memberRemoved", async () => {
+  it("filters out member and persists", async () => {
     const member = createTestMember({ id: VALID_UUID_2 });
     const team = createTestTeamRecord({ members: [member] });
     mockedGetTeamRecord.mockResolvedValue(team);
@@ -149,9 +133,8 @@ describe("removeMember", () => {
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
     expect(result.success).toBe(true);
-    expect(mockEmit).toHaveBeenCalledWith("team.memberRemoved", {
-      memberId: VALID_UUID_2,
-    });
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
+    expect(savedTeam.members).toHaveLength(0);
   });
 });
 
@@ -423,7 +406,7 @@ describe("reorderMembers", () => {
     expect(savedTeam.members[1].order).toBe(1);
   });
 
-  it("emits membersReordered event", async () => {
+  it("persists reordered members", async () => {
     const team = createTestTeamRecord({
       members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
     });
@@ -431,8 +414,8 @@ describe("reorderMembers", () => {
 
     await reorderMembers(VALID_UUID, [VALID_UUID_3, VALID_UUID_2]);
 
-    expect(mockEmit).toHaveBeenCalledWith("team.membersReordered", {
-      order: [VALID_UUID_3, VALID_UUID_2],
-    });
+    const savedTeam = mockedPersistTeam.mock.calls[0][1];
+    expect(savedTeam.members[0].id).toBe(VALID_UUID_3);
+    expect(savedTeam.members[1].id).toBe(VALID_UUID_2);
   });
 });

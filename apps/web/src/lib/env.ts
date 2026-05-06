@@ -16,9 +16,10 @@ const envSchema = z.object({
   // Web App URL (for redirects, etc.)
   WEB_APP_URL: z.string().url("WEB_APP_URL must be a valid URL").optional(),
 
-  // Upstash Redis (optional — app boots without Redis, features degrade gracefully)
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1, "UPSTASH_REDIS_REST_TOKEN is required").optional(),
-  UPSTASH_REDIS_REST_URL: z.string().url("UPSTASH_REDIS_REST_URL must be a valid URL").optional(),
+  // Redis (optional — app boots without Redis, features degrade gracefully)
+  // Accepts redis:// or rediss:// (Railway uses rediss:// with TLS).
+  // Empty string is treated as unset — unset GitHub secrets expand to "" in CI.
+  REDIS_URL: z.string().url("REDIS_URL must be a valid URL").optional().or(z.literal("")),
 
   // Optional: Space access signing (falls back to BETTER_AUTH_SECRET)
   SPACE_ACCESS_SECRET: z.string().min(32).optional(),

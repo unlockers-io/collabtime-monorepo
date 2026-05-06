@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 import { importMembers } from "@/lib/actions/member-actions";
 import type { COMMON_TIMEZONES } from "@/lib/timezones";
+import type { TeamMember } from "@/types";
 
 import type { ParsedRow } from "./import-members-dialog/parse-csv";
 import { parseCSV } from "./import-members-dialog/parse-csv";
@@ -24,10 +25,11 @@ import { PreviewTable } from "./import-members-dialog/preview-table";
 import { UploadForm } from "./import-members-dialog/upload-form";
 
 type ImportMembersDialogProps = {
+  onMembersImported: (members: Array<TeamMember>) => void;
   teamId: string;
 };
 
-const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
+const ImportMembersDialog = ({ onMembersImported, teamId }: ImportMembersDialogProps) => {
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [rows, setRows] = useState<Array<ParsedRow> | null>(null);
@@ -81,6 +83,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
     setIsImporting(false);
 
     if (result.success) {
+      onMembersImported(result.data.members);
       toast.success(
         `${result.data.imported} member${result.data.imported === 1 ? "" : "s"} imported`,
       );

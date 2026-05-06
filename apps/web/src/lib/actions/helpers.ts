@@ -33,13 +33,13 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
       return null;
     }
 
-    const data = await redis.get<string>(`team:${teamId}`);
+    const data = await redis.get(`team:${teamId}`);
 
     if (!data) {
       return null;
     }
 
-    const team = (typeof data === "string" ? JSON.parse(data) : data) as TeamRecord;
+    const team = JSON.parse(data) as TeamRecord;
 
     if (!team.groups) {
       team.groups = [];
@@ -59,7 +59,7 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
 };
 
 const persistTeam = async (teamId: string, team: TeamRecord): Promise<void> => {
-  await redis.set(`team:${teamId}`, JSON.stringify(team), { ex: TEAM_ACTIVE_TTL_SECONDS });
+  await redis.set(`team:${teamId}`, JSON.stringify(team), "EX", TEAM_ACTIVE_TTL_SECONDS);
 };
 
 export { getTeamRecord, persistTeam, sanitizeTeam };

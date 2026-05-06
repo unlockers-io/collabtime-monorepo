@@ -16,29 +16,22 @@ const getSigningSecret = (): string => {
   return secret;
 };
 
-/**
- * Create an HMAC signature for the given data.
- */
 const createSignature = (data: string, secret: string): string => {
   return crypto.createHmac("sha256", secret).update(data).digest("base64url");
 };
 
-/**
- * Verify an HMAC signature.
- */
 const verifySignature = (data: string, signature: string, secret: string): boolean => {
   const expectedSignature = createSignature(data, secret);
-  // Use timing-safe comparison to prevent timing attacks
+  // Timing-safe comparison to prevent timing attacks
   try {
     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
   } catch {
-    // Buffers of different lengths will throw
+    // Buffers of different lengths throw
     return false;
   }
 };
 
 type TokenPayload = {
-  clientIp: string;
   expiresAt: number;
   spaceId: string;
   version: string;
@@ -48,12 +41,11 @@ type TokenPayload = {
  * Create a signed access token for a space.
  * Token format: base64(payload).signature
  */
-const createSpaceAccessToken = (spaceId: string, clientIp: string): string => {
+const createSpaceAccessToken = (spaceId: string): string => {
   const secret = getSigningSecret();
   const expiresAt = Date.now() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
   const payload: TokenPayload = {
-    clientIp,
     expiresAt,
     spaceId,
     version: TOKEN_VERSION,
@@ -69,13 +61,9 @@ type VerificationResult = { payload: TokenPayload; valid: true } | { reason: str
 
 /**
  * Verify a space access token.
- * Checks signature, expiration, and optionally the client IP.
+ * Checks signature and expiration.
  */
-const verifySpaceAccessToken = (
-  token: string,
-  expectedSpaceId: string,
-  clientIp?: string,
-): VerificationResult => {
+const verifySpaceAccessToken = (token: string, expectedSpaceId: string): VerificationResult => {
   try {
     const secret = getSigningSecret();
     const parts = token.split(".");
@@ -90,35 +78,23 @@ const verifySpaceAccessToken = (
       return { reason: "Missing token parts", valid: false };
     }
 
-    // Verify signature
     if (!verifySignature(payloadStr, signature, secret)) {
       return { reason: "Invalid signature", valid: false };
     }
 
-    // Decode and parse payload
     const payloadJson = Buffer.from(payloadStr, "base64url").toString("utf8");
     const payload = JSON.parse(payloadJson) as TokenPayload;
 
-    // Verify version
     if (payload.version !== TOKEN_VERSION) {
       return { reason: "Token version mismatch", valid: false };
     }
 
-    // Verify space ID
     if (payload.spaceId !== expectedSpaceId) {
       return { reason: "Space ID mismatch", valid: false };
     }
 
-    // Verify expiration
     if (Date.now() > payload.expiresAt) {
       return { reason: "Token expired", valid: false };
-    }
-
-    // Optionally verify client IP (for stricter security)
-    // Note: This might cause issues with mobile users changing networks
-    // Disable by not passing clientIp parameter
-    if (clientIp && payload.clientIp !== clientIp) {
-      return { reason: "IP address mismatch", valid: false };
     }
 
     return { payload, valid: true };

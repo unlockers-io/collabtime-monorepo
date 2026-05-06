@@ -1,40 +1,43 @@
-import { Redis } from "@upstash/redis";
+import { Redis } from "ioredis";
 
 let cachedRedis: Redis | null = null;
 
 /**
  * Get the Redis client instance.
- * Uses lazy initialization to avoid build-time errors when env vars aren't available.
+ * Uses lazy initialization to avoid build-time errors when env vars aren't available
+ * and to defer the TCP handshake until first command on Vercel cold starts.
  */
 const getRedis = (): Redis | null => {
   if (cachedRedis) {
     return cachedRedis;
   }
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = process.env.REDIS_URL;
 
-  if (!url || !token) {
+  if (!url) {
     return null;
   }
 
-  cachedRedis = new Redis({ token, url });
+  cachedRedis = new Redis(url, {
+    enableAutoPipelining: true,
+    family: 0,
+    lazyConnect: true,
+    maxRetriesPerRequest: 3,
+  });
+
   return cachedRedis;
 };
 
 /**
  * Proxy object that provides lazy Redis access.
- * This allows imports to work at build time while deferring
+ * Allows imports to work at build time while deferring
  * actual Redis connection to runtime.
- *
- * Note: This is a Proxy, not a real Redis instance. For cases requiring
- * the actual Redis instance (like @upstash/realtime), use getRedis() directly.
  */
 const redis = new Proxy({} as Redis, {
   get(_, prop) {
     const instance = getRedis();
     if (!instance) {
-      // Return no-op functions and undefined for properties when Redis is unavailable
+      // No-op fallback when Redis is unavailable: graceful degradation
       if (
         typeof prop === "string" &&
         ["get", "set", "setex", "del", "scan", "publish"].includes(prop)
@@ -45,7 +48,7 @@ const redis = new Proxy({} as Redis, {
     }
     const value = instance[prop as keyof Redis];
     if (typeof value === "function") {
-      return value.bind(instance);
+      return (value as (...args: Array<unknown>) => unknown).bind(instance);
     }
     return value;
   },
@@ -57,4 +60,4 @@ const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60; // 60 days
 // TTL for teams with members (2 years)
 const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2; // 2 years
 
-export { redis, getRedis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };
+export { redis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };

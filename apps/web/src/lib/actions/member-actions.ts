@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 import type { Team, TeamMember } from "@/types";
 
-import { realtime } from "../realtime";
 import { TeamMemberInputSchema, TeamMemberUpdateSchema, UUIDSchema } from "../validation";
 
 import { getTeamRecord, persistTeam, sanitizeTeam } from "./helpers";
@@ -39,10 +38,7 @@ const addMember = async (
 
     team.members.push(newMember);
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.memberAdded", newMember),
-    ]);
+    await persistTeam(teamId, team);
 
     return {
       data: { member: newMember, team: sanitizeTeam(team) },
@@ -81,10 +77,7 @@ const removeMember = async (teamId: string, memberId: string): Promise<ActionRes
 
     team.members = team.members.filter((m) => m.id !== memberId);
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.memberRemoved", { memberId }),
-    ]);
+    await persistTeam(teamId, team);
 
     return { data: sanitizeTeam(team), success: true };
   } catch (error) {
@@ -136,10 +129,7 @@ const updateMember = async (
 
     team.members[memberIndex] = updatedMember;
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember),
-    ]);
+    await persistTeam(teamId, team);
 
     return { data: sanitizeTeam(team), success: true };
   } catch (error) {
@@ -169,12 +159,7 @@ const updateTeamName = async (teamId: string, name: string): Promise<ActionResul
 
     team.name = trimmedName;
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.nameUpdated", {
-        name: trimmedName,
-      }),
-    ]);
+    await persistTeam(teamId, team);
 
     return { data: sanitizeTeam(team), success: true };
   } catch (error) {
@@ -217,10 +202,7 @@ const importMembers = async (
     const orderedValidated = validated.map((m, i) => ({ ...m, order: startOrder + i }));
     team.members.push(...orderedValidated);
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.membersImported", validated),
-    ]);
+    await persistTeam(teamId, team);
 
     return {
       data: { imported: validated.length, members: validated, team: sanitizeTeam(team) },
@@ -299,10 +281,7 @@ const updateOwnMember = async (
 
     team.members[memberIndex] = updatedMember;
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.memberUpdated", updatedMember),
-    ]);
+    await persistTeam(teamId, team);
 
     return { data: sanitizeTeam(team, session.user.id), success: true };
   } catch (error) {
@@ -341,12 +320,7 @@ const reorderMembers = async (
     });
     team.members = reorderedMembers;
 
-    await Promise.all([
-      persistTeam(teamId, team),
-      realtime.channel(`team-${teamId}`).emit("team.membersReordered", {
-        order: memberIds,
-      }),
-    ]);
+    await persistTeam(teamId, team);
 
     return { data: undefined, success: true };
   } catch (error) {

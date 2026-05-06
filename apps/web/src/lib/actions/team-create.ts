@@ -55,9 +55,7 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
         name: "",
       };
 
-      await redis.set(`team:${teamId}`, JSON.stringify(team), {
-        ex: TEAM_INITIAL_TTL_SECONDS,
-      });
+      await redis.set(`team:${teamId}`, JSON.stringify(team), "EX", TEAM_INITIAL_TTL_SECONDS);
     } catch (cacheError) {
       console.error("Post-commit Redis cache failed (team created in Postgres):", cacheError);
     }

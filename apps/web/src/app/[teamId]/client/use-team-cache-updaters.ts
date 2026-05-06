@@ -54,6 +54,38 @@ const useTeamCacheUpdaters = (teamId: string) => {
     });
   };
 
+  const handleMembersImported = (newMembers: Array<TeamMember>) => {
+    updateTeamCache(teamId, (prev) => {
+      if (!prev) {
+        return prev;
+      }
+      const existingIds = new Set(prev.team.members.map((m) => m.id));
+      const toAdd = newMembers.filter((m) => !existingIds.has(m.id));
+      if (toAdd.length === 0) {
+        return prev;
+      }
+      return {
+        ...prev,
+        team: {
+          ...prev.team,
+          members: [...prev.team.members, ...toAdd],
+        },
+      };
+    });
+  };
+
+  const handleTeamNameUpdated = (name: string) => {
+    updateTeamCache(teamId, (prev) => {
+      if (!prev) {
+        return prev;
+      }
+      return {
+        ...prev,
+        team: { ...prev.team, name },
+      };
+    });
+  };
+
   const handleGroupAdded = (newGroup: TeamGroup) => {
     updateTeamCache(teamId, (prev) => {
       if (!prev) {
@@ -111,7 +143,9 @@ const useTeamCacheUpdaters = (teamId: string) => {
     handleGroupUpdated,
     handleMemberAdded,
     handleMemberRemoved,
+    handleMembersImported,
     handleMemberUpdated,
+    handleTeamNameUpdated,
     updateTeamCache,
   };
 };

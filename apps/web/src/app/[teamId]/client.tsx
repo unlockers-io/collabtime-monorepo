@@ -4,7 +4,7 @@ import { Clock, FolderKanban, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { AddGroupDialog } from "@/components/add-group-dialog";
@@ -13,7 +13,6 @@ import { DeleteWorkspaceDialog } from "@/components/delete-workspace-dialog";
 import { ImportMembersDialog } from "@/components/import-members-dialog";
 import { JoinRequestsPanel } from "@/components/join-requests-panel";
 import { Nav } from "@/components/nav";
-import { useRealtimeReady } from "@/components/providers";
 import {
   SectionCard,
   SectionCardContent,
@@ -32,7 +31,6 @@ import type { TeamStatus } from "@/types";
 import { GroupsGrid } from "./client/groups-grid";
 import { JoinPrompt } from "./client/join-prompt";
 import { MembersGrid } from "./client/members-grid";
-import { RealtimeSubscription } from "./client/realtime-subscription";
 import { useCollapsedGroups } from "./client/use-collapsed-groups";
 import { useDragEnd } from "./client/use-drag-end";
 import { useTeamCacheUpdaters } from "./client/use-team-cache-updaters";
@@ -69,7 +67,6 @@ const TeamPageClient = ({
   const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
   const [isDeleteWorkspaceOpen, setIsDeleteWorkspaceOpen] = useState(false);
-  const lastRemovalRef = useRef<{ id: string; ts: number }>({ id: "", ts: 0 });
 
   const { data: teamData, error: teamError } = useTeamQuery({ teamId });
 
@@ -96,7 +93,9 @@ const TeamPageClient = ({
     handleGroupUpdated,
     handleMemberAdded,
     handleMemberRemoved,
+    handleMembersImported,
     handleMemberUpdated,
+    handleTeamNameUpdated,
     updateTeamCache,
   } = useTeamCacheUpdaters(teamId);
 
@@ -123,11 +122,9 @@ const TeamPageClient = ({
     handleStartEditName,
     isEditingName,
     setEditingTeamName,
-  } = useTeamNameEdit({ isAdmin, teamId, teamName });
+  } = useTeamNameEdit({ isAdmin, onTeamNameUpdated: handleTeamNameUpdated, teamId, teamName });
 
   const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members);
-
-  const realtimeReady = useRealtimeReady();
 
   const handleRequestJoin = async () => {
     setIsRequestingJoin(true);
@@ -250,7 +247,7 @@ const TeamPageClient = ({
             </SectionCardContent>
             {isAdmin && (
               <SectionCardFooter bordered className="justify-end">
-                <ImportMembersDialog teamId={teamId} />
+                <ImportMembersDialog onMembersImported={handleMembersImported} teamId={teamId} />
                 <AddMemberDialog
                   groups={groups}
                   isFirstMember={members.length === 0}
@@ -308,24 +305,7 @@ const TeamPageClient = ({
   );
 
   if (!isAdmin) {
-    return (
-      <AnimatePresence mode="wait">
-        {!isLoaded ? (
-          skeleton
-        ) : (
-          <>
-            {realtimeReady && isMember && (
-              <RealtimeSubscription
-                lastRemovalRef={lastRemovalRef}
-                teamId={teamId}
-                updateTeamCache={updateTeamCache}
-              />
-            )}
-            {mainContent}
-          </>
-        )}
-      </AnimatePresence>
-    );
+    return <AnimatePresence mode="wait">{!isLoaded ? skeleton : mainContent}</AnimatePresence>;
   }
 
   return (
@@ -341,13 +321,6 @@ const TeamPageClient = ({
           onDragTypeChange={handleDragTypeChange}
           teamId={teamId}
         >
-          {realtimeReady && isMember && (
-            <RealtimeSubscription
-              lastRemovalRef={lastRemovalRef}
-              teamId={teamId}
-              updateTeamCache={updateTeamCache}
-            />
-          )}
           {mainContent}
         </DndWrapper>
       )}

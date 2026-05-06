@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## What is Collabtime
 
-A real-time team timezone visualizer SaaS. Distributed teams create spaces, add members with timezones/working hours, and visualize overlap for scheduling. Changes sync live via Upstash Realtime WebSockets.
+A team timezone visualizer SaaS. Distributed teams create spaces, add members with timezones/working hours, and visualize overlap for scheduling. Team data refreshes every 20s via TanStack Query polling; the acting client gets immediate optimistic updates after mutations.
 
 ## Commands
 
@@ -51,17 +51,16 @@ pnpm monorepo with Turborepo orchestration. Node >=24, pnpm 10.32.1.
 
 ### Key patterns
 
-- **Lazy initialization via Proxy**: Auth client, Realtime, and Prisma instances use a Proxy pattern to defer initialization until first access. This avoids build-time errors when env vars are unavailable.
+- **Lazy initialization via Proxy**: Auth client, Redis, and Prisma instances use a Proxy pattern to defer initialization until first access. This avoids build-time errors when env vars are unavailable.
 - **Server/client boundary**: `auth-server.ts` imports `"server-only"`, `auth-client.ts` uses `"use client"`. Never cross these boundaries.
 - **Env validation**: `apps/web/src/lib/env.ts` validates all env vars with Zod at startup. Use `getEnv(key)` for type-safe access.
-- **Realtime events**: Schema-validated with Zod in `@repo/auth`. Event types cover member CRUD, group CRUD, reordering, and name updates on team channels.
+- **Polling-based sync**: Team data is fetched on a 20s interval via TanStack Query (`use-team-query.ts`). Mutations call `useUpdateTeamCache` for immediate optimistic updates on the acting client.
 
 ### API routes
 
 All under `apps/web/src/app/api/`:
 
 - `auth/[...all]` — Better Auth catch-all handler
-- `realtime/` — Upstash Realtime sync
 - `spaces/` and `spaces/[spaceId]/` — Space CRUD, password verification
 - `subscription/checkout/` and `subscription/portal/` — Stripe subscription management
 
@@ -75,7 +74,7 @@ User → Session, Account, Subscription, Space. Users have a `subscriptionPlan` 
 - **Auth**: Better Auth with email/password, Stripe integration
 - **Database**: PostgreSQL via Prisma 7 with `@prisma/adapter-pg`
 - **Payments**: Stripe (subscriptions, webhooks, customer portal)
-- **Realtime**: Upstash Realtime (WebSocket) + Upstash Redis
+- **Cache / session storage**: Redis via `ioredis` (Railway-hosted in production, accepts `redis://` or `rediss://`)
 - **Linting**: oxlint with plugins (perfectionist, unused-imports, react-hooks, unicorn, typescript, import)
 - **Formatting**: oxfmt, enforced via husky + lint-staged on commit
 - **Bundling**: tsdown for library packages, Turbopack for Next.js dev
@@ -93,7 +92,7 @@ User → Session, Account, Subscription, Space. Users have a `subscriptionPlan` 
 
 ## Environment variables
 
-Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (≥32 chars), `BETTER_AUTH_URL`, `STRIPE_SECRET_KEY` (sk*\*), `STRIPE_WEBHOOK_SECRET` (whsec*\_), `STRIPE_PRO_PRICE_ID` (price\_\_), `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (≥32 chars), `BETTER_AUTH_URL`, `STRIPE_SECRET_KEY` (sk*\*), `STRIPE_WEBHOOK_SECRET` (whsec*\_), `STRIPE_PRO_PRICE_ID` (price\_\_), `REDIS_URL` (redis:// or rediss://)
 
 Optional: `WEB_APP_URL`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SPACE_ACCESS_SECRET`, `NODE_ENV`
 

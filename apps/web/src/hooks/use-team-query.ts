@@ -34,7 +34,8 @@ const useTeamQuery = ({ teamId }: UseTeamQueryOptions) => {
       };
     },
     queryKey: teamQueryKeys.team(teamId),
-    refetchInterval: 2 * 60 * 1000,
+    refetchInterval: 20 * 1000,
+    refetchIntervalInBackground: false,
   });
 };
 
