@@ -63,7 +63,7 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
                       <span className="text-xs text-muted-foreground">
                         {team.memberCount === 0
                           ? "Empty"
-                          : `${team.memberCount} member${team.memberCount !== 1 ? "s" : ""}`}
+                          : `${team.memberCount} member${team.memberCount === 1 ? "" : "s"}`}
                       </span>
                     </div>
                   </Link>

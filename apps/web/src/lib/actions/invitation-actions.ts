@@ -27,7 +27,7 @@ const inviteMember = async (
     }
 
     const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/v.test(trimmedEmail)) {
       return { error: "Invalid email address", success: false };
     }
 

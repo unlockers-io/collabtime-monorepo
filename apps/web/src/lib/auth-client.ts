@@ -3,7 +3,7 @@
 import { createBetterAuthClient } from "@repo/auth/client";
 
 const authClient = createBetterAuthClient({
-  baseURL: typeof window !== "undefined" ? window.location.origin : "",
+  baseURL: typeof window === "undefined" ? "" : window.location.origin,
 });
 
 const { signIn, signOut, signUp } = authClient;

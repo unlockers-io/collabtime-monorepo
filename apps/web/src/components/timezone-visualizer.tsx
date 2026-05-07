@@ -239,17 +239,7 @@ const TimezoneVisualizer = ({
           // grows directly from button → panel, instead of collapsing to zero
           // mid-transition (which scroll-jumps the viewport).
           <AnimatePresence mode="popLayout">
-            {!isComparing ? (
-              <motion.div
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                initial={{ opacity: 0 }}
-                key="compare-button"
-                transition={{ duration: 0.15 }}
-              >
-                <FindMeetingTimeButton onClick={openComparePanel} />
-              </motion.div>
-            ) : (
+            {isComparing ? (
               <motion.div
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -272,6 +262,16 @@ const TimezoneVisualizer = ({
                   totalPeopleSelected={totalPeopleSelected}
                   validSelections={validSelections}
                 />
+              </motion.div>
+            ) : (
+              <motion.div
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                key="compare-button"
+                transition={{ duration: 0.15 }}
+              >
+                <FindMeetingTimeButton onClick={openComparePanel} />
               </motion.div>
             )}
           </AnimatePresence>

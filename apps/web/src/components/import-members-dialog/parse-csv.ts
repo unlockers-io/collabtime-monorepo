@@ -19,7 +19,7 @@ const TEMPLATE_CSV = [
   "Carol Kim,Asia/Tokyo,Designer,9,18",
 ].join("\n");
 
-const normalizeHeader = (h: string) => h.toLowerCase().replaceAll(/[\s_-]/g, "");
+const normalizeHeader = (h: string) => h.toLowerCase().replaceAll(/[\s_\-]/gv, "");
 
 const findColIndex = (headers: Array<string>, ...names: Array<string>): number => {
   for (const name of names) {
@@ -61,14 +61,14 @@ const parseCSVLine = (line: string, sep: string): Array<string> => {
 };
 
 const parseCSV = (text: string): Array<ParsedRow> => {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  const lines = text.split(/\r?\n/v).filter((l) => l.trim());
   if (lines.length === 0) {
     return [];
   }
 
   const firstLine = lines[0];
   const sep =
-    (firstLine.match(/\t/g)?.length ?? 0) > (firstLine.match(/,/g)?.length ?? 0) ? "\t" : ",";
+    (firstLine.match(/\t/gv)?.length ?? 0) > (firstLine.match(/,/gv)?.length ?? 0) ? "\t" : ",";
 
   let startRow = 0;
   // null = column not present (only valid when header row detected)
@@ -102,11 +102,11 @@ const parseCSV = (text: string): Array<ParsedRow> => {
       continue;
     }
 
-    const name = (nameIdx !== null ? (cells[nameIdx] ?? "") : "").trim();
-    const rawTimezone = (tzIdx !== null ? (cells[tzIdx] ?? "") : "").trim();
-    const title = (titleIdx !== null ? (cells[titleIdx] ?? "") : "").trim();
-    const workStartRaw = (startIdx !== null ? (cells[startIdx] ?? "9") : "9").trim();
-    const workEndRaw = (endIdx !== null ? (cells[endIdx] ?? "17") : "17").trim();
+    const name = (nameIdx === null ? "" : (cells[nameIdx] ?? "")).trim();
+    const rawTimezone = (tzIdx === null ? "" : (cells[tzIdx] ?? "")).trim();
+    const title = (titleIdx === null ? "" : (cells[titleIdx] ?? "")).trim();
+    const workStartRaw = (startIdx === null ? "9" : (cells[startIdx] ?? "9")).trim();
+    const workEndRaw = (endIdx === null ? "17" : (cells[endIdx] ?? "17")).trim();
 
     const matchedTimezone = rawTimezone ? fuzzyMatchTimezone(rawTimezone) : null;
     const workStart = Number.parseInt(workStartRaw, 10);

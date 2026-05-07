@@ -7,7 +7,7 @@ type NavLogoProps = {
 
 const NavLogo = ({ showTitle = true }: NavLogoProps) => (
   <Link
-    aria-label={!showTitle ? "Go to homepage" : undefined}
+    aria-label={showTitle ? undefined : "Go to homepage"}
     className="flex items-center gap-3 text-foreground transition-opacity hover:opacity-80"
     href="/"
   >
