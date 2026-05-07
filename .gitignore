@@ -68,9 +68,6 @@ logs/
 *.backup
 *.bak
 
-# openlogs (dev-server log capture for AI agents)
-.openlogs/
-
 # claude code session-local state (skills/ stays tracked)
 .claude/scheduled_tasks.lock
 .claude/projects/

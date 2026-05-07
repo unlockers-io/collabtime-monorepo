@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "turbo run start",
-    "dev": "openlogs turbo run dev --concurrency 16",
+    "dev": "turbo run dev --concurrency 16",
     "lint": "oxlint .",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
@@ -22,17 +22,13 @@
     "fallow:dupes": "fallow dupes",
     "fallow:health": "fallow health --score",
     "fallow:audit": "fallow audit --base main",
-    "prepare": "husky",
-    "ci:local": "agent-ci run --quiet --all --pause-on-failure",
-    "ci:local:fast": "agent-ci run --quiet --pause-on-failure -w .github/workflows/test.yml && agent-ci run --quiet --pause-on-failure -w .github/workflows/lint.yml && agent-ci run --quiet --pause-on-failure -w .github/workflows/format.yml && agent-ci run --quiet --pause-on-failure -w .github/workflows/fallow.yml",
-    "ci:local:e2e": "agent-ci run --quiet --pause-on-failure -w .github/workflows/e2e.yml"
+    "prepare": "husky"
   },
   "dependencies": {
     "ioredis": "^5.10.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
-    "@redwoodjs/agent-ci": "^0.15.0",
     "fallow": "^2.66.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.2",
