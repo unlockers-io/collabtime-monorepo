@@ -305,14 +305,12 @@ const TeamPageClient = ({
   );
 
   if (!isAdmin) {
-    return <AnimatePresence mode="wait">{!isLoaded ? skeleton : mainContent}</AnimatePresence>;
+    return <AnimatePresence mode="wait">{isLoaded ? mainContent : skeleton}</AnimatePresence>;
   }
 
   return (
     <AnimatePresence mode="wait">
-      {!isLoaded ? (
-        skeleton
-      ) : (
+      {isLoaded ? (
         <DndWrapper
           groups={groups}
           hasClaimedProfile={hasClaimedProfile}
@@ -323,6 +321,8 @@ const TeamPageClient = ({
         >
           {mainContent}
         </DndWrapper>
+      ) : (
+        skeleton
       )}
     </AnimatePresence>
   );

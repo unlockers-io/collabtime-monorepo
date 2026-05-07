@@ -6,7 +6,7 @@ const loadGoogleFont = async (font: string, weight: number, text: string) => {
   const url = `https://fonts.googleapis.com/css2?family=${font}:wght@${weight}&text=${encodeURIComponent(text)}`;
   const cssResponse = await fetch(url);
   const css = await cssResponse.text();
-  const resource = css.match(/src: url\((.+)\) format\('(opentype|truetype)'\)/);
+  const resource = css.match(/src: url\((.+)\) format\('(opentype|truetype)'\)/v);
 
   if (resource) {
     const response = await fetch(resource[1]);

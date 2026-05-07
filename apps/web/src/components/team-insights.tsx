@@ -141,18 +141,18 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
       let hoursUntilStart: number | null = null;
       let hoursUntilEnd: number | null = null;
 
-      if (!working) {
-        let diff = startInViewer - currentHourInViewer;
-        if (diff < 0) {
-          diff += 24;
-        }
-        hoursUntilStart = diff;
-      } else {
+      if (working) {
         let diff = endInViewer - currentHourInViewer;
         if (diff < 0) {
           diff += 24;
         }
         hoursUntilEnd = diff;
+      } else {
+        let diff = startInViewer - currentHourInViewer;
+        if (diff < 0) {
+          diff += 24;
+        }
+        hoursUntilStart = diff;
       }
 
       return {
