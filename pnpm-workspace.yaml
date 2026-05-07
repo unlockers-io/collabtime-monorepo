@@ -2,21 +2,4 @@ packages:
   - apps/*
   - packages/*
 
-allowBuilds:
-  "@parcel/watcher": true
-  "@prisma/client": true
-  "@prisma/engines": true
-  "@sentry/cli": true
-  "@swc/core": true
-  "@tailwindcss/oxide": true
-  cpu-features: true
-  esbuild: true
-  fallow: true
-  msw: true
-  prisma: true
-  protobufjs: true
-  sharp: true
-  ssh2: true
-  unrs-resolver: true
-
 nodeLinker: hoisted
