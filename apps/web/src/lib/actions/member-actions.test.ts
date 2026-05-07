@@ -25,17 +25,12 @@ vi.mock("../redis", () => ({
   TEAM_ACTIVE_TTL_SECONDS: 100,
 }));
 
-vi.mock("./helpers", () => ({
-  getTeamRecord: vi.fn(),
-  persistTeam: vi.fn(),
-  sanitizeTeam: vi.fn((t: unknown) => t),
-}));
-
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
 import { prisma } from "@repo/db";
 
-import { getTeamRecord, persistTeam } from "./helpers";
+import { redis } from "../redis";
+
 import {
   addMember,
   importMembers,
@@ -46,11 +41,23 @@ import {
   updateTeamName,
 } from "./member-actions";
 
-const mockedGetTeamRecord = vi.mocked(getTeamRecord);
 const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
 const mockedRequireAuth = vi.mocked(requireAuth);
-const mockedPersistTeam = vi.mocked(persistTeam);
 const mockedFindUnique = vi.mocked(prisma.membership.findUnique);
+const mockedRedisGet = vi.mocked(redis.get);
+const mockedRedisSet = vi.mocked(redis.set);
+
+const seedTeam = (team: ReturnType<typeof createTestTeamRecord>) => {
+  mockedRedisGet.mockResolvedValue(JSON.stringify(team));
+};
+
+const persistedTeam = () => {
+  const lastCall = mockedRedisSet.mock.calls.at(-1);
+  if (!lastCall) {
+    throw new Error("redis.set was not called");
+  }
+  return JSON.parse(lastCall[1] as string) as ReturnType<typeof createTestTeamRecord>;
+};
 
 const validMemberInput = {
   name: "Alice",
@@ -64,6 +71,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
   mockedRequireTeamAdmin.mockResolvedValue(undefined as never);
+  mockedRedisSet.mockResolvedValue("OK" as never);
 });
 
 describe("addMember", () => {
@@ -76,7 +84,7 @@ describe("addMember", () => {
   });
 
   it("returns error when team not found", async () => {
-    mockedGetTeamRecord.mockResolvedValue(null);
+    mockedRedisGet.mockResolvedValue(null);
 
     const result = await addMember(VALID_UUID, validMemberInput as never);
 
@@ -85,8 +93,7 @@ describe("addMember", () => {
 
   it("assigns order equal to team.members.length", async () => {
     const existingMember = createTestMember({ id: VALID_UUID_2, order: 0 });
-    const team = createTestTeamRecord({ members: [existingMember] });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord({ members: [existingMember] }));
 
     const result = await addMember(VALID_UUID, validMemberInput as never);
 
@@ -98,18 +105,23 @@ describe("addMember", () => {
   });
 
   it("pushes member to team and persists", async () => {
-    const team = createTestTeamRecord({ members: [] });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord({ members: [] }));
 
     await addMember(VALID_UUID, validMemberInput as never);
 
-    expect(mockedPersistTeam).toHaveBeenCalledWith(VALID_UUID, expect.any(Object));
+    expect(persistedTeam().members).toHaveLength(1);
   });
 });
 
 describe("removeMember", () => {
+  it("returns error when memberId is not a UUID", async () => {
+    const result = await removeMember(VALID_UUID, "not-a-uuid");
+
+    expect(result).toEqual({ error: "Invalid member ID", success: false });
+  });
+
   it("returns error when team not found", async () => {
-    mockedGetTeamRecord.mockResolvedValue(null);
+    mockedRedisGet.mockResolvedValue(null);
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
@@ -117,8 +129,7 @@ describe("removeMember", () => {
   });
 
   it("returns error when member not found", async () => {
-    const team = createTestTeamRecord({ members: [createTestMember()] });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord({ members: [createTestMember()] }));
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
@@ -127,21 +138,18 @@ describe("removeMember", () => {
 
   it("filters out member and persists", async () => {
     const member = createTestMember({ id: VALID_UUID_2 });
-    const team = createTestTeamRecord({ members: [member] });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord({ members: [member] }));
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
     expect(result.success).toBe(true);
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
-    expect(savedTeam.members).toHaveLength(0);
+    expect(persistedTeam().members).toHaveLength(0);
   });
 });
 
 describe("updateMember", () => {
   it("returns error when member not found", async () => {
-    const team = createTestTeamRecord({ members: [] });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord({ members: [] }));
 
     const result = await updateMember(VALID_UUID, VALID_UUID_2, {
       name: "Bob",
@@ -153,26 +161,23 @@ describe("updateMember", () => {
   it("updates member at correct index", async () => {
     const member1 = createTestMember({ id: VALID_UUID_2, name: "Alice" });
     const member2 = createTestMember({ id: VALID_UUID_3, name: "Bob" });
-    const team = createTestTeamRecord({ members: [member1, member2] });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord({ members: [member1, member2] }));
 
     await updateMember(VALID_UUID, VALID_UUID_3, { name: "Charlie" });
 
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
-    expect(savedTeam.members[0].name).toBe("Alice");
-    expect(savedTeam.members[1].name).toBe("Charlie");
+    const saved = persistedTeam();
+    expect(saved.members[0].name).toBe("Alice");
+    expect(saved.members[1].name).toBe("Charlie");
   });
 });
 
 describe("updateTeamName", () => {
   it("trims and slices name", async () => {
-    const team = createTestTeamRecord();
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord());
 
     await updateTeamName(VALID_UUID, "  My Team  ");
 
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
-    expect(savedTeam.name).toBe("My Team");
+    expect(persistedTeam().name).toBe("My Team");
   });
 
   it("rejects empty name after trimming", async () => {
@@ -182,14 +187,12 @@ describe("updateTeamName", () => {
   });
 
   it("truncates name to 100 characters", async () => {
-    const team = createTestTeamRecord();
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord());
     const longName = "A".repeat(150);
 
     await updateTeamName(VALID_UUID, longName);
 
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
-    expect(savedTeam.name.length).toBe(100);
+    expect(persistedTeam().name.length).toBe(100);
   });
 });
 
@@ -216,8 +219,7 @@ describe("importMembers", () => {
 
   it("assigns orders starting from existing member count", async () => {
     const existing = createTestMember({ id: VALID_UUID_2, order: 0 });
-    const team = createTestTeamRecord({ members: [existing] });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord({ members: [existing] }));
 
     const result = await importMembers(VALID_UUID, [
       validMemberInput as never,
@@ -225,14 +227,14 @@ describe("importMembers", () => {
     ]);
 
     expect(result.success).toBe(true);
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
+    const saved = persistedTeam();
     // Existing member at index 0, imported start at order 1
-    expect(savedTeam.members[1].order).toBe(1);
-    expect(savedTeam.members[2].order).toBe(2);
+    expect(saved.members[1].order).toBe(1);
+    expect(saved.members[2].order).toBe(2);
   });
 
   it("returns error when team not found", async () => {
-    mockedGetTeamRecord.mockResolvedValue(null);
+    mockedRedisGet.mockResolvedValue(null);
 
     const result = await importMembers(VALID_UUID, [validMemberInput as never]);
 
@@ -249,10 +251,11 @@ describe("updateOwnMember", () => {
   });
 
   it("uses requireAuth instead of requireTeamAdmin", async () => {
-    const team = createTestTeamRecord({
-      members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
-    });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(
+      createTestTeamRecord({
+        members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
+      }),
+    );
 
     await updateOwnMember(VALID_UUID, VALID_UUID_2, { name: "Updated" });
 
@@ -271,8 +274,7 @@ describe("updateOwnMember", () => {
   });
 
   it("returns error when member not found in team record", async () => {
-    const team = createTestTeamRecord({ members: [] });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord({ members: [] }));
 
     const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       name: "X",
@@ -282,10 +284,11 @@ describe("updateOwnMember", () => {
   });
 
   it("rejects editing another user's member record", async () => {
-    const team = createTestTeamRecord({
-      members: [createTestMember({ id: VALID_UUID_2, userId: "other-user-id" })],
-    });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(
+      createTestTeamRecord({
+        members: [createTestMember({ id: VALID_UUID_2, userId: "other-user-id" })],
+      }),
+    );
 
     const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       name: "Hacked",
@@ -298,54 +301,54 @@ describe("updateOwnMember", () => {
   });
 
   it("allows editing own member record (userId matches)", async () => {
-    const team = createTestTeamRecord({
-      members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
-    });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(
+      createTestTeamRecord({
+        members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
+      }),
+    );
 
     const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       name: "New Name",
     });
 
     expect(result.success).toBe(true);
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
-    expect(savedTeam.members[0].name).toBe("New Name");
+    expect(persistedTeam().members[0].name).toBe("New Name");
   });
 
   it("claims unclaimed record by setting userId", async () => {
-    const team = createTestTeamRecord({
-      members: [createTestMember({ id: VALID_UUID_2, userId: undefined })],
-    });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(
+      createTestTeamRecord({
+        members: [createTestMember({ id: VALID_UUID_2, userId: undefined })],
+      }),
+    );
 
     const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       name: "Claimed",
     });
 
     expect(result.success).toBe(true);
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
-    expect(savedTeam.members[0].userId).toBe("user-123");
+    expect(persistedTeam().members[0].userId).toBe("user-123");
   });
 
   it("strips groupId from updates to prevent self-assignment", async () => {
-    const team = createTestTeamRecord({
-      members: [
-        createTestMember({
-          groupId: undefined,
-          id: VALID_UUID_2,
-          userId: "user-123",
-        }),
-      ],
-    });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(
+      createTestTeamRecord({
+        members: [
+          createTestMember({
+            groupId: undefined,
+            id: VALID_UUID_2,
+            userId: "user-123",
+          }),
+        ],
+      }),
+    );
 
     await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       groupId: VALID_UUID_3,
       name: "Updated",
     } as never);
 
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
-    expect(savedTeam.members[0].groupId).toBeUndefined();
+    expect(persistedTeam().members[0].groupId).toBeUndefined();
   });
 
   it("propagates auth error", async () => {
@@ -361,7 +364,7 @@ describe("updateOwnMember", () => {
 
 describe("reorderMembers", () => {
   it("returns error when team not found", async () => {
-    mockedGetTeamRecord.mockResolvedValue(null);
+    mockedRedisGet.mockResolvedValue(null);
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2]);
 
@@ -369,10 +372,11 @@ describe("reorderMembers", () => {
   });
 
   it("rejects when member IDs do not match existing members", async () => {
-    const team = createTestTeamRecord({
-      members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
-    });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(
+      createTestTeamRecord({
+        members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
+      }),
+    );
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2, "nonexistent-id"]);
 
@@ -380,10 +384,11 @@ describe("reorderMembers", () => {
   });
 
   it("rejects when member count does not match", async () => {
-    const team = createTestTeamRecord({
-      members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
-    });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(
+      createTestTeamRecord({
+        members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
+      }),
+    );
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2]);
 
@@ -393,29 +398,29 @@ describe("reorderMembers", () => {
   it("updates order values based on new positions", async () => {
     const member1 = createTestMember({ id: VALID_UUID_2, name: "A", order: 0 });
     const member2 = createTestMember({ id: VALID_UUID_3, name: "B", order: 1 });
-    const team = createTestTeamRecord({ members: [member1, member2] });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(createTestTeamRecord({ members: [member1, member2] }));
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_3, VALID_UUID_2]);
 
     expect(result.success).toBe(true);
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
-    expect(savedTeam.members[0].id).toBe(VALID_UUID_3);
-    expect(savedTeam.members[0].order).toBe(0);
-    expect(savedTeam.members[1].id).toBe(VALID_UUID_2);
-    expect(savedTeam.members[1].order).toBe(1);
+    const saved = persistedTeam();
+    expect(saved.members[0].id).toBe(VALID_UUID_3);
+    expect(saved.members[0].order).toBe(0);
+    expect(saved.members[1].id).toBe(VALID_UUID_2);
+    expect(saved.members[1].order).toBe(1);
   });
 
   it("persists reordered members", async () => {
-    const team = createTestTeamRecord({
-      members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
-    });
-    mockedGetTeamRecord.mockResolvedValue(team);
+    seedTeam(
+      createTestTeamRecord({
+        members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
+      }),
+    );
 
     await reorderMembers(VALID_UUID, [VALID_UUID_3, VALID_UUID_2]);
 
-    const savedTeam = mockedPersistTeam.mock.calls[0][1];
-    expect(savedTeam.members[0].id).toBe(VALID_UUID_3);
-    expect(savedTeam.members[1].id).toBe(VALID_UUID_2);
+    const saved = persistedTeam();
+    expect(saved.members[0].id).toBe(VALID_UUID_3);
+    expect(saved.members[1].id).toBe(VALID_UUID_2);
   });
 });

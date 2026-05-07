@@ -3,221 +3,144 @@
 import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 
-import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
+import { requireAuth } from "@/lib/team-auth";
 import type { Team, TeamMember } from "@/types";
 
-import { TeamMemberInputSchema, TeamMemberUpdateSchema, UUIDSchema } from "../validation";
+import { TeamMemberInputSchema, TeamMemberUpdateSchema } from "../validation";
 
-import { getTeamRecord, persistTeam, sanitizeTeam } from "./helpers";
+import { checkUuid, mutateTeam, sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
-const addMember = async (
+const addMember = (
   teamId: string,
   member: Omit<TeamMember, "id" | "order">,
 ): Promise<ActionResult<{ member: TeamMember; team: Team }>> => {
-  try {
-    const memberResult = TeamMemberInputSchema.safeParse(member);
-    if (!memberResult.success) {
-      const errorMessage = memberResult.error.issues[0]?.message ?? "Invalid member data";
-      return { error: errorMessage, success: false };
-    }
-
-    await requireTeamAdmin(teamId);
-
-    const team = await getTeamRecord(teamId);
-
-    if (!team) {
-      return { error: "Team not found", success: false };
-    }
-
-    const newMember: TeamMember = {
-      ...memberResult.data,
-      id: uuidv4(),
-      order: team.members.length,
-    };
-
-    team.members.push(newMember);
-
-    await persistTeam(teamId, team);
-
-    return {
-      data: { member: newMember, team: sanitizeTeam(team) },
-      success: true,
-    };
-  } catch (error) {
-    console.error("Failed to add member:", error);
-    return { error: "Failed to add member", success: false };
-  }
+  return mutateTeam({
+    errorContext: "add member",
+    mutate: (team, parsed) => {
+      const newMember: TeamMember = {
+        ...parsed,
+        id: uuidv4(),
+        order: team.members.length,
+      };
+      team.members.push(newMember);
+      return { ok: true, value: { member: newMember, team: sanitizeTeam(team) } };
+    },
+    prelude: () => {
+      const result = TeamMemberInputSchema.safeParse(member);
+      if (!result.success) {
+        return { error: result.error.issues[0]?.message ?? "Invalid member data", ok: false };
+      }
+      return { ok: true, value: result.data };
+    },
+    teamId,
+  });
 };
 
-const removeMember = async (teamId: string, memberId: string): Promise<ActionResult<Team>> => {
-  try {
-    const teamUuidResult = UUIDSchema.safeParse(teamId);
-    const memberUuidResult = UUIDSchema.safeParse(memberId);
-
-    if (!teamUuidResult.success) {
-      return { error: "Invalid team ID", success: false };
-    }
-    if (!memberUuidResult.success) {
-      return { error: "Invalid member ID", success: false };
-    }
-
-    await requireTeamAdmin(teamId);
-
-    const team = await getTeamRecord(teamId);
-
-    if (!team) {
-      return { error: "Team not found", success: false };
-    }
-
-    const memberExists = team.members.some((m) => m.id === memberId);
-    if (!memberExists) {
-      return { error: "Member not found", success: false };
-    }
-
-    team.members = team.members.filter((m) => m.id !== memberId);
-
-    await persistTeam(teamId, team);
-
-    return { data: sanitizeTeam(team), success: true };
-  } catch (error) {
-    console.error("Failed to remove member:", error);
-    return { error: "Failed to remove member", success: false };
-  }
+const removeMember = (teamId: string, memberId: string): Promise<ActionResult<Team>> => {
+  return mutateTeam({
+    errorContext: "remove member",
+    mutate: (team) => {
+      if (!team.members.some((m) => m.id === memberId)) {
+        return { error: "Member not found", ok: false };
+      }
+      team.members = team.members.filter((m) => m.id !== memberId);
+      return { ok: true, value: sanitizeTeam(team) };
+    },
+    prelude: () => checkUuid(memberId, "member ID"),
+    teamId,
+  });
 };
 
-const updateMember = async (
+const updateMember = (
   teamId: string,
   memberId: string,
   updates: Partial<Omit<TeamMember, "id">>,
 ): Promise<ActionResult<Team>> => {
-  try {
-    const teamUuidResult = UUIDSchema.safeParse(teamId);
-    const memberUuidResult = UUIDSchema.safeParse(memberId);
-
-    if (!teamUuidResult.success) {
-      return { error: "Invalid team ID", success: false };
-    }
-    if (!memberUuidResult.success) {
-      return { error: "Invalid member ID", success: false };
-    }
-
-    const updateResult = TeamMemberUpdateSchema.safeParse(updates);
-    if (!updateResult.success) {
-      const errorMessage = updateResult.error.issues[0]?.message ?? "Invalid update data";
-      return { error: errorMessage, success: false };
-    }
-
-    await requireTeamAdmin(teamId);
-
-    const team = await getTeamRecord(teamId);
-
-    if (!team) {
-      return { error: "Team not found", success: false };
-    }
-
-    const memberIndex = team.members.findIndex((m) => m.id === memberId);
-
-    if (memberIndex === -1) {
-      return { error: "Member not found", success: false };
-    }
-
-    const updatedMember = {
-      ...team.members[memberIndex],
-      ...updateResult.data,
-    };
-
-    team.members[memberIndex] = updatedMember;
-
-    await persistTeam(teamId, team);
-
-    return { data: sanitizeTeam(team), success: true };
-  } catch (error) {
-    console.error("Failed to update member:", error);
-    return { error: "Failed to update member", success: false };
-  }
+  return mutateTeam({
+    errorContext: "update member",
+    mutate: (team, parsed) => {
+      const memberIndex = team.members.findIndex((m) => m.id === memberId);
+      if (memberIndex === -1) {
+        return { error: "Member not found", ok: false };
+      }
+      team.members[memberIndex] = { ...team.members[memberIndex], ...parsed };
+      return { ok: true, value: sanitizeTeam(team) };
+    },
+    prelude: () => {
+      const idCheck = checkUuid(memberId, "member ID");
+      if (!idCheck.ok) {
+        return idCheck;
+      }
+      const result = TeamMemberUpdateSchema.safeParse(updates);
+      if (!result.success) {
+        return { error: result.error.issues[0]?.message ?? "Invalid update data", ok: false };
+      }
+      return { ok: true, value: result.data };
+    },
+    teamId,
+  });
 };
 
-const updateTeamName = async (teamId: string, name: string): Promise<ActionResult<Team>> => {
-  try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return { error: "Invalid team ID", success: false };
-    }
-
-    const trimmedName = name.trim().slice(0, 100);
-    if (!trimmedName) {
-      return { error: "Team name cannot be empty", success: false };
-    }
-
-    await requireTeamAdmin(teamId);
-
-    const team = await getTeamRecord(teamId);
-    if (!team) {
-      return { error: "Team not found", success: false };
-    }
-
-    team.name = trimmedName;
-
-    await persistTeam(teamId, team);
-
-    return { data: sanitizeTeam(team), success: true };
-  } catch (error) {
-    console.error("Failed to update team name:", error);
-    return { error: "Failed to update team name", success: false };
-  }
+const updateTeamName = (teamId: string, name: string): Promise<ActionResult<Team>> => {
+  return mutateTeam({
+    errorContext: "update team name",
+    mutate: (team, parsed) => {
+      team.name = parsed;
+      return { ok: true, value: sanitizeTeam(team) };
+    },
+    prelude: () => {
+      const trimmed = name.trim().slice(0, 100);
+      if (!trimmed) {
+        return { error: "Team name cannot be empty", ok: false };
+      }
+      return { ok: true, value: trimmed };
+    },
+    teamId,
+  });
 };
 
-const importMembers = async (
+const importMembers = (
   teamId: string,
   members: Array<Omit<TeamMember, "id" | "order">>,
 ): Promise<ActionResult<{ imported: number; members: Array<TeamMember>; team: Team }>> => {
-  try {
-    if (!Array.isArray(members) || members.length === 0) {
-      return { error: "No members to import", success: false };
-    }
-
-    if (members.length > 100) {
-      return { error: "Cannot import more than 100 members at once", success: false };
-    }
-
-    const validated: Array<TeamMember> = [];
-    for (const member of members) {
-      const result = TeamMemberInputSchema.safeParse(member);
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? "Invalid member data";
-        return { error: `Invalid member "${member.name}": ${msg}`, success: false };
+  return mutateTeam({
+    errorContext: "import members",
+    mutate: (team, validated) => {
+      const startOrder = team.members.length;
+      const ordered = validated.map((m, i) => ({ ...m, order: startOrder + i }));
+      team.members.push(...ordered);
+      return {
+        ok: true,
+        value: { imported: ordered.length, members: ordered, team: sanitizeTeam(team) },
+      };
+    },
+    prelude: () => {
+      if (!Array.isArray(members) || members.length === 0) {
+        return { error: "No members to import", ok: false };
       }
-      validated.push({ ...result.data, id: uuidv4(), order: 0 });
-    }
-
-    await requireTeamAdmin(teamId);
-
-    const team = await getTeamRecord(teamId);
-    if (!team) {
-      return { error: "Team not found", success: false };
-    }
-
-    const startOrder = team.members.length;
-    const orderedValidated = validated.map((m, i) => ({ ...m, order: startOrder + i }));
-    team.members.push(...orderedValidated);
-
-    await persistTeam(teamId, team);
-
-    return {
-      data: { imported: validated.length, members: validated, team: sanitizeTeam(team) },
-      success: true,
-    };
-  } catch (error) {
-    console.error("Failed to import members:", error);
-    return { error: "Failed to import members", success: false };
-  }
+      if (members.length > 100) {
+        return { error: "Cannot import more than 100 members at once", ok: false };
+      }
+      const validated: Array<TeamMember> = [];
+      for (const member of members) {
+        const result = TeamMemberInputSchema.safeParse(member);
+        if (!result.success) {
+          const msg = result.error.issues[0]?.message ?? "Invalid member data";
+          return { error: `Invalid member "${member.name}": ${msg}`, ok: false };
+        }
+        validated.push({ ...result.data, id: uuidv4(), order: 0 });
+      }
+      return { ok: true, value: validated };
+    },
+    teamId,
+  });
 };
 
 /**
- * Allows an authenticated user to edit their own member record.
- * Accepts memberId to identify the Redis member, then verifies ownership
- * via userId match or claims the record if userId is unset.
+ * Allows an authenticated user to edit their own member record. Verifies ownership via
+ * userId match (or claims the slot if userId is unset). Skips the default admin check —
+ * the auth boundary is "authenticated + has Postgres membership for this team".
  */
 const updateOwnMember = async (
   teamId: string,
@@ -226,107 +149,71 @@ const updateOwnMember = async (
     Pick<TeamMember, "name" | "title" | "timezone" | "workingHoursStart" | "workingHoursEnd">
   >,
 ): Promise<ActionResult<Team>> => {
+  let session: Awaited<ReturnType<typeof requireAuth>>;
   try {
-    const session = await requireAuth();
-
-    const teamUuidResult = UUIDSchema.safeParse(teamId);
-    if (!teamUuidResult.success) {
-      return { error: "Invalid team ID", success: false };
-    }
-
-    const memberUuidResult = UUIDSchema.safeParse(memberId);
-    if (!memberUuidResult.success) {
-      return { error: "Invalid member ID", success: false };
-    }
-
-    // Verify the user has a Postgres membership for this team
-    const membership = await prisma.membership.findUnique({
-      where: { userId_teamId: { teamId, userId: session.user.id } },
-    });
-    if (!membership) {
-      return { error: "You are not a member of this team", success: false };
-    }
-
-    const updateResult = TeamMemberUpdateSchema.safeParse(updates);
-    if (!updateResult.success) {
-      const errorMessage = updateResult.error.issues[0]?.message ?? "Invalid update data";
-      return { error: errorMessage, success: false };
-    }
-
-    // Strip groupId to prevent self-assignment to groups
-    const { groupId: _stripped, ...safeUpdates } = updateResult.data;
-
-    const team = await getTeamRecord(teamId);
-    if (!team) {
-      return { error: "Team not found", success: false };
-    }
-
-    const memberIndex = team.members.findIndex((m) => m.id === memberId);
-    if (memberIndex === -1) {
-      return { error: "Member not found", success: false };
-    }
-
-    const member = team.members[memberIndex];
-
-    // Verify ownership: userId must match or be unset (claim the record)
-    if (member.userId && member.userId !== session.user.id) {
-      return { error: "You can only edit your own member record", success: false };
-    }
-
-    const updatedMember = {
-      ...member,
-      ...safeUpdates,
-      userId: session.user.id,
-    };
-
-    team.members[memberIndex] = updatedMember;
-
-    await persistTeam(teamId, team);
-
-    return { data: sanitizeTeam(team, session.user.id), success: true };
+    session = await requireAuth();
   } catch (error) {
     console.error("Failed to update own member:", error);
     return { error: "Failed to update member", success: false };
   }
+
+  return mutateTeam({
+    errorContext: "update own member",
+    mutate: (team, parsed) => {
+      const memberIndex = team.members.findIndex((m) => m.id === memberId);
+      if (memberIndex === -1) {
+        return { error: "Member not found", ok: false };
+      }
+      const member = team.members[memberIndex];
+      // Ownership: must match session user, or the slot must be unclaimed.
+      if (member.userId && member.userId !== session.user.id) {
+        return { error: "You can only edit your own member record", ok: false };
+      }
+      team.members[memberIndex] = { ...member, ...parsed, userId: session.user.id };
+      return { ok: true, value: sanitizeTeam(team, session.user.id) };
+    },
+    prelude: async () => {
+      const idCheck = checkUuid(memberId, "member ID");
+      if (!idCheck.ok) {
+        return idCheck;
+      }
+      const membership = await prisma.membership.findUnique({
+        where: { userId_teamId: { teamId, userId: session.user.id } },
+      });
+      if (!membership) {
+        return { error: "You are not a member of this team", ok: false };
+      }
+      const result = TeamMemberUpdateSchema.safeParse(updates);
+      if (!result.success) {
+        return { error: result.error.issues[0]?.message ?? "Invalid update data", ok: false };
+      }
+      // Strip groupId — users can't self-assign to groups.
+      const { groupId: _stripped, ...safe } = result.data;
+      return { ok: true, value: safe };
+    },
+    skipAdminCheck: true,
+    teamId,
+  });
 };
 
-const reorderMembers = async (
-  teamId: string,
-  memberIds: Array<string>,
-): Promise<ActionResult<void>> => {
-  try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return { error: "Invalid team ID", success: false };
-    }
-
-    await requireTeamAdmin(teamId);
-
-    const team = await getTeamRecord(teamId);
-    if (!team) {
-      return { error: "Team not found", success: false };
-    }
-
-    const existingIds = new Set(team.members.map((m) => m.id));
-    const inputIds = new Set(memberIds);
-    if (inputIds.size !== existingIds.size || !memberIds.every((id) => existingIds.has(id))) {
-      return { error: "Invalid member order", success: false };
-    }
-
-    const memberMap = new Map(team.members.map((m) => [m.id, m]));
-    const reorderedMembers = memberIds.flatMap((id, index) => {
-      const member = memberMap.get(id);
-      return member ? [{ ...member, order: index }] : [];
-    });
-    team.members = reorderedMembers;
-
-    await persistTeam(teamId, team);
-
-    return { data: undefined, success: true };
-  } catch (error) {
-    console.error("Failed to reorder members:", error);
-    return { error: "Failed to reorder members", success: false };
-  }
+const reorderMembers = (teamId: string, memberIds: Array<string>): Promise<ActionResult<void>> => {
+  return mutateTeam({
+    errorContext: "reorder members",
+    mutate: (team) => {
+      const existingIds = new Set(team.members.map((m) => m.id));
+      const inputIds = new Set(memberIds);
+      if (inputIds.size !== existingIds.size || !memberIds.every((id) => existingIds.has(id))) {
+        return { error: "Invalid member order", ok: false };
+      }
+      const memberMap = new Map(team.members.map((m) => [m.id, m]));
+      team.members = memberIds.flatMap((id, index) => {
+        const member = memberMap.get(id);
+        return member ? [{ ...member, order: index }] : [];
+      });
+      return { ok: true, value: undefined };
+    },
+    teamId,
+  });
 };
 
 export {
