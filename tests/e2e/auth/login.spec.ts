@@ -15,7 +15,7 @@ test.describe("Login", () => {
     await loginPage.login(testUser.email, testUser.password);
 
     await expect(page).toHaveURL("/", { timeout: 10_000 });
-    await expect(page.getByRole("button", { name: /create team workspace/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /create team workspace/iv })).toBeVisible();
   });
 
   test("shows error with wrong password", async ({ loginPage, page, testUser }) => {
@@ -23,7 +23,7 @@ test.describe("Login", () => {
     await loginPage.login(testUser.email, "WrongPassword999!");
 
     // Sonner toast with error message
-    await expect(page.getByText(/failed to sign in|invalid/i)).toBeVisible({
+    await expect(page.getByText(/failed to sign in|invalid/iv)).toBeVisible({
       timeout: 5000,
     });
   });
@@ -34,9 +34,9 @@ test.describe("Login", () => {
     const emailInput = page.getByLabel("Email");
     await emailInput.click();
     await emailInput.pressSequentially("not-an-email", { delay: 10 });
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByRole("button", { name: /sign in/iv }).click();
 
-    await expect(page.getByText(/valid email/i)).toBeVisible();
+    await expect(page.getByText(/valid email/iv)).toBeVisible();
   });
 
   test("shows validation error for empty password", async ({ loginPage, page }) => {
@@ -45,9 +45,9 @@ test.describe("Login", () => {
     const emailInput = page.getByLabel("Email");
     await emailInput.click();
     await emailInput.pressSequentially("test@example.com", { delay: 10 });
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByRole("button", { name: /sign in/iv }).click();
 
-    await expect(page.getByText(/password is required/i)).toBeVisible();
+    await expect(page.getByText(/password is required/iv)).toBeVisible();
   });
 
   test("navigates to signup page", async ({ loginPage, page }) => {

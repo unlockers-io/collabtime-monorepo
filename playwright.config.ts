@@ -27,7 +27,7 @@ export default defineConfig({
   // 30 min job budget. chromium is the canonical Playwright signal; firefox
   // and webkit run locally and via nightly/manual workflows.
   projects: [
-    { name: "setup", testMatch: /.*\.setup\.ts/ },
+    { name: "setup", testMatch: /.*\.setup\.ts/v },
     {
       dependencies: ["setup"],
       name: "chromium",

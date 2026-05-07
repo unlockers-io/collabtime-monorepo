@@ -5,18 +5,18 @@ test.describe.skip("Group Management", () => {
   test.beforeEach(async ({ homePage, page }) => {
     await homePage.goto();
     await homePage.createWorkspace();
-    await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
-    await expect(page.getByRole("button", { name: /add group/i })).toBeVisible({ timeout: 60_000 });
+    await expect(page).toHaveURL(/\/[a-f0-9\-]+/v, { timeout: 10_000 });
+    await expect(page.getByRole("button", { name: /add group/iv })).toBeVisible({ timeout: 60_000 });
   });
 
   test("creates a group", async ({ page }) => {
-    await page.getByRole("button", { name: /add group/i }).click();
+    await page.getByRole("button", { name: /add group/iv }).click();
 
     await page.getByLabel("Group Name").click();
     await page.getByLabel("Group Name").pressSequentially("Engineering", { delay: 10 });
     await page.keyboard.press("Tab");
 
-    await page.getByRole("button", { name: /create group/i }).click();
+    await page.getByRole("button", { name: /create group/iv }).click();
 
     // Group should appear in the groups section
     await expect(page.getByText("Engineering")).toBeVisible({ timeout: 5000 });
@@ -24,21 +24,21 @@ test.describe.skip("Group Management", () => {
 
   test("deletes a group", async ({ page }) => {
     // Create a group first
-    await page.getByRole("button", { name: /add group/i }).click();
+    await page.getByRole("button", { name: /add group/iv }).click();
     await page.getByLabel("Group Name").click();
     await page.getByLabel("Group Name").pressSequentially("Marketing", { delay: 10 });
     await page.keyboard.press("Tab");
-    await page.getByRole("button", { name: /create group/i }).click();
+    await page.getByRole("button", { name: /create group/iv }).click();
     await expect(page.getByText("Marketing")).toBeVisible({ timeout: 5000 });
 
     // Find the group card and click delete
     const groupCard = page.locator("[class*='rounded']").filter({
       hasText: "Marketing",
     });
-    await groupCard.getByRole("button", { name: /remove|delete/i }).click();
+    await groupCard.getByRole("button", { name: /remove|delete/iv }).click();
 
     // Confirm if needed
-    const confirmButton = page.getByRole("button", { name: /confirm|remove|delete/i });
+    const confirmButton = page.getByRole("button", { name: /confirm|remove|delete/iv });
     if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
       await confirmButton.click();
     }

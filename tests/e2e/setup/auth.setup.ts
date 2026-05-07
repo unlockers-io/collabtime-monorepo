@@ -28,7 +28,7 @@ setup("create and authenticate test user", async ({ page }) => {
   await fillField(page, page.getByLabel("Email"), TEST_USER.email);
   await fillField(page, page.getByLabel("Password"), TEST_USER.password);
 
-  const submitButton = page.getByRole("button", { name: /create account/i });
+  const submitButton = page.getByRole("button", { name: /create account/iv });
   await expect(submitButton).toBeEnabled({ timeout: 10_000 });
   await submitButton.click();
 
@@ -45,7 +45,7 @@ setup("create and authenticate test user", async ({ page }) => {
     await fillField(page, page.getByLabel("Email"), TEST_USER.email);
     await fillField(page, page.getByLabel("Password"), TEST_USER.password);
 
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByRole("button", { name: /sign in/iv }).click();
     await page.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 15_000 });
   }
 
@@ -53,7 +53,7 @@ setup("create and authenticate test user", async ({ page }) => {
   await page.waitForLoadState("networkidle");
 
   // Verify authenticated state
-  await expect(page.getByRole("button", { name: /create team workspace/i })).toBeVisible({
+  await expect(page.getByRole("button", { name: /create team workspace/iv })).toBeVisible({
     timeout: 15_000,
   });
 

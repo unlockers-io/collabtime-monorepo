@@ -9,9 +9,9 @@ class HomePage {
   constructor(private readonly page: Page) {
     this.heading = page.getByRole("heading", { name: "Collab Time" });
     this.createWorkspaceButton = page.getByRole("button", {
-      name: /create team workspace/i,
+      name: /create team workspace/iv,
     });
-    this.getStartedLink = page.getByRole("link", { name: /get started/i });
+    this.getStartedLink = page.getByRole("link", { name: /get started/iv });
     this.myTeamsHeading = page.getByRole("heading", { name: "My Teams" });
   }
 
