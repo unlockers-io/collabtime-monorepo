@@ -85,6 +85,18 @@ export default defineConfig({
         "require-await": "off",
       },
     },
+    // Server actions wrapping `mutateTeam` must be syntactically `async` for
+    // Next.js's `"use server"` directive even when the body returns a Promise
+    // directly — the awaitless body is a deliberate pipeline, not an oversight.
+    {
+      files: [
+        "apps/web/src/lib/actions/group-actions.ts",
+        "apps/web/src/lib/actions/member-actions.ts",
+      ],
+      rules: {
+        "require-await": "off",
+      },
+    },
     // E2E teardown scripts: `console.*` output is the whole point, and the
     // Redis SCAN loop is sequential by design (each page needs the previous
     // cursor).
