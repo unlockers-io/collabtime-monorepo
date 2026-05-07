@@ -115,5 +115,16 @@ export default defineConfig({
         "no-empty-pattern": "off",
       },
     },
+    // Playwright's selector engine rejects regex literals with the /v flag
+    // (e.g. `getByRole("button", { name: /sign in/iv })` fails to parse at
+    // runtime). Disable `require-unicode-regexp` for files that pass regexes
+    // to Playwright APIs so the regex flags Playwright accepts (/i without /v)
+    // can stay.
+    {
+      files: ["tests/**", "playwright.config.ts"],
+      rules: {
+        "require-unicode-regexp": "off",
+      },
+    },
   ],
 });

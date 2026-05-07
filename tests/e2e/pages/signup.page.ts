@@ -11,8 +11,8 @@ class SignupPage {
     this.nameInput = page.getByLabel("Name");
     this.emailInput = page.getByLabel("Email");
     this.passwordInput = page.getByLabel("Password");
-    this.submitButton = page.getByRole("button", { name: /create account/iv });
-    this.signInLink = page.getByRole("link", { name: /sign in/iv });
+    this.submitButton = page.getByRole("button", { name: /create account/i });
+    this.signInLink = page.getByRole("link", { name: /sign in/i });
   }
 
   goto = async () => {

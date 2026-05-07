@@ -11,22 +11,22 @@ test.describe("Register", () => {
     await signupPage.signup("Test Register User", uniqueEmail, "TestPassword123!");
 
     await expect(page).toHaveURL("/", { timeout: 10_000 });
-    await expect(page.getByRole("button", { name: /create team workspace/iv })).toBeVisible();
+    await expect(page.getByRole("button", { name: /create team workspace/i })).toBeVisible();
   });
 
   test("shows error for duplicate email", async ({ page, signupPage, testUser }) => {
     await signupPage.goto();
     await signupPage.signup(testUser.name, testUser.email, testUser.password);
 
-    await expect(page.getByText(/already exists|failed to create/iv)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/already exists|failed to create/i)).toBeVisible({ timeout: 5000 });
   });
 
   test("shows validation error for empty name", async ({ page, signupPage }) => {
     await signupPage.goto();
 
-    await page.getByRole("button", { name: /create account/iv }).click();
+    await page.getByRole("button", { name: /create account/i }).click();
 
-    await expect(page.getByText(/name is required/iv)).toBeVisible();
+    await expect(page.getByText(/name is required/i)).toBeVisible();
   });
 
   test("shows validation error for invalid email", async ({ page, signupPage }) => {
@@ -39,9 +39,9 @@ test.describe("Register", () => {
     const emailInput = page.getByLabel("Email");
     await emailInput.click();
     await emailInput.pressSequentially("bad-email", { delay: 10 });
-    await page.getByRole("button", { name: /create account/iv }).click();
+    await page.getByRole("button", { name: /create account/i }).click();
 
-    await expect(page.getByText(/valid email/iv)).toBeVisible();
+    await expect(page.getByText(/valid email/i)).toBeVisible();
   });
 
   test("shows validation error for short password", async ({ page, signupPage }) => {
@@ -58,9 +58,9 @@ test.describe("Register", () => {
     const passwordInput = page.getByLabel("Password");
     await passwordInput.click();
     await passwordInput.pressSequentially("short", { delay: 10 });
-    await page.getByRole("button", { name: /create account/iv }).click();
+    await page.getByRole("button", { name: /create account/i }).click();
 
-    await expect(page.getByText(/at least 8 characters/iv)).toBeVisible();
+    await expect(page.getByText(/at least 8 characters/i)).toBeVisible();
   });
 
   test("navigates to login page", async ({ page, signupPage }) => {

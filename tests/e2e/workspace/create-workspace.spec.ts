@@ -8,10 +8,10 @@ test.describe("Create Workspace", () => {
     await homePage.createWorkspace();
 
     // Should navigate to a UUID-based team route
-    await expect(page).toHaveURL(/\/[a-f0-9\-]+/v, { timeout: 10_000 });
+    await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
 
     // Should see the team page with the creator already added
-    await expect(page.getByRole("heading", { name: /team members/iv })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /team members/i })).toBeVisible();
   });
 
   test("new workspace appears in My Teams list", async ({ homePage, page }) => {
@@ -19,7 +19,7 @@ test.describe("Create Workspace", () => {
     await homePage.createWorkspace();
 
     // Wait for team page to load
-    await expect(page).toHaveURL(/\/[a-f0-9\-]+/v, { timeout: 10_000 });
+    await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
 
     // Navigate back to home
     await page.goto("/");

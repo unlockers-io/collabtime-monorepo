@@ -9,8 +9,8 @@ class LoginPage {
   constructor(private readonly page: Page) {
     this.emailInput = page.getByLabel("Email");
     this.passwordInput = page.getByLabel("Password");
-    this.submitButton = page.getByRole("button", { name: /sign in/iv });
-    this.signUpLink = page.getByRole("link", { name: /sign up/iv });
+    this.submitButton = page.getByRole("button", { name: /sign in/i });
+    this.signUpLink = page.getByRole("link", { name: /sign up/i });
   }
 
   goto = async () => {

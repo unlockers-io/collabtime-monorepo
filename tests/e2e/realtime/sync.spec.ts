@@ -11,8 +11,8 @@ test.describe.skip("Realtime Sync", () => {
     const contextA = await browser.newContext({ storageState: STORAGE_STATE });
     const pageA = await contextA.newPage();
     await pageA.goto("/");
-    await pageA.getByRole("button", { name: /create team workspace/iv }).click();
-    await expect(pageA).toHaveURL(/\/[a-f0-9\-]+/v, { timeout: 10_000 });
+    await pageA.getByRole("button", { name: /create team workspace/i }).click();
+    await expect(pageA).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
     teamId = new URL(pageA.url()).pathname.slice(1);
     await contextA.close();
   });
@@ -27,7 +27,7 @@ test.describe.skip("Realtime Sync", () => {
     await Promise.all([pageA.goto(`/${teamId}`), pageB.goto(`/${teamId}`)]);
 
     // Wait for pages to load
-    await expect(pageA.getByRole("button", { name: /add team member/iv })).toBeVisible({
+    await expect(pageA.getByRole("button", { name: /add team member/i })).toBeVisible({
       timeout: 60_000,
     });
     await expect(pageB.getByRole("heading", { name: "Team Members" })).toBeVisible({
@@ -35,11 +35,11 @@ test.describe.skip("Realtime Sync", () => {
     });
 
     // Context A adds a member
-    await pageA.getByRole("button", { name: /add team member/iv }).click();
+    await pageA.getByRole("button", { name: /add team member/i }).click();
     await pageA.getByLabel("Name *").click();
     await pageA.getByLabel("Name *").pressSequentially("Realtime Alice", { delay: 10 });
     await pageA.keyboard.press("Tab");
-    await pageA.getByRole("button", { name: /add member/iv }).click();
+    await pageA.getByRole("button", { name: /add member/i }).click();
 
     // Verify member appears in context A
     await expect(pageA.getByText("Realtime Alice")).toBeVisible({
@@ -63,7 +63,7 @@ test.describe.skip("Realtime Sync", () => {
 
     await Promise.all([pageA.goto(`/${teamId}`), pageB.goto(`/${teamId}`)]);
 
-    await expect(pageA.getByRole("button", { name: /add group/iv })).toBeVisible({
+    await expect(pageA.getByRole("button", { name: /add group/i })).toBeVisible({
       timeout: 60_000,
     });
     await expect(pageB.getByRole("heading", { name: "Groups" })).toBeVisible({
@@ -71,11 +71,11 @@ test.describe.skip("Realtime Sync", () => {
     });
 
     // Context A creates a group
-    await pageA.getByRole("button", { name: /add group/iv }).click();
+    await pageA.getByRole("button", { name: /add group/i }).click();
     await pageA.getByLabel("Group Name").click();
     await pageA.getByLabel("Group Name").pressSequentially("Sync Test Group", { delay: 10 });
     await pageA.keyboard.press("Tab");
-    await pageA.getByRole("button", { name: /create group/iv }).click();
+    await pageA.getByRole("button", { name: /create group/i }).click();
 
     // Verify group appears in context A
     await expect(pageA.getByText("Sync Test Group")).toBeVisible({
@@ -135,11 +135,11 @@ test.describe.skip("Realtime Sync", () => {
     });
     const setupPage = await setupContext.newPage();
     await setupPage.goto(`/${teamId}`);
-    await setupPage.getByRole("button", { name: /add team member/iv }).click();
+    await setupPage.getByRole("button", { name: /add team member/i }).click();
     await setupPage.getByLabel("Name *").click();
     await setupPage.getByLabel("Name *").pressSequentially("Removal Target", { delay: 10 });
     await setupPage.keyboard.press("Tab");
-    await setupPage.getByRole("button", { name: /add member/iv }).click();
+    await setupPage.getByRole("button", { name: /add member/i }).click();
     await expect(setupPage.getByText("Removal Target")).toBeVisible({
       timeout: 5000,
     });
@@ -165,11 +165,11 @@ test.describe.skip("Realtime Sync", () => {
     const memberCard = pageA.locator("[class*='rounded']").filter({
       hasText: "Removal Target",
     });
-    await memberCard.getByRole("button", { name: /remove|delete/iv }).click();
+    await memberCard.getByRole("button", { name: /remove|delete/i }).click();
 
     // Confirm if needed
     const confirmButton = pageA.getByRole("button", {
-      name: /confirm|remove|delete/iv,
+      name: /confirm|remove|delete/i,
     });
     if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
       await confirmButton.click();
