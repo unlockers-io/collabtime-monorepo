@@ -9,7 +9,7 @@ import { TeamGroupInputSchema, TeamGroupUpdateSchema } from "../validation";
 import { checkUuid, mutateTeam, sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
-const createGroup = (
+const createGroup = async (
   teamId: string,
   input: { name: string },
 ): Promise<ActionResult<{ group: TeamGroup; team: Team }>> => {
@@ -35,7 +35,7 @@ const createGroup = (
   });
 };
 
-const updateGroup = (
+const updateGroup = async (
   teamId: string,
   groupId: string,
   updates: Partial<{ name: string }>,
@@ -65,7 +65,7 @@ const updateGroup = (
   });
 };
 
-const removeGroup = (teamId: string, groupId: string): Promise<ActionResult<Team>> => {
+const removeGroup = async (teamId: string, groupId: string): Promise<ActionResult<Team>> => {
   return mutateTeam({
     errorContext: "remove group",
     mutate: (team) => {
@@ -85,7 +85,10 @@ const removeGroup = (teamId: string, groupId: string): Promise<ActionResult<Team
   });
 };
 
-const reorderGroups = (teamId: string, groupIds: Array<string>): Promise<ActionResult<void>> => {
+const reorderGroups = async (
+  teamId: string,
+  groupIds: Array<string>,
+): Promise<ActionResult<void>> => {
   return mutateTeam({
     errorContext: "reorder groups",
     mutate: (team) => {

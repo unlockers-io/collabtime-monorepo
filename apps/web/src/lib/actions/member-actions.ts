@@ -11,7 +11,7 @@ import { TeamMemberInputSchema, TeamMemberUpdateSchema } from "../validation";
 import { checkUuid, mutateTeam, sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
-const addMember = (
+const addMember = async (
   teamId: string,
   member: Omit<TeamMember, "id" | "order">,
 ): Promise<ActionResult<{ member: TeamMember; team: Team }>> => {
@@ -37,7 +37,7 @@ const addMember = (
   });
 };
 
-const removeMember = (teamId: string, memberId: string): Promise<ActionResult<Team>> => {
+const removeMember = async (teamId: string, memberId: string): Promise<ActionResult<Team>> => {
   return mutateTeam({
     errorContext: "remove member",
     mutate: (team) => {
@@ -52,7 +52,7 @@ const removeMember = (teamId: string, memberId: string): Promise<ActionResult<Te
   });
 };
 
-const updateMember = (
+const updateMember = async (
   teamId: string,
   memberId: string,
   updates: Partial<Omit<TeamMember, "id">>,
@@ -82,7 +82,7 @@ const updateMember = (
   });
 };
 
-const updateTeamName = (teamId: string, name: string): Promise<ActionResult<Team>> => {
+const updateTeamName = async (teamId: string, name: string): Promise<ActionResult<Team>> => {
   return mutateTeam({
     errorContext: "update team name",
     mutate: (team, parsed) => {
@@ -100,7 +100,7 @@ const updateTeamName = (teamId: string, name: string): Promise<ActionResult<Team
   });
 };
 
-const importMembers = (
+const importMembers = async (
   teamId: string,
   members: Array<Omit<TeamMember, "id" | "order">>,
 ): Promise<ActionResult<{ imported: number; members: Array<TeamMember>; team: Team }>> => {
@@ -196,7 +196,10 @@ const updateOwnMember = async (
   });
 };
 
-const reorderMembers = (teamId: string, memberIds: Array<string>): Promise<ActionResult<void>> => {
+const reorderMembers = async (
+  teamId: string,
+  memberIds: Array<string>,
+): Promise<ActionResult<void>> => {
   return mutateTeam({
     errorContext: "reorder members",
     mutate: (team) => {
