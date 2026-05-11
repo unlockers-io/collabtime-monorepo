@@ -35,21 +35,18 @@ const resolveBaseUrl = (): string => {
 // (Node ≥18 resolves `localhost` to `::1` first; servers bind to 0.0.0.0/IPv4
 // and undici doesn't fall back), so omitting the IPv4 form rejects every
 // request from those tests with `[Better Auth]: Invalid origin`.
-const defaultTrustedOrigins = () => [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "https://collabtime.io",
-  "https://www.collabtime.io",
-];
-
 const resolveTrustedOrigins = (): Array<string> => {
-  const fromEnv = process.env.TRUSTED_ORIGINS?.split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-  if (fromEnv && fromEnv.length > 0) {
-    return fromEnv;
-  }
-  return defaultTrustedOrigins();
+  const origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://collabtime.io",
+    "https://www.collabtime.io",
+  ];
+  const extra =
+    process.env.TRUSTED_ORIGINS?.split(",")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0) ?? [];
+  return [...origins, ...extra];
 };
 
 const createAuth = (config: AuthConfig) => {
