@@ -152,8 +152,8 @@ const AddMemberForm = ({
     >
       <DialogHeader>
         <DialogTitle className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-            <UserPlus className="h-5 w-5 text-primary-foreground" />
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary">
+            <UserPlus className="size-5 text-primary-foreground" />
           </div>
           Add Team Member
         </DialogTitle>
@@ -357,7 +357,7 @@ const AddMemberForm = ({
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <Spinner />
-                  Adding...
+                  Adding…
                 </span>
               ) : (
                 "Add Member"

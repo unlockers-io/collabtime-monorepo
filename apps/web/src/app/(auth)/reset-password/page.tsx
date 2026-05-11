@@ -33,7 +33,7 @@ const resetPasswordSchema = z.object({
 });
 
 const ResetPasswordForm = () => {
-  const router = useRouter();
+  const { push } = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
@@ -53,7 +53,7 @@ const ResetPasswordForm = () => {
       if (result.error) {
         throw new Error(result.error.message ?? "Failed to reset password");
       }
-      router.push("/login?message=password-reset-success");
+      push("/login?message=password-reset-success");
     },
     schema: resetPasswordSchema,
   });

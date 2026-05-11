@@ -34,7 +34,7 @@ const signupSchema = z.object({
 });
 
 const SignupPage = () => {
-  const router = useRouter();
+  const { push, refresh } = useRouter();
   // Track edits since last submit so stale "user already exists" errors clear
   // as soon as the user changes the email — see useAuthForm: rootError lives
   // inside the hook and only resets on the next submit.
@@ -51,8 +51,8 @@ const SignupPage = () => {
       if (result.error) {
         throw new Error(result.error.message ?? "Failed to create account");
       }
-      router.push("/");
-      router.refresh();
+      push("/");
+      refresh();
     },
     schema: signupSchema,
   });

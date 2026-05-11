@@ -104,8 +104,11 @@ const sendBatchEmails = async (
     const settledBatchData = await Promise.allSettled(
       emails.map(async ({ template, ...config }) => {
         const validatedConfig = emailConfigSchema.parse(config);
-        const html = await render(template);
-        const text = await render(template, { plainText: true });
+        // HTML and plain-text renders are independent — run in parallel
+        const [html, text] = await Promise.all([
+          render(template),
+          render(template, { plainText: true }),
+        ]);
 
         return {
           bcc: validatedConfig.bcc,
@@ -167,8 +170,8 @@ const sendBatchEmails = async (
 };
 
 const previewEmail = async (template: ReactElement) => {
-  const html = await render(template);
-  const text = await render(template, { plainText: true });
+  // HTML and plain-text renders are independent — run in parallel
+  const [html, text] = await Promise.all([render(template), render(template, { plainText: true })]);
 
   return {
     html,

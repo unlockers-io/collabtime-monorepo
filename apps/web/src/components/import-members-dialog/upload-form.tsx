@@ -55,7 +55,7 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
         onDrop={handleDrop}
         type="button"
       >
-        <Upload className="h-8 w-8 text-muted-foreground" />
+        <Upload className="size-8 text-muted-foreground" />
         <div>
           <p className="text-sm font-medium">Drop a CSV file here, or click to browse</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -92,7 +92,7 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
           onClick={downloadTemplate}
           type="button"
         >
-          <Download className="h-3.5 w-3.5" />
+          <Download className="size-3.5" />
           Download template
         </button>
         <p className="text-xs text-muted-foreground">

@@ -31,7 +31,7 @@ const JoinPrompt = ({
           className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
           href={`/login?redirect=/${teamId}`}
         >
-          <LogIn className="mr-2 h-4 w-4" />
+          <LogIn className="mr-2 size-4" />
           Sign in
         </Link>
       </div>
@@ -53,9 +53,9 @@ const JoinPrompt = ({
       <p className="text-sm text-muted-foreground">Request access to edit this team</p>
       <Button disabled={isRequestingJoin} onClick={onRequestJoin} size="sm" variant="outline">
         {isRequestingJoin ? (
-          <Spinner className="mr-2 h-4 w-4" />
+          <Spinner className="mr-2 size-4" />
         ) : (
-          <UserPlus className="mr-2 h-4 w-4" />
+          <UserPlus className="mr-2 size-4" />
         )}
         Request to Join
       </Button>

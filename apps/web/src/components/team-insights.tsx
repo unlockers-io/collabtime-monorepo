@@ -10,7 +10,7 @@ import {
 } from "@repo/ui/components/tooltip";
 import { cn } from "@repo/ui/lib/utils";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
-import { Fragment, useSyncExternalStore } from "react";
+import { Fragment, useMemo, useSyncExternalStore } from "react";
 
 import {
   SectionCard,
@@ -106,18 +106,26 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
   // computations below.
   useHalfMinuteTick();
 
+  // Intl.DateTimeFormat allocates dozens of objects per construction; only recreate when timezone changes
+  const hourFormatter = useMemo(
+    () =>
+      viewerTimezone
+        ? new Intl.DateTimeFormat("en-US", {
+            hour: "numeric",
+            hour12: false,
+            timeZone: viewerTimezone,
+          })
+        : null,
+    [viewerTimezone],
+  );
+
   const memberStatuses = ((): Array<MemberStatus> => {
-    if (!viewerTimezone) {
+    if (!viewerTimezone || !hourFormatter) {
       return [];
     }
 
     const now = new Date();
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      hour12: false,
-      timeZone: viewerTimezone,
-    });
-    const hourPart = formatter.formatToParts(now).find((p) => p.type === "hour");
+    const hourPart = hourFormatter.formatToParts(now).find((p) => p.type === "hour");
     const currentHourInViewer = hourPart ? Number.parseInt(hourPart.value, 10) : 0;
 
     return members.map((member) => {

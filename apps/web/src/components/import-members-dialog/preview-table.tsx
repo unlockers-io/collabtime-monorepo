@@ -24,13 +24,13 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
     <div className="flex items-center gap-3 text-sm">
       {validCount > 0 && (
         <span className="flex items-center gap-1.5 font-medium text-success">
-          <CheckCircle className="h-4 w-4" />
+          <CheckCircle className="size-4" />
           {validCount} valid
         </span>
       )}
       {invalidCount > 0 && (
         <span className="flex items-center gap-1.5 text-destructive">
-          <XCircle className="h-4 w-4" />
+          <XCircle className="size-4" />
           {invalidCount} will be skipped
         </span>
       )}
@@ -82,18 +82,18 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
                     )}
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">
-                    {row.title || <span className="opacity-40">—</span>}
+                    {row.title || <span className="opacity-40">–</span>}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-muted-foreground tabular-nums">
                     {row.workingHoursStart}:00–{row.workingHoursEnd}:00
                   </td>
                   <td className="px-3 py-2">
                     {isValid ? (
-                      <CheckCircle className="h-4 w-4 text-success" />
+                      <CheckCircle className="size-4 text-success" />
                     ) : (
                       <Tooltip>
                         <TooltipTrigger render={<span className="inline-flex cursor-default" />}>
-                          <XCircle className="h-4 w-4 text-destructive" />
+                          <XCircle className="size-4 text-destructive" />
                         </TooltipTrigger>
                         <TooltipContent>{row.errors.join(" · ")}</TooltipContent>
                       </Tooltip>

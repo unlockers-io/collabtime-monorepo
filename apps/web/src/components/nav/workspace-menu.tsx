@@ -18,7 +18,7 @@ const WorkspaceMenu = ({ onDeleteWorkspace }: WorkspaceMenuProps) => (
     <DropdownMenuTrigger
       render={<Button aria-label="Workspace actions" size="icon" variant="outline" />}
     >
-      <MoreHorizontal className="h-4 w-4" />
+      <MoreHorizontal className="size-4" />
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" className="w-48 bg-popover">
       <DropdownMenuItem onClick={onDeleteWorkspace} variant="destructive">

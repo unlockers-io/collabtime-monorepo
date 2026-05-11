@@ -112,16 +112,16 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
         type="button"
       >
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20 text-warning">
-            <Bell aria-hidden="true" className="h-4 w-4" />
+          <div className="flex size-8 items-center justify-center rounded-full bg-warning/20 text-warning">
+            <Bell aria-hidden="true" className="size-4" />
           </div>
           <span className="text-sm font-medium text-foreground">Pending Join Requests</span>
           <Badge className="border-transparent bg-warning/30 text-warning">{requests.length}</Badge>
         </div>
         {isExpanded ? (
-          <ChevronUp aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
+          <ChevronUp aria-hidden="true" className="size-4 text-muted-foreground" />
         ) : (
-          <ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
         )}
       </button>
 
@@ -136,7 +136,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
 
                 return (
                   <li className="flex items-center gap-3 px-4 py-3" key={request.id}>
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                       {request.userName.charAt(0).toUpperCase()}
                     </div>
 
@@ -158,7 +158,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
                         size="icon-sm"
                         variant="ghost"
                       >
-                        {isApproving ? <Spinner /> : <Check className="h-4 w-4" />}
+                        {isApproving ? <Spinner /> : <Check className="size-4" />}
                       </Button>
                       <Button
                         aria-label={`Deny ${request.userName}`}
@@ -168,7 +168,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
                         size="icon-sm"
                         variant="ghost"
                       >
-                        {isDenying ? <Spinner /> : <X className="h-4 w-4" />}
+                        {isDenying ? <Spinner /> : <X className="size-4" />}
                       </Button>
                     </div>
                   </li>

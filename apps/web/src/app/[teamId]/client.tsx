@@ -62,7 +62,7 @@ const TeamPageClient = ({
   teamStatus: initialStatus,
   userId,
 }: TeamPageClientProps) => {
-  const router = useRouter();
+  const { push } = useRouter();
   const [teamStatus, setTeamStatus] = useState<TeamStatus>(initialStatus);
   const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
@@ -287,7 +287,7 @@ const TeamPageClient = ({
       {spaceId !== null && (
         <DeleteWorkspaceDialog
           onDeleted={() => {
-            router.push("/");
+            push("/");
           }}
           onOpenChange={setIsDeleteWorkspaceOpen}
           open={isDeleteWorkspaceOpen}

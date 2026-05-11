@@ -34,7 +34,7 @@ const InvitationsList = ({
         }}
       >
         <div className="flex items-center gap-2">
-          <Mail className="h-4 w-4 text-muted-foreground" />
+          <Mail className="size-4 text-muted-foreground" />
           <h2 className="text-sm font-medium text-muted-foreground">Pending Invitations</h2>
         </div>
 
@@ -53,8 +53,8 @@ const InvitationsList = ({
                   transition={{ duration: 0.2 }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                      <Mail className="h-4 w-4 text-primary" />
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+                      <Mail className="size-4 text-primary" />
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-foreground">
@@ -73,7 +73,7 @@ const InvitationsList = ({
                       size="sm"
                       variant="ghost"
                     >
-                      {isProcessing ? <Spinner className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      {isProcessing ? <Spinner className="size-4" /> : <X className="size-4" />}
                     </Button>
                     <Button
                       aria-label={`Accept invitation to ${invitation.teamName}`}
@@ -82,10 +82,10 @@ const InvitationsList = ({
                       size="sm"
                     >
                       {isProcessing ? (
-                        <Spinner className="h-4 w-4" />
+                        <Spinner className="size-4" />
                       ) : (
                         <>
-                          <Check className="h-4 w-4" />
+                          <Check className="size-4" />
                           Accept
                         </>
                       )}
