@@ -1,5 +1,3 @@
-import { execFileSync } from "node:child_process";
-
 import type { PrismaClient } from "@repo/db";
 import {
   sendPasswordResetEmail,
@@ -28,46 +26,30 @@ type AuthConfig = {
   secret: string;
 };
 
-const getPortlessUrl = (name: string) => {
-  if (process.env.CI) {
-    return undefined;
-  }
-  try {
-    return execFileSync("portless", ["get", name], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return undefined;
-  }
-};
-
 const resolveBaseUrl = (): string => {
-  if (process.env.NODE_ENV === "production" || process.env.CI) {
-    return process.env.BETTER_AUTH_URL || "http://localhost:3000";
-  }
-  return getPortlessUrl("collabtime.web") ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+  return process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 };
 
-const defaultTrustedOrigins = () => {
-  // Both `localhost` and `127.0.0.1` are loopback but Better Auth's origin
-  // check is exact-string. CI's playwright config uses `127.0.0.1` explicitly
-  // (Node ≥18 resolves `localhost` to `::1` first; servers bind to 0.0.0.0/IPv4
-  // and undici doesn't fall back), so omitting the IPv4 form rejects every
-  // request from those tests with `[Better Auth]: Invalid origin`.
-  const origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://collabtime.io",
-    "https://www.collabtime.io",
-  ];
+// Both `localhost` and `127.0.0.1` are loopback but Better Auth's origin
+// check is exact-string. CI's playwright config uses `127.0.0.1` explicitly
+// (Node ≥18 resolves `localhost` to `::1` first; servers bind to 0.0.0.0/IPv4
+// and undici doesn't fall back), so omitting the IPv4 form rejects every
+// request from those tests with `[Better Auth]: Invalid origin`.
+const defaultTrustedOrigins = () => [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://collabtime.io",
+  "https://www.collabtime.io",
+];
 
-  const portlessUrl = getPortlessUrl("collabtime.web");
-  if (portlessUrl) {
-    origins.push(portlessUrl);
+const resolveTrustedOrigins = (): Array<string> => {
+  const fromEnv = process.env.TRUSTED_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  if (fromEnv && fromEnv.length > 0) {
+    return fromEnv;
   }
-
-  return origins;
+  return defaultTrustedOrigins();
 };
 
 const createAuth = (config: AuthConfig) => {
@@ -213,7 +195,7 @@ const createAuth = (config: AuthConfig) => {
       updateAge: 60 * 60 * 24, // Update session if older than 1 day
     },
 
-    trustedOrigins: process.env.TRUSTED_ORIGINS?.split(",") || defaultTrustedOrigins(),
+    trustedOrigins: resolveTrustedOrigins(),
   });
 };
 
