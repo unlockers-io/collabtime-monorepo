@@ -89,7 +89,7 @@ const DeleteWorkspaceDialog = ({
             {isDeleting ? (
               <span className="flex items-center gap-2">
                 <Spinner />
-                Deleting...
+                Deleting…
               </span>
             ) : (
               "Delete workspace"

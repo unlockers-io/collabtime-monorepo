@@ -29,7 +29,7 @@ const loginSchema = z.object({
 });
 
 const LoginPage = () => {
-  const router = useRouter();
+  const { push, refresh } = useRouter();
   const { form, isLoading, rootError } = useAuthForm({
     defaultValues: { email: "", password: "" },
     onSubmit: async (values) => {
@@ -40,8 +40,8 @@ const LoginPage = () => {
       if (result.error) {
         throw new Error(result.error.message ?? "Failed to sign in");
       }
-      router.push("/");
-      router.refresh();
+      push("/");
+      refresh();
     },
     schema: loginSchema,
   });

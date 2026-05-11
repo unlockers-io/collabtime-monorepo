@@ -83,18 +83,26 @@ const useTimezoneData = ({
         continue;
       }
 
-      const rows = groupMembers
-        .map((m) => rowByMemberId.get(m.id))
-        .filter((row): row is MemberRow => row !== undefined);
+      const rows: Array<MemberRow> = [];
+      for (const m of groupMembers) {
+        const row = rowByMemberId.get(m.id);
+        if (row !== undefined) {
+          rows.push(row);
+        }
+      }
 
       sections.push({ group, rows });
     }
 
     const ungroupedMembers = members.filter((m) => !m.groupId);
     if (ungroupedMembers.length > 0) {
-      const rows = ungroupedMembers
-        .map((m) => rowByMemberId.get(m.id))
-        .filter((row): row is MemberRow => row !== undefined);
+      const rows: Array<MemberRow> = [];
+      for (const m of ungroupedMembers) {
+        const row = rowByMemberId.get(m.id);
+        if (row !== undefined) {
+          rows.push(row);
+        }
+      }
 
       sections.push({ group: null, rows });
     }
@@ -221,20 +229,21 @@ const useTimezoneData = ({
     return "partial";
   }, [overlapData]);
 
+  // O(1) member-by-id lookup so `isMemberInCompare` doesn't `.find()` inside its loop
+  const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+
   const isMemberInCompare = (memberId: string, isComparing: boolean): boolean => {
     if (!isComparing || validSelections.length === 0) {
       return false;
     }
 
+    const member = memberById.get(memberId);
     for (const sel of validSelections) {
       if (sel.type === "member" && sel.id === memberId) {
         return true;
       }
-      if (sel.type === "group") {
-        const member = members.find((m) => m.id === memberId);
-        if (member?.groupId === sel.id) {
-          return true;
-        }
+      if (sel.type === "group" && member?.groupId === sel.id) {
+        return true;
       }
     }
     return false;

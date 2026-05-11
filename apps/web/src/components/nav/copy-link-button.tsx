@@ -19,7 +19,7 @@ const CopyLinkButton = ({ hasCopied, onCopy, onMobileClose }: CopyLinkButtonProp
     variant="outline"
   >
     <span className="flex items-center gap-2">
-      {hasCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+      {hasCopied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
       {hasCopied ? "Copied!" : "Copy Link"}
     </span>
   </Button>

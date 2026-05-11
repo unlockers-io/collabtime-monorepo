@@ -33,7 +33,7 @@ const TeamTitle = ({
 
   if (!isAdmin) {
     return (
-      <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
+      <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
         {teamName || "Team Workspace"}
       </h1>
     );
@@ -56,12 +56,12 @@ const TeamTitle = ({
 
   return (
     <button className="group flex min-w-0 items-center gap-2" onClick={onEdit} type="button">
-      <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
+      <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
         {teamName || "Team Workspace"}
       </h1>
       <Pencil
         className={cn(
-          "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-opacity",
+          "size-3.5 shrink-0 text-muted-foreground transition-opacity",
           teamName ? "opacity-0 group-hover:opacity-100" : "opacity-100",
         )}
       />

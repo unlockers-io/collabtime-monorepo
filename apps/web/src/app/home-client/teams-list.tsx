@@ -53,8 +53,8 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
                   transition={{ duration: 0.2 }}
                 >
                   <Link className="flex flex-1 items-center gap-3" href={`/${team.teamId}`}>
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
-                      <Users className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-secondary">
+                      <Users className="size-4 text-muted-foreground" />
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-foreground">
@@ -69,7 +69,7 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
                   </Link>
                   <div className="flex items-center gap-1 pl-2">
                     {team.role === "ADMIN" && (
-                      <Shield aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
+                      <Shield aria-hidden="true" className="size-4 text-muted-foreground" />
                     )}
                     <DropdownMenu>
                       <DropdownMenuTrigger
@@ -81,7 +81,7 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
                           />
                         }
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" sideOffset={4}>
                         <DropdownMenuItem

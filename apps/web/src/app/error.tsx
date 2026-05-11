@@ -26,7 +26,7 @@ const Error = ({ error, reset }: ErrorProps) => {
             Something went wrong
           </h1>
           <p className="max-w-[48ch] text-sm text-pretty text-muted-foreground">
-            An unexpected error occurred. Please try again — if it keeps happening, refresh the page
+            An unexpected error occurred. Please try again. If it keeps happening, refresh the page
             or come back in a few minutes.
           </p>
         </div>

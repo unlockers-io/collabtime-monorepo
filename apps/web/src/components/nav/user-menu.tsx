@@ -22,7 +22,7 @@ type UserMenuProps = {
 };
 
 const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
-  const router = useRouter();
+  const { push, refresh } = useRouter();
 
   const handleSignOut = async () => {
     try {
@@ -34,8 +34,8 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
           },
           onSuccess: () => {
             toast.success("Signed out successfully");
-            router.push("/");
-            router.refresh();
+            push("/");
+            refresh();
           },
         },
       });
@@ -50,7 +50,7 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
       <DropdownMenuTrigger
         render={<Button aria-label="Account menu" size="icon" variant="outline" />}
       >
-        {isAdmin ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
+        {isAdmin ? <Shield className="size-4" /> : <User className="size-4" />}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 bg-popover">
         <div className="px-2 py-1.5 text-sm">
@@ -71,7 +71,7 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
                 />
               }
             >
-              <LogIn className="h-4 w-4" />
+              <LogIn className="size-4" />
               Sign in
             </DropdownMenuItem>
           </>
@@ -82,14 +82,14 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
             <DropdownMenuItem
               render={<Link className="flex items-center gap-2" href="/settings" />}
             >
-              <Settings className="h-4 w-4" />
+              <Settings className="size-4" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuItem
               className="flex cursor-pointer items-center gap-2"
               onClick={handleSignOut}
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="size-4" />
               Sign out
             </DropdownMenuItem>
           </>

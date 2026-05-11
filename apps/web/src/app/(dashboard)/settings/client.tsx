@@ -21,7 +21,7 @@ type SettingsClientProps = {
 };
 
 const SettingsClient = ({ user }: SettingsClientProps) => {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const [name, setName] = useState(user.name);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -45,7 +45,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
       }
 
       toast.success("Name updated successfully");
-      router.refresh();
+      refresh();
     } catch (error) {
       console.error("[Settings] Unexpected error updating name:", error);
       toast.error("Failed to update name");
@@ -58,7 +58,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
           <p className="text-sm text-muted-foreground">Manage your account</p>
         </div>
 
@@ -66,8 +66,8 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
           {/* Profile Section */}
           <Card className="flex flex-col gap-6 p-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <div className="flex size-10 items-center justify-center rounded-xl bg-secondary">
+                <User className="size-5 text-muted-foreground" />
               </div>
               <div>
                 <h2 className="font-semibold text-foreground">Profile</h2>

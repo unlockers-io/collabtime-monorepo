@@ -56,7 +56,7 @@ const ArchivedTeamsList = ({
             <ChevronDown
               aria-hidden="true"
               className={cn(
-                "h-4 w-4 transition-transform",
+                "size-4 transition-transform",
                 showArchived ? "rotate-180" : "rotate-0",
               )}
             />
@@ -86,8 +86,8 @@ const ArchivedTeamsList = ({
                         transition={{ duration: 0.2 }}
                       >
                         <Link className="flex flex-1 items-center gap-3" href={`/${team.teamId}`}>
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
-                            <Archive className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex size-9 items-center justify-center rounded-lg bg-secondary">
+                            <Archive className="size-4 text-muted-foreground" />
                           </div>
                           <div className="flex flex-col">
                             <span className="text-sm font-medium text-muted-foreground">
@@ -111,7 +111,7 @@ const ArchivedTeamsList = ({
                                 />
                               }
                             >
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreHorizontal className="size-4" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" sideOffset={4}>
                               <DropdownMenuItem

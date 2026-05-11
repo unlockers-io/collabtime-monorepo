@@ -42,9 +42,9 @@ const MobileMenu = ({
           {/* Role badge */}
           <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
             {isAdmin ? (
-              <Shield className="h-4 w-4 text-muted-foreground" />
+              <Shield className="size-4 text-muted-foreground" />
             ) : (
-              <User className="h-4 w-4 text-muted-foreground" />
+              <User className="size-4 text-muted-foreground" />
             )}
             <div>
               <p className="text-sm font-medium text-foreground">{isAdmin ? "Admin" : "Member"}</p>
@@ -65,9 +65,9 @@ const MobileMenu = ({
             >
               <span className="flex items-center gap-2">
                 {hasCopied ? (
-                  <Check className="h-4 w-4 text-success" />
+                  <Check className="size-4 text-success" />
                 ) : (
-                  <Copy className="h-4 w-4" />
+                  <Copy className="size-4" />
                 )}
                 {hasCopied ? "Copied!" : "Copy Link"}
               </span>
@@ -86,7 +86,7 @@ const MobileMenu = ({
                 )}
                 href="/login"
               >
-                <LogIn className="h-4 w-4" />
+                <LogIn className="size-4" />
                 Sign in
               </Link>
             )}
@@ -99,7 +99,7 @@ const MobileMenu = ({
                 )}
                 href="/settings"
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="size-4" />
                 Settings
               </Link>
             )}
@@ -114,7 +114,7 @@ const MobileMenu = ({
                 variant="ghost"
               >
                 <span className="flex items-center gap-2">
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="size-4" />
                   Delete workspace
                 </span>
               </Button>

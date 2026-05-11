@@ -17,7 +17,7 @@ const CurrentTimeIndicator = ({ nowPosition }: CurrentTimeIndicatorProps) => {
           left: `calc(2.5rem + (100% - 2.5rem) * ${nowPosition / 100})`,
         }}
       >
-        <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-destructive" />
+        <div className="absolute -top-1.5 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-destructive" />
       </div>
       {/* Desktop */}
       <div
@@ -26,7 +26,7 @@ const CurrentTimeIndicator = ({ nowPosition }: CurrentTimeIndicatorProps) => {
           left: `calc(6.75rem + (100% - 6.75rem) * ${nowPosition / 100})`,
         }}
       >
-        <div className="absolute -top-1.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-destructive" />
+        <div className="absolute -top-1.5 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-destructive" />
       </div>
     </>
   );

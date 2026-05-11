@@ -99,7 +99,7 @@ const GroupHeader = ({ group, isCollapsed, onToggle, rowCount }: GroupHeaderProp
     type="button"
   >
     <ChevronRight
-      className={`h-3 w-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
+      className={`size-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
     />
     <span>{group.name}</span>
     <span className="text-muted-foreground">({rowCount})</span>
@@ -124,9 +124,9 @@ const OverlapStatusIcon = ({ status }: OverlapStatusIconProps) => {
 
   return (
     <div
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${config.bgClass} sm:h-7 sm:w-7`}
+      className={`flex size-6 shrink-0 items-center justify-center rounded-full ${config.bgClass} sm:h-7 sm:w-7`}
     >
-      <Icon className={`h-3 w-3 ${config.iconClass} sm:h-3.5 sm:w-3.5`} />
+      <Icon className={`size-3 ${config.iconClass} sm:h-3.5 sm:w-3.5`} />
     </div>
   );
 };
@@ -142,7 +142,7 @@ const FindMeetingTimeButton = ({ onClick }: FindMeetingTimeButtonProps) => (
     type="button"
     variant="outline"
   >
-    <Clock className="h-5 w-5 transition-transform group-hover:scale-110" />
+    <Clock className="size-5 transition-transform group-hover:scale-110" />
     <span className="font-medium">Find Best Meeting Time</span>
   </Button>
 );

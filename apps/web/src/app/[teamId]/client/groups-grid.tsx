@@ -30,8 +30,8 @@ const GroupsGrid = ({
   if (orderedGroups.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border bg-muted/50 px-6 py-12 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
-          <FolderKanban className="h-6 w-6 text-muted-foreground" />
+        <div className="flex size-14 items-center justify-center rounded-full bg-secondary">
+          <FolderKanban className="size-6 text-muted-foreground" />
         </div>
         <div className="flex flex-col gap-1">
           <h3 className="font-semibold text-foreground">Organize with groups</h3>

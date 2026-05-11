@@ -64,6 +64,26 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+type SaveButtonLabelProps = {
+  isClaim: boolean;
+  isPending: boolean;
+};
+
+const SaveButtonLabel = ({ isClaim, isPending }: SaveButtonLabelProps) => {
+  if (isPending) {
+    return (
+      <span className="flex items-center gap-2">
+        <Spinner />
+        Saving…
+      </span>
+    );
+  }
+  if (isClaim) {
+    return <>Claim Profile</>;
+  }
+  return <>Save Changes</>;
+};
+
 const EditMemberForm = ({
   groups,
   member,
@@ -320,7 +340,7 @@ const EditMemberForm = ({
                 type="button"
                 variant="outline"
               >
-                {isInviting ? <Spinner /> : <Mail className="h-4 w-4" />}
+                {isInviting ? <Spinner /> : <Mail className="size-4" />}
               </Button>
             </div>
           </div>
@@ -336,27 +356,11 @@ const EditMemberForm = ({
             Cancel
           </Button>
           <form.Subscribe selector={(state) => ({ canSubmit: state.canSubmit })}>
-            {({ canSubmit }) => {
-              const renderLabel = () => {
-                if (isPending) {
-                  return (
-                    <span className="flex items-center gap-2">
-                      <Spinner />
-                      Saving...
-                    </span>
-                  );
-                }
-                if (isClaim) {
-                  return "Claim Profile";
-                }
-                return "Save Changes";
-              };
-              return (
-                <Button disabled={isPending || !canSubmit} type="submit">
-                  {renderLabel()}
-                </Button>
-              );
-            }}
+            {({ canSubmit }) => (
+              <Button disabled={isPending || !canSubmit} type="submit">
+                <SaveButtonLabel isClaim={isClaim} isPending={isPending} />
+              </Button>
+            )}
           </form.Subscribe>
         </DialogFooter>
       </form>

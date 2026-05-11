@@ -27,7 +27,7 @@ type HomeClientProps = {
 };
 
 const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
-  const router = useRouter();
+  const { push } = useRouter();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<WorkspaceToDelete | null>(null);
@@ -43,7 +43,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
 
   const handleCreateTeam = async () => {
     if (!isAuthenticated) {
-      router.push("/login");
+      push("/login");
       return;
     }
 
@@ -54,7 +54,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         toast.error(result.error);
         return;
       }
-      router.push(`/${result.data}`);
+      push(`/${result.data}`);
     } catch {
       toast.error("Failed to create team. Please try again.");
     } finally {
@@ -93,13 +93,13 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
             >
               {isCreating ? (
                 <>
-                  <Spinner className="h-5 w-5 text-primary-foreground" />
-                  Creating workspace...
+                  <Spinner className="size-5 text-primary-foreground" />
+                  Creating workspace…
                 </>
               ) : (
                 <>
                   Create Team Workspace
-                  <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                  <ArrowRight className="size-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </>
               )}
             </button>
@@ -110,7 +110,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
                 href="/signup"
               >
                 Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 size-5" />
               </Link>
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}

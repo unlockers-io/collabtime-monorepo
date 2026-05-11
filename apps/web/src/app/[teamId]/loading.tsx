@@ -28,10 +28,10 @@ const Loading = () => {
             <div className="h-4 w-24 animate-pulse rounded bg-muted" />
           </div>
           <div className="grid gap-3 px-4 sm:grid-cols-2 sm:px-5 lg:grid-cols-3">
-            {[0, 1, 2].map((i) => (
+            {["insight-1", "insight-2", "insight-3"].map((id) => (
               <div
                 className="flex flex-col gap-2.5 rounded-lg border border-border/60 bg-secondary/40 p-3.5"
-                key={i}
+                key={id}
               >
                 <div className="flex items-center gap-2">
                   <div className="size-4 animate-pulse rounded bg-muted" />
@@ -39,8 +39,8 @@ const Loading = () => {
                   <div className="ml-auto h-5 w-6 animate-pulse rounded-full bg-muted" />
                 </div>
                 <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                  {[0, 1].map((j) => (
-                    <div className="h-6 w-16 animate-pulse rounded-full bg-muted" key={j} />
+                  {["chip-a", "chip-b"].map((chipId) => (
+                    <div className="h-6 w-16 animate-pulse rounded-full bg-muted" key={chipId} />
                   ))}
                 </div>
               </div>
@@ -61,14 +61,14 @@ const Loading = () => {
             <div className="flex items-center gap-3">
               <div className="w-28" />
               <div className="flex flex-1 justify-between">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <div className="h-3 w-12 animate-pulse rounded bg-muted" key={i} />
+                {["tick-1", "tick-2", "tick-3", "tick-4", "tick-5"].map((id) => (
+                  <div className="h-3 w-12 animate-pulse rounded bg-muted" key={id} />
                 ))}
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              {[0, 1, 2].map((i) => (
-                <div className="flex items-center gap-3" key={i}>
+              {["row-1", "row-2", "row-3"].map((id) => (
+                <div className="flex items-center gap-3" key={id}>
                   <div className="flex w-28 items-center gap-2">
                     <div className="size-7 animate-pulse rounded-full bg-muted" />
                     <div className="h-4 w-16 animate-pulse rounded bg-muted" />
@@ -92,10 +92,10 @@ const Loading = () => {
               <div className="h-5 w-8 animate-pulse rounded-full bg-muted" />
             </div>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,320px))] gap-4 px-4 sm:px-5">
-              {[0, 1, 2, 3].map((i) => (
+              {["member-1", "member-2", "member-3", "member-4"].map((id) => (
                 <div
                   className="flex h-full flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm"
-                  key={i}
+                  key={id}
                 >
                   <div className="size-12 animate-pulse rounded-full bg-muted" />
                   <div className="flex flex-1 flex-col gap-1.5">
@@ -128,10 +128,10 @@ const Loading = () => {
               <div className="h-5 w-8 animate-pulse rounded-full bg-muted" />
             </div>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,320px))] gap-4 px-4 sm:px-5">
-              {[0, 1].map((i) => (
+              {["group-1", "group-2"].map((id) => (
                 <div
                   className="flex h-full flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm"
-                  key={i}
+                  key={id}
                 >
                   <div className="size-12 animate-pulse rounded-full bg-muted" />
                   <div className="flex flex-1 flex-col gap-2">
