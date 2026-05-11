@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "turbo run start",
-    "dev": "turbo run dev --concurrency 16",
+    "dev": "WORKTREE_NAME=$([ \"$(basename $PWD)\" = \"collabtime-monorepo\" ] || basename $PWD) turbo run dev --concurrency 16",
     "lint": "oxlint .",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
