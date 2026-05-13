@@ -92,9 +92,9 @@ User → Session, Account, Subscription, Space. Users have a `subscriptionPlan` 
 
 ## Environment variables
 
-Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (≥32 chars), `BETTER_AUTH_URL`, `STRIPE_SECRET_KEY` (sk*\*), `STRIPE_WEBHOOK_SECRET` (whsec*\_), `STRIPE_PRO_PRICE_ID` (price\_\_), `REDIS_URL` (redis:// or rediss://)
+Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (≥32 chars), `STRIPE_SECRET_KEY` (sk*\*), `STRIPE_WEBHOOK_SECRET` (whsec*\_), `STRIPE_PRO_PRICE_ID` (price\_\_), `REDIS_URL` (redis:// or rediss://)
 
-Optional: `WEB_APP_URL`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SPACE_ACCESS_SECRET`, `NODE_ENV`
+Optional: `WEB_APP_URL`, `AUTH_ALLOWED_HOSTS`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SPACE_ACCESS_SECRET`, `NODE_ENV`
 
 ## Portless (Dev URLs)
 

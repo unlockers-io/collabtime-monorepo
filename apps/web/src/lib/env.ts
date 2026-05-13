@@ -9,11 +9,14 @@ const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
 
-  // Better Auth
+  // Better Auth — base URL is derived from the request via dynamic baseURL
+  // (allowedHosts). Set AUTH_ALLOWED_HOSTS for prod/preview hosts beyond
+  // *.localhost.
+  AUTH_ALLOWED_HOSTS: z.string().optional(),
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
-  BETTER_AUTH_URL: z.string().url("BETTER_AUTH_URL must be a valid URL"),
 
-  // Web App URL (for redirects, etc.)
+  // Web App URL — used for redirects, metadata, and outbound email
+  // (invitation links) where an absolute URL is required.
   WEB_APP_URL: z.string().url("WEB_APP_URL must be a valid URL").optional(),
 
   // Redis (optional — app boots without Redis, features degrade gracefully)

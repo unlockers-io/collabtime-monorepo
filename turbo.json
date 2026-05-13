@@ -5,8 +5,8 @@
   "globalEnv": [
     "NODE_ENV",
     "DATABASE_URL",
+    "AUTH_ALLOWED_HOSTS",
     "BETTER_AUTH_SECRET",
-    "BETTER_AUTH_URL",
     "WEB_APP_URL",
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",

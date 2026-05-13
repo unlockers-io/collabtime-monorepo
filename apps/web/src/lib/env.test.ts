@@ -6,7 +6,6 @@ describe("validateEnv", () => {
   beforeEach(() => {
     vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/test");
     vi.stubEnv("BETTER_AUTH_SECRET", "a-secret-that-is-at-least-32-characters-long");
-    vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3000");
   });
 
   afterEach(() => {
@@ -35,10 +34,11 @@ describe("validateEnv", () => {
     expect(() => validateEnv()).toThrow("Invalid environment variables");
   });
 
-  it("throws when BETTER_AUTH_URL is not a valid URL", () => {
-    vi.stubEnv("BETTER_AUTH_URL", "not-a-url");
+  it("accepts optional AUTH_ALLOWED_HOSTS", () => {
+    vi.stubEnv("AUTH_ALLOWED_HOSTS", "collabtime.io,*.collabtime.io,*.vercel.app");
 
-    expect(() => validateEnv()).toThrow("Invalid environment variables");
+    const env = validateEnv();
+    expect(env.AUTH_ALLOWED_HOSTS).toBe("collabtime.io,*.collabtime.io,*.vercel.app");
   });
 
   // Unset GitHub Actions secrets expand to "" — must not blow up env validation.
@@ -81,7 +81,6 @@ describe("isEnvValid", () => {
   it("returns true when all required vars are set", () => {
     vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/test");
     vi.stubEnv("BETTER_AUTH_SECRET", "a-secret-that-is-at-least-32-characters-long");
-    vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3000");
 
     expect(isEnvValid()).toBe(true);
   });
@@ -89,7 +88,6 @@ describe("isEnvValid", () => {
   it("returns false when required vars are missing", () => {
     vi.stubEnv("DATABASE_URL", "");
     vi.stubEnv("BETTER_AUTH_SECRET", "");
-    vi.stubEnv("BETTER_AUTH_URL", "");
 
     expect(isEnvValid()).toBe(false);
   });
