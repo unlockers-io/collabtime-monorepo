@@ -30,9 +30,10 @@ test.describe("Password reset", () => {
     await page.goto(verify.url);
     await page.context().clearCookies();
 
-    // Request reset. Better Auth always returns 200 here (enumeration
-    // prevention) regardless of whether the email exists.
-    const reset = await request.post(`${webUrl}/api/auth/forget-password`, {
+    // Request reset. Better Auth's endpoint is `/request-password-reset`
+    // (the older `/forget-password` path was removed). Always returns 200
+    // here (enumeration prevention) regardless of whether the email exists.
+    const reset = await request.post(`${webUrl}/api/auth/request-password-reset`, {
       data: { email, redirectTo: "/reset-password" },
     });
     expect(reset.status()).toBe(200);
