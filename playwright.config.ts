@@ -19,6 +19,8 @@ const getPortlessUrl = (name: string) => {
 
 const webUrl = getPortlessUrl("collabtime.web") ?? "http://localhost:3000";
 
+export { webUrl };
+
 export default defineConfig({
   forbidOnly: !!process.env.CI,
   fullyParallel: true,

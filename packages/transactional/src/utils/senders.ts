@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { ChangeEmail } from "../emails/change-email";
 import { InvitationEmail } from "../emails/invitation";
 import { PasswordResetEmail } from "../emails/password-reset";
 import { SignUpAttemptEmail } from "../emails/sign-up-attempt";
@@ -147,4 +148,46 @@ const sendInvitationEmail = async (
   });
 };
 
-export { sendInvitationEmail, sendPasswordResetEmail, sendSignUpAttemptEmail, sendWelcomeEmail };
+const sendChangeEmailConfirmation = async (
+  {
+    changeUrl,
+    currentEmail,
+    newEmail,
+    username,
+  }: {
+    changeUrl: string;
+    currentEmail: string;
+    newEmail: string;
+    username?: string;
+  },
+  config: EmailConfig,
+) => {
+  return sendEmail({
+    apiKey: config.apiKey,
+    defaultReplyTo: config.defaultReplyTo,
+    from: config.from || DEFAULT_FROM,
+    subject: "Confirm change of your Collab Time account email",
+    tags: [
+      { name: "type", value: "change-email-confirmation" },
+      ...(username ? [{ name: "username", value: username }] : []),
+    ],
+    template: React.createElement(ChangeEmail, {
+      changeUrl,
+      currentEmail,
+      newEmail,
+      username,
+    }),
+    // Send to CURRENT email — this is the consent step. Better Auth's
+    // sendVerificationEmail hook handles the second mailbox-ownership step
+    // to the NEW email when the confirmation link is clicked.
+    to: currentEmail,
+  });
+};
+
+export {
+  sendChangeEmailConfirmation,
+  sendInvitationEmail,
+  sendPasswordResetEmail,
+  sendSignUpAttemptEmail,
+  sendWelcomeEmail,
+};

@@ -19,6 +19,9 @@ jobs:
       BETTER_AUTH_SECRET: test-secret-minimum-32-characters-long-for-e2e
       WEB_APP_URL: http://localhost:3000
       REDIS_URL: ${{ secrets.REDIS_URL }}
+      # Drives the auth-email/ specs. When absent (forks, contributors without
+      # access), those specs `test.skip()` themselves — the rest of the suite
+      # still runs.
       # Disable Sentry in CI: the tunnel proxy + browser SDK can't reach
       # ingest.us.sentry.io from GH runners and hangs Playwright's
       # networkidle waits. NEXT_PUBLIC_ prefix is required so the value
