@@ -174,7 +174,10 @@ const TimezoneVisualizer = ({
             const visibleRows = isCollapsed ? [] : section.rows;
 
             return (
-              <div className="flex flex-col gap-3" key={sectionGroup?.id ?? "ungrouped"}>
+              <div
+                className="flex flex-col gap-3 border-t border-border/50 pt-6 first:border-t-0 first:pt-0"
+                key={sectionGroup?.id ?? "ungrouped"}
+              >
                 {sectionGroup && (
                   <GroupHeader
                     group={sectionGroup}
