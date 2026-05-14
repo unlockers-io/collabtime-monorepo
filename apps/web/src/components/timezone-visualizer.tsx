@@ -175,7 +175,7 @@ const TimezoneVisualizer = ({
 
             return (
               <div
-                className="flex flex-col gap-3 border-b border-border/50 py-4 last:border-b-0 last:pb-0"
+                className="flex flex-col gap-3 border-b border-border/50 py-4 first:pt-0 last:border-b-0 last:pb-0"
                 key={sectionGroup?.id ?? "ungrouped"}
               >
                 {sectionGroup && (
