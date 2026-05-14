@@ -163,7 +163,7 @@ const TimezoneVisualizer = ({
         <TimeAxis />
 
         <ScrollArea
-          className="relative flex max-h-80 flex-col gap-4 select-none"
+          className="relative flex max-h-80 flex-col gap-4 pb-4 select-none"
           ref={sectionsContainerRef}
         >
           <CurrentTimeIndicator nowPosition={nowPosition} />
