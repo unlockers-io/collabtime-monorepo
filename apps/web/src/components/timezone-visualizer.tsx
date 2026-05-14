@@ -2,7 +2,7 @@
 
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { TooltipProvider } from "@repo/ui/components/tooltip";
-import { AnimatePresence, animate, motion, useMotionValue } from "motion/react";
+import { animate, AnimatePresence, m, useMotionValue } from "motion/react";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -240,7 +240,7 @@ const TimezoneVisualizer = ({
           // mid-transition (which scroll-jumps the viewport).
           <AnimatePresence mode="popLayout">
             {isComparing ? (
-              <motion.div
+              <m.div
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
@@ -262,9 +262,9 @@ const TimezoneVisualizer = ({
                   totalPeopleSelected={totalPeopleSelected}
                   validSelections={validSelections}
                 />
-              </motion.div>
+              </m.div>
             ) : (
-              <motion.div
+              <m.div
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
@@ -272,7 +272,7 @@ const TimezoneVisualizer = ({
                 transition={{ duration: 0.15 }}
               >
                 <FindMeetingTimeButton onClick={openComparePanel} />
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         )}

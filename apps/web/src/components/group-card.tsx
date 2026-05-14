@@ -7,7 +7,7 @@ import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
 import { Pencil, Trash2, Users } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
@@ -35,6 +35,16 @@ const GroupCard = ({
   const [isPending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus the editor input on enter — avoids `autoFocus` which jsx-a11y
+  // flags because it triggers focus changes outside an explicit user action.
+  useEffect(() => {
+    if (isEditing) {
+      editInputRef.current?.focus();
+      editInputRef.current?.select();
+    }
+  }, [isEditing]);
 
   const handleStartEditing = () => {
     setEditingName(group.name);
@@ -121,11 +131,11 @@ const GroupCard = ({
           if (canEdit && isEditing) {
             return (
               <Input
-                autoFocus
                 className="h-9 text-sm font-medium"
                 onBlur={handleSave}
                 onChange={(e) => setEditingName(e.target.value)}
                 onKeyDown={handleKeyDown}
+                ref={editInputRef}
                 type="text"
                 value={editingName}
               />

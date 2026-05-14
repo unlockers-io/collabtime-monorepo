@@ -3,7 +3,7 @@
 import { Button } from "@repo/ui/components/button";
 import { Spinner } from "@repo/ui/components/spinner";
 import { Check, Mail, X } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 
 import type { PendingInvitation } from "@/types";
 
@@ -22,7 +22,7 @@ const InvitationsList = ({
 }: InvitationsListProps) => (
   <AnimatePresence>
     {invitations.length > 0 && (
-      <motion.div
+      <m.div
         animate={{ opacity: 1, y: 0 }}
         className="flex w-full flex-col gap-3"
         exit={{ opacity: 0, y: -10 }}
@@ -43,7 +43,7 @@ const InvitationsList = ({
             {invitations.map((invitation) => {
               const isProcessing = processingInvitations.has(invitation.id);
               return (
-                <motion.div
+                <m.div
                   animate={{ opacity: 1, scale: 1 }}
                   className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-3"
                   exit={{ opacity: 0, scale: 0.95 }}
@@ -91,12 +91,12 @@ const InvitationsList = ({
                       )}
                     </Button>
                   </div>
-                </motion.div>
+                </m.div>
               );
             })}
           </AnimatePresence>
         </div>
-      </motion.div>
+      </m.div>
     )}
   </AnimatePresence>
 );

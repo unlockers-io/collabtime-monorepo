@@ -26,11 +26,19 @@ type AuthConfig = {
   secret: string;
 };
 
-const parseEnvList = (value: string | undefined): Array<string> =>
-  value
-    ?.split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0) ?? [];
+const parseEnvList = (value: string | undefined): Array<string> => {
+  if (!value) {
+    return [];
+  }
+  const result: Array<string> = [];
+  for (const entry of value.split(",")) {
+    const trimmed = entry.trim();
+    if (trimmed.length > 0) {
+      result.push(trimmed);
+    }
+  }
+  return result;
+};
 
 const createAuth = (config: AuthConfig) => {
   const {
