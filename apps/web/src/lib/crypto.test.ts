@@ -23,8 +23,10 @@ describe("password hashing", () => {
   });
 
   it("produces different hashes for same password", async () => {
-    const hash1 = await hashPassword("TestPassword123!");
-    const hash2 = await hashPassword("TestPassword123!");
+    const [hash1, hash2] = await Promise.all([
+      hashPassword("TestPassword123!"),
+      hashPassword("TestPassword123!"),
+    ]);
     expect(hash1).not.toBe(hash2);
   });
 });

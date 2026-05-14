@@ -21,10 +21,10 @@ const TEMPLATE_CSV = [
 
 const normalizeHeader = (h: string) => h.toLowerCase().replaceAll(/[\s_\-]/gv, "");
 
-const findColIndex = (headers: Array<string>, ...names: Array<string>): number => {
+const findColIndex = (headerIndices: Map<string, number>, ...names: Array<string>): number => {
   for (const name of names) {
-    const idx = headers.indexOf(normalizeHeader(name));
-    if (idx !== -1) {
+    const idx = headerIndices.get(normalizeHeader(name));
+    if (idx !== undefined) {
       return idx;
     }
   }
@@ -85,13 +85,27 @@ const parseCSV = (text: string): Array<ParsedRow> => {
 
   if (hasHeader) {
     startRow = 1;
+    // Map gives O(1) lookups; first-occurrence semantics differ from
+    // `indexOf` (Map keeps the last write) but CSV headers shouldn't repeat.
+    const headerIndices = new Map<string, number>();
+    for (let i = 0; i < firstCells.length; i++) {
+      if (!headerIndices.has(firstCells[i])) {
+        headerIndices.set(firstCells[i], i);
+      }
+    }
     // Use null when a column isn't found — don't fall back to positional defaults
     // so we don't silently read the wrong column.
-    nameIdx = findColIndex(firstCells, "name");
-    tzIdx = findColIndex(firstCells, "timezone", "tz");
-    titleIdx = findColIndex(firstCells, "title", "role", "position");
-    startIdx = findColIndex(firstCells, "workstart", "workhourstart", "workinghoursstart", "start");
-    endIdx = findColIndex(firstCells, "workend", "workhourend", "workinghoursend", "end");
+    nameIdx = findColIndex(headerIndices, "name");
+    tzIdx = findColIndex(headerIndices, "timezone", "tz");
+    titleIdx = findColIndex(headerIndices, "title", "role", "position");
+    startIdx = findColIndex(
+      headerIndices,
+      "workstart",
+      "workhourstart",
+      "workinghoursstart",
+      "start",
+    );
+    endIdx = findColIndex(headerIndices, "workend", "workhourend", "workinghoursend", "end");
   }
 
   const rows: Array<ParsedRow> = [];

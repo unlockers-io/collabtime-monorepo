@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
 import { Archive, MoreHorizontal, Shield, Trash2, Users } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import Link from "next/link";
 
 import type { MyTeam, WorkspaceToDelete } from "./types";
@@ -23,7 +23,7 @@ type TeamsListProps = {
 const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: TeamsListProps) => (
   <AnimatePresence>
     {teams.length > 0 && (
-      <motion.div
+      <m.div
         animate={{ opacity: 1, y: 0 }}
         className="flex w-full flex-col gap-3"
         exit={{ opacity: 0, y: -10 }}
@@ -43,7 +43,7 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
             {teams.map((team) => {
               const isArchivePending = processingArchive.has(team.teamId);
               return (
-                <motion.div
+                <m.div
                   animate={{ opacity: 1, scale: 1 }}
                   className="group flex items-center justify-between rounded-xl border border-border bg-card p-3 transition-colors hover:border-input"
                   exit={{ opacity: 0, scale: 0.95 }}
@@ -111,12 +111,12 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                </motion.div>
+                </m.div>
               );
             })}
           </AnimatePresence>
         </div>
-      </motion.div>
+      </m.div>
     )}
   </AnimatePresence>
 );

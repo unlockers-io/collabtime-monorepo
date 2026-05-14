@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { Toaster } from "sonner";
 
 import { Providers } from "@/components/providers";
@@ -79,24 +80,17 @@ const RootLayout = ({
 }>) => {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t||t==='system')&&matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`,
-          }}
-        />
-      </head>
       {process.env.NODE_ENV === "development" && !process.env.CI && (
         <>
-          <script
-            async
+          <Script
             crossOrigin="anonymous"
             src="https://unpkg.com/react-scan/dist/auto.global.js"
+            strategy="afterInteractive"
           />
-          <script
-            async
+          <Script
             crossOrigin="anonymous"
             src="https://unpkg.com/react-grab/dist/index.global.js"
+            strategy="afterInteractive"
           />
         </>
       )}
@@ -107,7 +101,9 @@ const RootLayout = ({
           <div className="flex flex-1 flex-col">{children}</div>
           <footer className="border-t border-border px-4 py-6 text-sm text-muted-foreground sm:px-6 lg:px-8 xl:px-12">
             <div className="mx-auto flex w-full max-w-450 items-center justify-between gap-3">
-              <span>© {new Date().getFullYear()} Collab Time. All rights reserved.</span>
+              <span suppressHydrationWarning>
+                © {new Date().getFullYear()} Collab Time. All rights reserved.
+              </span>
               <a
                 aria-label="View on GitHub"
                 className="inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"

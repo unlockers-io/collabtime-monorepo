@@ -9,7 +9,7 @@ import {
 } from "@repo/ui/components/dropdown-menu";
 import { cn } from "@repo/ui/lib/utils";
 import { Archive, ArchiveRestore, ChevronDown, MoreHorizontal, Trash2 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -33,7 +33,7 @@ const ArchivedTeamsList = ({
   return (
     <AnimatePresence>
       {teams.length > 0 && (
-        <motion.div
+        <m.div
           animate={{ opacity: 1, y: 0 }}
           className="flex w-full flex-col gap-3"
           exit={{ opacity: 0, y: -10 }}
@@ -64,7 +64,7 @@ const ArchivedTeamsList = ({
 
           <AnimatePresence initial={false}>
             {showArchived && (
-              <motion.div
+              <m.div
                 animate={{ height: "auto", opacity: 1 }}
                 className="flex flex-col gap-2 overflow-hidden"
                 exit={{ height: 0, opacity: 0 }}
@@ -76,7 +76,7 @@ const ArchivedTeamsList = ({
                   {teams.map((team) => {
                     const isArchivePending = processingArchive.has(team.teamId);
                     return (
-                      <motion.div
+                      <m.div
                         animate={{ opacity: 1, scale: 1 }}
                         className="group flex items-center justify-between rounded-xl border border-border bg-card/60 p-3 transition-colors hover:border-input"
                         exit={{ opacity: 0, scale: 0.95 }}
@@ -141,14 +141,14 @@ const ArchivedTeamsList = ({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                      </motion.div>
+                      </m.div>
                     );
                   })}
                 </AnimatePresence>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

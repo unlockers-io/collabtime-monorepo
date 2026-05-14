@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, FolderKanban, Users } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -110,7 +110,7 @@ const TeamPageClient = ({
 
   const currentUserId = isMember ? userId : undefined;
   const hasClaimedProfile = Boolean(
-    currentUserId && members.some((m) => m.userId === currentUserId),
+    currentUserId && members.some((member) => member.userId === currentUserId),
   );
 
   const teamName = teamData?.team?.name ?? "";
@@ -163,7 +163,7 @@ const TeamPageClient = ({
   const isLoaded = Boolean(teamData?.team);
 
   const mainContent = (
-    <motion.div
+    <m.div
       animate={{ opacity: 1 }}
       className="min-h-dvh w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12"
       initial={{ opacity: 0 }}
@@ -295,13 +295,13 @@ const TeamPageClient = ({
           teamName={displayName}
         />
       )}
-    </motion.div>
+    </m.div>
   );
 
   const skeleton = (
-    <motion.div exit={{ opacity: 0 }} key="skeleton" transition={{ duration: 0.2 }}>
+    <m.div exit={{ opacity: 0 }} key="skeleton" transition={{ duration: 0.2 }}>
       <Loading />
-    </motion.div>
+    </m.div>
   );
 
   if (!isAdmin) {

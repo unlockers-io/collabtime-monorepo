@@ -2,7 +2,7 @@
 
 import { Button, buttonVariants } from "@repo/ui/components/button";
 import { Check, Copy, LogIn, Settings, Shield, Trash2, User } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import Link from "next/link";
 
 import { ModeToggle } from "@/components/mode-toggle";
@@ -31,7 +31,7 @@ const MobileMenu = ({
 }: MobileMenuProps) => (
   <AnimatePresence>
     {isOpen && (
-      <motion.div
+      <m.div
         animate={{ height: "auto", opacity: 1 }}
         className="overflow-hidden sm:hidden"
         exit={{ height: 0, opacity: 0 }}
@@ -121,7 +121,7 @@ const MobileMenu = ({
             )}
           </div>
         </div>
-      </motion.div>
+      </m.div>
     )}
   </AnimatePresence>
 );

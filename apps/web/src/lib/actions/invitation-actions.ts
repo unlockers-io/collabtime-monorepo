@@ -2,6 +2,7 @@
 
 import { prisma } from "@repo/db";
 import { sendInvitationEmail } from "@repo/transactional";
+import { after } from "next/server";
 
 import { getEnv } from "@/lib/env";
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
@@ -110,10 +111,12 @@ const inviteMember = async (
         console.error("[Invitation] Failed to send email:", result.error);
       }
     } else {
-      console.warn(
-        "[Invitation] Resend not configured, skipping invitation email to:",
-        trimmedEmail,
-      );
+      after(() => {
+        console.warn(
+          "[Invitation] Resend not configured, skipping invitation email to:",
+          trimmedEmail,
+        );
+      });
     }
 
     return { data: { emailSent, invitationId: invitation.id }, success: true };
