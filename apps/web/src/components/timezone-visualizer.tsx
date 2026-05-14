@@ -163,7 +163,7 @@ const TimezoneVisualizer = ({
         <TimeAxis />
 
         <ScrollArea
-          className="relative flex max-h-80 flex-col gap-4 pb-4 select-none"
+          className="relative flex max-h-80 flex-col gap-4 select-none"
           ref={sectionsContainerRef}
         >
           <CurrentTimeIndicator nowPosition={nowPosition} />
@@ -175,7 +175,7 @@ const TimezoneVisualizer = ({
 
             return (
               <div
-                className="flex flex-col gap-3 border-t border-border/50 pt-6 first:border-t-0 first:pt-0"
+                className="flex flex-col gap-3 border-b border-border/50 py-4 last:border-b-0 last:pb-0"
                 key={sectionGroup?.id ?? "ungrouped"}
               >
                 {sectionGroup && (
