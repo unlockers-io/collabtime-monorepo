@@ -159,83 +159,84 @@ const TimezoneVisualizer = ({
 
   return (
     <TooltipProvider delay={120}>
-      <div className="flex flex-col gap-6">
-        <TimeAxis />
+      <div className="flex flex-col gap-4">
+        <div>
+          <TimeAxis />
 
-        <ScrollArea
-          className="relative flex max-h-80 flex-col gap-4 select-none"
-          ref={sectionsContainerRef}
-        >
-          <CurrentTimeIndicator nowPosition={nowPosition} />
+          <ScrollArea className="relative h-80" ref={sectionsContainerRef}>
+            <CurrentTimeIndicator nowPosition={nowPosition} />
 
-          {groupedSections.map((section, sectionIndex) => {
-            const sectionGroup = section.group;
-            const isCollapsed = sectionGroup ? collapsedSet.has(sectionGroup.id) : false;
-            const visibleRows = isCollapsed ? [] : section.rows;
+            <div className="flex flex-col gap-4 select-none">
+              {groupedSections.map((section, sectionIndex) => {
+                const sectionGroup = section.group;
+                const isCollapsed = sectionGroup ? collapsedSet.has(sectionGroup.id) : false;
+                const visibleRows = isCollapsed ? [] : section.rows;
 
-            return (
-              <div
-                className="flex flex-col gap-3 border-b border-border/50 py-4 first:pt-0 last:border-b-0 last:pb-0"
-                key={sectionGroup?.id ?? "ungrouped"}
-              >
-                {sectionGroup && (
-                  <GroupHeader
-                    group={sectionGroup}
-                    isCollapsed={isCollapsed}
-                    onToggle={() => onToggleGroupCollapse?.(sectionGroup.id)}
-                    rowCount={section.rows.length}
-                  />
-                )}
+                return (
+                  <div
+                    className="flex flex-col gap-3 border-b border-border/50 py-4 first:pt-0 last:border-b-0 last:pb-0"
+                    key={sectionGroup?.id ?? "ungrouped"}
+                  >
+                    {sectionGroup && (
+                      <GroupHeader
+                        group={sectionGroup}
+                        isCollapsed={isCollapsed}
+                        onToggle={() => onToggleGroupCollapse?.(sectionGroup.id)}
+                        rowCount={section.rows.length}
+                      />
+                    )}
 
-                {!section.group && groups.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                    <span>Ungrouped</span>
-                    <span>({section.rows.length})</span>
-                  </div>
-                )}
-
-                {visibleRows.length > 0 && (
-                  <div key={`section-${section.group?.id ?? "ungrouped"}`}>
-                    <div className="flex items-stretch gap-2 sm:gap-3">
-                      <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
-                        {visibleRows.map(({ dayOffset, member }) => (
-                          <MemberAvatar
-                            dayOffset={dayOffset}
-                            isSelected={isMemberInCompare(member.id, isComparing)}
-                            key={member.id}
-                            member={member}
-                            totalMembers={members.length}
-                          />
-                        ))}
+                    {!section.group && groups.length > 0 && (
+                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <span>Ungrouped</span>
+                        <span>({section.rows.length})</span>
                       </div>
+                    )}
 
-                      <div
-                        className="relative flex-1"
-                        onMouseLeave={isDragging ? undefined : handleMouseLeave}
-                        onMouseMove={isDragging ? undefined : handleMouseMove}
-                        ref={sectionIndex === 0 ? timelineRef : undefined}
-                      >
-                        <div className="flex flex-col gap-3">
-                          {visibleRows.map(({ hours, member }) => (
-                            <MemberTimelineRow
-                              hours={hours}
-                              isDark={isDark}
-                              key={member.id}
-                              memberId={member.id}
-                              memberTimezone={member.timezone}
-                              selectedBlockRef={selectedBlockRef}
-                              viewerTimezone={viewerTimezone}
-                            />
-                          ))}
+                    {visibleRows.length > 0 && (
+                      <div key={`section-${section.group?.id ?? "ungrouped"}`}>
+                        <div className="flex items-stretch gap-2 sm:gap-3">
+                          <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
+                            {visibleRows.map(({ dayOffset, member }) => (
+                              <MemberAvatar
+                                dayOffset={dayOffset}
+                                isSelected={isMemberInCompare(member.id, isComparing)}
+                                key={member.id}
+                                member={member}
+                                totalMembers={members.length}
+                              />
+                            ))}
+                          </div>
+
+                          <div
+                            className="relative flex-1"
+                            onMouseLeave={isDragging ? undefined : handleMouseLeave}
+                            onMouseMove={isDragging ? undefined : handleMouseMove}
+                            ref={sectionIndex === 0 ? timelineRef : undefined}
+                          >
+                            <div className="flex flex-col gap-3">
+                              {visibleRows.map(({ hours, member }) => (
+                                <MemberTimelineRow
+                                  hours={hours}
+                                  isDark={isDark}
+                                  key={member.id}
+                                  memberId={member.id}
+                                  memberTimezone={member.timezone}
+                                  selectedBlockRef={selectedBlockRef}
+                                  viewerTimezone={viewerTimezone}
+                                />
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </ScrollArea>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
 
         {members.length >= 2 && (
           // popLayout removes the exiting child from flow so the page height
