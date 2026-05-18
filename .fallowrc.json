@@ -15,7 +15,6 @@
     "eslint-plugin-*",
     "postcss",
     "postcss-load-config",
-    "react-scan",
     "tailwindcss",
     "jsdom",
     "shadcn",
