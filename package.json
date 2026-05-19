@@ -50,24 +50,5 @@
   "engines": {
     "node": ">=24"
   },
-  "packageManager": "pnpm@10.33.0",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "@prisma/client",
-      "@prisma/engines",
-      "@sentry/cli",
-      "@swc/core",
-      "@tailwindcss/oxide",
-      "cpu-features",
-      "esbuild",
-      "fallow",
-      "msw",
-      "prisma",
-      "protobufjs",
-      "sharp",
-      "ssh2",
-      "unrs-resolver"
-    ]
-  }
+  "packageManager": "pnpm@11.1.3"
 }

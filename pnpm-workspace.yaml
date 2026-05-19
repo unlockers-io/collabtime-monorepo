@@ -2,4 +2,13 @@ packages:
   - apps/*
   - packages/*
 
+allowBuilds:
+  "@prisma/engines": true
+  "@sentry/cli": true
+  esbuild: true
+  fallow: true
+  msw: true
+  prisma: true
+  sharp: true
+
 nodeLinker: hoisted
