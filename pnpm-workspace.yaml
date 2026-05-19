@@ -3,8 +3,8 @@ packages:
   - packages/*
 
 allowBuilds:
-  '@prisma/engines': true
-  '@sentry/cli': true
+  "@prisma/engines": true
+  "@sentry/cli": true
   esbuild: true
   fallow: true
   msw: true
