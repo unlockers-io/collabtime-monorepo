@@ -10,5 +10,3 @@ allowBuilds:
   msw: true
   prisma: true
   sharp: true
-
-nodeLinker: hoisted
