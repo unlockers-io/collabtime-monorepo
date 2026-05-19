@@ -2,21 +2,13 @@ packages:
   - apps/*
   - packages/*
 
-nodeLinker: hoisted
+allowBuilds:
+  '@prisma/engines': true
+  '@sentry/cli': true
+  esbuild: true
+  fallow: true
+  msw: true
+  prisma: true
+  sharp: true
 
-onlyBuiltDependencies:
-  - "@parcel/watcher"
-  - "@prisma/client"
-  - "@prisma/engines"
-  - "@sentry/cli"
-  - "@swc/core"
-  - "@tailwindcss/oxide"
-  - cpu-features
-  - esbuild
-  - fallow
-  - msw
-  - prisma
-  - protobufjs
-  - sharp
-  - ssh2
-  - unrs-resolver
+nodeLinker: hoisted
