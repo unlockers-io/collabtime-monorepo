@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, buttonVariants } from "@repo/ui/components/button";
-import { Check, Copy, LogIn, Settings, Shield, Trash2, User } from "lucide-react";
+import { Check, Copy, LogIn, LogOut, Settings, Shield, Trash2, User } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import Link from "next/link";
 
@@ -14,9 +14,11 @@ type MobileMenuProps = {
   isAdmin: boolean;
   isAuthenticated: boolean;
   isOpen: boolean;
+  isSigningOut: boolean;
   onClose: () => void;
   onCopy: () => void;
   onDeleteWorkspace: () => void;
+  onSignOut: () => void;
 };
 
 const MobileMenu = ({
@@ -25,9 +27,11 @@ const MobileMenu = ({
   isAdmin,
   isAuthenticated,
   isOpen,
+  isSigningOut,
   onClose,
   onCopy,
   onDeleteWorkspace,
+  onSignOut,
 }: MobileMenuProps) => (
   <AnimatePresence>
     {isOpen && (
@@ -92,16 +96,32 @@ const MobileMenu = ({
             )}
 
             {isAuthenticated && (
-              <Link
-                className={cn(
-                  buttonVariants({ variant: "ghost" }),
-                  "flex items-center justify-start gap-2",
-                )}
-                href="/settings"
-              >
-                <Settings className="size-4" />
-                Settings
-              </Link>
+              <>
+                <Link
+                  className={cn(
+                    buttonVariants({ variant: "ghost" }),
+                    "flex items-center justify-start gap-2",
+                  )}
+                  href="/settings"
+                >
+                  <Settings className="size-4" />
+                  Settings
+                </Link>
+                <Button
+                  className="justify-start"
+                  disabled={isSigningOut}
+                  onClick={() => {
+                    onSignOut();
+                    onClose();
+                  }}
+                  variant="ghost"
+                >
+                  <span className="flex items-center gap-2">
+                    <LogOut className="size-4" />
+                    {isSigningOut ? "Signing out..." : "Sign out"}
+                  </span>
+                </Button>
+              </>
             )}
 
             {canDeleteWorkspace && (

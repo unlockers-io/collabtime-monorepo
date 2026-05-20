@@ -8,42 +8,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
-import { toast } from "@repo/ui/components/sonner";
 import { LogIn, LogOut, Settings, Shield, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
-import { signOut } from "@/lib/auth-client";
+import { useSignOut } from "@/hooks/use-sign-out";
 import { cn } from "@/lib/utils";
 
 type UserMenuProps = {
-  isAdmin: boolean;
+  isAdmin?: boolean;
   isAuthenticated: boolean;
 };
 
 const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
-  const { push, refresh } = useRouter();
+  const { handleSignOut, isSigningOut } = useSignOut();
+  const hasTeamRole = typeof isAdmin === "boolean";
+  let menuTitle = "Account";
 
-  const handleSignOut = async () => {
-    try {
-      await signOut({
-        fetchOptions: {
-          onError: (ctx) => {
-            console.error("Sign out error:", ctx.error);
-            toast.error("Failed to sign out");
-          },
-          onSuccess: () => {
-            toast.success("Signed out successfully");
-            push("/");
-            refresh();
-          },
-        },
-      });
-    } catch (error) {
-      console.error("Sign out error:", error);
-      toast.error("Failed to sign out");
-    }
-  };
+  if (hasTeamRole) {
+    menuTitle = isAdmin ? "Admin" : "Member";
+  }
 
   return (
     <DropdownMenu>
@@ -54,8 +37,10 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 bg-popover">
         <div className="px-2 py-1.5 text-sm">
-          <p className="font-medium text-popover-foreground">{isAdmin ? "Admin" : "Member"}</p>
-          <p className="text-xs text-muted-foreground">{isAdmin ? "Full access" : "View only"}</p>
+          <p className="font-medium text-popover-foreground">{menuTitle}</p>
+          {hasTeamRole && (
+            <p className="text-xs text-muted-foreground">{isAdmin ? "Full access" : "View only"}</p>
+          )}
         </div>
         {!isAuthenticated && (
           <>
@@ -87,10 +72,11 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
             </DropdownMenuItem>
             <DropdownMenuItem
               className="flex cursor-pointer items-center gap-2"
+              disabled={isSigningOut}
               onClick={handleSignOut}
             >
               <LogOut className="size-4" />
-              Sign out
+              {isSigningOut ? "Signing out..." : "Sign out"}
             </DropdownMenuItem>
           </>
         )}
