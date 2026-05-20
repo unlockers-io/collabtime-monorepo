@@ -19,11 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/select";
+import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";

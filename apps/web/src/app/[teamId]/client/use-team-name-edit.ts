@@ -1,7 +1,7 @@
 "use client";
 
+import { toast } from "@repo/ui/components/sonner";
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
 
 import { updateTeamName } from "@/lib/actions/member-actions";
 

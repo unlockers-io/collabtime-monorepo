@@ -3,6 +3,7 @@
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Card } from "@repo/ui/components/card";
+import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import {
   Tooltip,
@@ -12,7 +13,6 @@ import {
 } from "@repo/ui/components/tooltip";
 import { Hand, Pencil, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
 
 import { EditMemberDialog } from "@/components/edit-member-dialog";
 import { removeMember } from "@/lib/actions/member-actions";
