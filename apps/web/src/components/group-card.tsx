@@ -4,11 +4,11 @@ import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Card } from "@repo/ui/components/card";
 import { Input } from "@repo/ui/components/input";
+import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
 import { Pencil, Trash2, Users } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { toast } from "sonner";
 
 import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
 import type { TeamGroup } from "@/types";

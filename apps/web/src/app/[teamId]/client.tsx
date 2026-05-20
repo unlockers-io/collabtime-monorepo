@@ -1,11 +1,11 @@
 "use client";
 
+import { toast } from "@repo/ui/components/sonner";
 import { Clock, FolderKanban, Users } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { AddGroupDialog } from "@/components/add-group-dialog";
 import { AddMemberDialog } from "@/components/add-member-dialog";

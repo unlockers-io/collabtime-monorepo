@@ -8,10 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
+import { toast } from "@repo/ui/components/sonner";
 import { LogIn, LogOut, Settings, Shield, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
