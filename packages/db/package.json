@@ -2,14 +2,15 @@
   "name": "@repo/db",
   "files": [
     "dist/**",
-    "src/**"
+    "src/**",
+    "prisma/schema.prisma"
   ],
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "prisma generate && tsdown",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "dev": "tsdown --watch",
     "lint": "oxlint src",
@@ -18,8 +19,10 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
     "postinstall": "pnpm run db:generate"
   },
   "dependencies": {
