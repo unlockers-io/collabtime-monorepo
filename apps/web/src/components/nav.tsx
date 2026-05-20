@@ -2,10 +2,12 @@
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button, buttonVariants } from "@repo/ui/components/button";
-import { Archive, LogIn, Menu, Settings, X } from "lucide-react";
+import { Archive, LogIn, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import { useSignOut } from "@/hooks/use-sign-out";
 
 import { CurrentTimeDisplay } from "./current-time-display";
 import { ModeToggle } from "./mode-toggle";
@@ -37,6 +39,7 @@ const Nav = (props: NavProps) => {
   const { isAuthenticated } = props;
   const [hasCopied, setHasCopied] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { handleSignOut, isSigningOut } = useSignOut();
 
   const variant = props.variant || "default";
 
@@ -133,9 +136,11 @@ const Nav = (props: NavProps) => {
           isAdmin={isAdmin}
           isAuthenticated={isAuthenticated}
           isOpen={mobileMenuOpen}
+          isSigningOut={isSigningOut}
           onClose={() => setMobileMenuOpen(false)}
           onCopy={handleCopyLink}
           onDeleteWorkspace={handleDeleteWorkspace}
+          onSignOut={handleSignOut}
         />
       </header>
     );
@@ -148,9 +153,7 @@ const Nav = (props: NavProps) => {
       <div className="flex items-center gap-2">
         <ModeToggle />
         {isAuthenticated ? (
-          <Link className={buttonVariants({ variant: "outline" })} href="/settings">
-            <Settings className="size-4" />
-          </Link>
+          <UserMenu isAuthenticated={isAuthenticated} />
         ) : (
           <Link className={buttonVariants({ variant: "outline" })} href="/login">
             <LogIn className="size-4" />
