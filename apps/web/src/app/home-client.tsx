@@ -1,6 +1,7 @@
 "use client";
 
 import { buttonVariants } from "@repo/ui/components/button";
+import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,7 +9,6 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { DeleteWorkspaceDialog } from "@/components/delete-workspace-dialog";
 import { Nav } from "@/components/nav";

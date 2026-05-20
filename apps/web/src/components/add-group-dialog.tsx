@@ -12,11 +12,11 @@ import {
 } from "@repo/ui/components/dialog";
 import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
+import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { Users } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { createGroup } from "@/lib/actions/group-actions";

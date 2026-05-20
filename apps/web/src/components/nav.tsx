@@ -2,10 +2,10 @@
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button, buttonVariants } from "@repo/ui/components/button";
+import { toast } from "@repo/ui/components/sonner";
 import { Archive, LogIn, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { useSignOut } from "@/hooks/use-sign-out";
 

@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("sonner", () => ({
+vi.mock("@repo/ui/components/sonner", () => ({
   toast: {
     error: toastErrorMock,
     success: toastSuccessMock,

@@ -9,9 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@repo/ui/components/dialog";
+import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useState } from "react";
-import { toast } from "sonner";
 
 type DeleteWorkspaceDialogProps = {
   onDeleted?: () => void | Promise<void>;
