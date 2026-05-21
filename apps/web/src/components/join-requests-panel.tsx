@@ -128,7 +128,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
       {isExpanded && (
         <div className="border-t border-warning/40" id="join-requests-list">
           <ScrollArea className="max-h-64">
-            <ul className="divide-y divide-warning/20">
+            <ul aria-busy={isPending} aria-live="polite" className="divide-y divide-warning/20">
               {requests.map((request) => {
                 const isThisRequest = isPending && pendingAction?.id === request.id;
                 const isApproving = isThisRequest && pendingAction?.type === "approve";

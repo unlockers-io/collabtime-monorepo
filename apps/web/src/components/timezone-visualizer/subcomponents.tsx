@@ -25,11 +25,14 @@ const HourBlock = ({ hour, isWorking, memberTimezone, viewerTimezone }: HourBloc
   const memberNextHour = (memberHour + 1) % HOURS_IN_DAY;
   const memberTzAbbrev = formatTimezoneAbbreviation(memberTimezone);
 
+  const hourLabel = `${formatHour(hour)} – ${formatHour((hour + 1) % HOURS_IN_DAY)} (${formatHour(memberHour)} – ${formatHour(memberNextHour)} ${memberTzAbbrev})`;
+
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <button
+            aria-label={hourLabel}
             className={cn(
               `h-full flex-1 cursor-[inherit] ${getRoundedCornerClass(hour)}`,
               isWorking

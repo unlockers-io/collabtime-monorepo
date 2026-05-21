@@ -170,7 +170,7 @@ const TeamPageClient = ({
       key="content"
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
-      <main className="mx-auto flex w-full max-w-450 flex-col gap-6">
+      <main className="mx-auto flex w-full max-w-450 flex-col gap-6" id="main">
         {/* Header */}
         <Nav
           canDeleteWorkspace={spaceId !== null}

@@ -1,7 +1,7 @@
 import "@/styles/globals.css";
 
 import { Toaster } from "@repo/ui/components/sonner";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 
 import { Providers } from "@/components/providers";
@@ -13,6 +13,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
 });
+
+export const viewport: Viewport = {
+  themeColor: [
+    { color: "oklch(1 0 0)", media: "(prefers-color-scheme: light)" },
+    { color: "oklch(0.145 0 0)", media: "(prefers-color-scheme: dark)" },
+  ],
+};
 
 export const metadata: Metadata = {
   authors: [{ name: "Collab Time" }],
@@ -82,6 +89,12 @@ const RootLayout = ({
       <body
         className={`${geistMono.variable} flex min-h-screen flex-col bg-background font-(family-name:--font-geist-mono) text-foreground antialiased selection:bg-accent selection:text-accent-foreground`}
       >
+        <a
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-md focus:ring-2 focus:ring-ring focus:outline-none"
+          href="#main"
+        >
+          Skip to content
+        </a>
         <Providers>
           <div className="flex flex-1 flex-col">{children}</div>
           <footer className="border-t border-border px-4 py-6 text-sm text-muted-foreground sm:px-6 lg:px-8 xl:px-12">
@@ -113,7 +126,7 @@ const RootLayout = ({
                 description: "text-sm text-muted-foreground",
                 error: "border border-destructive/50 bg-popover text-popover-foreground shadow-lg",
                 info: "border border-info/40 bg-popover text-popover-foreground shadow-lg",
-                success: "border border-warning/40 bg-popover text-popover-foreground shadow-lg",
+                success: "border border-success/40 bg-popover text-popover-foreground shadow-lg",
                 title: "font-semibold",
                 toast: "border border-border bg-popover text-popover-foreground shadow-lg",
                 warning: "border border-warning/50 bg-popover text-popover-foreground shadow-lg",

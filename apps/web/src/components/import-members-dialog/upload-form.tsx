@@ -41,6 +41,7 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
     <div className="flex flex-col gap-4 py-2">
       {/* Drop zone */}
       <button
+        aria-label="Upload CSV file: drop a file here or click to browse"
         className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
           isDragging
             ? "border-primary bg-primary/5"
@@ -79,6 +80,7 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
       </div>
 
       <Textarea
+        aria-label="Paste CSV data here"
         className="h-32 resize-none font-mono text-xs"
         onChange={(e) => onCsvTextChange(e.target.value)}
         placeholder={`name,timezone,title,work_start,work_end\nAlice Johnson,America/New_York,Engineering Lead,9,17`}

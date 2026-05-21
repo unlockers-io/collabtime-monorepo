@@ -114,9 +114,11 @@ const FieldError = ({ children, className, errors, ref, ...props }: FieldErrorPr
 
   return (
     <p
+      aria-live="polite"
       className={cn("text-xs font-medium text-destructive", className)}
       data-slot="field-error"
       ref={ref}
+      role="alert"
       {...props}
     >
       {message}

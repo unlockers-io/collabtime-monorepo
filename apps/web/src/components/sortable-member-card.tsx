@@ -35,6 +35,7 @@ const SortableMemberCard = (props: SortableMemberCardProps) => {
       style={style}
       {...attributes}
       {...listeners}
+      aria-roledescription="draggable item, press Space to lift"
     >
       <MemberCard {...props} />
     </div>

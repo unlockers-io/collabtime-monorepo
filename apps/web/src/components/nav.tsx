@@ -119,6 +119,8 @@ const Nav = (props: NavProps) => {
           {/* Mobile menu toggle */}
           <div className="flex items-center gap-2 sm:hidden">
             <Button
+              aria-controls="mobile-menu"
+              aria-expanded={mobileMenuOpen}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               className="size-9"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
