@@ -134,7 +134,7 @@ const useDragEnd = ({
       } else {
         const overIsGroup = orderedGroups.some((g) => g.id === overId);
         if (overIsGroup) {
-          handleMemberDroppedOnGroup(activeId, overId);
+          void handleMemberDroppedOnGroup(activeId, overId);
         }
       }
     } else if (dragType === "group") {
