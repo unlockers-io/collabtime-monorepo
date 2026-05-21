@@ -94,7 +94,7 @@ const inviteMember = async (
     let emailSent = false;
     const apiKey = getEnv("RESEND_API_KEY");
     const fromEmail = getEnv("RESEND_FROM_EMAIL");
-    const webAppUrl = process.env.WEB_APP_URL ?? "";
+    const webAppUrl = getEnv("WEB_APP_URL") ?? "";
 
     if (apiKey) {
       const result = await sendInvitationEmail(
