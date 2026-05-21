@@ -42,16 +42,10 @@ type EditMemberDialogProps = {
   teamId: string;
 };
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+// Form does not receive `open` — that stays in the Dialog wrapper.
+type EditMemberFormProps = Omit<EditMemberDialogProps, "open"> & { mode: "admin" | "claim" };
 
-type EditMemberFormProps = {
-  groups: Array<TeamGroup>;
-  member: TeamMember;
-  mode: "admin" | "claim";
-  onMemberUpdated: (member: TeamMember) => void;
-  onOpenChange: (open: boolean) => void;
-  teamId: string;
-};
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 const formSchema = z.object({
   groupId: z.string(),
@@ -84,6 +78,55 @@ const SaveButtonLabel = ({ isClaim, isPending }: SaveButtonLabelProps) => {
   return <>Save Changes</>;
 };
 
+type HourSelectProps = {
+  errorId: string;
+  errors: Array<unknown>;
+  id: string;
+  isInvalid: boolean;
+  label: string;
+  onBlur: () => void;
+  onChange: (v: number) => void;
+  value: number;
+};
+
+const HourSelect = ({
+  errorId,
+  errors,
+  id,
+  isInvalid,
+  label,
+  onBlur,
+  onChange,
+  value,
+}: HourSelectProps) => (
+  <Field data-invalid={isInvalid || undefined}>
+    <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    <Select
+      onValueChange={(v) => {
+        onChange(Number(v));
+        onBlur();
+      }}
+      value={String(value)}
+    >
+      <SelectTrigger
+        aria-describedby={isInvalid ? errorId : undefined}
+        aria-invalid={isInvalid}
+        id={id}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {HOURS.map((hour) => (
+          <SelectItem key={hour} value={String(hour)}>
+            {formatHour(hour)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    {isInvalid && <FieldError errors={errors} id={errorId} />}
+  </Field>
+);
+
 const EditMemberForm = ({
   groups,
   member,
@@ -102,11 +145,10 @@ const EditMemberForm = ({
     try {
       const result = await inviteMember(teamId, member.id, inviteEmail);
       if (result.success) {
-        if (result.data.emailSent) {
-          toast.success(`Invitation sent to ${inviteEmail}`);
-        } else {
-          toast.success(`Invitation created for ${inviteEmail}`);
-        }
+        const msg = result.data.emailSent
+          ? `Invitation sent to ${inviteEmail}`
+          : `Invitation created for ${inviteEmail}`;
+        toast.success(msg);
         setInviteEmail("");
       } else {
         toast.error(result.error);
@@ -130,29 +172,22 @@ const EditMemberForm = ({
     onSubmit: ({ value }) => {
       startTransition(async () => {
         const { groupId: _stripped, ...claimSafeData } = value;
+        const safeGroupId = value.groupId || undefined;
+        const safeTitle = value.title || "";
         const result = isClaim
-          ? await updateOwnMember(teamId, member.id, {
-              ...claimSafeData,
-              title: claimSafeData.title || "",
-            })
+          ? await updateOwnMember(teamId, member.id, { ...claimSafeData, title: safeTitle })
           : await updateMember(teamId, member.id, {
               ...value,
-              groupId: value.groupId || undefined,
-              title: value.title || "",
+              groupId: safeGroupId,
+              title: safeTitle,
             });
         if (!result.success) {
           toast.error(result.error);
           return;
         }
-
         toast.success(isClaim ? "Profile claimed" : "Member updated");
         onOpenChange(false);
-        onMemberUpdated({
-          ...member,
-          ...value,
-          groupId: value.groupId || undefined,
-          title: value.title || "",
-        });
+        onMemberUpdated({ ...member, ...value, groupId: safeGroupId, title: safeTitle });
       });
     },
     validators: {
@@ -283,63 +318,33 @@ const EditMemberForm = ({
 
           <div className="grid grid-cols-2 gap-4">
             <form.Field name="workingHoursStart">
-              {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor="edit-work-start">Work Starts</FieldLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.handleChange(Number(value));
-                        field.handleBlur();
-                      }}
-                      value={String(field.state.value)}
-                    >
-                      <SelectTrigger aria-invalid={isInvalid} id="edit-work-start">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HOURS.map((hour) => (
-                          <SelectItem key={hour} value={String(hour)}>
-                            {formatHour(hour)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              {(field) => (
+                <HourSelect
+                  errorId="edit-work-start-error"
+                  errors={field.state.meta.errors}
+                  id="edit-work-start"
+                  isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                  label="Work Starts"
+                  onBlur={field.handleBlur}
+                  onChange={field.handleChange}
+                  value={field.state.value}
+                />
+              )}
             </form.Field>
 
             <form.Field name="workingHoursEnd">
-              {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor="edit-work-end">Work Ends</FieldLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.handleChange(Number(value));
-                        field.handleBlur();
-                      }}
-                      value={String(field.state.value)}
-                    >
-                      <SelectTrigger aria-invalid={isInvalid} id="edit-work-end">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HOURS.map((hour) => (
-                          <SelectItem key={hour} value={String(hour)}>
-                            {formatHour(hour)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+              {(field) => (
+                <HourSelect
+                  errorId="edit-work-end-error"
+                  errors={field.state.meta.errors}
+                  id="edit-work-end"
+                  isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                  label="Work Ends"
+                  onBlur={field.handleBlur}
+                  onChange={field.handleChange}
+                  value={field.state.value}
+                />
+              )}
             </form.Field>
           </div>
         </div>
