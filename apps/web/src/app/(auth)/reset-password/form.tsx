@@ -32,9 +32,6 @@ const ResetPasswordForm = () => {
         if (!token) {
           throw new Error("Invalid reset token. Please request a new password reset.");
         }
-        if (value.password !== value.confirmPassword) {
-          throw new Error("Passwords do not match");
-        }
         const result = await authClient.resetPassword({
           newPassword: value.password,
           token,

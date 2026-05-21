@@ -67,11 +67,17 @@ const TeamTitle = ({
   }
 
   return (
-    <button className="group flex min-w-0 items-center gap-2" onClick={onEdit} type="button">
+    <button
+      aria-label="Edit team name"
+      className="group flex min-w-0 items-center gap-2"
+      onClick={onEdit}
+      type="button"
+    >
       <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
         {teamName || "Team Workspace"}
       </h1>
       <Pencil
+        aria-hidden="true"
         className={cn(
           "size-3.5 shrink-0 text-muted-foreground transition-opacity",
           teamName ? "opacity-0 group-hover:opacity-100" : "opacity-100",

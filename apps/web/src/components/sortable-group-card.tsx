@@ -34,6 +34,7 @@ const SortableGroupCard = (props: SortableGroupCardProps) => {
       style={style}
       {...attributes}
       {...listeners}
+      aria-roledescription="draggable item, press Space to lift"
     >
       <GroupCard {...props} />
     </div>

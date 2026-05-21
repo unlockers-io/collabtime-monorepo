@@ -80,6 +80,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
                 <Label htmlFor="name">Name</Label>
                 <div className="flex gap-2">
                   <Input
+                    autoComplete="name"
                     id="name"
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your name"

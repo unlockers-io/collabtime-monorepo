@@ -6,6 +6,7 @@ import {
   KeyboardSensor,
   PointerSensor,
   closestCenter,
+  defaultAnnouncements,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -101,6 +102,13 @@ const DndWrapper = ({
 
   return (
     <DndContext
+      accessibility={{
+        announcements: defaultAnnouncements,
+        screenReaderInstructions: {
+          draggable:
+            "To pick up a draggable item, press Space or Enter. To move the item, use the arrow keys. To drop the item, press Space or Enter again. To cancel, press Escape.",
+        },
+      }}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
       onDragStart={handleDragStart}

@@ -181,141 +181,165 @@ const EditMemberForm = ({
       >
         <div className="flex flex-col gap-4 py-2">
           <form.Field name="name">
-            {(field) => (
-              <Field data-invalid={!field.state.meta.isValid}>
-                <FieldLabel htmlFor="edit-name">Name</FieldLabel>
-                <Input
-                  aria-invalid={!field.state.meta.isValid}
-                  id="edit-name"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="John Doe"
-                  value={field.state.value}
-                />
-                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )}
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor="edit-name">Name</FieldLabel>
+                  <Input
+                    aria-describedby={isInvalid ? "edit-name-error" : undefined}
+                    aria-invalid={isInvalid}
+                    id="edit-name"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="John Doe"
+                    value={field.state.value}
+                  />
+                  {isInvalid && (
+                    <FieldError errors={field.state.meta.errors} id="edit-name-error" />
+                  )}
+                </Field>
+              );
+            }}
           </form.Field>
 
           <form.Field name="title">
-            {(field) => (
-              <Field data-invalid={!field.state.meta.isValid}>
-                <FieldLabel htmlFor="edit-title">Title (optional)</FieldLabel>
-                <Input
-                  aria-invalid={!field.state.meta.isValid}
-                  id="edit-title"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Software Engineer"
-                  value={field.state.value}
-                />
-                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )}
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor="edit-title">Title (optional)</FieldLabel>
+                  <Input
+                    aria-describedby={isInvalid ? "edit-title-error" : undefined}
+                    aria-invalid={isInvalid}
+                    id="edit-title"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Software Engineer"
+                    value={field.state.value}
+                  />
+                  {isInvalid && (
+                    <FieldError errors={field.state.meta.errors} id="edit-title-error" />
+                  )}
+                </Field>
+              );
+            }}
           </form.Field>
 
           <form.Field name="timezone">
-            {(field) => (
-              <Field data-invalid={!field.state.meta.isValid}>
-                <FieldLabel htmlFor="edit-timezone">Timezone</FieldLabel>
-                <Select
-                  onValueChange={(value) => {
-                    field.handleChange(value as FormValues["timezone"]);
-                    field.handleBlur();
-                  }}
-                  value={field.state.value}
-                >
-                  <SelectTrigger aria-invalid={!field.state.meta.isValid} id="edit-timezone">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COMMON_TIMEZONES.map((tz) => (
-                      <SelectItem key={tz} value={tz}>
-                        {formatTimezoneLabel(tz, true)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )}
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor="edit-timezone">Timezone</FieldLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.handleChange(value as FormValues["timezone"]);
+                      field.handleBlur();
+                    }}
+                    value={field.state.value}
+                  >
+                    <SelectTrigger aria-invalid={isInvalid} id="edit-timezone">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMMON_TIMEZONES.map((tz) => (
+                        <SelectItem key={tz} value={tz}>
+                          {formatTimezoneLabel(tz, true)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
           </form.Field>
 
           {!isClaim && groups.length > 0 && (
             <form.Field name="groupId">
-              {(field) => (
-                <Field data-invalid={!field.state.meta.isValid}>
-                  <FieldLabel htmlFor="edit-group">Group</FieldLabel>
-                  <GroupSelector
-                    aria-invalid={!field.state.meta.isValid}
-                    groups={groups}
-                    id="edit-group"
-                    onValueChange={(value) => {
-                      field.handleChange(value ?? "");
-                      field.handleBlur();
-                    }}
-                    placeholder="No group"
-                    value={field.state.value || undefined}
-                  />
-                  {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )}
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <FieldLabel htmlFor="edit-group">Group</FieldLabel>
+                    <GroupSelector
+                      aria-invalid={isInvalid}
+                      groups={groups}
+                      id="edit-group"
+                      onValueChange={(value) => {
+                        field.handleChange(value ?? "");
+                        field.handleBlur();
+                      }}
+                      placeholder="No group"
+                      value={field.state.value || undefined}
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
             </form.Field>
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <form.Field name="workingHoursStart">
-              {(field) => (
-                <Field data-invalid={!field.state.meta.isValid}>
-                  <FieldLabel htmlFor="edit-work-start">Work Starts</FieldLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.handleChange(Number(value));
-                      field.handleBlur();
-                    }}
-                    value={String(field.state.value)}
-                  >
-                    <SelectTrigger aria-invalid={!field.state.meta.isValid} id="edit-work-start">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {HOURS.map((hour) => (
-                        <SelectItem key={hour} value={String(hour)}>
-                          {formatHour(hour)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )}
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <FieldLabel htmlFor="edit-work-start">Work Starts</FieldLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.handleChange(Number(value));
+                        field.handleBlur();
+                      }}
+                      value={String(field.state.value)}
+                    >
+                      <SelectTrigger aria-invalid={isInvalid} id="edit-work-start">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HOURS.map((hour) => (
+                          <SelectItem key={hour} value={String(hour)}>
+                            {formatHour(hour)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
             </form.Field>
 
             <form.Field name="workingHoursEnd">
-              {(field) => (
-                <Field data-invalid={!field.state.meta.isValid}>
-                  <FieldLabel htmlFor="edit-work-end">Work Ends</FieldLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.handleChange(Number(value));
-                      field.handleBlur();
-                    }}
-                    value={String(field.state.value)}
-                  >
-                    <SelectTrigger aria-invalid={!field.state.meta.isValid} id="edit-work-end">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {HOURS.map((hour) => (
-                        <SelectItem key={hour} value={String(hour)}>
-                          {formatHour(hour)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )}
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <FieldLabel htmlFor="edit-work-end">Work Ends</FieldLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.handleChange(Number(value));
+                        field.handleBlur();
+                      }}
+                      value={String(field.state.value)}
+                    >
+                      <SelectTrigger aria-invalid={isInvalid} id="edit-work-end">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HOURS.map((hour) => (
+                          <SelectItem key={hour} value={String(hour)}>
+                            {formatHour(hour)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
             </form.Field>
           </div>
         </div>

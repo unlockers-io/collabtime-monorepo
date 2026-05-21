@@ -18,12 +18,17 @@ const recoverSchema = z.object({
   email: z.email("Please enter a valid email"),
 });
 
-const resetPasswordSchema = z.object({
-  confirmPassword: z.string().min(1, "Please confirm your password"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(128, "Password is too long"),
-});
+const resetPasswordSchema = z
+  .object({
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(128, "Password is too long"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 export { loginSchema, recoverSchema, resetPasswordSchema, signupSchema };
