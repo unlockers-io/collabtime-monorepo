@@ -119,7 +119,9 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
     [viewerTimezone],
   );
 
-  const memberStatuses = ((): Array<MemberStatus> => {
+  // Wrapped in useMemo so the 30-second tick doesn't re-run the member scan
+  // when members or formatter haven't changed.
+  const memberStatuses = useMemo((): Array<MemberStatus> => {
     if (!viewerTimezone || !hourFormatter) {
       return [];
     }
@@ -170,7 +172,7 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
         member,
       };
     });
-  })();
+  }, [members, viewerTimezone, hourFormatter]);
 
   const onlineMembers = memberStatuses.filter((s) => s.isWorking);
 

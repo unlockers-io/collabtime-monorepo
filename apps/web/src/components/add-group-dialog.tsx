@@ -108,20 +108,26 @@ const AddGroupDialog = ({ onGroupAdded, teamId }: AddGroupDialogProps) => {
 
           <div className="py-4">
             <form.Field name="name">
-              {(field) => (
-                <Field data-invalid={!field.state.meta.isValid}>
-                  <FieldLabel htmlFor="group-name">Group Name</FieldLabel>
-                  <Input
-                    aria-invalid={!field.state.meta.isValid}
-                    id="group-name"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="e.g., Engineering, Design, Marketing..."
-                    value={field.state.value}
-                  />
-                  {!field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )}
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid || undefined}>
+                    <FieldLabel htmlFor="group-name">Group Name</FieldLabel>
+                    <Input
+                      aria-describedby={isInvalid ? "group-name-error" : undefined}
+                      aria-invalid={isInvalid}
+                      id="group-name"
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="e.g., Engineering, Design, Marketing..."
+                      value={field.state.value}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} id="group-name-error" />
+                    )}
+                  </Field>
+                );
+              }}
             </form.Field>
           </div>
 

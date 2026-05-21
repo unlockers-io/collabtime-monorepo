@@ -23,7 +23,7 @@ import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
@@ -127,17 +127,21 @@ const AddMemberForm = ({
   // useState lazy init so the placeholder is stable for this dialog instance;
   // setter is intentionally unused — the random placeholder must not change after mount
   const [titlePlaceholder, _setTitlePlaceholder] = useState(getRandomPlaceholder);
-  const defaultTimezone = getUserTimezone() as FormValues["timezone"];
 
-  const defaultValues: FormValues = {
-    email: "",
-    groupId: "",
-    name: "",
-    timezone: defaultTimezone,
-    title: "",
-    workingHoursEnd: 17,
-    workingHoursStart: 9,
-  };
+  // Memoized so getUserTimezone() and the object literal are only evaluated once,
+  // not on every render triggered by parent state changes.
+  const defaultValues = useMemo(
+    (): FormValues => ({
+      email: "",
+      groupId: "",
+      name: "",
+      timezone: getUserTimezone() as FormValues["timezone"],
+      title: "",
+      workingHoursEnd: 17,
+      workingHoursStart: 9,
+    }),
+    [],
+  );
 
   const form = useForm({
     defaultValues,

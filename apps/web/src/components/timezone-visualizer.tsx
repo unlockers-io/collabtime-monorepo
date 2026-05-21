@@ -3,7 +3,6 @@
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { TooltipProvider } from "@repo/ui/components/tooltip";
 import { animate, AnimatePresence, m, useMotionValue } from "motion/react";
-import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useDragToScroll } from "@/hooks/use-drag-to-scroll";
@@ -44,9 +43,6 @@ const TimezoneVisualizer = ({
   members,
   onToggleGroupCollapse,
 }: TimezoneVisualizerProps) => {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
-
   const sectionsContainerRef = useRef<HTMLDivElement>(null);
   const scrollViewportRef = useRef<HTMLElement | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -62,7 +58,6 @@ const TimezoneVisualizer = ({
   }, []);
   const lineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isHoveringRef = useRef(false);
-  const selectedBlockRef = useRef<number | null>(null);
 
   const lineX = useMotionValue(0);
   const lineOpacity = useMotionValue(0);
@@ -195,7 +190,10 @@ const TimezoneVisualizer = ({
                 )}
 
                 {visibleRows.length > 0 && (
-                  <div key={`section-${section.group?.id ?? "ungrouped"}`}>
+                  <div
+                    id={sectionGroup ? `tz-group-${sectionGroup.id}` : undefined}
+                    key={`section-${section.group?.id ?? "ungrouped"}`}
+                  >
                     <div className="flex items-stretch gap-2 sm:gap-3">
                       <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
                         {visibleRows.map(({ dayOffset, member }) => (
@@ -219,11 +217,9 @@ const TimezoneVisualizer = ({
                           {visibleRows.map(({ hours, member }) => (
                             <MemberTimelineRow
                               hours={hours}
-                              isDark={isDark}
                               key={member.id}
                               memberId={member.id}
                               memberTimezone={member.timezone}
-                              selectedBlockRef={selectedBlockRef}
                               viewerTimezone={viewerTimezone}
                             />
                           ))}

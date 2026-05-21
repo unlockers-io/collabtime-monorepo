@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import { convertHourToTimezone, getDayOffset } from "@/lib/timezones";
 import type { TeamGroup, TeamMember } from "@/types";
@@ -232,22 +232,25 @@ const useTimezoneData = ({
   // O(1) member-by-id lookup so `isMemberInCompare` doesn't `.find()` inside its loop
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
 
-  const isMemberInCompare = (memberId: string, isComparing: boolean): boolean => {
-    if (!isComparing || validSelections.length === 0) {
-      return false;
-    }
+  const isMemberInCompare = useCallback(
+    (memberId: string, isComparing: boolean): boolean => {
+      if (!isComparing || validSelections.length === 0) {
+        return false;
+      }
 
-    const member = memberById.get(memberId);
-    for (const sel of validSelections) {
-      if (sel.type === "member" && sel.id === memberId) {
-        return true;
+      const member = memberById.get(memberId);
+      for (const sel of validSelections) {
+        if (sel.type === "member" && sel.id === memberId) {
+          return true;
+        }
+        if (sel.type === "group" && member?.groupId === sel.id) {
+          return true;
+        }
       }
-      if (sel.type === "group" && member?.groupId === sel.id) {
-        return true;
-      }
-    }
-    return false;
-  };
+      return false;
+    },
+    [validSelections, memberById],
+  );
 
   const addSelection = (
     sel: Selection,

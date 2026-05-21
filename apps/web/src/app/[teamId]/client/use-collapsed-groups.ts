@@ -12,7 +12,15 @@ const useCollapsedGroups = (members: Array<TeamMember>) => {
       return new Set();
     }
     const stored = localStorage.getItem(COLLAPSED_GROUPS_KEY);
-    return stored ? new Set(JSON.parse(stored) as Array<string>) : new Set();
+    if (!stored) {
+      return new Set();
+    }
+    try {
+      return new Set(JSON.parse(stored) as Array<string>);
+    } catch {
+      // Silently reset — corrupt storage shouldn't break the UI
+      return new Set();
+    }
   });
 
   const toggleGroupCollapse = (groupId: string) => {

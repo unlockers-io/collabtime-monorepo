@@ -13,7 +13,6 @@ import type { OverlapStatus } from "./types";
 
 type HourBlockProps = {
   hour: number;
-  isDark: boolean;
   isWorking: boolean;
   memberTimezone: string;
   viewerTimezone: string;
@@ -60,16 +59,13 @@ const HourBlock = ({ hour, isWorking, memberTimezone, viewerTimezone }: HourBloc
 
 type MemberTimelineRowProps = {
   hours: Array<boolean>;
-  isDark: boolean;
   memberId: string;
   memberTimezone: string;
-  selectedBlockRef: React.RefObject<number | null>;
   viewerTimezone: string;
 };
 
 const MemberTimelineRow = ({
   hours,
-  isDark,
   memberId,
   memberTimezone,
   viewerTimezone,
@@ -78,7 +74,6 @@ const MemberTimelineRow = ({
     {hours.map((isWorking, hour) => (
       <HourBlock
         hour={hour}
-        isDark={isDark}
         isWorking={isWorking}
         key={hour}
         memberTimezone={memberTimezone}
@@ -97,6 +92,8 @@ type GroupHeaderProps = {
 
 const GroupHeader = ({ group, isCollapsed, onToggle, rowCount }: GroupHeaderProps) => (
   <button
+    aria-controls={`tz-group-${group.id}`}
+    aria-expanded={!isCollapsed}
     className="-ml-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
     onClick={onToggle}
     type="button"
