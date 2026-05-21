@@ -124,7 +124,7 @@ const MobileMenu = ({
                   >
                     <span className="flex items-center gap-2">
                       <LogOut className="size-4" />
-                      {isSigningOut ? "Signing out..." : "Sign out"}
+                      {isSigningOut ? "Signing out…" : "Sign out"}
                     </span>
                   </Button>
                 </>

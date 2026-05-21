@@ -13,37 +13,36 @@ import { toast } from "@repo/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useTransition } from "react";
 
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
 
 const SignupForm = () => {
   const { push, refresh } = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm({
     defaultValues: { email: "", name: "", password: "" },
-    onSubmit: async ({ value }) => {
-      setIsLoading(true);
-      try {
-        const result = await signUp.email({
-          email: value.email,
-          name: value.name,
-          password: value.password,
-        });
-        if (result.error) {
-          throw new Error(result.error.message ?? "Failed to create account");
+    onSubmit: ({ value }) => {
+      startTransition(async () => {
+        try {
+          const result = await signUp.email({
+            email: value.email,
+            name: value.name,
+            password: value.password,
+          });
+          if (result.error) {
+            throw new Error(result.error.message ?? "Failed to create account");
+          }
+          push("/");
+          refresh();
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "An error occurred. Please try again.";
+          toast.error(message);
         }
-        push("/");
-        refresh();
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "An error occurred. Please try again.";
-        toast.error(message);
-      } finally {
-        setIsLoading(false);
-      }
+      });
     },
     validators: { onSubmit: signupSchema },
   });
@@ -63,12 +62,12 @@ const SignupForm = () => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="name">Full Name</FieldLabel>
+                <FieldLabel htmlFor="signup-name">Full Name</FieldLabel>
                 <Input
                   aria-invalid={isInvalid}
                   autoComplete="name"
-                  disabled={isLoading}
-                  id="name"
+                  disabled={isPending}
+                  id="signup-name"
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="John Doe"
@@ -86,12 +85,12 @@ const SignupForm = () => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="signup-email">Email</FieldLabel>
                 <Input
                   aria-invalid={isInvalid}
                   autoComplete="email"
-                  disabled={isLoading}
-                  id="email"
+                  disabled={isPending}
+                  id="signup-email"
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="m@example.com"
@@ -109,12 +108,12 @@ const SignupForm = () => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <FieldLabel htmlFor="signup-password">Password</FieldLabel>
                 <Input
                   aria-invalid={isInvalid}
                   autoComplete="new-password"
-                  disabled={isLoading}
-                  id="password"
+                  disabled={isPending}
+                  id="signup-password"
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   type="password"
@@ -131,8 +130,8 @@ const SignupForm = () => {
         </form.Field>
 
         <Field>
-          <Button disabled={isLoading} type="submit">
-            {isLoading ? "Creating account..." : "Create account"}
+          <Button aria-busy={isPending} disabled={isPending} type="submit">
+            {isPending ? "Creating account…" : "Create account"}
           </Button>
           <FieldDescription className="text-center">
             Already have an account?{" "}

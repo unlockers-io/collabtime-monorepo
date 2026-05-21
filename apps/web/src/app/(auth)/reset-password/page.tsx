@@ -23,7 +23,15 @@ const Page = () => (
       <CardDescription>Enter a new password for your account</CardDescription>
     </CardHeader>
     <CardContent>
-      <Suspense>
+      <Suspense
+        fallback={
+          <div aria-busy="true" className="flex flex-col gap-4">
+            <div className="h-10 animate-pulse rounded-md bg-muted" />
+            <div className="h-10 animate-pulse rounded-md bg-muted" />
+            <div className="h-10 animate-pulse rounded-md bg-muted" />
+          </div>
+        }
+      >
         <ResetPasswordForm />
       </Suspense>
     </CardContent>

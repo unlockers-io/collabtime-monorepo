@@ -12,35 +12,34 @@ import { Input } from "@repo/ui/components/input";
 import { toast } from "@repo/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { recoverSchema } from "@/lib/form-schemas";
 
 const RecoverForm = () => {
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm({
     defaultValues: { email: "" },
-    onSubmit: async ({ value }) => {
-      setIsLoading(true);
-      try {
-        const result = await authClient.requestPasswordReset({
-          email: value.email,
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-        if (result.error) {
-          throw new Error(result.error.message ?? "Failed to send password reset email");
+    onSubmit: ({ value }) => {
+      startTransition(async () => {
+        try {
+          const result = await authClient.requestPasswordReset({
+            email: value.email,
+            redirectTo: `${window.location.origin}/reset-password`,
+          });
+          if (result.error) {
+            throw new Error(result.error.message ?? "Failed to send password reset email");
+          }
+          setSubmittedEmail(value.email);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "An error occurred. Please try again.";
+          toast.error(message);
         }
-        setSubmittedEmail(value.email);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "An error occurred. Please try again.";
-        toast.error(message);
-      } finally {
-        setIsLoading(false);
-      }
+      });
     },
     validators: { onSubmit: recoverSchema },
   });
@@ -79,27 +78,30 @@ const RecoverForm = () => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="recover-email">Email</FieldLabel>
                 <Input
+                  aria-describedby={isInvalid ? "recover-email-error" : undefined}
                   aria-invalid={isInvalid}
                   autoComplete="email"
-                  disabled={isLoading}
-                  id="email"
+                  disabled={isPending}
+                  id="recover-email"
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="m@example.com"
                   type="email"
                   value={field.state.value}
                 />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {isInvalid && (
+                  <FieldError errors={field.state.meta.errors} id="recover-email-error" />
+                )}
               </Field>
             );
           }}
         </form.Field>
 
         <Field>
-          <Button disabled={isLoading} type="submit">
-            {isLoading ? "Sending..." : "Send reset link"}
+          <Button aria-busy={isPending} disabled={isPending} type="submit">
+            {isPending ? "Sending…" : "Send reset link"}
           </Button>
           <FieldDescription className="text-center">
             Remembered your password?{" "}
