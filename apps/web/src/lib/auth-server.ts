@@ -16,10 +16,10 @@ const getAuthConfig = (): AuthConfig => {
     extraPlugins: [nextCookies()],
     prisma,
     secret: process.env.BETTER_AUTH_SECRET ?? "",
-    ...(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL
+    ...(process.env.RESEND_API_KEY
       ? {
-          fromEmail: process.env.RESEND_FROM_EMAIL,
           resendApiKey: process.env.RESEND_API_KEY,
+          ...(process.env.RESEND_FROM_EMAIL && { fromEmail: process.env.RESEND_FROM_EMAIL }),
         }
       : {}),
     ...(process.env.REDIS_URL
