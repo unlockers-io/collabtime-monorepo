@@ -101,6 +101,7 @@ const inviteMember = async (
         {
           inviterName: session.user.name || session.user.email.split("@")[0] || "Someone",
           recipientEmail: trimmedEmail,
+          teamId,
           teamName: team.name,
           teamUrl: webAppUrl,
         },
