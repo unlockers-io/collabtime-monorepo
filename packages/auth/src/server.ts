@@ -127,6 +127,7 @@ const createAuth = (config: AuthConfig) => {
                 resetPasswordUrl: `${origin}/recover`,
                 signInUrl: `${origin}/login`,
                 userEmail: user.email,
+                userId: user.id,
                 username: user.name,
               },
               { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },
@@ -155,6 +156,7 @@ const createAuth = (config: AuthConfig) => {
           {
             resetUrl: url,
             userEmail: user.email,
+            userId: user.id,
             username: user.name,
           },
           { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },
@@ -174,6 +176,7 @@ const createAuth = (config: AuthConfig) => {
         const result = await sendWelcomeEmail(
           {
             userEmail: user.email,
+            userId: user.id,
             username: user.name,
             verificationUrl: url,
           },
@@ -240,6 +243,7 @@ const createAuth = (config: AuthConfig) => {
               changeUrl: url,
               currentEmail: user.email,
               newEmail,
+              userId: user.id,
               username: user.name,
             },
             { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },

@@ -19,10 +19,12 @@ const DEFAULT_FROM = "Collab Time <noreply@email.collabtime.io>";
 const sendWelcomeEmail = async (
   {
     userEmail,
+    userId,
     username,
     verificationUrl,
   }: {
     userEmail: string;
+    userId: string;
     username?: string;
     verificationUrl: string;
   },
@@ -35,7 +37,7 @@ const sendWelcomeEmail = async (
     subject: `Welcome to Collab Time${username ? `, ${username}` : ""}! Please verify your email`,
     tags: [
       { name: "type", value: "welcome" },
-      ...(username ? [{ name: "username", value: username }] : []),
+      { name: "userId", value: userId },
     ],
     template: React.createElement(WelcomeEmail, {
       userEmail,
@@ -51,11 +53,13 @@ const sendSignUpAttemptEmail = async (
     resetPasswordUrl,
     signInUrl,
     userEmail,
+    userId,
     username,
   }: {
     resetPasswordUrl: string;
     signInUrl: string;
     userEmail: string;
+    userId: string;
     username?: string;
   },
   config: EmailConfig,
@@ -67,7 +71,7 @@ const sendSignUpAttemptEmail = async (
     subject: "Sign-up attempt with your Collab Time account",
     tags: [
       { name: "type", value: "sign-up-attempt" },
-      ...(username ? [{ name: "username", value: username }] : []),
+      { name: "userId", value: userId },
     ],
     template: React.createElement(SignUpAttemptEmail, {
       resetPasswordUrl,
@@ -85,12 +89,14 @@ const sendPasswordResetEmail = async (
     ipAddress,
     resetUrl,
     userEmail,
+    userId,
     username,
   }: {
     browserInfo?: string;
     ipAddress?: string;
     resetUrl: string;
     userEmail: string;
+    userId: string;
     username?: string;
   },
   config: EmailConfig,
@@ -102,7 +108,7 @@ const sendPasswordResetEmail = async (
     subject: "Reset your Collab Time password",
     tags: [
       { name: "type", value: "password-reset" },
-      ...(username ? [{ name: "username", value: username }] : []),
+      { name: "userId", value: userId },
     ],
     template: React.createElement(PasswordResetEmail, {
       browserInfo,
@@ -119,11 +125,13 @@ const sendInvitationEmail = async (
   {
     inviterName,
     recipientEmail,
+    teamId,
     teamName,
     teamUrl,
   }: {
     inviterName: string;
     recipientEmail: string;
+    teamId: string;
     teamName: string;
     teamUrl: string;
   },
@@ -136,7 +144,7 @@ const sendInvitationEmail = async (
     subject: `${inviterName} invited you to join ${teamName} on Collab Time`,
     tags: [
       { name: "type", value: "invitation" },
-      { name: "team", value: teamName },
+      { name: "teamId", value: teamId },
     ],
     template: React.createElement(InvitationEmail, {
       inviterName,
@@ -153,11 +161,13 @@ const sendChangeEmailConfirmation = async (
     changeUrl,
     currentEmail,
     newEmail,
+    userId,
     username,
   }: {
     changeUrl: string;
     currentEmail: string;
     newEmail: string;
+    userId: string;
     username?: string;
   },
   config: EmailConfig,
@@ -169,7 +179,7 @@ const sendChangeEmailConfirmation = async (
     subject: "Confirm change of your Collab Time account email",
     tags: [
       { name: "type", value: "change-email-confirmation" },
-      ...(username ? [{ name: "username", value: username }] : []),
+      { name: "userId", value: userId },
     ],
     template: React.createElement(ChangeEmail, {
       changeUrl,
