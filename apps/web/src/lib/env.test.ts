@@ -53,6 +53,24 @@ describe("validateEnv", () => {
 
     expect(() => validateEnv()).toThrow("Invalid environment variables");
   });
+
+  it("accepts RESEND_FROM_EMAIL as a bare email", () => {
+    vi.stubEnv("RESEND_FROM_EMAIL", "noreply@email.collabtime.io");
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("accepts RESEND_FROM_EMAIL in 'Display Name <email>' format", () => {
+    vi.stubEnv("RESEND_FROM_EMAIL", "Collab Time <noreply@email.collabtime.io>");
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("throws when RESEND_FROM_EMAIL is not an email or wrapped email", () => {
+    vi.stubEnv("RESEND_FROM_EMAIL", "not-an-email");
+
+    expect(() => validateEnv()).toThrow("Invalid environment variables");
+  });
 });
 
 describe("getEnv", () => {
