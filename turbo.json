@@ -18,7 +18,7 @@
   "tasks": {
     "build": {
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build", "db:generate"]
     },
     "lint": {
       "dependsOn": ["^build"]
