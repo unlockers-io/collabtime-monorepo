@@ -44,7 +44,7 @@ const parseEnvList = (value: string | undefined): Array<string> => {
 const createAuth = (config: AuthConfig) => {
   const {
     extraPlugins = [],
-    fromEmail = "noreply@collabtime.com",
+    fromEmail = "Collab Time <noreply@email.collabtime.io>",
     prisma,
     resendApiKey,
     resendReplyTo,
