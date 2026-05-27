@@ -4,6 +4,16 @@ import { z } from "zod";
 
 import { createResendClient } from "../client";
 
+// Resend tag names/values are restricted to ASCII letters, numbers, underscores,
+// and dashes (≤256 chars). User-supplied values like display names or team names
+// commonly contain spaces or punctuation, so coerce here rather than at each
+// call site.
+const sanitizeTagSegment = (s: string): string =>
+  s
+    .replaceAll(/[^\-A-Za-z0-9_]+/gv, "-")
+    .replaceAll(/^-+|-+$/gv, "")
+    .slice(0, 256);
+
 const emailConfigSchema = z.object({
   bcc: z.union([z.string().email(), z.array(z.string().email())]).optional(),
   cc: z.union([z.string().email(), z.array(z.string().email())]).optional(),
@@ -13,10 +23,11 @@ const emailConfigSchema = z.object({
   tags: z
     .array(
       z.object({
-        name: z.string(),
-        value: z.string(),
+        name: z.string().transform(sanitizeTagSegment),
+        value: z.string().transform(sanitizeTagSegment),
       }),
     )
+    .transform((arr) => arr.filter((t) => t.name.length > 0 && t.value.length > 0))
     .optional(),
   to: z.union([z.string().email(), z.array(z.string().email())]),
 });
