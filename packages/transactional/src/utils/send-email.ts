@@ -17,7 +17,7 @@ const sanitizeTagSegment = (s: string): string =>
 const emailConfigSchema = z.object({
   bcc: z.union([z.string().email(), z.array(z.string().email())]).optional(),
   cc: z.union([z.string().email(), z.array(z.string().email())]).optional(),
-  from: z.string().email().default("Collab Time <noreply@collabtime.io>"),
+  from: z.string().email().default("Collab Time <noreply@email.collabtime.io>"),
   replyTo: z.string().email().optional(),
   subject: z.string(),
   tags: z

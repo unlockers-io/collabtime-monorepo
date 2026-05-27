@@ -14,7 +14,7 @@ type EmailConfig = {
   from?: string;
 };
 
-const DEFAULT_FROM = "Collab Time <noreply@collabtime.io>";
+const DEFAULT_FROM = "Collab Time <noreply@email.collabtime.io>";
 
 const sendWelcomeEmail = async (
   {
