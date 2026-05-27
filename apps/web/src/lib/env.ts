@@ -27,9 +27,22 @@ const envSchema = z.object({
   // Optional: Space access signing (falls back to BETTER_AUTH_SECRET)
   SPACE_ACCESS_SECRET: z.string().min(32).optional(),
 
-  // Optional: Resend email
+  // Optional: Resend email. Accepts either a bare email
+  // (`noreply@email.collabtime.io`) or RFC 5322 "Display Name <email>"
+  // (`Collab Time <noreply@email.collabtime.io>`) — both are valid Resend
+  // sender formats.
   RESEND_API_KEY: z.string().optional(),
-  RESEND_FROM_EMAIL: z.email().optional(),
+  RESEND_FROM_EMAIL: z
+    .string()
+    .refine(
+      (val) => {
+        const wrapped = val.match(/^.+<([^<>\s]+)>$/v);
+        const email = wrapped ? wrapped[1] : val;
+        return z.email().safeParse(email).success;
+      },
+      { message: "Must be a valid email or 'Display Name <email>' format" },
+    )
+    .optional(),
 
   // Node environment
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
