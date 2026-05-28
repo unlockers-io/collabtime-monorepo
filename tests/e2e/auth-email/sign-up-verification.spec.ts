@@ -13,33 +13,45 @@ test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe("Sign-up email verification", () => {
-  test("user can sign up, click the verification link, and reach home authenticated", async ({
-    page,
+  test("verify link lands on success page; original tab signs in via polling", async ({
+    browser,
     request,
   }, testInfo) => {
-    await page.context().clearCookies();
-
     const email = makeTestEmail(testInfo);
     const password = "SecurePassword1!";
 
     const signUp = await request.post(`${webUrl}/api/auth/sign-up/email`, {
       data: { email, name: "Verify Me", password },
     });
-    // 200/201 with requireEmailVerification:true. Better Auth returns user
-    // shape but no session cookie — confirmed by the redirect below.
     expect([200, 201]).toContain(signUp.status());
 
-    // Pre-verification: visiting / shows the unauthenticated home (Get Started)
-    // rather than the create-workspace CTA.
-    await page.goto("/");
-    await expect(page.getByRole("link", { name: /get started/i })).toBeVisible();
+    // Pre-verification: signIn fails (Better Auth blocks unverified users)
+    // and returns no session cookie.
+    const preSignIn = await request.post(`${webUrl}/api/auth/sign-in/email`, {
+      data: { email, password },
+      failOnStatusCode: false,
+    });
+    expect(preSignIn.status()).not.toBe(200);
 
+    // Cross-device: click the verify URL in a fresh BrowserContext (no
+    // shared cookies). With autoSignInAfterVerification: false, this lands
+    // on the success page WITHOUT creating a session in this context — the
+    // polling tab elsewhere is the one that completes sign-in.
+    const clickerContext = await browser.newContext();
+    const clickerPage = await clickerContext.newPage();
     const { url } = await verification.forVerifyEmail(email);
-    await page.goto(url);
+    await clickerPage.goto(url);
+    await expect(clickerPage).toHaveURL(/\/verify-email\/success$/v);
+    await expect(clickerPage.getByText(/email verified/iv)).toBeVisible();
+    const clickerCookies = await clickerContext.cookies(webUrl);
+    expect(clickerCookies.find((c) => c.name.startsWith("collabtime."))).toBeUndefined();
+    await clickerContext.close();
 
-    // verify-email handler redirects to callbackURL (=/) and sets a session
-    // cookie. End state: authenticated, on home with the create-workspace CTA.
-    await page.waitForURL("/");
-    await expect(page.getByRole("button", { name: /create team workspace/i })).toBeVisible();
+    // Original-tab path: signIn now succeeds. Polling client-side does this
+    // continuously; the test just exercises the same code path once.
+    const postSignIn = await request.post(`${webUrl}/api/auth/sign-in/email`, {
+      data: { email, password },
+    });
+    expect(postSignIn.status()).toBe(200);
   });
 });

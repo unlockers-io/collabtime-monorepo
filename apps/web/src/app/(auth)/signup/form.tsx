@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
+import { stashCredentials } from "@/app/(auth)/verify-email/credentials-store";
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
 
@@ -34,6 +35,19 @@ const SignupForm = () => {
           });
           if (result.error) {
             throw new Error(result.error.message ?? "Failed to create account");
+          }
+          // requireEmailVerification gates auto-sign-in: when active, Better
+          // Auth returns the user without a session token. Hand off email +
+          // password (in-memory only — never to storage) to the dedicated
+          // /verify-email screen, which polls signIn.email until the user
+          // clicks the verification link from their inbox. The branch also
+          // covers Better Auth's enumeration-prevention path (existing email
+          // → synthetic-success-without-token), since the screen's "check
+          // your inbox" wording is correct in both cases.
+          if (!result.data?.token) {
+            const handoff = stashCredentials({ email: value.email, password: value.password });
+            push(`/verify-email?k=${handoff}`);
+            return;
           }
           push("/");
           refresh();
