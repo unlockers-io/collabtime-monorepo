@@ -22,7 +22,12 @@ test.describe("Sign-up email verification", () => {
     const password = "SecurePassword1!";
 
     const signUp = await request.post(`${webUrl}/api/auth/sign-up/email`, {
-      data: { email, name: "Verify Me", password },
+      data: {
+        callbackURL: "/verify-email/success",
+        email,
+        name: "Verify Me",
+        password,
+      },
     });
     expect([200, 201]).toContain(signUp.status());
 
