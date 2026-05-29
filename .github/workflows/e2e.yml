@@ -22,6 +22,7 @@ jobs:
       # Drives the auth-email/ specs. When absent (forks, contributors without
       # access), those specs `test.skip()` themselves — the rest of the suite
       # still runs.
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       # Disable Sentry in CI: the tunnel proxy + browser SDK can't reach
       # ingest.us.sentry.io from GH runners and hangs Playwright's
       # networkidle waits. NEXT_PUBLIC_ prefix is required so the value
