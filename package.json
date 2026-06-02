@@ -28,7 +28,7 @@
     "ioredis": "^5.10.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.60.0",
     "@repo/db": "workspace:*",
     "fallow": "^2.69.0",
     "husky": "^9.1.7",
