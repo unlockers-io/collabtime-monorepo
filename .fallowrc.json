@@ -8,6 +8,7 @@
     "**/prisma.config.ts",
     "packages/db/src/seed.ts",
     "tests/e2e/**/*.{ts,tsx}",
+    "apps/web/scripts/ensure-e2e-user.ts",
     "packages/transactional/src/emails/**/*.tsx"
   ],
   "ignorePatterns": ["packages/db/src/generated/**"],
