@@ -23,6 +23,11 @@ jobs:
       # access), those specs `test.skip()` themselves — the rest of the suite
       # still runs.
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      # Verified Resend domain — required so the auth-email/* specs can
+      # deliver to `delivered+<label>@resend.dev`. The code fallback
+      # `onboarding@resend.dev` boots without errors but Resend silently
+      # restricts that sender to test mode (account-owner email only).
+      RESEND_FROM_EMAIL: noreply@email.collabtime.io
       # Disable Sentry in CI: the tunnel proxy + browser SDK can't reach
       # ingest.us.sentry.io from GH runners and hangs Playwright's
       # networkidle waits. NEXT_PUBLIC_ prefix is required so the value
@@ -53,6 +58,8 @@ jobs:
       - run: pnpm db:generate
       - run: pnpm db:push
       - run: pnpm build
+      - name: Seed E2E test user
+        run: pnpm --filter @repo/web exec tsx scripts/ensure-e2e-user.ts
       - name: Get Playwright version
         id: pw
         run: echo "version=$(pnpm exec playwright --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" >> $GITHUB_OUTPUT
