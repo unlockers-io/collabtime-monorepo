@@ -6,8 +6,7 @@ import { cache } from "react";
 
 import { redis } from "./redis";
 
-// Lazily initialized auth instance to avoid build-time errors
-// when environment variables aren't available
+// Lazy init: env vars may be unavailable at build time.
 let cachedAuth: Auth | null = null;
 
 const getAuthConfig = (): AuthConfig => {
@@ -50,9 +49,6 @@ const getAuthConfig = (): AuthConfig => {
   };
 };
 
-/**
- * Get the auth instance (lazily initialized).
- */
 const getAuth = (): Auth => {
   if (!cachedAuth) {
     cachedAuth = createAuth(getAuthConfig());
@@ -60,7 +56,6 @@ const getAuth = (): Auth => {
   return cachedAuth;
 };
 
-// Proxy for backwards compatibility with existing imports
 const auth = new Proxy({} as Auth, {
   get(_, prop) {
     const instance = getAuth();
@@ -72,9 +67,7 @@ const auth = new Proxy({} as Auth, {
   },
 });
 
-/**
- * Deduplicated getSession within a single RSC request via React.cache().
- */
+// React.cache() dedupes getSession within a single RSC request.
 const getSession = cache(async () => {
   return auth.api.getSession({ headers: await headers() });
 });

@@ -4,7 +4,7 @@ export const runtime = "edge";
 
 const loadGoogleFont = async (font: string, weight: number, text: string) => {
   const url = `https://fonts.googleapis.com/css2?family=${font}:wght@${weight}&text=${encodeURIComponent(text)}`;
-  // Google Fonts CSS and font binaries rarely change; cache for a day so OG image generation isn't waterfall-heavy on cold starts
+  // 24h cache keeps OG generation off the cold-start critical path.
   const cssResponse = await fetch(url, { next: { revalidate: 86_400 } });
   const css = await cssResponse.text();
   const resource = css.match(/src: url\((.+)\) format\('(opentype|truetype)'\)/v);

@@ -187,9 +187,7 @@ const sendChangeEmailConfirmation = async (
       newEmail,
       username,
     }),
-    // Send to CURRENT email — this is the consent step. Better Auth's
-    // sendVerificationEmail hook handles the second mailbox-ownership step
-    // to the NEW email when the confirmation link is clicked.
+    // Consent step goes to the current email; mailbox-ownership step on the new email is a separate hook.
     to: currentEmail,
   });
 };

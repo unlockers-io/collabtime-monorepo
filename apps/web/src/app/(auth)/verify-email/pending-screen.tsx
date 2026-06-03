@@ -49,10 +49,7 @@ const PendingScreen = ({ token }: Props) => {
     };
   }, []);
 
-  // Polling — gated on `credentials` being present. Each tick attempts signIn.email;
-  // unverified accounts produce an error which we swallow and keep polling.
-  // visibilitychange pauses the timer while the tab is hidden so backgrounded
-  // tabs stop hammering the auth endpoint.
+  // Pause polling when the tab is hidden so backgrounded tabs don't hammer the auth endpoint.
   useEffect(() => {
     if (!credentials) {
       return;
@@ -90,9 +87,6 @@ const PendingScreen = ({ token }: Props) => {
       if (cancelled || document.visibilityState !== "visible") {
         return;
       }
-      // Resume by firing an immediate poll; the pending timer (if any) gets
-      // overwritten on the next schedule and harmlessly fires a stale tick
-      // that re-checks `cancelled` and bails.
       void tick();
     };
 

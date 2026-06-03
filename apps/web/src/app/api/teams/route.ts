@@ -21,8 +21,7 @@ export const GET = async () => {
       where: { userId: session.user.id },
     });
 
-    // Fetch only the spaces the current user owns, scoped to their memberships.
-    // This lets the client render the "delete workspace" affordance without extra round-trips.
+    // Owned spaces are returned alongside teams so the client can render the delete affordance.
     const ownedSpaces = await prisma.space.findMany({
       select: { id: true, teamId: true },
       where: {
