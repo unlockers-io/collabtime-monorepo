@@ -29,11 +29,7 @@ const SignupForm = () => {
       startTransition(async () => {
         try {
           const result = await signUp.email({
-            // Better Auth builds the verification URL from `body.callbackURL`
-            // (defaulting to "/"), NOT from `emailVerification.callbackURL`
-            // in betterAuth() config — that option is unused by the sign-up
-            // route. Sending the success page explicitly keeps the email
-            // link landing on /verify-email/success instead of /.
+            // Better Auth builds the verification URL from body.callbackURL, not the betterAuth() config.
             callbackURL: "/verify-email/success",
             email: value.email,
             name: value.name,
@@ -42,14 +38,8 @@ const SignupForm = () => {
           if (result.error) {
             throw new Error(result.error.message ?? "Failed to create account");
           }
-          // requireEmailVerification gates auto-sign-in: when active, Better
-          // Auth returns the user without a session token. Hand off email +
-          // password (in-memory only — never to storage) to the dedicated
-          // /verify-email screen, which polls signIn.email until the user
-          // clicks the verification link from their inbox. The branch also
-          // covers Better Auth's enumeration-prevention path (existing email
-          // → synthetic-success-without-token), since the screen's "check
-          // your inbox" wording is correct in both cases.
+          // No token means requireEmailVerification suppressed auto-sign-in (or enumeration prevention
+          // returned synthetic success); both paths route to /verify-email with the same "check inbox" UX.
           if (!result.data?.token) {
             const handoff = stashCredentials({ email: value.email, password: value.password });
             push(`/verify-email?k=${handoff}`);

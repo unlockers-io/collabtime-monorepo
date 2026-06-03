@@ -2,11 +2,7 @@ import { Redis } from "ioredis";
 
 let cachedRedis: Redis | null = null;
 
-/**
- * Get the Redis client instance.
- * Uses lazy initialization to avoid build-time errors when env vars aren't available
- * and to defer the TCP handshake until first command on Vercel cold starts.
- */
+// Lazy init: env vars may be missing at build time, and we defer the TCP handshake on cold starts.
 const getRedis = (): Redis | null => {
   if (cachedRedis) {
     return cachedRedis;
@@ -28,16 +24,11 @@ const getRedis = (): Redis | null => {
   return cachedRedis;
 };
 
-/**
- * Proxy object that provides lazy Redis access.
- * Allows imports to work at build time while deferring
- * actual Redis connection to runtime.
- */
 const redis = new Proxy({} as Redis, {
   get(_, prop) {
     const instance = getRedis();
     if (!instance) {
-      // No-op fallback when Redis is unavailable: graceful degradation
+      // Graceful degradation when Redis isn't configured.
       if (
         typeof prop === "string" &&
         ["get", "set", "setex", "del", "scan", "publish"].includes(prop)

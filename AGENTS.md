@@ -1,159 +1,154 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with code in this repository.
+Guidance for AI coding agents working in this repo. `CLAUDE.md` is a symlink to this file.
 
-## What is Collabtime
-
-A team timezone visualizer SaaS. Distributed teams create spaces, add members with timezones/working hours, and visualize overlap for scheduling. Team data refreshes every 20s via TanStack Query polling; the acting client gets immediate optimistic updates after mutations.
-
-## Commands
-
-```bash
-pnpm dev                  # Start all apps + packages in dev mode (Turbopack, via portless)
-pnpm build                # Build everything
-pnpm lint                 # Lint with oxlint
-pnpm format               # Format with oxfmt
-pnpm format:check         # Check formatting
-pnpm typecheck            # TypeScript type checking
-pnpm db:generate          # Generate Prisma client
-pnpm db:push              # Push schema changes to database
-pnpm db:seed              # Seed database
-
-# Run a single workspace command
-pnpm --filter web dev     # Dev only the web app
-pnpm --filter @repo/ui build  # Build only the UI package
-```
-
-### Testing
-
-```bash
-pnpm test                         # vitest unit tests
-pnpm test:e2e                     # playwright (chromium, firefox, webkit)
-pnpm test:e2e:ui                  # playwright with interactive UI
-```
-
-## Architecture
-
-pnpm monorepo with Turborepo orchestration. Node >=24, pnpm 10.32.1.
-
-### Apps
-
-- **`apps/web`** — Next.js 16 App Router with React Compiler enabled (`http://collabtime.web.localhost:1355`). Uses `@/*` path alias mapping to `src/*`.
-
-### Packages
-
-- **`@repo/ui`** — Shared component library (Tailwind + CVA). Built with tsdown. Includes TanStack Form field components (`Field`, `FieldGroup`, `FieldLabel`, `FieldError`).
-- **`@repo/config-vitest`** — Shared Vitest config. Exports `react.ts` and `node.ts` configs.
-- **`@repo/auth`** — Better Auth config with Stripe plugin. Exports `auth-server.ts` (server-only) and `auth-client.ts` (`"use client"`). Uses Prisma adapter.
-- **`@repo/db`** — Prisma 7 ORM with PostgreSQL. Schema at `packages/db/prisma/schema.prisma`. Uses `@prisma/adapter-pg` for serverless connection pooling. Generated client output to `packages/db/src/generated`.
-- **`@repo/tailwind-config`** — Shared Tailwind CSS v4 config with OKLch color tokens and dark mode.
-- **`@repo/typescript-config`** — Base, Next.js, and library TypeScript configs. Strict mode, ESNext target, Bundler module resolution.
-
-### Key patterns
-
-- **Lazy initialization via Proxy**: Auth client, Redis, and Prisma instances use a Proxy pattern to defer initialization until first access. This avoids build-time errors when env vars are unavailable.
-- **Server/client boundary**: `auth-server.ts` imports `"server-only"`, `auth-client.ts` uses `"use client"`. Never cross these boundaries.
-- **Env validation**: `apps/web/src/lib/env.ts` validates all env vars with Zod at startup. Use `getEnv(key)` for type-safe access.
-- **Polling-based sync**: Team data is fetched on a 20s interval via TanStack Query (`use-team-query.ts`). Mutations call `useUpdateTeamCache` for immediate optimistic updates on the acting client.
-
-### API routes
-
-All under `apps/web/src/app/api/`:
-
-- `auth/[...all]` — Better Auth catch-all handler
-- `spaces/` and `spaces/[spaceId]/` — Space CRUD, password verification
-- `subscription/checkout/` and `subscription/portal/` — Stripe subscription management
-
-### Data models
-
-User → Session, Account, Subscription, Space. Users have a `subscriptionPlan` (FREE|PRO) and optional `stripeCustomerId`. Spaces link to teams via unique `teamId` and support private access with passwords.
+Collabtime is a team timezone visualizer SaaS. Distributed teams create spaces, add members with timezones and working hours, and visualize overlap for scheduling. Single `web` app, pnpm monorepo, Better Auth + Stripe, Prisma/Postgres, Redis.
 
 ## Stack
 
-- **Frontend**: Next.js 16, React 19, Tailwind CSS v4, Radix UI, @tanstack/react-form + Zod 4, TanStack Query, Motion (Framer Motion), Sonner, Lucide
-- **Auth**: Better Auth with email/password, Stripe integration
-- **Database**: PostgreSQL via Prisma 7 with `@prisma/adapter-pg`
-- **Payments**: Stripe (subscriptions, webhooks, customer portal)
-- **Cache / session storage**: Redis via `ioredis` (Railway-hosted in production, accepts `redis://` or `rediss://`)
-- **Linting**: oxlint with plugins (perfectionist, unused-imports, react-hooks, unicorn, typescript, import)
-- **Formatting**: oxfmt, enforced via husky + lint-staged on commit
-- **Bundling**: tsdown for library packages, Turbopack for Next.js dev
+- **Framework**: Next.js 16 App Router (Turbopack, React Compiler enabled)
+- **Language**: TypeScript strict, ESNext, Bundler module resolution
+- **UI**: React 19, Tailwind CSS v4, Radix UI, Motion, Sonner, Lucide
+- **Forms**: `@tanstack/react-form` + Zod 4 (NOT react-hook-form)
+- **Data**: TanStack Query with 20s polling for team sync
+- **Auth**: Better Auth (email/password) + Stripe plugin
+- **DB**: Prisma 7 + PostgreSQL via `@prisma/adapter-pg`
+- **Cache / session**: Redis via `ioredis` (Railway in prod, supports `redis://` or `rediss://`)
+- **Payments**: Stripe subscriptions, webhooks, customer portal
+- **Email**: Resend (optional)
+- **Monorepo**: Turborepo + pnpm workspaces, Node >=24, `packageManager: pnpm@11.1.3`
+- **Lint / format**: oxlint + oxfmt (NOT ESLint/Prettier), `oxlint-config-awesomeness`
+- **Tests**: Vitest (unit), Playwright (e2e — chromium, firefox, webkit)
+- **Bundler**: tsdown for library packages, Turbopack for Next.js dev
+- **Dead-code / circular deps**: `fallow`
+
+## Layout
+
+```
+apps/web/                       # Next.js 16 App Router app (only app)
+packages/auth/                  # Better Auth server + client, Stripe plugin
+packages/db/                    # Prisma schema + generated client
+packages/ui/                    # Shared component library (Tailwind + CVA)
+packages/transactional/         # Email templates (Resend)
+packages/config-typescript/     # Base / Next / library tsconfigs
+packages/config-vitest/         # Shared Vitest configs (react.ts, node.ts)
+tests/                          # Playwright e2e specs
+docker-compose.yml              # Postgres :5433, Redis :6379, Upstash REST shim :8079
+playwright.config.ts
+turbo.json
+oxlint.config.ts                # plus .oxlintrc.json / .oxfmtrc.json
+```
+
+## Dev workflow
+
+```bash
+pnpm dev                  # turbo run dev --concurrency 16 (Turbopack via portless)
+pnpm build                # turbo run build
+pnpm typecheck            # turbo run typecheck
+pnpm lint                 # oxlint .
+pnpm format               # oxfmt
+pnpm format:check         # oxfmt --check
+pnpm test                 # turbo run test (vitest)
+pnpm test:e2e             # playwright test
+pnpm test:e2e:ui          # playwright test --ui
+pnpm db:generate          # Prisma client
+pnpm db:push              # Push schema to DB
+pnpm db:seed              # Seed DB
+pnpm clean                # turbo clean + rm -rf node_modules
+
+# Single-workspace
+pnpm --filter web dev
+pnpm --filter @repo/ui build
+
+# Dead-code / health
+pnpm fallow:dead          # cross-file dead code, unused exports, circular deps
+pnpm fallow:dupes
+pnpm fallow:health --score
+pnpm fallow:audit         # --base main
+```
+
+## Portless dev URLs
+
+Dev server runs behind portless — HTTPS on `.localhost:443`, no port juggling. Cookies, OAuth redirects, and CORS allowlists stay valid across project switches.
+
+One-time per machine:
+
+```bash
+npm install -g portless
+sudo portless proxy start --https
+```
+
+| Service | URL                                |
+| ------- | ---------------------------------- |
+| `web`   | `https://collabtime.web.localhost` |
+
+Branch worktrees auto-prefix the subdomain: `https://fix-styles.collabtime.web.localhost`. Each gets its own auto-assigned backing port — no collisions.
+
+Docker host ports: Postgres `5433`, Redis `6379`, Upstash REST shim `8079`. Only one project's stack runs at a time on these ports unless explicitly remapped.
+
+## Environment variables
+
+Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (>=32 chars), `STRIPE_SECRET_KEY` (`sk_*`), `STRIPE_WEBHOOK_SECRET` (`whsec_*`), `STRIPE_PRO_PRICE_ID` (`price_*`), `REDIS_URL` (`redis://` or `rediss://`).
+
+Optional: `WEB_APP_URL`, `AUTH_ALLOWED_HOSTS`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SPACE_ACCESS_SECRET`, `NODE_ENV`.
+
+Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(key)`.
+
+## Conventions & gotchas
+
+- **Lazy init via Proxy**: Auth client, Redis, and Prisma instances defer initialization until first access. Avoids build-time errors when env vars are absent.
+- **Server/client boundary**: `@repo/auth/auth-server` imports `"server-only"`; `@repo/auth/auth-client` uses `"use client"`. Never cross.
+- **Polling sync**: Team data fetched every 20s via `use-team-query.ts`. Mutations call `useUpdateTeamCache` for immediate optimistic update on the acting client.
+- **Forms**: validate `onBlur` + `onChange` with Zod. Show errors via `field.state.meta.isTouched && !field.state.meta.isValid`. Field primitives (`Field`, `FieldGroup`, `FieldLabel`, `FieldError`) live in `@repo/ui`.
+- **TanStack `field` in effect deps is banned** — never put `field.handleChange` inside `useEffect`/`useCallback` with `field` in deps. Use `field.form.setFieldValue(field.name, value)` with a stable ref.
+- **Prisma config**: `prisma.config.ts` uses `process.env.DATABASE_URL ?? ""` (not `env("DATABASE_URL")`) so `prisma generate` works in CI without DB creds.
+- **Turbo ordering**: root `turbo.json` `build.dependsOn` includes `db:generate` so the Prisma client exists before any app/package builds.
+- **Path alias**: `apps/web` uses `@/*` -> `src/*`.
 
 ## Linting rules to know
 
 - `no-console` is **error** globally (off in `apps/web/src/**` and `**/seed.ts`)
 - `@typescript-eslint/no-explicit-any` is **error** (off in test files)
-- `@typescript-eslint/array-type` enforces `Array<T>` syntax (generic), not `T[]`
-- `perfectionist/sort-objects` and `sort-jsx-props` are **error** globally but **off** in `apps/web/src/**` and `packages/ui/src/**`
+- `@typescript-eslint/array-type` enforces `Array<T>` (generic), not `T[]`
+- `perfectionist/sort-objects` and `sort-jsx-props` are **error** globally, **off** in `apps/web/src/**` and `packages/ui/src/**`
 - `perfectionist/sort-interfaces` and `sort-object-types` are always **error**
-- `curly` is enforced (always use braces)
+- `curly` enforced (always braces)
 - `unused-imports/no-unused-imports` is **error**
-- `@nocommit` in comments triggers `no-warning-comments` error
+- `@nocommit` triggers `no-warning-comments` error
+- Pre-commit (husky + lint-staged): `oxlint` on `.{ts,tsx,js,jsx}`, `oxfmt` on `.{ts,tsx,js,jsx,json,md}`
 
-## Environment variables
+## Dev tools (development only)
 
-Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (≥32 chars), `STRIPE_SECRET_KEY` (sk*\*), `STRIPE_WEBHOOK_SECRET` (whsec*\_), `STRIPE_PRO_PRICE_ID` (price\_\_), `REDIS_URL` (redis:// or rediss://)
+- **React Scan** — flags unnecessary re-renders, loaded via `<script>` in root layout when `NODE_ENV=development`
+- **React Grab** — inspect component tree, loaded the same way
+- Neither runs in production builds
 
-Optional: `WEB_APP_URL`, `AUTH_ALLOWED_HOSTS`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SPACE_ACCESS_SECRET`, `NODE_ENV`
+## API routes
 
-## Portless (Dev URLs)
+All under `apps/web/src/app/api/`:
 
-The dev server runs behind portless, which gives the app a stable HTTPS URL on `.localhost` instead of guessing port numbers. Cookies, OAuth redirects, and CORS allowlists stay valid across project switches.
+- `auth/[...all]` — Better Auth catch-all
+- `spaces/` and `spaces/[spaceId]/` — Space CRUD, password verification
+- `subscription/checkout/` and `subscription/portal/` — Stripe checkout + customer portal
 
-### Setup (one-time per machine)
+## Data model
 
-```bash
-npm install -g portless                # global install (or upgrade)
-sudo portless proxy start --https      # start the daemon on :443
-```
-
-The proxy auto-restarts on subsequent invocations once trusted.
-
-### URLs
-
-| Service | URL                                | Started by |
-| ------- | ---------------------------------- | ---------- |
-| `web`   | `https://collabtime.web.localhost` | `pnpm dev` |
-
-### Worktrees
-
-Branch name auto-prefixes the subdomain — no port collisions between concurrent worktrees, each gets its own auto-assigned backing port:
-
-```
-main worktree:        https://collabtime.web.localhost
-branch fix-styles:    https://fix-styles.collabtime.web.localhost
-```
-
-## Dev Tools (Development Only)
-
-- **React Scan** — highlights unnecessary re-renders, loaded via `<script>` in root layout when `NODE_ENV=development`
-- **React Grab** — inspect React component tree, loaded via `<script>` in root layout when `NODE_ENV=development`
-- Neither tool runs in production builds
-
-## Tooling
-
-- **Linter**: oxlint (NOT ESLint). Config in `.oxlintrc.json`. Uses `oxlint-config-awesomeness`.
-- **Formatter**: oxfmt (NOT Prettier). Config in `.oxfmtrc.json`. Sorts Tailwind classes and imports.
-- **Pre-commit**: Husky + lint-staged runs `oxlint` (on `.ts,.tsx,.js,.jsx` files) and `oxfmt` (on `.ts,.tsx,.js,.jsx,.json,.md` files).
-- **Testing**: Vitest for unit tests, Playwright for e2e (chromium, firefox, webkit). `@repo/config-vitest` exports `react.ts` and `node.ts` configs.
-- **Bundler**: tsdown for library packages, Turbopack for Next.js dev.
-
-## Forms
-
-- **@tanstack/react-form** (NOT react-hook-form)
-- Validation: `onBlur` + `onChange` validators with Zod schemas
-- Display errors with `field.state.meta.isTouched && !field.state.meta.isValid`
-- Field components from `@repo/ui`: `Field`, `FieldGroup`, `FieldLabel`, `FieldError`
-- NEVER use `field.handleChange` inside `useEffect` or `useCallback` with `field` in deps — use `field.form.setFieldValue(field.name, value)` with stable refs
+User -> Session, Account, Subscription, Space. Users have `subscriptionPlan` (FREE|PRO) and optional `stripeCustomerId`. Spaces link to teams via unique `teamId` and support private access with passwords.
 
 ## CI (GitHub Actions)
 
 - `test.yml` — `pnpm test`
 - `lint.yml` — `pnpm oxlint --format=github .`
 - `format.yml` — `pnpm run format:check`
-- `fallow.yml` — `pnpm fallow:dead` (cross-file dead code, unused exports, circular deps)
-- All use `permissions: { contents: read }` and `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
+- `fallow.yml` — `pnpm fallow:dead`
+- `e2e.yml` — Playwright
+- All workflows use `permissions: { contents: read }` and `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
 
-## Prisma
+## References
 
-`prisma.config.ts` uses `process.env.DATABASE_URL ?? ""` (not `env("DATABASE_URL")`) so `prisma generate` works in CI without database credentials.
+- Sibling repos (control plane): `~/dev/orchestrator` (standards.md + verifiers)
+- Template / source of truth for `saas` profile: `~/dev/acme-monorepo`
+- Better Auth docs: <https://better-auth.com>
+- Prisma 7: <https://www.prisma.io/docs>
+- oxlint: <https://oxc.rs>
+- portless: <https://portless.dev>

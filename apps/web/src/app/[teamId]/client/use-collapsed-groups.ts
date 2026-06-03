@@ -42,8 +42,6 @@ const useCollapsedGroups = (members: Array<TeamMember>) => {
           next.add(groupId);
         }
       }
-      // Persist alongside the state update — runs in the event handler instead
-      // of mirroring via a useEffect (https://react.dev/learn/you-might-not-need-an-effect).
       try {
         localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...next]));
       } catch {

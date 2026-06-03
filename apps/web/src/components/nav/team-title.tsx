@@ -26,8 +26,7 @@ const TeamTitle = ({
 }: TeamTitleProps) => {
   const editInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus on enter — replaces `autoFocus`, which jsx-a11y flags because it
-  // can move focus without an explicit user action on initial mount.
+  // Programmatic focus instead of autoFocus (jsx-a11y rejects autoFocus on mount).
   useEffect(() => {
     if (isEditing) {
       editInputRef.current?.focus();

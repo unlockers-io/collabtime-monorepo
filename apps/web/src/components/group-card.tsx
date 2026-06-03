@@ -37,8 +37,7 @@ const GroupCard = ({
   const [editingName, setEditingName] = useState("");
   const editInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus the editor input on enter — avoids `autoFocus` which jsx-a11y
-  // flags because it triggers focus changes outside an explicit user action.
+  // Programmatic focus instead of autoFocus (jsx-a11y rejects autoFocus on mount).
   useEffect(() => {
     if (isEditing) {
       editInputRef.current?.focus();

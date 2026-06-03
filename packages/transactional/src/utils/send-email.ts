@@ -4,19 +4,14 @@ import { z } from "zod";
 
 import { createResendClient } from "../client";
 
-// Resend tag names/values are restricted to ASCII letters, numbers, underscores,
-// and dashes (≤256 chars). User-supplied values like display names or team names
-// commonly contain spaces or punctuation, so coerce here rather than at each
-// call site.
+// Resend tag chars: ASCII letters, digits, underscore, dash, ≤256.
 const sanitizeTagSegment = (s: string): string =>
   s
     .replaceAll(/[^\-A-Za-z0-9_]+/gv, "-")
     .replaceAll(/^-+|-+$/gv, "")
     .slice(0, 256);
 
-// Resend accepts either a bare email or RFC 5322 "Display Name <email>" form
-// for from / reply-to. `z.string().email()` only matches bare addresses, so
-// extract the bracketed address when present and validate that.
+// Accepts bare email or RFC 5322 "Display Name <email>"; z.email() alone rejects the bracketed form.
 const senderAddressSchema = z.string().refine(
   (val) => {
     const wrapped = val.match(/^.+<([^<>\s]+)>$/v);
@@ -44,9 +39,7 @@ const emailConfigSchema = z.object({
   to: z.union([z.string().email(), z.array(z.string().email())]),
 });
 
-// z.input keeps `from` optional for callers — the Zod default fills it in
-// during parse. Using z.infer (the output type) would require every caller
-// to pass `from`, defeating the default.
+// z.input keeps `from` optional for callers; the schema default fills it in during parse.
 type EmailConfig = z.input<typeof emailConfigSchema>;
 
 type SendEmailOptions = EmailConfig & {
