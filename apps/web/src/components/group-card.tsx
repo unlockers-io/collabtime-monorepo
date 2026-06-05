@@ -7,9 +7,11 @@ import { Input } from "@repo/ui/components/input";
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2, Users } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 
+import { teamQueryKeys } from "@/hooks/use-team-query";
 import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
 import type { TeamGroup } from "@/types";
 
@@ -18,8 +20,6 @@ type GroupCardProps = {
   group: TeamGroup;
   isDropTarget?: boolean;
   memberCount: number;
-  onGroupRemoved: (groupId: string) => void;
-  onGroupUpdated: (group: TeamGroup) => void;
   teamId: string;
 };
 
@@ -28,10 +28,9 @@ const GroupCard = ({
   group,
   isDropTarget = false,
   memberCount,
-  onGroupRemoved,
-  onGroupUpdated,
   teamId,
 }: GroupCardProps) => {
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState("");
@@ -66,7 +65,7 @@ const GroupCard = ({
         name: trimmedName,
       });
       if (result.success) {
-        onGroupUpdated({ ...group, name: trimmedName });
+        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
       } else {
         toast.error(result.error);
       }
@@ -88,7 +87,7 @@ const GroupCard = ({
     startTransition(async () => {
       const result = await removeGroup(teamId, group.id);
       if (result.success) {
-        onGroupRemoved(group.id);
+        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
         toast.success(`Group "${group.name}" removed`);
       } else {
         toast.error(result.error);

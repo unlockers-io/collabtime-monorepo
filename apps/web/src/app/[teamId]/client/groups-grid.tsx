@@ -12,8 +12,6 @@ type GroupsGridProps = {
   activeDragType: "group" | "member" | null;
   isAdmin: boolean;
   members: Array<TeamMember>;
-  onGroupRemoved: (groupId: string) => void;
-  onGroupUpdated: (group: TeamGroup) => void;
   orderedGroups: Array<TeamGroup>;
   teamId: string;
 };
@@ -22,8 +20,6 @@ const GroupsGrid = ({
   activeDragType,
   isAdmin,
   members,
-  onGroupRemoved,
-  onGroupUpdated,
   orderedGroups,
   teamId,
 }: GroupsGridProps) => {
@@ -58,8 +54,6 @@ const GroupsGrid = ({
                 isDropTarget={activeDragType === "member"}
                 key={group.id}
                 memberCount={members.filter((m) => m.groupId === group.id).length}
-                onGroupRemoved={onGroupRemoved}
-                onGroupUpdated={onGroupUpdated}
                 teamId={teamId}
               />
             ))}
@@ -71,8 +65,6 @@ const GroupsGrid = ({
               group={group}
               key={group.id}
               memberCount={members.filter((m) => m.groupId === group.id).length}
-              onGroupRemoved={onGroupRemoved}
-              onGroupUpdated={onGroupUpdated}
               teamId={teamId}
             />
           ))

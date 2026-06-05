@@ -12,12 +12,13 @@ import {
 } from "@repo/ui/components/dialog";
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
+import { useQueryClient } from "@tanstack/react-query";
 import { Upload, Users } from "lucide-react";
 import { useState } from "react";
 
+import { teamQueryKeys } from "@/hooks/use-team-query";
 import { importMembers } from "@/lib/actions/member-actions";
 import type { COMMON_TIMEZONES } from "@/lib/timezones";
-import type { TeamMember } from "@/types";
 
 import type { ParsedRow } from "./import-members-dialog/parse-csv";
 import { parseCSV } from "./import-members-dialog/parse-csv";
@@ -25,11 +26,11 @@ import { PreviewTable } from "./import-members-dialog/preview-table";
 import { UploadForm } from "./import-members-dialog/upload-form";
 
 type ImportMembersDialogProps = {
-  onMembersImported: (members: Array<TeamMember>) => void;
   teamId: string;
 };
 
-const ImportMembersDialog = ({ onMembersImported, teamId }: ImportMembersDialogProps) => {
+const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [rows, setRows] = useState<Array<ParsedRow> | null>(null);
@@ -83,7 +84,7 @@ const ImportMembersDialog = ({ onMembersImported, teamId }: ImportMembersDialogP
     setIsImporting(false);
 
     if (result.success) {
-      onMembersImported(result.data.members);
+      void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
       toast.success(
         `${result.data.imported} member${result.data.imported === 1 ? "" : "s"} imported`,
       );

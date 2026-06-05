@@ -12,8 +12,6 @@ type SortableMemberCardProps = {
   groups: Array<TeamGroup>;
   hasClaimedProfile: boolean;
   member: TeamMember;
-  onMemberRemoved: (memberId: string) => void;
-  onMemberUpdated: (member: TeamMember) => void;
   teamId: string;
 };
 

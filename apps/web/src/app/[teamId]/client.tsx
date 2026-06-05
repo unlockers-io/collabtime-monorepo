@@ -23,7 +23,7 @@ import {
 } from "@/components/section-card";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
-import { useTeamQuery } from "@/hooks/use-team-query";
+import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
 import { requestToJoin } from "@/lib/actions/join-requests";
 import { getTeamMembershipRole } from "@/lib/actions/team-read";
 import type { TeamStatus } from "@/types";
@@ -33,7 +33,6 @@ import { JoinPrompt } from "./client/join-prompt";
 import { MembersGrid } from "./client/members-grid";
 import { useCollapsedGroups } from "./client/use-collapsed-groups";
 import { useDragEnd } from "./client/use-drag-end";
-import { useTeamCacheUpdaters } from "./client/use-team-cache-updaters";
 import { useTeamNameEdit } from "./client/use-team-name-edit";
 import Loading from "./loading";
 
@@ -87,17 +86,8 @@ const TeamPageClient = ({
   const isAdmin = teamStatus === "ADMIN";
   const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
 
-  const {
-    handleGroupAdded,
-    handleGroupRemoved,
-    handleGroupUpdated,
-    handleMemberAdded,
-    handleMemberRemoved,
-    handleMembersImported,
-    handleMemberUpdated,
-    handleTeamNameUpdated,
-    updateTeamCache,
-  } = useTeamCacheUpdaters(teamId);
+  // Kept for drag-end optimistic update + revert; other mutation sites invalidate the team query directly.
+  const updateTeamCache = useUpdateTeamCache();
 
   useEffect(() => {
     if (teamError) {
@@ -122,7 +112,7 @@ const TeamPageClient = ({
     handleStartEditName,
     isEditingName,
     setEditingTeamName,
-  } = useTeamNameEdit({ isAdmin, onTeamNameUpdated: handleTeamNameUpdated, teamId, teamName });
+  } = useTeamNameEdit({ isAdmin, teamId, teamName });
 
   const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members);
 
@@ -223,8 +213,6 @@ const TeamPageClient = ({
                 groups={groups}
                 hasClaimedProfile={hasClaimedProfile}
                 isAdmin={isAdmin}
-                onMemberRemoved={handleMemberRemoved}
-                onMemberUpdated={handleMemberUpdated}
                 orderedMembers={orderedMembers}
                 teamId={teamId}
               />
@@ -247,11 +235,10 @@ const TeamPageClient = ({
             </SectionCardContent>
             {isAdmin && (
               <SectionCardFooter bordered className="justify-end">
-                <ImportMembersDialog onMembersImported={handleMembersImported} teamId={teamId} />
+                <ImportMembersDialog teamId={teamId} />
                 <AddMemberDialog
                   groups={groups}
                   isFirstMember={members.length === 0}
-                  onMemberAdded={handleMemberAdded}
                   teamId={teamId}
                 />
               </SectionCardFooter>
@@ -269,15 +256,13 @@ const TeamPageClient = ({
                 activeDragType={activeDragType}
                 isAdmin={isAdmin}
                 members={members}
-                onGroupRemoved={handleGroupRemoved}
-                onGroupUpdated={handleGroupUpdated}
                 orderedGroups={orderedGroups}
                 teamId={teamId}
               />
             </SectionCardContent>
             {isAdmin && (
               <SectionCardFooter bordered className="justify-end">
-                <AddGroupDialog onGroupAdded={handleGroupAdded} teamId={teamId} />
+                <AddGroupDialog teamId={teamId} />
               </SectionCardFooter>
             )}
           </SectionCard>

@@ -15,15 +15,15 @@ import { Input } from "@repo/ui/components/input";
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 
+import { teamQueryKeys } from "@/hooks/use-team-query";
 import { createGroup } from "@/lib/actions/group-actions";
-import type { TeamGroup } from "@/types";
 
 type AddGroupDialogProps = {
-  onGroupAdded: (group: TeamGroup) => void;
   teamId: string;
 };
 
@@ -37,7 +37,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const AddGroupDialog = ({ onGroupAdded, teamId }: AddGroupDialogProps) => {
+const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
   const defaultValues: FormValues = {
@@ -51,7 +52,7 @@ const AddGroupDialog = ({ onGroupAdded, teamId }: AddGroupDialogProps) => {
 
       if (result.success) {
         setOpen(false);
-        onGroupAdded(result.data.group);
+        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
         toast.success(`Group "${value.name}" created`);
       } else {
         toast.error(result.error);

@@ -11,8 +11,6 @@ type SortableGroupCardProps = {
   group: TeamGroup;
   isDropTarget?: boolean;
   memberCount: number;
-  onGroupRemoved: (groupId: string) => void;
-  onGroupUpdated: (group: TeamGroup) => void;
   teamId: string;
 };
 
