@@ -22,21 +22,22 @@ import {
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
+import { teamQueryKeys } from "@/hooks/use-team-query";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { addMember } from "@/lib/actions/member-actions";
 import { COMMON_TIMEZONES, formatTimezoneLabel, getUserTimezone } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
-import type { TeamGroup, TeamMember } from "@/types";
+import type { TeamGroup } from "@/types";
 
 type AddMemberDialogProps = {
   groups: Array<TeamGroup>;
   isFirstMember: boolean;
-  onMemberAdded: (member: TeamMember) => void;
   teamId: string;
 };
 
@@ -112,18 +113,12 @@ type FormValues = z.infer<typeof formSchema>;
 type AddMemberFormProps = {
   groups: Array<TeamGroup>;
   isFirstMember: boolean;
-  onMemberAdded: (member: TeamMember) => void;
   onOpenChange: (open: boolean) => void;
   teamId: string;
 };
 
-const AddMemberForm = ({
-  groups,
-  isFirstMember,
-  onMemberAdded,
-  onOpenChange,
-  teamId,
-}: AddMemberFormProps) => {
+const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMemberFormProps) => {
+  const queryClient = useQueryClient();
   // useState lazy init so the placeholder is stable for this dialog instance;
   // setter is intentionally unused — the random placeholder must not change after mount
   const [titlePlaceholder, _setTitlePlaceholder] = useState(getRandomPlaceholder);
@@ -155,7 +150,7 @@ const AddMemberForm = ({
 
       if (result.success) {
         onOpenChange(false);
-        onMemberAdded(result.data.member);
+        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
         toast.success(`${value.name} added to team`);
 
         if (emailValue) {
@@ -396,12 +391,7 @@ const AddMemberForm = ({
   );
 };
 
-const AddMemberDialog = ({
-  groups,
-  isFirstMember,
-  onMemberAdded,
-  teamId,
-}: AddMemberDialogProps) => {
+const AddMemberDialog = ({ groups, isFirstMember, teamId }: AddMemberDialogProps) => {
   const [open, setOpen] = useState(isFirstMember);
   // Bumped after close animation completes so the next open gets a fresh form
   // without unmounting mid-animation (which caused a visible close flicker).
@@ -429,7 +419,6 @@ const AddMemberDialog = ({
           groups={groups}
           isFirstMember={isFirstMember}
           key={instanceId}
-          onMemberAdded={onMemberAdded}
           onOpenChange={setOpen}
           teamId={teamId}
         />

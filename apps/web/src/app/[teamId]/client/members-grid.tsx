@@ -13,8 +13,6 @@ type MembersGridProps = {
   groups: Array<TeamGroup>;
   hasClaimedProfile: boolean;
   isAdmin: boolean;
-  onMemberRemoved: (memberId: string) => void;
-  onMemberUpdated: (member: TeamMember) => void;
   orderedMembers: Array<TeamMember>;
   teamId: string;
 };
@@ -24,8 +22,6 @@ const MembersGrid = ({
   groups,
   hasClaimedProfile,
   isAdmin,
-  onMemberRemoved,
-  onMemberUpdated,
   orderedMembers,
   teamId,
 }: MembersGridProps) => {
@@ -61,8 +57,6 @@ const MembersGrid = ({
                 hasClaimedProfile={hasClaimedProfile}
                 key={member.id}
                 member={member}
-                onMemberRemoved={onMemberRemoved}
-                onMemberUpdated={onMemberUpdated}
                 teamId={teamId}
               />
             ))}
@@ -76,8 +70,6 @@ const MembersGrid = ({
               hasClaimedProfile={hasClaimedProfile}
               key={member.id}
               member={member}
-              onMemberRemoved={onMemberRemoved}
-              onMemberUpdated={onMemberUpdated}
               teamId={teamId}
             />
           ))

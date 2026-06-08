@@ -21,11 +21,13 @@ import {
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { Mail } from "lucide-react";
 import { useState, useTransition } from "react";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
+import { teamQueryKeys } from "@/hooks/use-team-query";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
 import { COMMON_TIMEZONES, formatTimezoneLabel } from "@/lib/timezones";
@@ -36,7 +38,6 @@ type EditMemberDialogProps = {
   groups: Array<TeamGroup>;
   member: TeamMember;
   mode?: "admin" | "claim";
-  onMemberUpdated: (member: TeamMember) => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
   teamId: string;
@@ -127,14 +128,8 @@ const HourSelect = ({
   </Field>
 );
 
-const EditMemberForm = ({
-  groups,
-  member,
-  mode,
-  onMemberUpdated,
-  onOpenChange,
-  teamId,
-}: EditMemberFormProps) => {
+const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemberFormProps) => {
+  const queryClient = useQueryClient();
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
   const [inviteEmail, setInviteEmail] = useState("");
@@ -187,7 +182,7 @@ const EditMemberForm = ({
         }
         toast.success(isClaim ? "Profile claimed" : "Member updated");
         onOpenChange(false);
-        onMemberUpdated({ ...member, ...value, groupId: safeGroupId, title: safeTitle });
+        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
       });
     },
     validators: {
@@ -401,7 +396,6 @@ const EditMemberDialog = ({
   groups,
   member,
   mode = "admin",
-  onMemberUpdated,
   onOpenChange,
   open,
   teamId,
@@ -417,7 +411,6 @@ const EditMemberDialog = ({
           key={member.id}
           member={member}
           mode={mode}
-          onMemberUpdated={onMemberUpdated}
           onOpenChange={onOpenChange}
           teamId={teamId}
         />

@@ -122,8 +122,6 @@ const DndWrapper = ({
             groups={groups}
             hasClaimedProfile={hasClaimedProfile}
             member={activeMember}
-            onMemberRemoved={() => {}}
-            onMemberUpdated={() => {}}
             teamId={teamId}
           />
         )}
@@ -132,8 +130,6 @@ const DndWrapper = ({
             canEdit={false}
             group={activeGroup}
             memberCount={members.filter((m) => m.groupId === activeGroup.id).length}
-            onGroupRemoved={() => {}}
-            onGroupUpdated={() => {}}
             teamId={teamId}
           />
         )}

@@ -49,4 +49,4 @@ const useUpdateTeamCache = () => {
   };
 };
 
-export { useTeamQuery, useUpdateTeamCache };
+export { teamQueryKeys, useTeamQuery, useUpdateTeamCache };

@@ -11,10 +11,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
+import { useQueryClient } from "@tanstack/react-query";
 import { Hand, Pencil, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 
 import { EditMemberDialog } from "@/components/edit-member-dialog";
+import { teamQueryKeys } from "@/hooks/use-team-query";
 import { removeMember } from "@/lib/actions/member-actions";
 import {
   formatTimezoneLabel,
@@ -32,8 +34,6 @@ type MemberCardProps = {
   groups: Array<TeamGroup>;
   hasClaimedProfile: boolean;
   member: TeamMember;
-  onMemberRemoved: (memberId: string) => void;
-  onMemberUpdated: (member: TeamMember) => void;
   teamId: string;
 };
 
@@ -43,10 +43,9 @@ const MemberCard = ({
   groups,
   hasClaimedProfile,
   member,
-  onMemberRemoved,
-  onMemberUpdated,
   teamId,
 }: MemberCardProps) => {
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
@@ -72,7 +71,7 @@ const MemberCard = ({
     startTransition(async () => {
       const result = await removeMember(teamId, member.id);
       if (result.success) {
-        onMemberRemoved(member.id);
+        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
       } else {
         toast.error(result.error);
       }
@@ -183,7 +182,6 @@ const MemberCard = ({
         <EditMemberDialog
           groups={groups}
           member={member}
-          onMemberUpdated={onMemberUpdated}
           onOpenChange={setIsEditDialogOpen}
           open={isEditDialogOpen}
           teamId={teamId}
@@ -194,7 +192,6 @@ const MemberCard = ({
           groups={groups}
           member={member}
           mode="claim"
-          onMemberUpdated={(updated) => onMemberUpdated({ ...updated, userId: currentUserId })}
           onOpenChange={setIsClaimDialogOpen}
           open={isClaimDialogOpen}
           teamId={teamId}
