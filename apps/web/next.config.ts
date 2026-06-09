@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["collabtime.web.localhost", "*.collabtime.web.localhost", "*.vercel.app"],
   reactCompiler: true,
-  transpilePackages: ["@repo/ui"],
+  transpilePackages: ["@repo/observability", "@repo/ui"],
 };
 
 export default withSentryConfig(nextConfig, {
