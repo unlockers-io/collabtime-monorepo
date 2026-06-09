@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
+import { captureException } from "@sentry/nextjs";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useEffect } from "react";
 
@@ -11,7 +12,7 @@ type ErrorProps = {
 
 const Error = ({ error, reset }: ErrorProps) => {
   useEffect(() => {
-    console.error("Application error:", error);
+    captureException(error);
   }, [error]);
 
   return (

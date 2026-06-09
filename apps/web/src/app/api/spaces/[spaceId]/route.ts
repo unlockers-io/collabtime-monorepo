@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
+import { useLogger, withEvlog } from "@/lib/observability";
 
 const updateSpaceSchema = z.object({
   isPrivate: z.boolean().optional(),
@@ -18,7 +19,7 @@ type Params = {
 };
 
 // GET /api/spaces/[spaceId] - Get space details
-export const GET = async (_request: Request, { params }: Params) => {
+export const GET = withEvlog(async (_request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
     const session = await auth.api.getSession({
@@ -50,13 +51,15 @@ export const GET = async (_request: Request, { params }: Params) => {
       },
     });
   } catch (error) {
-    console.error("[Spaces API] Error fetching space:", error);
+    useLogger().error(error instanceof Error ? error : String(error), {
+      route: "/api/spaces/[spaceId]",
+    });
     return NextResponse.json({ error: "Failed to fetch space" }, { status: 500 });
   }
-};
+});
 
 // PATCH /api/spaces/[spaceId] - Update space settings
-export const PATCH = async (request: Request, { params }: Params) => {
+export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
     const session = await auth.api.getSession({
@@ -125,13 +128,15 @@ export const PATCH = async (request: Request, { params }: Params) => {
         { status: 400 },
       );
     }
-    console.error("[Spaces API] Error updating space:", error);
+    useLogger().error(error instanceof Error ? error : String(error), {
+      route: "/api/spaces/[spaceId]",
+    });
     return NextResponse.json({ error: "Failed to update space" }, { status: 500 });
   }
-};
+});
 
 // DELETE /api/spaces/[spaceId] - Delete space
-export const DELETE = async (_request: Request, { params }: Params) => {
+export const DELETE = withEvlog(async (_request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
     const session = await auth.api.getSession({
@@ -160,7 +165,9 @@ export const DELETE = async (_request: Request, { params }: Params) => {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[Spaces API] Error deleting space:", error);
+    useLogger().error(error instanceof Error ? error : String(error), {
+      route: "/api/spaces/[spaceId]",
+    });
     return NextResponse.json({ error: "Failed to delete space" }, { status: 500 });
   }
-};
+});

@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMockSession } from "./test-helpers";
 
+vi.mock("@/lib/observability", () => ({
+  log: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+}));
 vi.mock("@/lib/team-auth", () => ({ requireAuth: vi.fn() }));
 vi.mock("@repo/db", () => ({
   prisma: {
@@ -17,6 +20,7 @@ vi.mock("uuid", () => ({ v4: vi.fn(() => `test-uuid-${uuidCounter++}`) }));
 
 import { prisma } from "@repo/db";
 
+import { log } from "@/lib/observability";
 import { requireAuth } from "@/lib/team-auth";
 
 import { redis } from "../redis";
@@ -33,12 +37,10 @@ describe("createTeam", () => {
 
   it("returns error when not authenticated", async () => {
     vi.mocked(requireAuth).mockRejectedValue(new Error("Unauthorized"));
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await createTeam(TEST_TIMEZONE);
 
     expect(result).toEqual({ error: "Failed to create team", success: false });
-    spy.mockRestore();
   });
 
   it("creates space and membership in a transaction", async () => {
@@ -88,16 +90,16 @@ describe("createTeam", () => {
     vi.mocked(requireAuth).mockResolvedValue(session as never);
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
     vi.mocked(redis.set).mockRejectedValue(new Error("Redis down"));
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await createTeam(TEST_TIMEZONE);
 
     expect(result).toEqual({ data: "test-uuid-0", success: true });
-    expect(spy).toHaveBeenCalledWith(
-      "Post-commit Redis cache failed (team created in Postgres):",
-      expect.any(Error),
+    expect(log.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Post-commit Redis cache failed (team created in Postgres)",
+        route: "actions/team-create",
+      }),
     );
-    spy.mockRestore();
   });
 
   it("returns the generated teamId on success", async () => {

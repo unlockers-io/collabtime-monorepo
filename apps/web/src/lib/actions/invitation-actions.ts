@@ -5,6 +5,7 @@ import { sendInvitationEmail } from "@repo/transactional";
 import { after } from "next/server";
 
 import { getEnv } from "@/lib/env";
+import { log } from "@/lib/observability";
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 
 import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
@@ -109,20 +110,25 @@ const inviteMember = async (
       );
       emailSent = result.success;
       if (!result.success) {
-        console.error("[Invitation] Failed to send email:", result.error);
+        log.error({
+          error: result.error,
+          message: "Failed to send invitation email",
+          route: "actions/invitation",
+        });
       }
     } else {
       after(() => {
-        console.warn(
-          "[Invitation] Resend not configured, skipping invitation email to:",
-          trimmedEmail,
-        );
+        log.warn({
+          message: "Resend not configured, skipping invitation email",
+          recipientEmail: trimmedEmail,
+          route: "actions/invitation",
+        });
       });
     }
 
     return { data: { emailSent, invitationId: invitation.id }, success: true };
   } catch (error) {
-    console.error("Failed to invite member:", error);
+    log.error({ error, message: "Failed to invite member", route: "actions/invitation" });
     return { error: "Failed to send invitation", success: false };
   }
 };
@@ -199,12 +205,16 @@ const acceptInvitation = async (
         }
       }
     } catch (cacheError) {
-      console.error("Failed to claim member slot in Redis:", cacheError);
+      log.error({
+        error: cacheError,
+        message: "Failed to claim member slot in Redis",
+        route: "actions/invitation",
+      });
     }
 
     return { data: { teamId: invitation.teamId }, success: true };
   } catch (error) {
-    console.error("Failed to accept invitation:", error);
+    log.error({ error, message: "Failed to accept invitation", route: "actions/invitation" });
     return { error: "Failed to accept invitation", success: false };
   }
 };
@@ -236,7 +246,7 @@ const declineInvitation = async (invitationId: string): Promise<ActionResult<voi
 
     return { data: undefined, success: true };
   } catch (error) {
-    console.error("Failed to decline invitation:", error);
+    log.error({ error, message: "Failed to decline invitation", route: "actions/invitation" });
     return { error: "Failed to decline invitation", success: false };
   }
 };

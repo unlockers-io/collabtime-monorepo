@@ -3,6 +3,7 @@
 import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 
+import { log } from "@/lib/observability";
 import { requireAuth } from "@/lib/team-auth";
 import type { Team, TeamMember } from "@/types";
 
@@ -153,7 +154,7 @@ const updateOwnMember = async (
   try {
     session = await requireAuth();
   } catch (error) {
-    console.error("Failed to update own member:", error);
+    log.error({ error, message: "Failed to update own member", route: "actions/member" });
     return { error: "Failed to update member", success: false };
   }
 

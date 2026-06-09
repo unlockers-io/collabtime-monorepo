@@ -3,6 +3,7 @@ import { compare } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { useLogger, withEvlog } from "@/lib/observability";
 import { createSpaceAccessToken, SPACE_ACCESS_COOKIE_PREFIX } from "@/lib/space-access";
 
 const verifyPasswordSchema = z.object({
@@ -13,7 +14,7 @@ type Params = {
   params: Promise<{ spaceId: string }>;
 };
 
-export const POST = async (request: Request, { params }: Params) => {
+export const POST = withEvlog(async (request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
     const body = await request.json();
@@ -69,7 +70,9 @@ export const POST = async (request: Request, { params }: Params) => {
         { status: 400 },
       );
     }
-    console.error("[Verify Password] Error:", error);
+    useLogger().error(error instanceof Error ? error : String(error), {
+      route: "/api/spaces/[spaceId]/verify-password",
+    });
     return NextResponse.json({ error: "Failed to verify password" }, { status: 500 });
   }
-};
+});

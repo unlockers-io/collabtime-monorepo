@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { log } from "@/lib/observability";
+
 const envSchema = z.object({
   AUTH_ALLOWED_HOSTS: z.string().optional(),
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
@@ -34,7 +36,7 @@ const validateEnv = (): Env => {
       .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
       .join("\n");
 
-    console.error(`❌ Invalid environment variables:\n${errors}`);
+    log.error({ message: "Invalid environment variables", route: "env", validationErrors: errors });
     throw new Error("Invalid environment variables. See above for details.");
   }
 

@@ -6,6 +6,7 @@ import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
+import { captureException } from "@sentry/nextjs";
 import { User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -39,7 +40,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
       });
 
       if (error) {
-        console.error("[Settings] Failed to update name:", error);
+        captureException(error);
         toast.error(error.message ?? "Failed to update name");
         return;
       }
@@ -47,7 +48,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
       toast.success("Name updated successfully");
       refresh();
     } catch (error) {
-      console.error("[Settings] Unexpected error updating name:", error);
+      captureException(error);
       toast.error("Failed to update name");
     } finally {
       setIsSaving(false);

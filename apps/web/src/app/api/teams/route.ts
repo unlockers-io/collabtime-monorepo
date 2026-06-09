@@ -3,10 +3,11 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth-server";
+import { useLogger, withEvlog } from "@/lib/observability";
 import { redis } from "@/lib/redis";
 import type { Team } from "@/types";
 
-export const GET = async () => {
+export const GET = withEvlog(async () => {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -58,7 +59,7 @@ export const GET = async () => {
 
     return NextResponse.json({ teams: validTeams });
   } catch (error) {
-    console.error("[Teams API] Error:", error);
+    useLogger().error(error instanceof Error ? error : String(error), { route: "/api/teams" });
     return NextResponse.json({ error: "Failed to fetch teams" }, { status: 500 });
   }
-};
+});

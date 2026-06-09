@@ -3,6 +3,7 @@
 import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 
+import { log } from "@/lib/observability";
 import { getTeamRole, requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 import type { TeamMember } from "@/types";
 
@@ -76,7 +77,7 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
 
     return { data: { requestId: joinRequest.id }, success: true };
   } catch (error) {
-    console.error("Failed to request to join:", error);
+    log.error({ error, message: "Failed to request to join", route: "actions/join-requests" });
     return { error: "Failed to submit join request", success: false };
   }
 };
@@ -140,12 +141,16 @@ const approveJoinRequest = async (
         );
       }
     } catch (cacheError) {
-      console.error("Post-commit cache failed (approval committed):", cacheError);
+      log.error({
+        error: cacheError,
+        message: "Post-commit cache failed (approval committed)",
+        route: "actions/join-requests",
+      });
     }
 
     return { data: { memberId: newMember.id }, success: true };
   } catch (error) {
-    console.error("Failed to approve join request:", error);
+    log.error({ error, message: "Failed to approve join request", route: "actions/join-requests" });
     return { error: "Failed to approve join request", success: false };
   }
 };
@@ -173,7 +178,7 @@ const denyJoinRequest = async (requestId: string): Promise<ActionResult<void>> =
 
     return { data: undefined, success: true };
   } catch (error) {
-    console.error("Failed to deny join request:", error);
+    log.error({ error, message: "Failed to deny join request", route: "actions/join-requests" });
     return { error: "Failed to deny join request", success: false };
   }
 };
@@ -222,7 +227,11 @@ const getPendingJoinRequests = async (
 
     return { data, success: true };
   } catch (error) {
-    console.error("Failed to get pending join requests:", error);
+    log.error({
+      error,
+      message: "Failed to get pending join requests",
+      route: "actions/join-requests",
+    });
     return { error: "Failed to get join requests", success: false };
   }
 };
@@ -258,7 +267,7 @@ const getMyTeamStatus = async (
 
     return { data: { status: "none" }, success: true };
   } catch (error) {
-    console.error("Failed to get team status:", error);
+    log.error({ error, message: "Failed to get team status", route: "actions/join-requests" });
     return { error: "Failed to get team status", success: false };
   }
 };
