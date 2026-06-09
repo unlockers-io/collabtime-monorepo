@@ -4,11 +4,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
+import { useLogger, withEvlog } from "@/lib/observability";
 import { redis } from "@/lib/redis";
 
 const TeamCacheSchema = z.object({ name: z.string().optional() });
 
-export const GET = async () => {
+export const GET = withEvlog(async () => {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -51,7 +52,9 @@ export const GET = async () => {
 
     return NextResponse.json({ invitations: validInvitations });
   } catch (error) {
-    console.error("[Invitations API] Error:", error);
+    useLogger().error(error instanceof Error ? error : String(error), {
+      route: "/api/invitations",
+    });
     return NextResponse.json({ error: "Failed to fetch invitations" }, { status: 500 });
   }
-};
+});

@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 
+import { log } from "@/lib/observability";
+
 const SPACE_ACCESS_COOKIE_PREFIX = "space-access-";
 const TOKEN_EXPIRY_DAYS = 7;
 const TOKEN_VERSION = "v1";
@@ -99,7 +101,7 @@ const verifySpaceAccessToken = (token: string, expectedSpaceId: string): Verific
 
     return { payload, valid: true };
   } catch (error) {
-    console.error("[Space Access] Token verification error:", error);
+    log.error({ error, message: "Space access token verification failed", route: "space-access" });
     return { reason: "Token verification failed", valid: false };
   }
 };

@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { cache } from "react";
 
 import { auth } from "@/lib/auth-server";
+import { log } from "@/lib/observability";
 import { getTeamRole } from "@/lib/team-auth";
 import { isTeamRole } from "@/types";
 import type { Team, TeamRole } from "@/types";
@@ -66,7 +67,7 @@ const getPublicTeam = async (
       success: true,
     };
   } catch (error) {
-    console.error("Failed to fetch public team:", error);
+    log.error({ error, message: "Failed to fetch public team", route: "actions/team-read" });
     return { error: "Failed to fetch team", success: false };
   }
 };
@@ -87,7 +88,7 @@ const validateTeam = cache(async (teamId: string): Promise<boolean> => {
 
     return space !== null;
   } catch (error) {
-    console.error("Failed to validate team:", error);
+    log.error({ error, message: "Failed to validate team", route: "actions/team-read" });
     return false;
   }
 });
@@ -108,7 +109,7 @@ const getTeamName = cache(async (teamId: string): Promise<string | null> => {
     const name = typeof team?.name === "string" ? team.name.trim() : "";
     return name.length > 0 ? name : null;
   } catch (error) {
-    console.error("Failed to get team name:", error);
+    log.error({ error, message: "Failed to get team name", route: "actions/team-read" });
     return null;
   }
 });

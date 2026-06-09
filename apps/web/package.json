@@ -21,6 +21,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@repo/auth": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/observability": "workspace:*",
     "@repo/transactional": "workspace:*",
     "@repo/ui": "workspace:*",
     "@sentry/nextjs": "^10.52.0",

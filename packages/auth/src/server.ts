@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@repo/db";
+import { log } from "@repo/observability";
 import {
   sendChangeEmailConfirmation,
   sendPasswordResetEmail,
@@ -136,7 +137,11 @@ const createAuth = (config: AuthConfig) => {
               // Don't throw — Better Auth's enumeration-prevention path needs
               // to return success regardless. Log so delivery failures don't
               // break the auth response.
-              console.error("[Auth] Failed to send sign-up attempt email:", result.error);
+              log.error({
+                error: result.error,
+                message: "Failed to send sign-up attempt email",
+                route: "auth",
+              });
             }
           }
         : undefined,

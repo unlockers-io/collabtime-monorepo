@@ -1,3 +1,4 @@
+import { log } from "@/lib/observability";
 import { requireTeamAdmin } from "@/lib/team-auth";
 import type { Team, TeamRecord } from "@/types";
 
@@ -56,7 +57,7 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
 
     return team;
   } catch (error) {
-    console.error("Failed to get team:", error);
+    log.error({ error, message: "Failed to get team", route: "actions/helpers" });
     return null;
   }
 };
@@ -125,7 +126,7 @@ const mutateTeam = async <TPrelude, TResult>(
 
     return { data: outcome.value, success: true };
   } catch (error) {
-    console.error(`Failed to ${errorContext}:`, error);
+    log.error({ error, message: `Failed to ${errorContext}`, route: "actions/helpers" });
     return { error: `Failed to ${errorContext}`, success: false };
   }
 };

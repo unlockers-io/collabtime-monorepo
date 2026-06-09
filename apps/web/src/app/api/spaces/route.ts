@@ -4,13 +4,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
+import { useLogger, withEvlog } from "@/lib/observability";
 
 const createSpaceSchema = z.object({
   teamId: z.string().min(1, "Team ID is required"),
 });
 
 // GET /api/spaces - List user's spaces
-export const GET = async () => {
+export const GET = withEvlog(async () => {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -27,13 +28,13 @@ export const GET = async () => {
 
     return NextResponse.json({ spaces });
   } catch (error) {
-    console.error("[Spaces API] Error fetching spaces:", error);
+    useLogger().error(error instanceof Error ? error : String(error), { route: "/api/spaces" });
     return NextResponse.json({ error: "Failed to fetch spaces" }, { status: 500 });
   }
-};
+});
 
 // POST /api/spaces - Create/claim a space
-export const POST = async (request: Request) => {
+export const POST = withEvlog(async (request: Request) => {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -77,7 +78,7 @@ export const POST = async (request: Request) => {
         { status: 400 },
       );
     }
-    console.error("[Spaces API] Error creating space:", error);
+    useLogger().error(error instanceof Error ? error : String(error), { route: "/api/spaces" });
     return NextResponse.json({ error: "Failed to create space" }, { status: 500 });
   }
-};
+});

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
+import { useLogger, withEvlog } from "@/lib/observability";
 import { UUIDSchema } from "@/lib/validation";
 
 const patchSchema = z.object({
@@ -15,7 +16,7 @@ type Params = {
 };
 
 // PATCH /api/teams/[teamId]/membership - Toggle archive state on caller's membership
-export const PATCH = async (request: Request, { params }: Params) => {
+export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
   try {
     const { teamId } = await params;
 
@@ -61,7 +62,9 @@ export const PATCH = async (request: Request, { params }: Params) => {
         { status: 400 },
       );
     }
-    console.error("[Membership API] Error toggling archive:", error);
+    useLogger().error(error instanceof Error ? error : String(error), {
+      route: "/api/teams/[teamId]/membership",
+    });
     return NextResponse.json({ error: "Failed to update membership" }, { status: 500 });
   }
-};
+});

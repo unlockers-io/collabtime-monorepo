@@ -3,6 +3,7 @@
 import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 
+import { log } from "@/lib/observability";
 import { requireAuth } from "@/lib/team-auth";
 import type { TeamMember, TeamRecord } from "@/types";
 
@@ -57,12 +58,16 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
 
       await redis.set(`team:${teamId}`, JSON.stringify(team), "EX", TEAM_INITIAL_TTL_SECONDS);
     } catch (cacheError) {
-      console.error("Post-commit Redis cache failed (team created in Postgres):", cacheError);
+      log.error({
+        error: cacheError,
+        message: "Post-commit Redis cache failed (team created in Postgres)",
+        route: "actions/team-create",
+      });
     }
 
     return { data: teamId, success: true };
   } catch (error) {
-    console.error("Failed to create team:", error);
+    log.error({ error, message: "Failed to create team", route: "actions/team-create" });
     return { error: "Failed to create team", success: false };
   }
 };
