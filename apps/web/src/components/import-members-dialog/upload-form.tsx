@@ -65,6 +65,7 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
         </div>
         <input
           accept=".csv,text/csv,text/plain"
+          aria-label="CSV file"
           className="sr-only"
           onChange={handleFileUpload}
           ref={fileInputRef}

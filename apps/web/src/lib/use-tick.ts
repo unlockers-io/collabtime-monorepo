@@ -32,10 +32,11 @@ const createTickStore = (intervalMs: number): TickStore => {
     }, intervalMs);
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        cachedTick = Date.now();
-        callback();
+      if (document.visibilityState !== "visible") {
+        return;
       }
+      cachedTick = Date.now();
+      callback();
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);

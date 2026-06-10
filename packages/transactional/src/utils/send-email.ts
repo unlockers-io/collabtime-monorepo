@@ -14,8 +14,7 @@ const sanitizeTagSegment = (s: string): string =>
 // Accepts bare email or RFC 5322 "Display Name <email>"; z.email() alone rejects the bracketed form.
 const senderAddressSchema = z.string().refine(
   (val) => {
-    const wrapped = val.match(/^.+<([^<>\s]+)>$/v);
-    const email = wrapped ? wrapped[1] : val;
+    const email = val.match(/^.+<(?<email>[^<>\s]+)>$/v)?.groups?.email ?? val;
     return z.email().safeParse(email).success;
   },
   { message: "Must be a valid email or 'Display Name <email>' format" },

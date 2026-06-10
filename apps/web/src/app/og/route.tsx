@@ -7,10 +7,11 @@ const loadGoogleFont = async (font: string, weight: number, text: string) => {
   // 24h cache keeps OG generation off the cold-start critical path.
   const cssResponse = await fetch(url, { next: { revalidate: 86_400 } });
   const css = await cssResponse.text();
-  const resource = css.match(/src: url\((.+)\) format\('(opentype|truetype)'\)/v);
+  const fontUrl = css.match(/src: url\((?<url>.+)\) format\('(?:opentype|truetype)'\)/v)?.groups
+    ?.url;
 
-  if (resource) {
-    const response = await fetch(resource[1], { next: { revalidate: 86_400 } });
+  if (fontUrl) {
+    const response = await fetch(fontUrl, { next: { revalidate: 86_400 } });
     if (response.status === 200) {
       return await response.arrayBuffer();
     }

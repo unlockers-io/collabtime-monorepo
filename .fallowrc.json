@@ -15,6 +15,9 @@
   "ignorePatterns": ["packages/db/src/generated/**"],
   "ignoreDependencies": [
     "eslint-plugin-*",
+    "better-auth",
+    "hono",
+    "react",
     "postcss",
     "postcss-load-config",
     "tailwindcss",

@@ -15,6 +15,29 @@ type UseTimezoneDataArgs = {
   viewerTimezone: string;
 };
 
+const addSelection = (
+  sel: Selection,
+  setCompareSelections: React.Dispatch<React.SetStateAction<Array<Selection>>>,
+) => {
+  setCompareSelections((prev) => {
+    const key = serializeSelection(sel);
+    if (prev.some((s) => serializeSelection(s) === key)) {
+      return prev;
+    }
+    return [...prev, sel];
+  });
+};
+
+const removeSelection = (
+  sel: Selection,
+  setCompareSelections: React.Dispatch<React.SetStateAction<Array<Selection>>>,
+) => {
+  setCompareSelections((prev) => {
+    const key = serializeSelection(sel);
+    return prev.filter((s) => serializeSelection(s) !== key);
+  });
+};
+
 const useTimezoneData = ({
   compareSelections,
   groups,
@@ -251,29 +274,6 @@ const useTimezoneData = ({
     },
     [validSelections, memberById],
   );
-
-  const addSelection = (
-    sel: Selection,
-    setCompareSelections: React.Dispatch<React.SetStateAction<Array<Selection>>>,
-  ) => {
-    setCompareSelections((prev) => {
-      const key = serializeSelection(sel);
-      if (prev.some((s) => serializeSelection(s) === key)) {
-        return prev;
-      }
-      return [...prev, sel];
-    });
-  };
-
-  const removeSelection = (
-    sel: Selection,
-    setCompareSelections: React.Dispatch<React.SetStateAction<Array<Selection>>>,
-  ) => {
-    setCompareSelections((prev) => {
-      const key = serializeSelection(sel);
-      return prev.filter((s) => serializeSelection(s) !== key);
-    });
-  };
 
   return {
     addSelection,
