@@ -2,6 +2,8 @@
 
 Guidance for AI coding agents working in this repo. `CLAUDE.md` is a symlink to this file.
 
+Project conventions and defaults live in [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md).
+
 Collabtime is a team timezone visualizer SaaS. Distributed teams create spaces, add members with timezones and working hours, and visualize overlap for scheduling. Single `web` app, pnpm monorepo, Better Auth + Stripe, Prisma/Postgres, Redis.
 
 ## Stack
@@ -36,7 +38,7 @@ tests/                          # Playwright e2e specs
 docker-compose.yml              # Postgres :5433, Redis :6379, Upstash REST shim :8079
 playwright.config.ts
 turbo.json
-oxlint.config.ts                # plus .oxlintrc.json / .oxfmtrc.json
+oxlint.config.ts                # plus .oxfmtrc.json
 ```
 
 ## Dev workflow
@@ -105,17 +107,12 @@ Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(k
 - **Turbo ordering**: root `turbo.json` `build.dependsOn` includes `db:generate` so the Prisma client exists before any app/package builds.
 - **Path alias**: `apps/web` uses `@/*` -> `src/*`.
 
-## Linting rules to know
+## Linting & formatting
 
-- `no-console` is **error** globally (off in `apps/web/src/**` and `**/seed.ts`)
-- `@typescript-eslint/no-explicit-any` is **error** (off in test files)
-- `@typescript-eslint/array-type` enforces `Array<T>` (generic), not `T[]`
-- `perfectionist/sort-objects` and `sort-jsx-props` are **error** globally, **off** in `apps/web/src/**` and `packages/ui/src/**`
-- `perfectionist/sort-interfaces` and `sort-object-types` are always **error**
-- `curly` enforced (always braces)
-- `unused-imports/no-unused-imports` is **error**
-- `@nocommit` triggers `no-warning-comments` error
-- Pre-commit (husky + lint-staged): `oxlint` on `.{ts,tsx,js,jsx}`, `oxfmt` on `.{ts,tsx,js,jsx,json,md}`
+- **oxlint** extending `oxlint-config-awesomeness` (450 rules across 10 plugins) in `oxlint.config.ts`. Narrow per-file overrides live there, each with a WHY comment.
+- Notable enforced rules: `no-console` (error; targeted file-level `off` for pre-logger surfaces), `typescript/no-explicit-any`, `perfectionist/sort-objects` + `sort-jsx-props`, `unicorn/consistent-function-scoping`, `jsx-a11y/*` (labels, roles, no-autofocus), `require-unicode-regexp` (`/v` regexes — off under `tests/`), `prefer-named-capture-group`, `curly`, `max-lines` (400), `unused-imports/no-unused-imports`.
+- **oxfmt** (config in `.oxfmtrc.json`) formats TS/JS/JSON/MD and sorts Tailwind classes + imports.
+- Pre-commit (husky + lint-staged): `oxlint` on JS/TS files, `oxfmt` on JS/TS/JSON/MD.
 
 ## Dev tools (development only)
 
@@ -142,10 +139,11 @@ User -> Session, Account, Subscription, Space. Users have `subscriptionPlan` (FR
 - `format.yml` — `pnpm run format:check`
 - `fallow.yml` — `pnpm fallow:dead`
 - `e2e.yml` — Playwright
-- All workflows use `permissions: { contents: read }` and `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
+- All workflows use `permissions: { contents: read }`
 
 ## References
 
+- Conventions: [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)
 - Sibling repos (control plane): `~/dev/orchestrator` (standards.md + verifiers)
 - Template / source of truth for `saas` profile: `~/dev/acme-monorepo`
 - Better Auth docs: <https://better-auth.com>
