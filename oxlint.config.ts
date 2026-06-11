@@ -60,6 +60,16 @@ export default defineConfig({
         "jsx-a11y/label-has-associated-control": "off",
       },
     },
+    // shadcn-style primitives where the suggested tag swap doesn't apply:
+    // Spinner is a lucide `<svg>` (can't become `<output>`), and Field's
+    // styled `<div role="group">` can't be a `<fieldset>` (flex layout on
+    // fieldset is unreliable; `FieldSet` exists separately for real fieldsets).
+    {
+      files: ["packages/ui/src/components/field.tsx", "packages/ui/src/components/spinner.tsx"],
+      rules: {
+        "jsx-a11y/prefer-tag-over-role": "off",
+      },
+    },
     // `add-member-dialog.tsx` is a complex multi-field form dialog that
     // crosses 400 code lines; a11y improvements (isTouched guards,
     // aria-describedby wiring) added ~20 lines. Splitting would fracture the

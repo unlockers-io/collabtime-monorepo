@@ -54,7 +54,9 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
               <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
                 Hours
               </th>
-              <th className="px-3 py-2" />
+              <th className="px-3 py-2">
+                <span className="sr-only">Status</span>
+              </th>
             </tr>
           </thead>
           <tbody>

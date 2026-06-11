@@ -2,23 +2,22 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "globalDependencies": ["**/.env.*local"],
-  "globalEnv": [
-    "NODE_ENV",
-    "DATABASE_URL",
-    "AUTH_ALLOWED_HOSTS",
-    "BETTER_AUTH_SECRET",
-    "WEB_APP_URL",
-    "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET",
-    "STRIPE_PRO_PRICE_ID",
-    "RESEND_API_KEY",
-    "RESEND_FROM_EMAIL",
-    "REDIS_URL"
-  ],
+  "globalEnv": ["NODE_ENV", "DATABASE_URL"],
   "tasks": {
     "build": {
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "dependsOn": ["^build", "db:generate"]
+      "dependsOn": ["^build", "db:generate"],
+      "env": [
+        "AUTH_ALLOWED_HOSTS",
+        "BETTER_AUTH_SECRET",
+        "WEB_APP_URL",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "STRIPE_PRO_PRICE_ID",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+        "REDIS_URL"
+      ]
     },
     "lint": {
       "dependsOn": ["^build"]
@@ -32,16 +31,49 @@
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": [
+        "AUTH_ALLOWED_HOSTS",
+        "BETTER_AUTH_SECRET",
+        "WEB_APP_URL",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "STRIPE_PRO_PRICE_ID",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+        "REDIS_URL"
+      ]
     },
     "dev:ci": {
       "dependsOn": ["^build"],
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": [
+        "AUTH_ALLOWED_HOSTS",
+        "BETTER_AUTH_SECRET",
+        "WEB_APP_URL",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "STRIPE_PRO_PRICE_ID",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+        "REDIS_URL"
+      ]
     },
     "start": {
       "dependsOn": ["^build"],
-      "cache": false
+      "cache": false,
+      "env": [
+        "AUTH_ALLOWED_HOSTS",
+        "BETTER_AUTH_SECRET",
+        "WEB_APP_URL",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "STRIPE_PRO_PRICE_ID",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+        "REDIS_URL"
+      ]
     },
     "clean": {
       "cache": false
@@ -58,7 +90,18 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
-      "cache": false
+      "cache": false,
+      "env": [
+        "AUTH_ALLOWED_HOSTS",
+        "BETTER_AUTH_SECRET",
+        "WEB_APP_URL",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "STRIPE_PRO_PRICE_ID",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+        "REDIS_URL"
+      ]
     },
     "test:watch": {
       "dependsOn": ["^build"],
