@@ -21,8 +21,8 @@ const senderAddressSchema = z.string().refine(
 );
 
 const emailConfigSchema = z.object({
-  bcc: z.union([z.string().email(), z.array(z.string().email())]).optional(),
-  cc: z.union([z.string().email(), z.array(z.string().email())]).optional(),
+  bcc: z.union([z.email(), z.array(z.email())]).optional(),
+  cc: z.union([z.email(), z.array(z.email())]).optional(),
   from: senderAddressSchema.default("Collab Time <noreply@email.collabtime.io>"),
   replyTo: senderAddressSchema.optional(),
   subject: z.string(),
@@ -35,7 +35,7 @@ const emailConfigSchema = z.object({
     )
     .transform((arr) => arr.filter((t) => t.name.length > 0 && t.value.length > 0))
     .optional(),
-  to: z.union([z.string().email(), z.array(z.string().email())]),
+  to: z.union([z.email(), z.array(z.email())]),
 });
 
 // z.input keeps `from` optional for callers; the schema default fills it in during parse.
