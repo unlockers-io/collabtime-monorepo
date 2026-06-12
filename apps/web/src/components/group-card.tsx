@@ -9,7 +9,7 @@ import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2, Users } from "lucide-react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
@@ -34,15 +34,6 @@ const GroupCard = ({
   const [isPending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState("");
-  const editInputRef = useRef<HTMLInputElement>(null);
-
-  // Programmatic focus instead of autoFocus (jsx-a11y rejects autoFocus on mount).
-  useEffect(() => {
-    if (isEditing) {
-      editInputRef.current?.focus();
-      editInputRef.current?.select();
-    }
-  }, [isEditing]);
 
   const handleStartEditing = () => {
     setEditingName(group.name);
@@ -95,6 +86,35 @@ const GroupCard = ({
     });
   };
 
+  const editInput = (
+    <Input
+      aria-label={`Rename ${group.name}`}
+      autoFocus
+      className="h-9 text-sm font-medium"
+      onBlur={handleSave}
+      onChange={(e) => setEditingName(e.target.value)}
+      onFocus={(e) => e.currentTarget.select()}
+      onKeyDown={handleKeyDown}
+      type="text"
+      value={editingName}
+    />
+  );
+
+  const groupName = canEdit ? (
+    <button
+      className="group/name flex items-center gap-1.5 text-left"
+      onClick={handleStartEditing}
+      type="button"
+    >
+      <span className="font-semibold text-foreground">{group.name}</span>
+      <Pencil className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/name:opacity-100 group-focus-visible/name:opacity-100" />
+    </button>
+  ) : (
+    <div className="flex items-center gap-1.5 text-left">
+      <span className="font-semibold text-foreground">{group.name}</span>
+    </div>
+  );
+
   return (
     <Card
       className={cn(
@@ -111,7 +131,7 @@ const GroupCard = ({
         {canEdit && (
           <Button
             aria-label={`Remove group ${group.name}`}
-            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100"
             disabled={isPending}
             onClick={handleRemove}
             size="icon-sm"
@@ -125,38 +145,7 @@ const GroupCard = ({
 
       {/* Group info - stacked vertically */}
       <div className="flex flex-1 flex-col gap-2">
-        {(() => {
-          if (canEdit && isEditing) {
-            return (
-              <Input
-                className="h-9 text-sm font-medium"
-                onBlur={handleSave}
-                onChange={(e) => setEditingName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                ref={editInputRef}
-                type="text"
-                value={editingName}
-              />
-            );
-          }
-          if (canEdit) {
-            return (
-              <button
-                className="group/name flex items-center gap-1.5 text-left"
-                onClick={handleStartEditing}
-                type="button"
-              >
-                <span className="font-semibold text-foreground">{group.name}</span>
-                <Pencil className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/name:opacity-100" />
-              </button>
-            );
-          }
-          return (
-            <div className="flex items-center gap-1.5 text-left">
-              <span className="font-semibold text-foreground">{group.name}</span>
-            </div>
-          );
-        })()}
+        {canEdit && isEditing ? editInput : groupName}
 
         {/* Member count badge */}
         <div className="mt-auto">

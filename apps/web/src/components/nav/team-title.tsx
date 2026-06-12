@@ -1,7 +1,6 @@
 "use client";
 
 import { Pencil } from "lucide-react";
-import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -24,16 +23,6 @@ const TeamTitle = ({
   onSave,
   teamName,
 }: TeamTitleProps) => {
-  const editInputRef = useRef<HTMLInputElement>(null);
-
-  // Programmatic focus instead of autoFocus (jsx-a11y rejects autoFocus on mount).
-  useEffect(() => {
-    if (isEditing) {
-      editInputRef.current?.focus();
-      editInputRef.current?.select();
-    }
-  }, [isEditing]);
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       onSave();
@@ -54,12 +43,13 @@ const TeamTitle = ({
     return (
       <input
         aria-label="Team name"
+        autoFocus
         className="h-9 w-full max-w-48 rounded-lg border border-input bg-background px-3 text-base font-bold tracking-tight text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:text-lg"
         onBlur={onSave}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
         onKeyDown={handleKeyDown}
         placeholder="Team name…"
-        ref={editInputRef}
         type="text"
         value={teamName}
       />
