@@ -72,19 +72,31 @@ const TeamPageClient = ({
   const { data: teamData, error: teamError } = useTeamQuery({ teamId });
 
   // Resolve admin status client-side when server-side session detection fails
-  const { data: resolvedRole } = useQuery({
+  const { data: resolvedRole, error: resolvedRoleError } = useQuery({
     enabled: initialStatus === "none" && Boolean(userId),
     queryFn: () => (userId ? getTeamMembershipRole(teamId, userId) : null),
     queryKey: ["membership-role", teamId, userId],
   });
 
-  const teamStatus: TeamStatus = statusOverride ?? resolvedRole ?? initialStatus;
+  // Cached client resolution only fills the gap when the server couldn't
+  // resolve a status — a fresh non-"none" initialStatus from an RSC refresh
+  // must outrank stale query cache (disabled queries still serve cached data).
+  const teamStatus: TeamStatus =
+    statusOverride ?? (initialStatus === "none" ? (resolvedRole ?? "none") : initialStatus);
 
   const isAdmin = teamStatus === "ADMIN";
   const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
 
   // Kept for drag-end optimistic update + revert; other mutation sites invalidate the team query directly.
   const updateTeamCache = useUpdateTeamCache();
+
+  useEffect(() => {
+    // The role lookup is a silent fallback (the action itself returns null on
+    // failure), so transport errors must be reported rather than swallowed.
+    if (resolvedRoleError) {
+      captureException(resolvedRoleError);
+    }
+  }, [resolvedRoleError]);
 
   useEffect(() => {
     // Stable id: the team query polls every 20s, so repeated failures replace

@@ -70,7 +70,9 @@ const TeamTitle = ({
         aria-hidden="true"
         className={cn(
           "size-3.5 shrink-0 text-muted-foreground transition-opacity",
-          teamName ? "opacity-0 group-hover:opacity-100" : "opacity-100",
+          teamName
+            ? "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+            : "opacity-100",
         )}
       />
     </button>

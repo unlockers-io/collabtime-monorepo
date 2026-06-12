@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "@repo/ui/components/sonner";
+import { captureException } from "@sentry/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
@@ -44,7 +45,8 @@ const useMyTeams = (isAuthenticated: boolean) => {
 
       toast.success(archive ? "Workspace archived" : "Workspace restored");
       await queryClient.invalidateQueries({ queryKey: ["my-teams"] });
-    } catch {
+    } catch (error) {
+      captureException(error);
       toast.error("Failed to update workspace");
     } finally {
       setProcessingArchive((prev) => {
