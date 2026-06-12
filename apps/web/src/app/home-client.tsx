@@ -4,6 +4,7 @@ import { buttonVariants } from "@repo/ui/components/button";
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
+import { captureException } from "@sentry/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -55,7 +56,8 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         return;
       }
       push(`/${result.data}`);
-    } catch {
+    } catch (error) {
+      captureException(error);
       toast.error("Failed to create team. Please try again.");
     } finally {
       setIsCreating(false);

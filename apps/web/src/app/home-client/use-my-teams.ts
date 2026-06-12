@@ -3,8 +3,11 @@
 import { toast } from "@repo/ui/components/sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { z } from "zod";
 
 import type { MyTeam } from "./types";
+
+const errorBodySchema = z.object({ error: z.string() });
 
 const useMyTeams = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
@@ -33,8 +36,9 @@ const useMyTeams = (isAuthenticated: boolean) => {
       });
 
       if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        toast.error(data?.error ?? "Failed to update workspace");
+        const body: unknown = await response.json().catch(() => null);
+        const parsed = errorBodySchema.safeParse(body);
+        toast.error(parsed.success ? parsed.data.error : "Failed to update workspace");
         return;
       }
 
