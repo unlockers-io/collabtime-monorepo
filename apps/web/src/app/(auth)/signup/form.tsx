@@ -13,15 +13,15 @@ import { toast } from "@repo/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
-import { stashCredentials } from "@/app/(auth)/verify-email/credentials-store";
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
 
 const SignupForm = () => {
   const { push, refresh } = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [sentToEmail, setSentToEmail] = useState<string | null>(null);
 
   const form = useForm({
     defaultValues: { email: "", name: "", password: "" },
@@ -29,8 +29,6 @@ const SignupForm = () => {
       startTransition(async () => {
         try {
           const result = await signUp.email({
-            // Better Auth builds the verification URL from body.callbackURL, not the betterAuth() config.
-            callbackURL: "/verify-email/success",
             email: value.email,
             name: value.name,
             password: value.password,
@@ -39,10 +37,10 @@ const SignupForm = () => {
             throw new Error(result.error.message ?? "Failed to create account");
           }
           // No token means requireEmailVerification suppressed auto-sign-in (or enumeration prevention
-          // returned synthetic success); both paths route to /verify-email with the same "check inbox" UX.
+          // returned synthetic success); both paths show the same inline "check your email" state.
+          // Clicking the emailed link verifies AND signs in the clicking device.
           if (!result.data?.token) {
-            const handoff = stashCredentials({ email: value.email, password: value.password });
-            push(`/verify-email?k=${handoff}`);
+            setSentToEmail(value.email);
             return;
           }
           push("/");
@@ -56,6 +54,18 @@ const SignupForm = () => {
     },
     validators: { onSubmit: signupSchema },
   });
+
+  if (sentToEmail) {
+    return (
+      <output aria-live="polite" className="block space-y-1 text-center">
+        <span className="block font-medium">Check your email</span>
+        <span className="block text-sm text-muted-foreground">
+          We sent a verification link to <span className="font-medium">{sentToEmail}</span>. Click
+          it to verify your account and sign in.
+        </span>
+      </output>
+    );
+  }
 
   return (
     <form

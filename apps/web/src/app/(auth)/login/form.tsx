@@ -13,7 +13,7 @@ import { toast } from "@repo/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { signIn } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/form-schemas";
@@ -21,10 +21,12 @@ import { loginSchema } from "@/lib/form-schemas";
 const LoginForm = () => {
   const { push, refresh } = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [showUnverifiedNotice, setShowUnverifiedNotice] = useState(false);
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
     onSubmit: ({ value }) => {
+      setShowUnverifiedNotice(false);
       startTransition(async () => {
         try {
           const result = await signIn.email({
@@ -32,6 +34,12 @@ const LoginForm = () => {
             password: value.password,
           });
           if (result.error) {
+            // Better Auth 403s unverified accounts and (sendOnSignIn) re-sends
+            // the verification link — informational, not a credentials error.
+            if (result.error.code === "EMAIL_NOT_VERIFIED") {
+              setShowUnverifiedNotice(true);
+              return;
+            }
             throw new Error(result.error.message ?? "Failed to sign in");
           }
           push("/");
@@ -114,6 +122,12 @@ const LoginForm = () => {
             );
           }}
         </form.Field>
+
+        {showUnverifiedNotice && (
+          <output aria-live="polite" className="block text-center text-sm">
+            This email isn&apos;t verified yet — we just sent you a new link.
+          </output>
+        )}
 
         <Field>
           <Button aria-busy={isPending} disabled={isPending} type="submit">
