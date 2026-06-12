@@ -32,9 +32,6 @@ const isValidRedirectUrl = (url: string): boolean => {
 /**
  * Pre-built Zod schema for validated redirect URLs.
  */
-const redirectUrlSchema = z
-  .string()
-  .url()
-  .refine(isValidRedirectUrl, { message: "Invalid redirect URL" });
+const redirectUrlSchema = z.url().refine(isValidRedirectUrl, { message: "Invalid redirect URL" });
 
 export { isValidRedirectUrl, redirectUrlSchema };

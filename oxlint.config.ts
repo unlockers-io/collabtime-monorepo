@@ -4,33 +4,6 @@ import awesomeness from "oxlint-config-awesomeness";
 export default defineConfig({
   extends: [awesomeness],
   overrides: [
-    // Server-side code without a structured logger yet — `console.*` is the
-    // pragmatic surface for diagnostics until a logger lands.
-    {
-      files: [
-        "apps/web/src/instrumentation.ts",
-        "apps/web/src/lib/env.ts",
-        "apps/web/src/lib/space-access.ts",
-        "apps/web/src/lib/actions/**/*.ts",
-        "apps/web/src/app/api/**/*.ts",
-        "packages/auth/src/**/*.ts",
-      ],
-      rules: {
-        "no-console": "off",
-      },
-    },
-    // Client-side error/diagnostic surfaces — error boundaries and auth
-    // failures still need to reach the console until logging lands.
-    {
-      files: [
-        "apps/web/src/app/error.tsx",
-        "apps/web/src/app/(dashboard)/settings/client.tsx",
-        "apps/web/src/components/nav/user-menu.tsx",
-      ],
-      rules: {
-        "no-console": "off",
-      },
-    },
     // Inline-edit inputs that mount on a user gesture (click "Edit" → render
     // input) — focusing immediately matches user expectation and isn't a
     // surprise focus jump.

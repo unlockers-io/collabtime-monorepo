@@ -8,7 +8,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   // Empty string is treated as unset — unset GitHub secrets expand to "" in CI.
-  REDIS_URL: z.string().url("REDIS_URL must be a valid URL").optional().or(z.literal("")),
+  REDIS_URL: z.url("REDIS_URL must be a valid URL").optional().or(z.literal("")),
   // Accepts bare email or RFC 5322 "Display Name <email>" — both valid Resend sender formats.
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z
@@ -22,7 +22,7 @@ const envSchema = z.object({
     )
     .optional(),
   SPACE_ACCESS_SECRET: z.string().min(32).optional(),
-  WEB_APP_URL: z.string().url("WEB_APP_URL must be a valid URL").optional(),
+  WEB_APP_URL: z.url("WEB_APP_URL must be a valid URL").optional(),
 });
 
 type Env = z.infer<typeof envSchema>;
