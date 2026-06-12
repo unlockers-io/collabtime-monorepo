@@ -8,30 +8,30 @@ import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
 import { cn } from "@/lib/utils";
 
+type MobileMenuRole = "admin" | "guest" | "member";
+
 type MobileMenuProps = {
   canDeleteWorkspace: boolean;
   hasCopied: boolean;
-  isAdmin: boolean;
-  isAuthenticated: boolean;
   isOpen: boolean;
   isSigningOut: boolean;
   onClose: () => void;
   onCopy: () => void;
   onDeleteWorkspace: () => void;
   onSignOut: () => void;
+  role: MobileMenuRole;
 };
 
 const MobileMenu = ({
   canDeleteWorkspace,
   hasCopied,
-  isAdmin,
-  isAuthenticated,
   isOpen,
   isSigningOut,
   onClose,
   onCopy,
   onDeleteWorkspace,
   onSignOut,
+  role,
 }: MobileMenuProps) => {
   const prefersReducedMotion = useReducedMotion();
 
@@ -49,17 +49,17 @@ const MobileMenu = ({
           <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
             {/* Role badge */}
             <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
-              {isAdmin ? (
+              {role === "admin" ? (
                 <Shield className="size-4 text-muted-foreground" />
               ) : (
                 <User className="size-4 text-muted-foreground" />
               )}
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  {isAdmin ? "Admin" : "Member"}
+                  {role === "admin" ? "Admin" : "Member"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {isAdmin ? "Full access" : "View only"}
+                  {role === "admin" ? "Full access" : "View only"}
                 </p>
               </div>
             </div>
@@ -88,7 +88,7 @@ const MobileMenu = ({
                 <ModeToggle />
               </div>
 
-              {!isAuthenticated && (
+              {role === "guest" && (
                 <Link
                   className={cn(
                     buttonVariants({ variant: "ghost" }),
@@ -101,7 +101,7 @@ const MobileMenu = ({
                 </Link>
               )}
 
-              {isAuthenticated && (
+              {role !== "guest" && (
                 <>
                   <Link
                     className={cn(
@@ -154,3 +154,4 @@ const MobileMenu = ({
 };
 
 export { MobileMenu };
+export type { MobileMenuRole };

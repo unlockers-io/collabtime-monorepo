@@ -23,32 +23,33 @@ const useCollapsedGroups = (members: Array<TeamMember>) => {
     }
   });
 
+  // Computed in the handler (not a functional updater) so the localStorage
+  // write stays outside the updater — updaters must be pure, and StrictMode /
+  // the React Compiler may invoke them more than once.
   const toggleGroupCollapse = (groupId: string) => {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        const collapsedAfter = new Set([...prev, groupId]);
-        const ungroupedCount = members.filter((m) => !m.groupId).length;
-        const visibleGroupedCount = members.filter((m) => {
-          if (!m.groupId) {
-            return false;
-          }
-          return !collapsedAfter.has(m.groupId);
-        }).length;
-        const totalVisibleAfter = ungroupedCount + visibleGroupedCount;
-        if (totalVisibleAfter > 0) {
-          next.add(groupId);
+    const next = new Set(collapsedGroups);
+    if (next.has(groupId)) {
+      next.delete(groupId);
+    } else {
+      const collapsedAfter = new Set([...collapsedGroups, groupId]);
+      const ungroupedCount = members.filter((m) => !m.groupId).length;
+      const visibleGroupedCount = members.filter((m) => {
+        if (!m.groupId) {
+          return false;
         }
+        return !collapsedAfter.has(m.groupId);
+      }).length;
+      const totalVisibleAfter = ungroupedCount + visibleGroupedCount;
+      if (totalVisibleAfter > 0) {
+        next.add(groupId);
       }
-      try {
-        localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...next]));
-      } catch {
-        // ignore quota errors
-      }
-      return next;
-    });
+    }
+    setCollapsedGroups(next);
+    try {
+      localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...next]));
+    } catch {
+      // ignore quota errors
+    }
   };
 
   return {

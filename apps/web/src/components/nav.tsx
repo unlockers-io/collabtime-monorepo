@@ -14,9 +14,20 @@ import { ModeToggle } from "./mode-toggle";
 import { CopyLinkButton } from "./nav/copy-link-button";
 import { NavLogo } from "./nav/logo";
 import { MobileMenu } from "./nav/mobile-menu";
+import type { MobileMenuRole } from "./nav/mobile-menu";
 import { TeamTitle } from "./nav/team-title";
 import { UserMenu } from "./nav/user-menu";
 import { WorkspaceMenu } from "./nav/workspace-menu";
+
+const getMobileMenuRole = (isAdmin: boolean, isAuthenticated: boolean): MobileMenuRole => {
+  if (isAdmin) {
+    return "admin";
+  }
+  if (isAuthenticated) {
+    return "member";
+  }
+  return "guest";
+};
 
 type NavProps = { isAuthenticated: boolean } & (
   | { variant?: "default" | "centered" }
@@ -135,14 +146,13 @@ const Nav = (props: NavProps) => {
         <MobileMenu
           canDeleteWorkspace={canDeleteWorkspace}
           hasCopied={hasCopied}
-          isAdmin={isAdmin}
-          isAuthenticated={isAuthenticated}
           isOpen={mobileMenuOpen}
           isSigningOut={isSigningOut}
           onClose={() => setMobileMenuOpen(false)}
           onCopy={handleCopyLink}
           onDeleteWorkspace={handleDeleteWorkspace}
           onSignOut={handleSignOut}
+          role={getMobileMenuRole(isAdmin, isAuthenticated)}
         />
       </header>
     );

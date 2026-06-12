@@ -12,7 +12,10 @@ const SettingsPage = async () => {
   }
 
   return (
+    // Keyed by name so the client draft resets when the canonical name
+    // changes (e.g. after router.refresh() picks up an update from another tab).
     <SettingsClient
+      key={session.user.name ?? ""}
       user={{
         email: session.user.email,
         id: session.user.id,

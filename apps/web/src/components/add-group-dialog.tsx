@@ -37,16 +37,16 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const DEFAULT_VALUES: FormValues = {
+  name: "",
+};
+
 const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
-  const defaultValues: FormValues = {
-    name: "",
-  };
-
   const form = useForm({
-    defaultValues,
+    defaultValues: DEFAULT_VALUES,
     onSubmit: async ({ value }) => {
       const result = await createGroup(teamId, { name: value.name });
 
