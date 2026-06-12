@@ -1,51 +1,56 @@
 import { describe, expect, it } from "vitest";
 
-import { isValidRedirectUrl, redirectUrlSchema } from "./redirect-validation";
+import { safeRedirectPath } from "./redirect-validation";
 
-describe("isValidRedirectUrl", () => {
-  it("accepts localhost URL", () => {
-    expect(isValidRedirectUrl("http://localhost:3000/dashboard")).toBe(true);
+describe("safeRedirectPath", () => {
+  it("accepts a simple in-app path", () => {
+    expect(safeRedirectPath("/team-abc123")).toBe("/team-abc123");
   });
 
-  it("accepts collabtime.io URL", () => {
-    expect(isValidRedirectUrl("https://collabtime.io/settings")).toBe(true);
+  it("accepts the root path", () => {
+    expect(safeRedirectPath("/")).toBe("/");
   });
 
-  it("accepts www.collabtime.io URL", () => {
-    expect(isValidRedirectUrl("https://www.collabtime.io/")).toBe(true);
+  it("accepts nested paths with query and hash", () => {
+    expect(safeRedirectPath("/settings?tab=account#top")).toBe("/settings?tab=account#top");
   });
 
-  it("rejects external URL", () => {
-    expect(isValidRedirectUrl("https://evil.com/phish")).toBe(false);
-  });
-
-  it("rejects URL with different port on localhost", () => {
-    expect(isValidRedirectUrl("http://localhost:4000/")).toBe(false);
-  });
-
-  it("rejects URL with different protocol", () => {
-    expect(isValidRedirectUrl("http://collabtime.io/")).toBe(false);
-  });
-
-  it("rejects invalid URL", () => {
-    expect(isValidRedirectUrl("not-a-url")).toBe(false);
+  it("defaults absent values to /", () => {
+    expect(safeRedirectPath(null)).toBe("/");
+    expect(safeRedirectPath(undefined)).toBe("/");
   });
 
   it("rejects empty string", () => {
-    expect(isValidRedirectUrl("")).toBe(false);
-  });
-});
-
-describe("redirectUrlSchema", () => {
-  it("validates allowed URL", () => {
-    expect(redirectUrlSchema.safeParse("https://collabtime.io/page").success).toBe(true);
+    expect(safeRedirectPath("")).toBe("/");
   });
 
-  it("rejects non-URL string", () => {
-    expect(redirectUrlSchema.safeParse("just-a-path").success).toBe(false);
+  it("rejects protocol-relative URLs", () => {
+    expect(safeRedirectPath("//evil.com")).toBe("/");
+    expect(safeRedirectPath("//evil.com/phish")).toBe("/");
   });
 
-  it("rejects disallowed origin", () => {
-    expect(redirectUrlSchema.safeParse("https://attacker.com").success).toBe(false);
+  it("rejects backslash tricks", () => {
+    // Browsers normalize "\" to "/" during URL parsing, so "/\evil.com"
+    // would navigate to evil.com if let through.
+    expect(safeRedirectPath(String.raw`/\evil.com`)).toBe("/");
+    expect(safeRedirectPath(String.raw`\/evil.com`)).toBe("/");
+    expect(safeRedirectPath(String.raw`/path\..\evil`)).toBe("/");
+  });
+
+  it("rejects absolute URLs", () => {
+    expect(safeRedirectPath("https://evil.com/phish")).toBe("/");
+    expect(safeRedirectPath("http://localhost:3000/team")).toBe("/");
+  });
+
+  it("rejects scheme-prefixed values", () => {
+    // Built dynamically so lint's no-script-url doesn't flag a literal.
+    expect(safeRedirectPath(["javascript", "alert(1)"].join(":"))).toBe("/");
+    expect(safeRedirectPath("data:text/html,<script>1</script>")).toBe("/");
+  });
+
+  it("rejects bare hostnames and relative paths without a leading slash", () => {
+    expect(safeRedirectPath("evil.com")).toBe("/");
+    expect(safeRedirectPath("team-abc123")).toBe("/");
+    expect(safeRedirectPath(" /team-abc123")).toBe("/");
   });
 });

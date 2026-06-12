@@ -12,14 +12,20 @@ import { Input } from "@repo/ui/components/input";
 import { toast } from "@repo/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { signIn } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/form-schemas";
+import { safeRedirectPath } from "@/lib/redirect-validation";
 
 const LoginForm = () => {
   const { push, refresh } = useRouter();
+  const searchParams = useSearchParams();
+  // Workspace pages send logged-out users here with ?redirect=/<teamId>;
+  // validate it once and use it as both the post-sign-in destination and
+  // the signup cross-link context. Invalid or absent → "/".
+  const redirect = safeRedirectPath(searchParams.get("redirect"));
   const [isPending, startTransition] = useTransition();
   const [showUnverifiedNotice, setShowUnverifiedNotice] = useState(false);
 
@@ -42,7 +48,7 @@ const LoginForm = () => {
             }
             throw new Error(result.error.message ?? "Failed to sign in");
           }
-          push("/");
+          push(redirect);
           refresh();
         } catch (error) {
           const message =
@@ -135,7 +141,12 @@ const LoginForm = () => {
           </Button>
           <FieldDescription className="text-center">
             Don&apos;t have an account?{" "}
-            <Link className="text-foreground underline underline-offset-4" href="/signup">
+            <Link
+              className="text-foreground underline underline-offset-4"
+              href={
+                redirect === "/" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirect)}`
+              }
+            >
               Sign up
             </Link>
           </FieldDescription>

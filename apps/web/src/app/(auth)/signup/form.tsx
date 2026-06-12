@@ -12,14 +12,21 @@ import { Input } from "@repo/ui/components/input";
 import { toast } from "@repo/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
+import { safeRedirectPath } from "@/lib/redirect-validation";
 
 const SignupForm = () => {
   const { push, refresh } = useRouter();
+  const searchParams = useSearchParams();
+  // Carried over from the login form's cross-link (workspace pages send
+  // logged-out users to /login?redirect=/<teamId>). Validated to an in-app
+  // path; Better Auth bakes it into the verification link as callbackURL,
+  // so the email clicker lands back on the page that started signup.
+  const redirect = safeRedirectPath(searchParams.get("redirect"));
   const [isPending, startTransition] = useTransition();
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
 
@@ -29,6 +36,7 @@ const SignupForm = () => {
       startTransition(async () => {
         try {
           const result = await signUp.email({
+            callbackURL: redirect,
             email: value.email,
             name: value.name,
             password: value.password,
@@ -43,7 +51,7 @@ const SignupForm = () => {
             setSentToEmail(value.email);
             return;
           }
-          push("/");
+          push(redirect);
           refresh();
         } catch (error) {
           const message =
@@ -155,7 +163,10 @@ const SignupForm = () => {
           </Button>
           <FieldDescription className="text-center">
             Already have an account?{" "}
-            <Link className="text-foreground underline underline-offset-4" href="/login">
+            <Link
+              className="text-foreground underline underline-offset-4"
+              href={redirect === "/" ? "/login" : `/login?redirect=${encodeURIComponent(redirect)}`}
+            >
               Sign in
             </Link>
           </FieldDescription>

@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import LoginForm from "@/app/(auth)/login/form";
 
@@ -22,7 +23,18 @@ const Page = () => (
       <CardDescription>Sign in to your account to continue</CardDescription>
     </CardHeader>
     <CardContent>
-      <LoginForm />
+      {/* The form reads ?redirect= via useSearchParams, which needs a Suspense boundary. */}
+      <Suspense
+        fallback={
+          <div aria-busy="true" className="flex flex-col gap-4">
+            <div className="h-10 animate-pulse rounded-md bg-muted" />
+            <div className="h-10 animate-pulse rounded-md bg-muted" />
+            <div className="h-10 animate-pulse rounded-md bg-muted" />
+          </div>
+        }
+      >
+        <LoginForm />
+      </Suspense>
     </CardContent>
   </Card>
 );
