@@ -1,6 +1,8 @@
 "use client";
 
 import { toast } from "@repo/ui/components/sonner";
+import { captureException } from "@sentry/nextjs";
+import { useQuery } from "@tanstack/react-query";
 import { Clock, FolderKanban, Users } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import dynamic from "next/dynamic";
@@ -62,7 +64,7 @@ const TeamPageClient = ({
   userId,
 }: TeamPageClientProps) => {
   const { push } = useRouter();
-  const [teamStatus, setTeamStatus] = useState<TeamStatus>(initialStatus);
+  const [statusOverride, setStatusOverride] = useState<TeamStatus | null>(null);
   const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
   const [isDeleteWorkspaceOpen, setIsDeleteWorkspaceOpen] = useState(false);
@@ -70,18 +72,13 @@ const TeamPageClient = ({
   const { data: teamData, error: teamError } = useTeamQuery({ teamId });
 
   // Resolve admin status client-side when server-side session detection fails
-  useEffect(() => {
-    if (teamStatus !== "none" || !userId) {
-      return;
-    }
-    const resolveRole = async () => {
-      const role = await getTeamMembershipRole(teamId, userId);
-      if (role) {
-        setTeamStatus(role);
-      }
-    };
-    void resolveRole();
-  }, [userId, teamId, teamStatus]);
+  const { data: resolvedRole } = useQuery({
+    enabled: initialStatus === "none" && Boolean(userId),
+    queryFn: () => (userId ? getTeamMembershipRole(teamId, userId) : null),
+    queryKey: ["membership-role", teamId, userId],
+  });
+
+  const teamStatus: TeamStatus = statusOverride ?? resolvedRole ?? initialStatus;
 
   const isAdmin = teamStatus === "ADMIN";
   const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
@@ -90,9 +87,13 @@ const TeamPageClient = ({
   const updateTeamCache = useUpdateTeamCache();
 
   useEffect(() => {
+    // Stable id: the team query polls every 20s, so repeated failures replace
+    // the toast instead of stacking a new one per refetch.
     if (teamError) {
-      toast.error(teamError.message);
+      toast.error(teamError.message, { id: "team-query-error" });
+      return;
     }
+    toast.dismiss("team-query-error");
   }, [teamError]);
 
   const members = teamData?.team?.members ?? [];
@@ -121,12 +122,13 @@ const TeamPageClient = ({
     try {
       const result = await requestToJoin(teamId);
       if (result.success) {
-        setTeamStatus("PENDING");
+        setStatusOverride("PENDING");
         toast.success("Join request sent! The team admin will review it.");
       } else {
         toast.error(result.error);
       }
-    } catch {
+    } catch (error) {
+      captureException(error);
       toast.error("Failed to send join request");
     } finally {
       setIsRequestingJoin(false);
