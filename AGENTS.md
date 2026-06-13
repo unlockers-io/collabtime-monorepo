@@ -110,7 +110,7 @@ Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(k
 ## Linting & formatting
 
 - **oxlint** extending `oxlint-config-awesomeness` (450 rules across 10 plugins) in `oxlint.config.ts`. Narrow per-file overrides live there, each with a WHY comment.
-- Notable enforced rules: `no-console` (error; targeted file-level `off` for pre-logger surfaces), `typescript/no-explicit-any`, `perfectionist/sort-objects` + `sort-jsx-props`, `unicorn/consistent-function-scoping`, `jsx-a11y/*` (labels, roles, no-autofocus), `require-unicode-regexp` (`/v` regexes — off under `tests/`), `prefer-named-capture-group`, `curly`, `max-lines` (400), `unused-imports/no-unused-imports`.
+- Notable enforced rules: `no-console` (error; `off` for E2E teardown scripts via repo override, plus seed/migration/CLI scripts and stories via the shared preset — app and package code logs via `@repo/observability`), `typescript/no-explicit-any`, `perfectionist/sort-objects` + `sort-jsx-props`, `unicorn/consistent-function-scoping`, `jsx-a11y/*` (labels, roles, no-autofocus), `require-unicode-regexp` (`/v` regexes — off under `tests/`), `prefer-named-capture-group`, `curly`, `max-lines` (400), `unused-imports/no-unused-imports`.
 - **oxfmt** (config in `.oxfmtrc.json`) formats TS/JS/JSON/MD and sorts Tailwind classes + imports.
 - Pre-commit (husky + lint-staged): `oxlint` on JS/TS files, `oxfmt` on JS/TS/JSON/MD.
 

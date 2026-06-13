@@ -97,7 +97,7 @@ const MemberCard = ({
 
           {/* Actions */}
           {canEdit && (
-            <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
               <Button
                 aria-label={`Edit ${member.name}`}
                 className="text-muted-foreground hover:text-foreground"

@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "@repo/ui/components/sonner";
+import { captureException } from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -30,7 +31,8 @@ const useSignOut = () => {
           },
         },
       });
-    } catch {
+    } catch (error) {
+      captureException(error);
       toast.error("Failed to sign out");
     } finally {
       setIsSigningOut(false);
