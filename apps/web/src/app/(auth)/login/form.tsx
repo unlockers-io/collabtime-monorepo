@@ -12,19 +12,27 @@ import { Input } from "@repo/ui/components/input";
 import { toast } from "@repo/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useTransition } from "react";
 
 import { signIn } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/form-schemas";
+import { safeRedirectPath } from "@/lib/redirect-validation";
 
 const LoginForm = () => {
   const { push, refresh } = useRouter();
+  const searchParams = useSearchParams();
+  // Workspace pages send logged-out users here with ?redirect=/<teamId>;
+  // validate it once and use it as both the post-sign-in destination and
+  // the signup cross-link context. Invalid or absent → "/".
+  const redirect = safeRedirectPath(searchParams.get("redirect"));
   const [isPending, startTransition] = useTransition();
+  const [showUnverifiedNotice, setShowUnverifiedNotice] = useState(false);
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
     onSubmit: ({ value }) => {
+      setShowUnverifiedNotice(false);
       startTransition(async () => {
         try {
           const result = await signIn.email({
@@ -32,9 +40,15 @@ const LoginForm = () => {
             password: value.password,
           });
           if (result.error) {
+            // Better Auth 403s unverified accounts and (sendOnSignIn) re-sends
+            // the verification link — informational, not a credentials error.
+            if (result.error.code === "EMAIL_NOT_VERIFIED") {
+              setShowUnverifiedNotice(true);
+              return;
+            }
             throw new Error(result.error.message ?? "Failed to sign in");
           }
-          push("/");
+          push(redirect);
           refresh();
         } catch (error) {
           const message =
@@ -115,13 +129,24 @@ const LoginForm = () => {
           }}
         </form.Field>
 
+        {showUnverifiedNotice && (
+          <output aria-live="polite" className="block text-center text-sm">
+            This email isn&apos;t verified yet — we just sent you a new link.
+          </output>
+        )}
+
         <Field>
           <Button aria-busy={isPending} disabled={isPending} type="submit">
             {isPending ? "Signing in…" : "Sign in"}
           </Button>
           <FieldDescription className="text-center">
             Don&apos;t have an account?{" "}
-            <Link className="text-foreground underline underline-offset-4" href="/signup">
+            <Link
+              className="text-foreground underline underline-offset-4"
+              href={
+                redirect === "/" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirect)}`
+              }
+            >
               Sign up
             </Link>
           </FieldDescription>

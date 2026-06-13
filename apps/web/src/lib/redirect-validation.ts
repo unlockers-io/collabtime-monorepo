@@ -1,37 +1,37 @@
-import { z } from "zod";
+// The auth forms forward a `?redirect=` param: login pushes it after
+// sign-in, signup passes it as the verification email's callbackURL so the
+// clicker lands back on the page that sent them to auth. This validator is
+// the open-redirect gate — Better Auth's server-side trustedOrigins check
+// is a backstop, not the contract.
+
+const FALLBACK_PATH = "/";
+
+// Fixed base for URL resolution: anything that escapes it (absolute URL,
+// scheme, protocol-relative host) resolves to a different origin.
+const ANCHOR_ORIGIN = "https://collabtime.invalid";
 
 /**
- * Allowed origins for redirect URLs to prevent open redirect attacks.
- * These must be kept in sync with trustedOrigins in the auth config.
- */
-const ALLOWED_ORIGINS = [
-  "http://localhost:3000",
-  "https://collabtime.io",
-  "https://www.collabtime.io",
-] as const;
-
-/**
- * Validate that a URL is safe to redirect to.
- * Only allows URLs from our allowed origins to prevent open redirect attacks.
+ * Validate a redirect value as an in-app relative path.
+ * Returns the path unchanged when safe, otherwise "/".
  *
- * @param url - The URL to validate
- * @returns true if the URL is from an allowed origin, false otherwise
+ * Rejected: absolute URLs, protocol-relative ("//evil.com"), backslash
+ * tricks ("/\evil.com" — browsers normalize "\" to "/"), schemes
+ * ("javascript:"), and anything not starting with a single "/".
  */
-const isValidRedirectUrl = (url: string): boolean => {
-  try {
-    const parsed = new URL(url);
-
-    return ALLOWED_ORIGINS.some(
-      (origin) => parsed.origin === origin || parsed.origin === new URL(origin).origin,
-    );
-  } catch {
-    return false;
+const safeRedirectPath = (value: string | null | undefined): string => {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+    return FALLBACK_PATH;
   }
+
+  try {
+    if (new URL(value, ANCHOR_ORIGIN).origin !== ANCHOR_ORIGIN) {
+      return FALLBACK_PATH;
+    }
+  } catch {
+    return FALLBACK_PATH;
+  }
+
+  return value;
 };
 
-/**
- * Pre-built Zod schema for validated redirect URLs.
- */
-const redirectUrlSchema = z.url().refine(isValidRedirectUrl, { message: "Invalid redirect URL" });
-
-export { isValidRedirectUrl, redirectUrlSchema };
+export { safeRedirectPath };

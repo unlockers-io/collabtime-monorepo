@@ -27,9 +27,9 @@ const forVerifyEmail = async (email: string): Promise<{ token: string; url: stri
   const token = await signJWT({ email: email.toLowerCase() }, requireSecret(), 3600);
   // Matches @repo/auth's emailVerification.callbackURL — the verify-email
   // handler redirects here after token exchange, and (with
-  // autoSignInAfterVerification: false) does so without setting a session
-  // cookie on the device that clicked the link.
-  const callbackURL = encodeURIComponent("/verify-email/success");
+  // autoSignInAfterVerification: true) sets a session cookie on the device
+  // that clicked the link: the link is the login.
+  const callbackURL = encodeURIComponent("/");
   const url = `${webUrl}/api/auth/verify-email?token=${token}&callbackURL=${callbackURL}`;
   return { token, url };
 };
