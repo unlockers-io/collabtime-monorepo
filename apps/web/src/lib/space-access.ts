@@ -6,16 +6,31 @@ const SPACE_ACCESS_COOKIE_PREFIX = "space-access-";
 const TOKEN_EXPIRY_DAYS = 7;
 const TOKEN_VERSION = "v1";
 
+let warnedAboutFallback = false;
+
 /**
  * Get the signing secret from environment.
- * Falls back to BETTER_AUTH_SECRET if a dedicated secret isn't set.
+ * Falls back to BETTER_AUTH_SECRET if a dedicated secret isn't set, warning once
+ * per process so the shared-secret case is observable in logs.
  */
 const getSigningSecret = (): string => {
-  const secret = process.env.SPACE_ACCESS_SECRET ?? process.env.BETTER_AUTH_SECRET;
-  if (!secret) {
+  const dedicated = process.env.SPACE_ACCESS_SECRET;
+  if (dedicated) {
+    return dedicated;
+  }
+  const fallback = process.env.BETTER_AUTH_SECRET;
+  if (!fallback) {
     throw new Error("Missing SPACE_ACCESS_SECRET or BETTER_AUTH_SECRET environment variable");
   }
-  return secret;
+  if (!warnedAboutFallback) {
+    warnedAboutFallback = true;
+    log.warn({
+      message:
+        "SPACE_ACCESS_SECRET not set; signing space tokens with BETTER_AUTH_SECRET. Set a dedicated secret to isolate blast radius.",
+      route: "space-access",
+    });
+  }
+  return fallback;
 };
 
 const createSignature = (data: string, secret: string): string => {

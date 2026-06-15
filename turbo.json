@@ -10,6 +10,7 @@
       "env": [
         "AUTH_ALLOWED_HOSTS",
         "BETTER_AUTH_SECRET",
+        "SPACE_ACCESS_SECRET",
         "WEB_APP_URL",
         "STRIPE_SECRET_KEY",
         "STRIPE_WEBHOOK_SECRET",
@@ -35,6 +36,7 @@
       "env": [
         "AUTH_ALLOWED_HOSTS",
         "BETTER_AUTH_SECRET",
+        "SPACE_ACCESS_SECRET",
         "WEB_APP_URL",
         "STRIPE_SECRET_KEY",
         "STRIPE_WEBHOOK_SECRET",
@@ -51,6 +53,7 @@
       "env": [
         "AUTH_ALLOWED_HOSTS",
         "BETTER_AUTH_SECRET",
+        "SPACE_ACCESS_SECRET",
         "WEB_APP_URL",
         "STRIPE_SECRET_KEY",
         "STRIPE_WEBHOOK_SECRET",
@@ -66,6 +69,7 @@
       "env": [
         "AUTH_ALLOWED_HOSTS",
         "BETTER_AUTH_SECRET",
+        "SPACE_ACCESS_SECRET",
         "WEB_APP_URL",
         "STRIPE_SECRET_KEY",
         "STRIPE_WEBHOOK_SECRET",
@@ -94,6 +98,7 @@
       "env": [
         "AUTH_ALLOWED_HOSTS",
         "BETTER_AUTH_SECRET",
+        "SPACE_ACCESS_SECRET",
         "WEB_APP_URL",
         "STRIPE_SECRET_KEY",
         "STRIPE_WEBHOOK_SECRET",

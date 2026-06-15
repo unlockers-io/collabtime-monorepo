@@ -58,4 +58,33 @@ describe("space-access tokens", () => {
 
     vi.useRealTimers();
   });
+
+  it("signs and verifies with a dedicated secret (no fallback)", () => {
+    // Clear BETTER_AUTH_SECRET so the dedicated path is genuinely isolated —
+    // an empty string is falsy, so getSigningSecret cannot fall back to it.
+    vi.stubEnv("SPACE_ACCESS_SECRET", "dedicated-space-secret-at-least-32-chars-long");
+    vi.stubEnv("BETTER_AUTH_SECRET", "");
+
+    const token = createSpaceAccessToken("space-123");
+    const result = verifySpaceAccessToken(token, "space-123");
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.payload.spaceId).toBe("space-123");
+    }
+  });
+
+  it("ignores BETTER_AUTH_SECRET when a dedicated secret is present", () => {
+    vi.stubEnv("SPACE_ACCESS_SECRET", "dedicated-space-secret-at-least-32-chars-long");
+    vi.stubEnv("BETTER_AUTH_SECRET", "signing-secret-at-least-32-characters-long");
+
+    const token = createSpaceAccessToken("space-123");
+
+    // Rotate the auth secret while the dedicated secret stays put; the token must
+    // still verify because the auth secret is never consulted.
+    vi.stubEnv("BETTER_AUTH_SECRET", "rotated-auth-secret-at-least-32-characters-long");
+
+    const result = verifySpaceAccessToken(token, "space-123");
+    expect(result.valid).toBe(true);
+  });
 });
