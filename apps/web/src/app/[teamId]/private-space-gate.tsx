@@ -40,36 +40,44 @@ const PrivateSpaceGate = ({ isAuthenticated, spaceId, teamId }: PrivateSpaceGate
     onSubmit: async ({ value }) => {
       setServerError(null);
       setIsPending(true);
-      try {
-        const response = await fetch(`/api/spaces/${spaceId}/verify-password`, {
-          body: JSON.stringify({ password: value.password }),
-          headers: { "Content-Type": "application/json" },
-          method: "POST",
-        });
 
-        if (response.status === 401) {
-          setServerError("Incorrect password");
-          return;
-        }
-        if (response.status === 429) {
-          toast.error("Too many attempts. Try again later.");
-          return;
-        }
-        if (!response.ok) {
-          toast.error("Could not verify the password. Please try again.");
-          return;
-        }
+      // No try/catch: a TryStatement bails the React Compiler out of memoizing
+      // this component. Catch the network rejection on the promise instead.
+      const response = await fetch(`/api/spaces/${spaceId}/verify-password`, {
+        body: JSON.stringify({ password: value.password }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }).catch(() => null);
 
-        if (isAuthenticated) {
-          refresh();
-          return;
-        }
-        setAccepted(true);
-      } catch {
+      if (!response) {
         toast.error("Could not verify the password. Please try again.");
-      } finally {
         setIsPending(false);
+        return;
       }
+      if (response.status === 401) {
+        setServerError("Incorrect password");
+        setIsPending(false);
+        return;
+      }
+      if (response.status === 429) {
+        toast.error("Too many attempts. Try again later.");
+        setIsPending(false);
+        return;
+      }
+      if (!response.ok) {
+        toast.error("Could not verify the password. Please try again.");
+        setIsPending(false);
+        return;
+      }
+
+      // Signed-in visitor: the route already created the membership, so reload
+      // into the team (button stays busy through navigation).
+      if (isAuthenticated) {
+        refresh();
+        return;
+      }
+      setAccepted(true);
+      setIsPending(false);
     },
     validators: { onSubmit: passwordSchema },
   });
