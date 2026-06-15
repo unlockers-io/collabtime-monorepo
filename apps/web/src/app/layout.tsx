@@ -5,6 +5,14 @@ import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 
 import { Providers } from "@/components/providers";
+import { getAppUrl } from "@/lib/app-url";
+import {
+  APP_DESCRIPTION,
+  APP_DESCRIPTION_SHORT,
+  APP_KEYWORDS,
+  APP_NAME,
+  APP_TITLE,
+} from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -22,37 +30,24 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  authors: [{ name: "Collab Time" }],
-  creator: "Collab Time",
-  description:
-    "Visualize your team's working hours across timezones. Find the perfect moment to connect with distributed teams. No account required.",
-  keywords: [
-    "timezone",
-    "team collaboration",
-    "remote work",
-    "distributed teams",
-    "working hours",
-    "time zones",
-    "meeting planner",
-    "overlap hours",
-  ],
-  metadataBase: new URL(
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000",
-  ),
+  authors: [{ name: APP_NAME }],
+  creator: APP_NAME,
+  description: APP_DESCRIPTION,
+  keywords: APP_KEYWORDS,
+  metadataBase: new URL(getAppUrl()),
   openGraph: {
-    description:
-      "Visualize your team's working hours across timezones. Find the perfect moment to connect.",
+    description: APP_DESCRIPTION_SHORT,
     images: [
       {
-        alt: "Collab Time - Team Timezone Visualizer",
+        alt: APP_TITLE,
         height: 630,
         url: "/og",
         width: 1200,
       },
     ],
     locale: "en_US",
-    siteName: "Collab Time",
-    title: "Collab Time - Team Timezone Visualizer",
+    siteName: APP_NAME,
+    title: APP_TITLE,
     type: "website",
   },
   robots: {
@@ -67,15 +62,14 @@ export const metadata: Metadata = {
     index: true,
   },
   title: {
-    default: "Collab Time - Team Timezone Visualizer",
-    template: "%s - Collab Time",
+    default: APP_TITLE,
+    template: `%s - ${APP_NAME}`,
   },
   twitter: {
     card: "summary_large_image",
-    description:
-      "Visualize your team's working hours across timezones. Find the perfect moment to connect.",
+    description: APP_DESCRIPTION_SHORT,
     images: ["/og"],
-    title: "Collab Time - Team Timezone Visualizer",
+    title: APP_TITLE,
   },
 };
 
