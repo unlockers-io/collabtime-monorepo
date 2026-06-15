@@ -1,9 +1,11 @@
 import { prisma } from "@repo/db";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
 import { getTeamName, validateTeam } from "@/lib/actions/team-read";
 import { getSession } from "@/lib/auth-server";
+import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
 import { isTeamRole } from "@/types";
 import type { TeamStatus } from "@/types";
 
@@ -84,17 +86,27 @@ const TeamPage = async ({ params }: TeamPageProps) => {
   const space = spaceResult.status === "fulfilled" ? spaceResult.value : null;
 
   if (space?.isPrivate) {
-    if (!session) {
-      redirect(`/login?redirect=/${teamId}`);
-    }
+    // A valid space-access cookie (set by verify-password) admits an
+    // unauthenticated guest without team membership.
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
+    const hasGuestAccess = accessToken
+      ? verifySpaceAccessToken(accessToken, space.id).valid
+      : false;
 
-    // Authenticated but not a member — block access to private teams
-    const membership = await prisma.membership.findUnique({
-      where: { userId_teamId: { teamId, userId: session.user.id } },
-    });
+    if (!hasGuestAccess) {
+      if (!session) {
+        redirect(`/login?redirect=/${teamId}`);
+      }
 
-    if (!membership) {
-      notFound();
+      // Authenticated but not a member — block access to private teams
+      const membership = await prisma.membership.findUnique({
+        where: { userId_teamId: { teamId, userId: session.user.id } },
+      });
+
+      if (!membership) {
+        notFound();
+      }
     }
   }
 

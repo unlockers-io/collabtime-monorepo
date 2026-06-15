@@ -1,11 +1,16 @@
 import { prisma } from "@repo/db";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
 import { useLogger, withEvlog } from "@/lib/observability";
 import { redis } from "@/lib/redis";
-import type { Team } from "@/types";
+
+const TeamCacheSchema = z.object({
+  members: z.array(z.unknown()).optional(),
+  name: z.string().optional(),
+});
 
 export const GET = withEvlog(async () => {
   try {
@@ -40,15 +45,20 @@ export const GET = withEvlog(async () => {
           return null;
         }
 
-        const team = JSON.parse(data) as Team;
+        let parsed: z.infer<typeof TeamCacheSchema>;
+        try {
+          parsed = TeamCacheSchema.parse(JSON.parse(data));
+        } catch {
+          return null;
+        }
 
         return {
           archivedAt: membership.archivedAt ? membership.archivedAt.toISOString() : null,
-          memberCount: team.members?.length ?? 0,
+          memberCount: parsed.members?.length ?? 0,
           role: membership.role,
           spaceId: ownedSpaceByTeamId.get(membership.teamId) ?? null,
           teamId: membership.teamId,
-          teamName: team.name || "",
+          teamName: parsed.name || "",
         };
       }),
     );

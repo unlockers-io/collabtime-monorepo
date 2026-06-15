@@ -28,6 +28,11 @@ const inviteMember = async (
       return { error: "Invalid team ID", success: false };
     }
 
+    const memberIdResult = UUIDSchema.safeParse(memberId);
+    if (!memberIdResult.success) {
+      return { error: "Invalid member ID", success: false };
+    }
+
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/v.test(trimmedEmail)) {
       return { error: "Invalid email address", success: false };

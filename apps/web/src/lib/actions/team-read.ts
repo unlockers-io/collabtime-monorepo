@@ -1,11 +1,12 @@
 "use server";
 
 import { prisma } from "@repo/db";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { cache } from "react";
 
 import { auth } from "@/lib/auth-server";
 import { log } from "@/lib/observability";
+import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
 import { getTeamRole } from "@/lib/team-auth";
 import { isTeamRole } from "@/types";
 import type { Team, TeamRole } from "@/types";
@@ -40,7 +41,16 @@ const getPublicTeam = async (
     if (space.isPrivate) {
       const teamRole = await getTeamRole(teamId);
       if (!teamRole) {
-        return { error: "This team is private", success: false };
+        // A valid space-access cookie admits a guest, matching the page gate so a
+        // guest who can see the page can also load its data.
+        const cookieStore = await cookies();
+        const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
+        const hasGuestAccess = accessToken
+          ? verifySpaceAccessToken(accessToken, space.id).valid
+          : false;
+        if (!hasGuestAccess) {
+          return { error: "This team is private", success: false };
+        }
       }
     }
 

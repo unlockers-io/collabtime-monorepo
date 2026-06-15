@@ -12,7 +12,10 @@ vi.mock("@/lib/auth-server", () => ({ auth: { api: { getSession: vi.fn() } } }))
 vi.mock("@/lib/team-auth", () => ({ getTeamRole: vi.fn(), requireTeamAdmin: vi.fn() }));
 vi.mock("../redis", () => ({ redis: { get: vi.fn() } }));
 vi.mock("./helpers", () => ({ getTeamRecord: vi.fn(), sanitizeTeam: vi.fn((t: unknown) => t) }));
-vi.mock("next/headers", () => ({ headers: vi.fn(() => Promise.resolve(new Headers())) }));
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(() => Promise.resolve({ get: vi.fn(() => undefined) })),
+  headers: vi.fn(() => Promise.resolve(new Headers())),
+}));
 vi.mock("@/types", () => ({
   isTeamRole: (v: unknown) => typeof v === "string" && ["ADMIN", "MEMBER"].includes(v),
 }));

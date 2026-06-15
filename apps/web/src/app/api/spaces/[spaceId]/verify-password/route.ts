@@ -1,10 +1,11 @@
 import { prisma } from "@repo/db";
-import { compare } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { verifyPassword } from "@/lib/crypto";
 import { useLogger, withEvlog } from "@/lib/observability";
 import { createSpaceAccessToken, SPACE_ACCESS_COOKIE_PREFIX } from "@/lib/space-access";
+import { checkRateLimit } from "@/lib/space-rate-limit";
 
 const verifyPasswordSchema = z.object({
   password: z.string().min(1, "Password is required"),
@@ -19,6 +20,15 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
     const { spaceId } = await params;
     const body = await request.json();
     const { password } = verifyPasswordSchema.parse(body);
+
+    // Brute-force brake before the expensive bcrypt compare. The 429 body is
+    // generic so it does not leak whether the space exists or is private.
+    const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
+    const clientIp = forwardedFor.split(",")[0]?.trim() || "unknown";
+    const { allowed } = await checkRateLimit(`space-verify:${spaceId}:${clientIp}`, 10, 60);
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+    }
 
     const space = await prisma.space.findUnique({
       select: {
@@ -38,7 +48,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
     // Prevents timing attacks that could reveal whether a space is private.
     const accessPassword = space.accessPassword;
     const hasPassword = Boolean(accessPassword);
-    const isValid = accessPassword ? await compare(password, accessPassword) : false;
+    const isValid = accessPassword ? await verifyPassword(password, accessPassword) : false;
 
     if (!space.isPrivate || !hasPassword) {
       return NextResponse.json({ success: true, teamId: space.teamId });
@@ -59,7 +69,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       httpOnly: true,
       maxAge: 60 * 60 * 24 * 7, // 7 days
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.WEB_APP_URL?.startsWith("https://") === true,
     });
 
     return response;
