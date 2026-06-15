@@ -2,9 +2,11 @@ import { prisma } from "@repo/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getSession } from "@/lib/auth-server";
 import { verifyPassword } from "@/lib/crypto";
 import { useLogger, withEvlog } from "@/lib/observability";
 import { createSpaceAccessToken, SPACE_ACCESS_COOKIE_PREFIX } from "@/lib/space-access";
+import { joinPrivateSpace } from "@/lib/space-join";
 import { checkRateLimit } from "@/lib/space-rate-limit";
 
 const verifyPasswordSchema = z.object({
@@ -56,6 +58,20 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
 
     if (!isValid) {
       return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+    }
+
+    // Already-logged-in user verifying the password: the cookie hasn't been set
+    // yet (this request sets it), so materialize the membership directly from
+    // the just-verified space. Signup/login flows are covered by the auth hooks.
+    const session = await getSession();
+    if (session) {
+      try {
+        await joinPrivateSpace(session.user.id, space.teamId);
+      } catch (joinError) {
+        useLogger().error(joinError instanceof Error ? joinError : String(joinError), {
+          route: "/api/spaces/[spaceId]/verify-password",
+        });
+      }
     }
 
     const accessToken = createSpaceAccessToken(spaceId);

@@ -16,11 +16,25 @@ type SecondaryStorage = {
   set: (key: string, value: string, ttl?: number) => Promise<void>;
 };
 
+// Raw request cookie header forwarded to lifecycle callbacks so the app side can
+// run domain side effects (e.g. private-space self-join) without this package
+// importing any domain models.
+type AuthLifecycleContext = {
+  cookieHeader: string | null;
+};
+
 type AuthConfig = {
   // Inject framework-specific plugins (e.g. nextCookies()) at the call site;
   // must be last in the plugins array
   extraPlugins?: Array<BetterAuthPlugin>;
   fromEmail?: string;
+  // Fired after Better Auth persists a new session (login, and verification
+  // auto-sign-in). Implemented at the web call site; failures must be swallowed
+  // there since this runs inside Better Auth's create flow.
+  onSessionCreated?: (userId: string, ctx: AuthLifecycleContext) => Promise<void>;
+  // Fired after Better Auth persists a new user (signup). Captures intent tied
+  // to the user row, so it survives the cross-device email-verification step.
+  onUserCreated?: (userId: string, ctx: AuthLifecycleContext) => Promise<void>;
   prisma: PrismaClient;
   resendApiKey?: string;
   resendReplyTo?: string;
@@ -46,6 +60,8 @@ const createAuth = (config: AuthConfig) => {
   const {
     extraPlugins = [],
     fromEmail = "Collab Time <noreply@email.collabtime.io>",
+    onSessionCreated,
+    onUserCreated,
     prisma,
     resendApiKey,
     resendReplyTo,
@@ -110,6 +126,32 @@ const createAuth = (config: AuthConfig) => {
     database: prismaAdapter(prisma, {
       provider: "postgresql",
     }),
+
+    // Domain side effects run via injected callbacks (see AuthConfig). user.create
+    // fires at signup (no session yet under requireEmailVerification, so this is
+    // the device-independent capture point); session.create fires on login and
+    // verification auto-sign-in. The cookie header lets the app side read the
+    // space-access cookie that travels with the signup/login request.
+    databaseHooks: {
+      session: {
+        create: {
+          after: async (session, ctx) => {
+            await onSessionCreated?.(session.userId, {
+              cookieHeader: ctx?.headers?.get("cookie") ?? null,
+            });
+          },
+        },
+      },
+      user: {
+        create: {
+          after: async (user, ctx) => {
+            await onUserCreated?.(user.id, {
+              cookieHeader: ctx?.headers?.get("cookie") ?? null,
+            });
+          },
+        },
+      },
+    },
 
     emailAndPassword: {
       enabled: true,
