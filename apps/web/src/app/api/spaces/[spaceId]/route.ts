@@ -1,16 +1,17 @@
 import { prisma } from "@repo/db";
-import { hash } from "bcryptjs";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
+import { hashPassword } from "@/lib/crypto";
 import { useLogger, withEvlog } from "@/lib/observability";
+import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
 const updateSpaceSchema = z.object({
   isPrivate: z.boolean().optional(),
   // Use separate flag to indicate password update intent
-  accessPassword: z.string().min(4).max(128).optional().nullable(),
+  accessPassword: SpaceAccessPasswordSchema.optional().nullable(),
   updatePassword: z.boolean().optional(),
 });
 
@@ -104,7 +105,7 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
         updateData.accessPassword = null;
       } else if (updates.accessPassword) {
         // Setting new password
-        updateData.accessPassword = await hash(updates.accessPassword, 10);
+        updateData.accessPassword = await hashPassword(updates.accessPassword);
       }
     }
 

@@ -44,8 +44,14 @@ const PasswordSchema = z
   .min(6, "Password must be at least 6 characters")
   .max(100, "Password must be 100 characters or less");
 
+const SpaceAccessPasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(128, "Password must be 128 characters or less");
+
 export {
   PasswordSchema,
+  SpaceAccessPasswordSchema,
   TeamGroupInputSchema,
   TeamGroupUpdateSchema,
   TeamMemberInputSchema,
