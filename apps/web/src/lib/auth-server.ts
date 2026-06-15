@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { cache } from "react";
 
 import { redis } from "./redis";
+import { joinPrivateSpacesFromCookies } from "./space-join";
 
 // Lazy init: env vars may be unavailable at build time.
 let cachedAuth: Auth | null = null;
@@ -13,6 +14,12 @@ const getAuthConfig = (): AuthConfig => {
   return {
     // nextCookies() must be last — lets better-auth read cookies in RSC/Server Actions
     extraPlugins: [nextCookies()],
+    // Self-join private spaces the user holds a valid password cookie for.
+    // user.create captures signup (device-independent); session.create covers
+    // an existing user logging in with the cookie present.
+    onSessionCreated: (userId, { cookieHeader }) =>
+      joinPrivateSpacesFromCookies(userId, cookieHeader),
+    onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
     prisma,
     secret: process.env.BETTER_AUTH_SECRET ?? "",
     ...(process.env.RESEND_API_KEY

@@ -1,7 +1,7 @@
 import { prisma } from "@repo/db";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { getTeamName, validateTeam } from "@/lib/actions/team-read";
 import { getSession } from "@/lib/auth-server";
@@ -10,6 +10,7 @@ import { isTeamRole } from "@/types";
 import type { TeamStatus } from "@/types";
 
 import { TeamPageClient } from "./client";
+import { PrivateSpaceGate } from "./private-space-gate";
 
 type TeamPageProps = {
   params: Promise<{ teamId: string }>;
@@ -95,17 +96,21 @@ const TeamPage = async ({ params }: TeamPageProps) => {
       : false;
 
     if (!hasGuestAccess) {
-      if (!session) {
-        redirect(`/login?redirect=/${teamId}`);
-      }
+      const membership = session
+        ? await prisma.membership.findUnique({
+            where: { userId_teamId: { teamId, userId: session.user.id } },
+          })
+        : null;
 
-      // Authenticated but not a member — block access to private teams
-      const membership = await prisma.membership.findUnique({
-        where: { userId_teamId: { teamId, userId: session.user.id } },
-      });
-
+      // No guest cookie and no membership: show a password gate instead of
+      // redirecting (logged-out) or 404ing (logged-in non-member). Tradeoff:
+      // a private team's existence becomes discoverable to anyone holding the
+      // link, but the verify-password route's generic errors, constant-time
+      // compare, and per-space+IP rate limit contain the leakage.
       if (!membership) {
-        notFound();
+        return (
+          <PrivateSpaceGate isAuthenticated={Boolean(session)} spaceId={space.id} teamId={teamId} />
+        );
       }
     }
   }
