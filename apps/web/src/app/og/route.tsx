@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
+
 export const runtime = "edge";
 
 const loadGoogleFont = async (font: string, weight: number, text: string) => {
@@ -21,8 +23,8 @@ const loadGoogleFont = async (font: string, weight: number, text: string) => {
 };
 
 const GET = async () => {
-  const title = "Collab Time";
-  const subtitle = "Visualize your team's working hours across timezones";
+  const title = APP_NAME;
+  const subtitle = APP_TAGLINE;
 
   const results = await Promise.allSettled([
     loadGoogleFont("Geist+Mono", 700, title),
