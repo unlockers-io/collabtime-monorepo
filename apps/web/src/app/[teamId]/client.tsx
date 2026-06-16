@@ -175,7 +175,6 @@ const TeamPageClient = ({
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
       <main className="mx-auto flex w-full max-w-450 flex-col gap-6" id="main">
-        {/* Header */}
         <Nav
           canDeleteWorkspace={spaceId !== null}
           isAdmin={isAdmin}
@@ -191,10 +190,8 @@ const TeamPageClient = ({
           variant="team"
         />
 
-        {/* Team Insights */}
         {members.length > 0 && <TeamInsights groups={groups} members={orderedMembers} />}
 
-        {/* Timezone Visualizer */}
         {members.length > 0 && (
           <SectionCard>
             <SectionCardHeader bordered>
@@ -213,9 +210,7 @@ const TeamPageClient = ({
           </SectionCard>
         )}
 
-        {/* Team Members & Groups */}
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2 [&>*]:min-w-0">
-          {/* Team Members */}
           <SectionCard>
             <SectionCardHeader>
               <SectionCardTitle icon={Users}>Team Members</SectionCardTitle>
@@ -259,7 +254,6 @@ const TeamPageClient = ({
             )}
           </SectionCard>
 
-          {/* Groups */}
           <SectionCard>
             <SectionCardHeader>
               <SectionCardTitle icon={FolderKanban}>Groups</SectionCardTitle>

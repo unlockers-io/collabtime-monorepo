@@ -81,7 +81,6 @@ const GET = async () => {
         </svg>
       </div>
 
-      {/* Title */}
       <div
         style={{
           color: "#fafafa",
@@ -94,7 +93,6 @@ const GET = async () => {
         {title}
       </div>
 
-      {/* Subtitle */}
       <div
         style={{
           color: "#a3a3a3",

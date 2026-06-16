@@ -122,7 +122,6 @@ const GroupCard = ({
         isDropTarget && "outline-2 -outline-offset-1 outline-foreground",
       )}
     >
-      {/* Top row: Icon and Actions */}
       <div className="flex items-start justify-between">
         <div className="flex size-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
           <Users className="size-5" />
@@ -143,11 +142,9 @@ const GroupCard = ({
         )}
       </div>
 
-      {/* Group info - stacked vertically */}
       <div className="flex flex-1 flex-col gap-2">
         {canEdit && isEditing ? editInput : groupName}
 
-        {/* Member count badge */}
         <div className="mt-auto">
           <Badge variant="secondary">
             <Users className="size-3" />

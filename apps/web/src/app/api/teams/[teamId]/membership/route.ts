@@ -15,7 +15,6 @@ type Params = {
   params: Promise<{ teamId: string }>;
 };
 
-// PATCH /api/teams/[teamId]/membership - Toggle archive state on caller's membership
 export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
   try {
     const { teamId } = await params;

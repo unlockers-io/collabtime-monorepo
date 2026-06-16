@@ -64,7 +64,6 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
         </div>
 
         <div className="flex flex-col gap-6">
-          {/* Profile Section */}
           <Card className="flex flex-col gap-6 p-6">
             <div className="flex items-center gap-3">
               <div className="flex size-10 items-center justify-center rounded-xl bg-secondary">

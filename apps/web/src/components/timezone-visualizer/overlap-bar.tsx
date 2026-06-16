@@ -96,11 +96,9 @@ const OverlapBar = ({
         const availableByTeam = bucketByTeam(allAvailable);
         const unavailableByTeam = bucketByTeam(allUnavailable);
 
-        // Identify teams where no one is available (entire team unavailable)
         const fullyUnavailableTeams = [...unavailableByTeam.keys()].filter(
           (teamName) => !availableByTeam.has(teamName),
         );
-        // Teams with some members available and some unavailable
         const partiallyUnavailableTeams = [...unavailableByTeam.entries()].filter(([teamName]) =>
           availableByTeam.has(teamName),
         );
@@ -151,7 +149,6 @@ const OverlapBar = ({
                         </span>
                       </div>
                     ))}
-                    {/* Teams with some members unavailable */}
                     {partiallyUnavailableTeams.map(([teamName, names]) => (
                       <div
                         className="flex items-center justify-between gap-4 text-xs text-muted-foreground"

@@ -10,7 +10,6 @@ const createSpaceSchema = z.object({
   teamId: z.string().min(1, "Team ID is required"),
 });
 
-// GET /api/spaces - List user's spaces
 export const GET = withEvlog(async () => {
   try {
     const session = await auth.api.getSession({
@@ -33,7 +32,6 @@ export const GET = withEvlog(async () => {
   }
 });
 
-// POST /api/spaces - Create/claim a space
 export const POST = withEvlog(async (request: Request) => {
   try {
     const session = await auth.api.getSession({
@@ -47,7 +45,6 @@ export const POST = withEvlog(async (request: Request) => {
     const body = await request.json();
     const { teamId } = createSpaceSchema.parse(body);
 
-    // Check if space already exists for this team
     const existingSpace = await prisma.space.findUnique({
       where: { teamId },
     });
@@ -62,7 +59,6 @@ export const POST = withEvlog(async (request: Request) => {
       );
     }
 
-    // Create new space
     const space = await prisma.space.create({
       data: {
         ownerId: session.user.id,

@@ -19,19 +19,14 @@ test.describe.skip("Logout", () => {
     // Create a workspace so we can access the team page with the UserMenu
     await homePage.createWorkspace();
 
-    // Wait for navigation to team page
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
     await expect(page.getByRole("button", { name: /account menu/i })).toBeVisible({
       timeout: 60_000,
     });
 
-    // Open the account menu dropdown
     await page.getByRole("button", { name: /account menu/i }).click();
-
-    // Click "Sign out"
     await page.getByRole("menuitem", { name: /sign out/i }).click();
 
-    // Should show success toast and redirect to home
     await expect(page.getByText(/signed out successfully/i)).toBeVisible({
       timeout: 5000,
     });

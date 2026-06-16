@@ -10,7 +10,8 @@ import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
 const updateSpaceSchema = z.object({
   isPrivate: z.boolean().optional(),
-  // Use separate flag to indicate password update intent
+  // accessPassword is only applied when updatePassword is set, so a PATCH that
+  // omits the flag leaves the stored password untouched.
   accessPassword: SpaceAccessPasswordSchema.optional().nullable(),
   updatePassword: z.boolean().optional(),
 });
@@ -19,7 +20,6 @@ type Params = {
   params: Promise<{ spaceId: string }>;
 };
 
-// GET /api/spaces/[spaceId] - Get space details
 export const GET = withEvlog(async (_request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
@@ -46,7 +46,7 @@ export const GET = withEvlog(async (_request: Request, { params }: Params) => {
     return NextResponse.json({
       space: {
         ...space,
-        // Return hasPassword boolean instead of masked value to prevent sentinel value issues
+        // Expose a boolean, never the hash — and never a masked sentinel the client could echo back.
         accessPassword: undefined,
         hasPassword: Boolean(space.accessPassword),
       },
@@ -59,7 +59,6 @@ export const GET = withEvlog(async (_request: Request, { params }: Params) => {
   }
 });
 
-// PATCH /api/spaces/[spaceId] - Update space settings
 export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
@@ -86,25 +85,21 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
     const body = await request.json();
     const updates = updateSpaceSchema.parse(body);
 
-    // Build update data
     const updateData: {
       accessPassword?: string | null;
       isPrivate?: boolean;
     } = {};
 
-    // Handle privacy setting
     if (updates.isPrivate !== undefined) {
       updateData.isPrivate = updates.isPrivate;
     }
 
-    // Handle password update - only process if explicitly requested
-    // This prevents the masked value "********" from being used
+    // Only touch the password when the client explicitly opts in, so the masked
+    // "********" value the form may resubmit never gets hashed and stored.
     if (updates.updatePassword) {
       if (updates.accessPassword === null) {
-        // Explicitly clearing password
         updateData.accessPassword = null;
       } else if (updates.accessPassword) {
-        // Setting new password
         updateData.accessPassword = await hashPassword(updates.accessPassword);
       }
     }
@@ -117,7 +112,6 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
     return NextResponse.json({
       space: {
         ...updatedSpace,
-        // Return hasPassword boolean instead of masked value
         accessPassword: undefined,
         hasPassword: Boolean(updatedSpace.accessPassword),
       },
@@ -136,7 +130,6 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
   }
 });
 
-// DELETE /api/spaces/[spaceId] - Delete space
 export const DELETE = withEvlog(async (_request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;

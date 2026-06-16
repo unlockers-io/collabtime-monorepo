@@ -7,7 +7,6 @@ test.describe.skip("Realtime Sync", () => {
   let teamId: string;
 
   test.beforeEach(async ({ browser }) => {
-    // Create a workspace in context A
     const contextA = await browser.newContext({ storageState: STORAGE_STATE });
     const pageA = await contextA.newPage();
     await pageA.goto("/");
@@ -23,10 +22,8 @@ test.describe.skip("Realtime Sync", () => {
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
-    // Both open the same team page
     await Promise.all([pageA.goto(`/${teamId}`), pageB.goto(`/${teamId}`)]);
 
-    // Wait for pages to load
     await expect(pageA.getByRole("button", { name: /add team member/i })).toBeVisible({
       timeout: 60_000,
     });
@@ -34,14 +31,12 @@ test.describe.skip("Realtime Sync", () => {
       timeout: 60_000,
     });
 
-    // Context A adds a member
     await pageA.getByRole("button", { name: /add team member/i }).click();
     await pageA.getByLabel("Name *").click();
     await pageA.getByLabel("Name *").pressSequentially("Realtime Alice", { delay: 10 });
     await pageA.keyboard.press("Tab");
     await pageA.getByRole("button", { name: /add member/i }).click();
 
-    // Verify member appears in context A
     await expect(pageA.getByText("Realtime Alice")).toBeVisible({
       timeout: 5000,
     });
@@ -70,14 +65,12 @@ test.describe.skip("Realtime Sync", () => {
       timeout: 60_000,
     });
 
-    // Context A creates a group
     await pageA.getByRole("button", { name: /add group/i }).click();
     await pageA.getByLabel("Group Name").click();
     await pageA.getByLabel("Group Name").pressSequentially("Sync Test Group", { delay: 10 });
     await pageA.keyboard.press("Tab");
     await pageA.getByRole("button", { name: /create group/i }).click();
 
-    // Verify group appears in context A
     await expect(pageA.getByText("Sync Test Group")).toBeVisible({
       timeout: 5000,
     });
@@ -99,7 +92,6 @@ test.describe.skip("Realtime Sync", () => {
 
     await Promise.all([pageA.goto(`/${teamId}`), pageB.goto(`/${teamId}`)]);
 
-    // Wait for team page to load in both contexts
     await expect(pageA.getByRole("heading", { name: "Team Members" })).toBeVisible({
       timeout: 10_000,
     });
@@ -107,13 +99,12 @@ test.describe.skip("Realtime Sync", () => {
       timeout: 10_000,
     });
 
-    // Context A edits the team name (click the team name heading to start editing)
     const teamNameButton = pageA.locator("button").filter({
       has: pageA.locator("h1"),
     });
     await teamNameButton.first().click();
 
-    // Fill the name input and save (blur triggers save)
+    // Tab blurs the input, which is what commits the rename.
     const nameInput = pageA.locator('input[placeholder="Team name…"]');
     await nameInput.clear();
     await nameInput.pressSequentially("Synced Team Name", { delay: 10 });
@@ -129,7 +120,6 @@ test.describe.skip("Realtime Sync", () => {
   });
 
   test("member removed syncs to second browser", async ({ browser }) => {
-    // First add a member using context A alone
     const setupContext = await browser.newContext({
       storageState: STORAGE_STATE,
     });
@@ -145,7 +135,6 @@ test.describe.skip("Realtime Sync", () => {
     });
     await setupContext.close();
 
-    // Now open two contexts
     const contextA = await browser.newContext({ storageState: STORAGE_STATE });
     const contextB = await browser.newContext({ storageState: STORAGE_STATE });
     const pageA = await contextA.newPage();
@@ -153,7 +142,6 @@ test.describe.skip("Realtime Sync", () => {
 
     await Promise.all([pageA.goto(`/${teamId}`), pageB.goto(`/${teamId}`)]);
 
-    // Verify member is visible in both
     await expect(pageA.getByText("Removal Target")).toBeVisible({
       timeout: 10_000,
     });
@@ -161,13 +149,11 @@ test.describe.skip("Realtime Sync", () => {
       timeout: 10_000,
     });
 
-    // Context A removes the member
     const memberCard = pageA.locator("[class*='rounded']").filter({
       hasText: "Removal Target",
     });
     await memberCard.getByRole("button", { name: /remove|delete/i }).click();
 
-    // Confirm if needed
     const confirmButton = pageA.getByRole("button", {
       name: /confirm|remove|delete/i,
     });

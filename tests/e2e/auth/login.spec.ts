@@ -22,7 +22,6 @@ test.describe("Login", () => {
     await loginPage.goto();
     await loginPage.login(testUser.email, "WrongPassword999!");
 
-    // Sonner toast with error message
     await expect(page.getByText(/failed to sign in|invalid/i)).toBeVisible({
       timeout: 5000,
     });

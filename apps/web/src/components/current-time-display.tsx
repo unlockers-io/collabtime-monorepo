@@ -6,22 +6,11 @@ import { useSyncExternalStore } from "react";
 import { getUserTimezone, formatTimezoneAbbreviation } from "@/lib/timezones";
 import { useSecondTick } from "@/lib/use-tick";
 
-// ============================================================================
-// Hooks
-// ============================================================================
-
 const emptySubscribe = () => () => {};
 
 const useClientValue = <T,>(clientValue: () => T, serverValue: T): T =>
   useSyncExternalStore(emptySubscribe, clientValue, () => serverValue);
 
-// ============================================================================
-// Utilities
-// ============================================================================
-
-/**
- * Format a timestamp for a given timezone.
- */
 const formatTime = (timestamp: number, timezone: string): string => {
   const date = new Date(timestamp);
   return date.toLocaleTimeString("en-US", {
@@ -34,13 +23,11 @@ const formatTime = (timestamp: number, timezone: string): string => {
 };
 
 const CurrentTimeDisplay = () => {
-  // useClientValue returns "" on server, actual timezone on client - handles hydration
+  // "" on server, real timezone on client — keeps the first paint hydration-safe.
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
 
-  // Tick updates every second, triggering re-render for real-time display
   const tick = useSecondTick();
 
-  // Show placeholder during SSR (viewerTimezone is empty string on server)
   if (!viewerTimezone) {
     return (
       <div className="flex h-9 items-center gap-2 rounded-lg border bg-card px-3 py-2 font-medium text-card-foreground shadow-xs">
@@ -50,7 +37,6 @@ const CurrentTimeDisplay = () => {
     );
   }
 
-  // Format time using tick timestamp directly
   const currentTime = formatTime(tick, viewerTimezone);
   const timezoneAbbr = formatTimezoneAbbreviation(viewerTimezone);
 

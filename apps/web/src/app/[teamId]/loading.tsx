@@ -2,7 +2,6 @@ const Loading = () => {
   return (
     <div className="min-h-dvh w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
       <main className="mx-auto flex w-full max-w-450 flex-col gap-6">
-        {/* Header Skeleton */}
         <header className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -21,7 +20,6 @@ const Loading = () => {
           </div>
         </header>
 
-        {/* Team Insights Skeleton */}
         <section className="flex flex-col gap-4 rounded-xl border bg-card py-4 text-card-foreground shadow-sm sm:py-5">
           <div className="flex items-center gap-2 px-4 sm:px-5">
             <div className="size-4 animate-pulse rounded bg-muted" />
@@ -48,7 +46,6 @@ const Loading = () => {
           </div>
         </section>
 
-        {/* Timezone Visualizer Skeleton */}
         <section className="flex flex-col gap-4 rounded-xl border bg-card py-4 text-card-foreground shadow-sm sm:py-5">
           <div className="flex flex-col gap-0.5 border-b px-4 pb-4 sm:px-5 sm:pb-5">
             <div className="flex items-center gap-2">
@@ -80,9 +77,7 @@ const Loading = () => {
           </div>
         </section>
 
-        {/* Team Members & Groups */}
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
-          {/* Team Members Section Skeleton */}
           <section className="flex flex-col gap-4 rounded-xl border bg-card py-4 text-card-foreground shadow-sm sm:py-5">
             <div className="flex items-center justify-between px-4 sm:px-5">
               <div className="flex items-center gap-2">
@@ -118,7 +113,6 @@ const Loading = () => {
             </div>
           </section>
 
-          {/* Groups Section Skeleton */}
           <section className="flex flex-col gap-4 rounded-xl border bg-card py-4 text-card-foreground shadow-sm sm:py-5">
             <div className="flex items-center justify-between px-4 sm:px-5">
               <div className="flex items-center gap-2">
