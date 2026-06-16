@@ -30,7 +30,6 @@ type TeamInsightsProps = {
   members: Array<TeamMember>;
 };
 
-// No-op subscribe function for useSyncExternalStore when no subscriptions are needed
 const emptySubscribe = () => () => {};
 
 const useClientValue = <T,>(clientValue: () => T, serverValue: T): T => {

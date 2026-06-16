@@ -83,9 +83,7 @@ const MemberCard = ({
   return (
     <>
       <Card className="group h-full gap-3 p-4 transition-shadow hover:shadow-md">
-        {/* Top row: Avatar and Actions */}
         <div className="flex items-start justify-between">
-          {/* Avatar with status */}
           <div className="relative">
             <div className="flex size-12 items-center justify-center rounded-full bg-secondary text-base font-semibold text-secondary-foreground">
               {member.name.charAt(0).toUpperCase()}
@@ -95,7 +93,6 @@ const MemberCard = ({
             )}
           </div>
 
-          {/* Actions */}
           {canEdit && (
             <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
               <Button
@@ -133,7 +130,6 @@ const MemberCard = ({
           )}
         </div>
 
-        {/* Info - stacked vertically */}
         <div className="flex flex-1 flex-col gap-1.5">
           <div className="flex flex-col gap-0.5">
             <span className="flex items-center gap-1.5 font-semibold text-foreground">
@@ -147,7 +143,6 @@ const MemberCard = ({
             {member.title && <span className="text-sm text-muted-foreground">{member.title}</span>}
           </div>
 
-          {/* Timezone and hours */}
           <div className="mt-auto flex flex-col gap-1 text-xs text-muted-foreground">
             <span className="truncate">{formatTimezoneLabel(member.timezone)}</span>
             <span className="tabular-nums">
@@ -155,7 +150,6 @@ const MemberCard = ({
             </span>
           </div>
 
-          {/* Status badges */}
           <div className="flex flex-wrap gap-1.5">
             {isAvailable ? (
               <Badge variant="success">Available</Badge>

@@ -65,7 +65,6 @@ const Nav = (props: NavProps) => {
     }
   };
 
-  // Centered variant - simple logo only
   if (variant === "centered") {
     return (
       <header className="flex items-center justify-center px-4 py-8 sm:px-6">
@@ -74,7 +73,6 @@ const Nav = (props: NavProps) => {
     );
   }
 
-  // Team variant - with team name and editing
   if (variant === "team") {
     if (props.variant !== "team") {
       return null;
@@ -118,7 +116,6 @@ const Nav = (props: NavProps) => {
             )}
           </div>
 
-          {/* Desktop actions */}
           <div className="hidden items-center gap-2 sm:flex">
             <CurrentTimeDisplay />
             <CopyLinkButton hasCopied={hasCopied} onCopy={handleCopyLink} />
@@ -127,7 +124,6 @@ const Nav = (props: NavProps) => {
             <UserMenu isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
           </div>
 
-          {/* Mobile menu toggle */}
           <div className="flex items-center gap-2 sm:hidden">
             <Button
               aria-controls="mobile-menu"
@@ -158,7 +154,6 @@ const Nav = (props: NavProps) => {
     );
   }
 
-  // Default variant - simple nav with logo and auth
   return (
     <header className="flex items-center justify-between px-4 py-6 sm:px-6">
       <NavLogo />

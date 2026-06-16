@@ -75,7 +75,7 @@ const inviteMember = async (
       }
     }
 
-    // Upsert invitation (re-sends if previously declined)
+    // Upsert resets a previously declined invitation back to PENDING so it re-sends.
     const invitation = await prisma.invitation.upsert({
       create: {
         email: trimmedEmail,
@@ -96,7 +96,7 @@ const inviteMember = async (
       },
     });
 
-    // Send email (best-effort)
+    // Best-effort: a failed send is logged but doesn't fail the invitation.
     let emailSent = false;
     const apiKey = getEnv("RESEND_API_KEY");
     const fromEmail = getEnv("RESEND_FROM_EMAIL");
@@ -160,7 +160,6 @@ const acceptInvitation = async (
       return { error: "This invitation is no longer pending", success: false };
     }
 
-    // Check for existing membership
     const existingMembership = await prisma.membership.findUnique({
       where: {
         userId_teamId: {

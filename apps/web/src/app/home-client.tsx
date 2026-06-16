@@ -84,7 +84,6 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
           </div>
         </div>
 
-        {/* CTA Section */}
         <div className="flex w-full flex-col items-center gap-4">
           {isAuthenticated ? (
             <button

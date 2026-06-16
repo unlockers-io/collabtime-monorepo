@@ -47,7 +47,6 @@ const MobileMenu = ({
           transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
         >
           <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
-            {/* Role badge */}
             <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
               {role === "admin" ? (
                 <Shield className="size-4 text-muted-foreground" />

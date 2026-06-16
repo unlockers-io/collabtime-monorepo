@@ -2,26 +2,16 @@
 
 import { useSyncExternalStore } from "react";
 
-// ============================================================================
-// Types
-// ============================================================================
-
 type TickStore = {
   getServerSnapshot: () => number;
   getSnapshot: () => number;
   subscribe: (callback: () => void) => () => void;
 };
 
-// ============================================================================
-// Factory
-// ============================================================================
-
 const getServerSnapshot = () => 0;
 
-/**
- * Creates a tick store that updates at the specified interval.
- * Includes visibility change handling to update immediately when the page regains focus.
- */
+// Updates immediately on visibilitychange so a backgrounded tab shows fresh
+// time the moment it regains focus, not after the next interval.
 const createTickStore = (intervalMs: number): TickStore => {
   let cachedTick = Date.now();
 
@@ -52,26 +42,10 @@ const createTickStore = (intervalMs: number): TickStore => {
   return { getServerSnapshot, getSnapshot, subscribe };
 };
 
-// ============================================================================
-// Shared Store Instances
-// ============================================================================
-
-// 1-second tick for real-time displays (clock display)
 const secondTickStore = createTickStore(1000);
-
-// 30-second tick for timeline indicators (less frequent updates for performance)
 const halfMinuteTickStore = createTickStore(30_000);
 
-// ============================================================================
-// Hooks
-// ============================================================================
-
-/**
- * Hook that triggers a re-render every second.
- * Useful for real-time clock displays.
- *
- * @returns The current timestamp (use this as a dependency to force recalculation)
- */
+// Returns the current timestamp; use it as a dependency to force recalculation.
 const useSecondTick = (): number =>
   useSyncExternalStore(
     secondTickStore.subscribe,
@@ -79,12 +53,6 @@ const useSecondTick = (): number =>
     secondTickStore.getServerSnapshot,
   );
 
-/**
- * Hook that triggers a re-render every 30 seconds.
- * Useful for timeline indicators where second-precision isn't needed.
- *
- * @returns The current timestamp (use this as a dependency to force recalculation)
- */
 const useHalfMinuteTick = (): number =>
   useSyncExternalStore(
     halfMinuteTickStore.subscribe,

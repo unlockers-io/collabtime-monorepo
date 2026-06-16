@@ -39,7 +39,6 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
 
   return (
     <div className="flex flex-col gap-4 py-2">
-      {/* Drop zone */}
       <button
         aria-label="Upload CSV file: drop a file here or click to browse"
         className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${

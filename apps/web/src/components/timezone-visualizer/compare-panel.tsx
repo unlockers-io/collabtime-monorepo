@@ -250,7 +250,6 @@ const ComparePanel = ({
             </div>
           </div>
 
-          {/* Time axis for overlap visualization */}
           <div className="flex gap-2 sm:gap-3">
             <div className="w-8 shrink-0 sm:w-24" />
             <div className="flex flex-1 justify-between">
