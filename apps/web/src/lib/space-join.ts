@@ -63,7 +63,7 @@ const joinPrivateSpace = (userId: string, teamId: string) => {
       })
       // Re-activate an archived membership; never demote an existing role.
       .onConflictDoUpdate({
-        set: { archivedAt: null },
+        set: { archivedAt: null, updatedAt: new Date().toISOString() },
         target: [membershipTable.userId, membershipTable.teamId],
       })
       .returning()

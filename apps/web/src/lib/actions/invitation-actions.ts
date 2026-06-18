@@ -92,6 +92,7 @@ const inviteMember = async (
           invitedById: session.user.id,
           memberId,
           status: "PENDING",
+          updatedAt: new Date().toISOString(),
         },
         target: [invitationTable.email, invitationTable.teamId],
       })

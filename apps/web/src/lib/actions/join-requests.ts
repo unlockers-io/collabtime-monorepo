@@ -62,7 +62,7 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
         userId: session.user.id,
       })
       .onConflictDoUpdate({
-        set: { status: "PENDING" },
+        set: { status: "PENDING", updatedAt: new Date().toISOString() },
         target: [joinRequestTable.userId, joinRequestTable.teamId],
       })
       .returning();
