@@ -105,7 +105,8 @@
         "STRIPE_PRO_PRICE_ID",
         "RESEND_API_KEY",
         "RESEND_FROM_EMAIL",
-        "REDIS_URL"
+        "REDIS_URL",
+        "DATABASE_URL"
       ]
     },
     "test:watch": {
