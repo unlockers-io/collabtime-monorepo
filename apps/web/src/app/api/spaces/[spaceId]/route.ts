@@ -1,4 +1,5 @@
-import { prisma } from "@repo/db";
+import { db, space as spaceTable } from "@repo/db";
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -31,8 +32,8 @@ export const GET = withEvlog(async (_request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const space = await prisma.space.findUnique({
-      where: { id: spaceId },
+    const space = await db.query.space.findFirst({
+      where: eq(spaceTable.id, spaceId),
     });
 
     if (!space) {
@@ -70,8 +71,8 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const space = await prisma.space.findUnique({
-      where: { id: spaceId },
+    const space = await db.query.space.findFirst({
+      where: eq(spaceTable.id, spaceId),
     });
 
     if (!space) {
@@ -104,10 +105,15 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
       }
     }
 
-    const updatedSpace = await prisma.space.update({
-      data: updateData,
-      where: { id: spaceId },
-    });
+    const [updatedSpace] = await db
+      .update(spaceTable)
+      .set(updateData)
+      .where(eq(spaceTable.id, spaceId))
+      .returning();
+
+    if (!updatedSpace) {
+      return NextResponse.json({ error: "Space not found" }, { status: 404 });
+    }
 
     return NextResponse.json({
       space: {
@@ -141,8 +147,8 @@ export const DELETE = withEvlog(async (_request: Request, { params }: Params) =>
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const space = await prisma.space.findUnique({
-      where: { id: spaceId },
+    const space = await db.query.space.findFirst({
+      where: eq(spaceTable.id, spaceId),
     });
 
     if (!space) {
@@ -153,9 +159,7 @@ export const DELETE = withEvlog(async (_request: Request, { params }: Params) =>
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.space.delete({
-      where: { id: spaceId },
-    });
+    await db.delete(spaceTable).where(eq(spaceTable.id, spaceId));
 
     return NextResponse.json({ success: true });
   } catch (error) {

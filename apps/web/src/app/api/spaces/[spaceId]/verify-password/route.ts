@@ -1,4 +1,5 @@
-import { prisma } from "@repo/db";
+import { db, space as spaceTable } from "@repo/db";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -32,14 +33,14 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
     }
 
-    const space = await prisma.space.findUnique({
-      select: {
+    const space = await db.query.space.findFirst({
+      columns: {
         accessPassword: true,
         id: true,
         isPrivate: true,
         teamId: true,
       },
-      where: { id: spaceId },
+      where: eq(spaceTable.id, spaceId),
     });
 
     if (!space) {

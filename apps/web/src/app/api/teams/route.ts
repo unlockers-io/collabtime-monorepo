@@ -1,4 +1,5 @@
-import { prisma } from "@repo/db";
+import { db, membership as membershipTable, space as spaceTable } from "@repo/db";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -22,19 +23,23 @@ export const GET = withEvlog(async () => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const memberships = await prisma.membership.findMany({
-      orderBy: { createdAt: "desc" },
-      where: { userId: session.user.id },
+    const memberships = await db.query.membership.findMany({
+      orderBy: desc(membershipTable.createdAt),
+      where: eq(membershipTable.userId, session.user.id),
     });
 
     // Owned spaces are returned alongside teams so the client can render the delete affordance.
-    const ownedSpaces = await prisma.space.findMany({
-      select: { id: true, teamId: true },
-      where: {
-        ownerId: session.user.id,
-        teamId: { in: memberships.map((m) => m.teamId) },
-      },
-    });
+    const teamIds = memberships.map((m) => m.teamId);
+    const ownedSpaces =
+      teamIds.length > 0
+        ? await db.query.space.findMany({
+            columns: { id: true, teamId: true },
+            where: and(
+              eq(spaceTable.ownerId, session.user.id),
+              inArray(spaceTable.teamId, teamIds),
+            ),
+          })
+        : [];
 
     const ownedSpaceByTeamId = new Map(ownedSpaces.map((space) => [space.teamId, space.id]));
 
@@ -53,7 +58,7 @@ export const GET = withEvlog(async () => {
         }
 
         return {
-          archivedAt: membership.archivedAt ? membership.archivedAt.toISOString() : null,
+          archivedAt: membership.archivedAt ? new Date(membership.archivedAt).toISOString() : null,
           memberCount: parsed.members?.length ?? 0,
           role: membership.role,
           spaceId: ownedSpaceByTeamId.get(membership.teamId) ?? null,

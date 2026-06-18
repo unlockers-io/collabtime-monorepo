@@ -1,4 +1,5 @@
-import { prisma } from "@repo/db";
+import { db, space as spaceTable } from "@repo/db";
+import { desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -20,9 +21,9 @@ export const GET = withEvlog(async () => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const spaces = await prisma.space.findMany({
-      orderBy: { createdAt: "desc" },
-      where: { ownerId: session.user.id },
+    const spaces = await db.query.space.findMany({
+      orderBy: desc(spaceTable.createdAt),
+      where: eq(spaceTable.ownerId, session.user.id),
     });
 
     return NextResponse.json({ spaces });
@@ -45,8 +46,8 @@ export const POST = withEvlog(async (request: Request) => {
     const body = await request.json();
     const { teamId } = createSpaceSchema.parse(body);
 
-    const existingSpace = await prisma.space.findUnique({
-      where: { teamId },
+    const existingSpace = await db.query.space.findFirst({
+      where: eq(spaceTable.teamId, teamId),
     });
 
     if (existingSpace) {
@@ -59,12 +60,15 @@ export const POST = withEvlog(async (request: Request) => {
       );
     }
 
-    const space = await prisma.space.create({
-      data: {
+    const [space] = await db
+      .insert(spaceTable)
+      .values({
+        id: crypto.randomUUID(),
         ownerId: session.user.id,
         teamId,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
 
     return NextResponse.json({ space }, { status: 201 });
   } catch (error) {

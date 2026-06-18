@@ -1,4 +1,5 @@
-import { prisma } from "@repo/db";
+import { db, membership as membershipTable } from "@repo/db";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -35,22 +36,30 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
     const body = await request.json();
     const { archived } = patchSchema.parse(body);
 
-    const existing = await prisma.membership.findUnique({
-      where: { userId_teamId: { teamId, userId: session.user.id } },
-    });
+    const membershipWhere = and(
+      eq(membershipTable.teamId, teamId),
+      eq(membershipTable.userId, session.user.id),
+    );
+
+    const existing = await db.query.membership.findFirst({ where: membershipWhere });
 
     if (!existing) {
       return NextResponse.json({ error: "Membership not found" }, { status: 404 });
     }
 
-    const updated = await prisma.membership.update({
-      data: { archivedAt: archived ? new Date() : null },
-      where: { userId_teamId: { teamId, userId: session.user.id } },
-    });
+    const [updated] = await db
+      .update(membershipTable)
+      .set({ archivedAt: archived ? new Date().toISOString() : null })
+      .where(membershipWhere)
+      .returning();
+
+    if (!updated) {
+      return NextResponse.json({ error: "Membership not found" }, { status: 404 });
+    }
 
     return NextResponse.json({
       membership: {
-        archivedAt: updated.archivedAt ? updated.archivedAt.toISOString() : null,
+        archivedAt: updated.archivedAt ? new Date(updated.archivedAt).toISOString() : null,
         teamId: updated.teamId,
       },
     });
