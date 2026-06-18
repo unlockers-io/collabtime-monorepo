@@ -36,7 +36,7 @@ export const user = pgTable(
   },
   (table) => [
     index("User_email_idx").using("btree", table.email.asc().nullsLast().op("text_ops")),
-    uniqueIndex("User_email_key").using("btree", table.email.asc().nullsLast().op("text_ops")),
+    unique("User_email_key").on(table.email),
   ],
 );
 
@@ -92,11 +92,7 @@ export const account = pgTable(
     userId: text().notNull(),
   },
   (table) => [
-    uniqueIndex("Account_providerId_accountId_key").using(
-      "btree",
-      table.providerId.asc().nullsLast().op("text_ops"),
-      table.accountId.asc().nullsLast().op("text_ops"),
-    ),
+    unique("Account_providerId_accountId_key").on(table.providerId, table.accountId),
     index("Account_userId_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
     foreignKey({
       columns: [table.userId],
@@ -189,11 +185,7 @@ export const membership = pgTable(
       table.archivedAt.asc().nullsLast().op("text_ops"),
     ),
     index("Membership_userId_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
-    uniqueIndex("Membership_userId_teamId_key").using(
-      "btree",
-      table.userId.asc().nullsLast().op("text_ops"),
-      table.teamId.asc().nullsLast().op("text_ops"),
-    ),
+    unique("Membership_userId_teamId_key").on(table.userId, table.teamId),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [user.id],
@@ -232,11 +224,7 @@ export const joinRequest = pgTable(
       table.status.asc().nullsLast().op("text_ops"),
     ),
     index("JoinRequest_userId_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
-    uniqueIndex("JoinRequest_userId_teamId_key").using(
-      "btree",
-      table.userId.asc().nullsLast().op("text_ops"),
-      table.teamId.asc().nullsLast().op("text_ops"),
-    ),
+    unique("JoinRequest_userId_teamId_key").on(table.userId, table.teamId),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [user.id],
@@ -276,11 +264,7 @@ export const invitation = pgTable(
       table.email.asc().nullsLast().op("text_ops"),
       table.status.asc().nullsLast().op("text_ops"),
     ),
-    uniqueIndex("Invitation_email_teamId_key").using(
-      "btree",
-      table.email.asc().nullsLast().op("text_ops"),
-      table.teamId.asc().nullsLast().op("text_ops"),
-    ),
+    unique("Invitation_email_teamId_key").on(table.email, table.teamId),
     index("Invitation_teamId_idx").using("btree", table.teamId.asc().nullsLast().op("text_ops")),
     foreignKey({
       columns: [table.invitedById],
