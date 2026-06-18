@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "Space_teamId_key" ON "Space" USING btree ("teamId" text_ops);
