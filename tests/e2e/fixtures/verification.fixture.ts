@@ -1,5 +1,6 @@
-import { prisma } from "@repo/db";
+import { db, user as userTable, verification as verificationTable } from "@repo/db";
 import { signJWT } from "better-auth/crypto";
+import { and, desc, eq, gt, like } from "drizzle-orm";
 
 import { webUrl } from "../../../playwright.config";
 
@@ -83,10 +84,10 @@ const forResetPassword = async (
   email: string,
   timeoutMs = 5000,
 ): Promise<{ token: string; url: string }> => {
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
+  const foundUser = await db.query.user.findFirst({
+    where: eq(userTable.email, email.toLowerCase()),
   });
-  if (!user) {
+  if (!foundUser) {
     throw new Error(`forResetPassword: no user with email ${email}`);
   }
 
@@ -97,13 +98,13 @@ const forResetPassword = async (
   // appear, so parallelizing wouldn't help.
   while (Date.now() < deadline) {
     // eslint-disable-next-line no-await-in-loop
-    const row = await prisma.verification.findFirst({
-      orderBy: { createdAt: "desc" },
-      where: {
-        expiresAt: { gt: new Date() },
-        identifier: { startsWith: "reset-password:" },
-        value: user.id,
-      },
+    const row = await db.query.verification.findFirst({
+      orderBy: desc(verificationTable.createdAt),
+      where: and(
+        gt(verificationTable.expiresAt, new Date().toISOString()),
+        like(verificationTable.identifier, "reset-password:%"),
+        eq(verificationTable.value, foundUser.id),
+      ),
     });
 
     if (row) {

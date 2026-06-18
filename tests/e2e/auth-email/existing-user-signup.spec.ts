@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { prisma } from "@repo/db";
+import { db, user as userTable } from "@repo/db";
+import { eq } from "drizzle-orm";
 
 import { webUrl } from "../../../playwright.config";
 import { waitForEmail } from "../helpers/resend";
@@ -37,7 +38,7 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
     expect([200, 201]).toContain(second.status());
 
     // Side-effect ceiling: exactly one user row.
-    const users = await prisma.user.findMany({ where: { email } });
+    const users = await db.query.user.findMany({ where: eq(userTable.email, email) });
     expect(users).toHaveLength(1);
     expect(users[0]?.name).toBe("Original Name");
 

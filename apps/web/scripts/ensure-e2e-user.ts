@@ -1,6 +1,6 @@
 // LOCAL-only: creates a known-password user. DATABASE_URL is gated to localhost below.
 
-import { prisma } from "@repo/db";
+import { account, db, user } from "@repo/db";
 
 import { auth } from "@/lib/auth-server";
 
@@ -23,36 +23,49 @@ const main = async () => {
   const ctx = await auth.$context;
   const hashed = await ctx.password.hash(PASSWORD);
 
-  // Existing rows keep their id (not SLUG), so use the returned `id` for the account FK below.
-  const user = await prisma.user.upsert({
-    create: {
+  const now = new Date().toISOString();
+
+  // Existing rows keep their original id (not SLUG), so use the returned `id` for the account FK.
+  const [upsertedUser] = await db
+    .insert(user)
+    .values({
       email: EMAIL,
       // Better Auth blocks sign-in for unverified accounts when requireEmailVerification is on.
       emailVerified: true,
       id: SLUG,
       name: NAME,
-    },
-    update: {
-      emailVerified: true,
-      name: NAME,
-    },
-    where: { email: EMAIL },
-  });
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      set: {
+        emailVerified: true,
+        name: NAME,
+        updatedAt: now,
+      },
+      target: user.email,
+    })
+    .returning({ id: user.id });
 
-  await prisma.account.upsert({
-    create: {
-      accountId: user.id,
+  const userId = upsertedUser?.id ?? SLUG;
+
+  await db
+    .insert(account)
+    .values({
+      accountId: userId,
+      id: `${userId}-credential`,
       password: hashed,
       providerId: "credential",
-      userId: user.id,
-    },
-    update: { password: hashed },
-    where: { providerId_accountId: { accountId: user.id, providerId: "credential" } },
-  });
+      updatedAt: now,
+      userId,
+    })
+    .onConflictDoUpdate({
+      set: { password: hashed },
+      target: [account.providerId, account.accountId],
+    });
 
   // eslint-disable-next-line no-console -- CI step output: surface the seed result.
   console.log(`✓ e2e user ${EMAIL} ready; password: ${PASSWORD}`);
-  await prisma.$disconnect();
+  await db.$client.end();
 };
 
 await main();
