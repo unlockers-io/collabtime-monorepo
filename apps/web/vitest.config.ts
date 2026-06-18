@@ -15,5 +15,14 @@ export default mergeConfig(
         "react-dom": resolve(monorepoRoot, "node_modules/react-dom"),
       },
     },
+    test: {
+      env: {
+        BETTER_AUTH_SECRET:
+          process.env.BETTER_AUTH_SECRET ?? "test-secret-minimum-32-characters-long",
+        DATABASE_URL:
+          process.env.DATABASE_URL ??
+          "postgresql://collabtime:collabtime123@localhost:5433/collabtime",
+      },
+    },
   }),
 );

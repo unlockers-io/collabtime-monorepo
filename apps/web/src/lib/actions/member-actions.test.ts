@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { db, membership, space, user } from "@repo/db";
+import { eq } from "drizzle-orm";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 
@@ -16,18 +18,12 @@ vi.mock("@/lib/team-auth", () => ({
   requireTeamAdmin: vi.fn(),
 }));
 
-vi.mock("@repo/db", () => ({
-  prisma: { membership: { findUnique: vi.fn() } },
-}));
-
 vi.mock("../redis", () => ({
   redis: { get: vi.fn(), set: vi.fn() },
   TEAM_ACTIVE_TTL_SECONDS: 100,
 }));
 
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
-
-import { prisma } from "@repo/db";
 
 import { redis } from "../redis";
 
@@ -41,9 +37,55 @@ import {
   updateTeamName,
 } from "./member-actions";
 
+// updateOwnMember reads a real Membership row; seed against the live DB.
+const OWN_USER_ID = "user-123";
+const OWN_SPACE_ID = "member-actions-space";
+// Tests below call updateOwnMember(VALID_UUID, ...), so the Membership FK target
+// (Space.teamId) must be VALID_UUID. This file owns VALID_UUID's Space row.
+const OWN_TEAM_ID = VALID_UUID;
+
+const now = () => new Date().toISOString();
+
+const setOwnMembership = async (exists: boolean) => {
+  await db.delete(membership).where(eq(membership.userId, OWN_USER_ID));
+  if (exists) {
+    await db.insert(membership).values({
+      id: "member-actions-membership",
+      role: "MEMBER",
+      teamId: OWN_TEAM_ID,
+      updatedAt: now(),
+      userId: OWN_USER_ID,
+    });
+  }
+};
+
+beforeAll(async () => {
+  await db.delete(membership).where(eq(membership.userId, OWN_USER_ID));
+  await db.delete(space).where(eq(space.id, OWN_SPACE_ID));
+  await db.delete(user).where(eq(user.id, OWN_USER_ID));
+  await db.insert(user).values({
+    email: "member-actions-user@example.com",
+    emailVerified: true,
+    id: OWN_USER_ID,
+    name: "Test User",
+    updatedAt: now(),
+  });
+  await db.insert(space).values({
+    id: OWN_SPACE_ID,
+    ownerId: OWN_USER_ID,
+    teamId: OWN_TEAM_ID,
+    updatedAt: now(),
+  });
+});
+
+afterAll(async () => {
+  await db.delete(membership).where(eq(membership.userId, OWN_USER_ID));
+  await db.delete(space).where(eq(space.id, OWN_SPACE_ID));
+  await db.delete(user).where(eq(user.id, OWN_USER_ID));
+});
+
 const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
 const mockedRequireAuth = vi.mocked(requireAuth);
-const mockedFindUnique = vi.mocked(prisma.membership.findUnique);
 const mockedRedisGet = vi.mocked(redis.get);
 const mockedRedisSet = vi.mocked(redis.set);
 
@@ -245,9 +287,9 @@ describe("importMembers", () => {
 describe("updateOwnMember", () => {
   const session = createMockSession();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockedRequireAuth.mockResolvedValue(session as never);
-    mockedFindUnique.mockResolvedValue({ id: "membership-1" } as never);
+    await setOwnMembership(true);
   });
 
   it("uses requireAuth instead of requireTeamAdmin", async () => {
@@ -264,7 +306,7 @@ describe("updateOwnMember", () => {
   });
 
   it("returns error when user is not a team member (no membership)", async () => {
-    mockedFindUnique.mockResolvedValue(null);
+    await setOwnMembership(false);
 
     const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       name: "X",

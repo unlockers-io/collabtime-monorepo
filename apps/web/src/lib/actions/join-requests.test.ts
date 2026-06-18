@@ -1,18 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { db, joinRequest, membership, space, user } from "@repo/db";
+import { eq } from "drizzle-orm";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createMockSession, createTestTeamRecord, VALID_UUID } from "./test-helpers";
+import { createMockSession, createTestTeamRecord } from "./test-helpers";
 
 vi.mock("@/lib/team-auth", () => ({
   getTeamRole: vi.fn(),
   requireAuth: vi.fn(),
   requireTeamAdmin: vi.fn(),
-}));
-vi.mock("@repo/db", () => ({
-  prisma: {
-    $transaction: vi.fn(),
-    joinRequest: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn(), upsert: vi.fn() },
-    membership: { create: vi.fn(), findUnique: vi.fn() },
-  },
 }));
 vi.mock("../redis", () => ({
   redis: { get: vi.fn(), set: vi.fn() },
@@ -20,8 +15,6 @@ vi.mock("../redis", () => ({
 }));
 vi.mock("./helpers", () => ({ getTeamRecord: vi.fn() }));
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
-
-import { prisma } from "@repo/db";
 
 import { getTeamRole, requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 
@@ -34,37 +27,111 @@ import {
   requestToJoin,
 } from "./join-requests";
 
-beforeEach(() => {
+// Requester (the session user) and an existing team owner with a Space.
+const REQUESTER_ID = "jr-requester";
+const OWNER_ID = "jr-owner";
+// File-unique team id (unique Space.teamId constraint forbids sharing across test files).
+const TEAM_ID = "5d36d3bf-9170-45e4-9123-1d01d253ab77";
+const SPACE_ID = "jr-space";
+
+const now = () => new Date().toISOString();
+
+const resetState = async () => {
+  await db.delete(joinRequest).where(eq(joinRequest.teamId, TEAM_ID));
+  await db.delete(membership).where(eq(membership.teamId, TEAM_ID));
+};
+
+beforeAll(async () => {
+  await resetState();
+  await db.delete(space).where(eq(space.id, SPACE_ID));
+  await db.delete(user).where(eq(user.id, REQUESTER_ID));
+  await db.delete(user).where(eq(user.id, OWNER_ID));
+
+  await db.insert(user).values({
+    email: "jr-requester@example.com",
+    emailVerified: true,
+    id: REQUESTER_ID,
+    name: "Bob",
+    updatedAt: now(),
+  });
+  await db.insert(user).values({
+    email: "jr-owner@example.com",
+    emailVerified: true,
+    id: OWNER_ID,
+    name: "Owner",
+    updatedAt: now(),
+  });
+  await db.insert(space).values({
+    id: SPACE_ID,
+    ownerId: OWNER_ID,
+    teamId: TEAM_ID,
+    updatedAt: now(),
+  });
+});
+
+afterAll(async () => {
+  await resetState();
+  await db.delete(space).where(eq(space.id, SPACE_ID));
+  await db.delete(user).where(eq(user.id, REQUESTER_ID));
+  await db.delete(user).where(eq(user.id, OWNER_ID));
+});
+
+const seedMembership = async (userId: string, role: "ADMIN" | "MEMBER") => {
+  await db.insert(membership).values({
+    id: `jr-membership-${userId}`,
+    role,
+    teamId: TEAM_ID,
+    updatedAt: now(),
+    userId,
+  });
+};
+
+const seedJoinRequest = async (
+  userId: string,
+  status: "APPROVED" | "DENIED" | "PENDING",
+  id = `jr-${userId}`,
+) => {
+  await db.insert(joinRequest).values({
+    id,
+    status,
+    teamId: TEAM_ID,
+    updatedAt: now(),
+    userId,
+  });
+  return id;
+};
+
+beforeEach(async () => {
   vi.clearAllMocks();
-  vi.mocked(requireAuth).mockResolvedValue(createMockSession() as never);
+  vi.mocked(requireAuth).mockResolvedValue(createMockSession({ userId: REQUESTER_ID }) as never);
   vi.mocked(requireTeamAdmin).mockResolvedValue(undefined as never);
   vi.spyOn(console, "error").mockImplementation(() => {});
+  await resetState();
 });
 
 describe("requestToJoin", () => {
   it("returns error when team not found", async () => {
     vi.mocked(getTeamRecord).mockResolvedValue(null as never);
 
-    const result = await requestToJoin(VALID_UUID);
+    const result = await requestToJoin(TEAM_ID);
 
     expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("returns error when already a member", async () => {
     vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
-    vi.mocked(prisma.membership.findUnique).mockResolvedValue({ id: "m-1" } as never);
+    await seedMembership(REQUESTER_ID, "MEMBER");
 
-    const result = await requestToJoin(VALID_UUID);
+    const result = await requestToJoin(TEAM_ID);
 
     expect(result).toEqual({ error: "You are already a member of this team", success: false });
   });
 
   it("returns error when already has pending request", async () => {
     vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
-    vi.mocked(prisma.membership.findUnique).mockResolvedValue(null as never);
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue({ status: "PENDING" } as never);
+    await seedJoinRequest(REQUESTER_ID, "PENDING");
 
-    const result = await requestToJoin(VALID_UUID);
+    const result = await requestToJoin(TEAM_ID);
 
     expect(result).toEqual({
       error: "You already have a pending request for this team",
@@ -72,122 +139,99 @@ describe("requestToJoin", () => {
     });
   });
 
-  it("creates join request via upsert on success", async () => {
+  it("creates a PENDING join request on success", async () => {
     vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
-    vi.mocked(prisma.membership.findUnique).mockResolvedValue(null as never);
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null as never);
-    vi.mocked(prisma.joinRequest.upsert).mockResolvedValue({ id: "jr-1" } as never);
 
-    const result = await requestToJoin(VALID_UUID);
+    const result = await requestToJoin(TEAM_ID);
 
-    expect(result).toEqual({ data: { requestId: "jr-1" }, success: true });
-    expect(prisma.joinRequest.upsert).toHaveBeenCalled();
+    expect(result.success).toBe(true);
+    const row = await db.query.joinRequest.findFirst({
+      where: eq(joinRequest.userId, REQUESTER_ID),
+    });
+    expect(row?.status).toBe("PENDING");
+    if (result.success) {
+      expect(result.data.requestId).toBe(row?.id);
+    }
   });
 });
 
 describe("approveJoinRequest", () => {
-  const pendingRequest = {
-    id: "jr-1",
-    status: "PENDING",
-    teamId: VALID_UUID,
-    user: { email: "bob@example.com", name: "Bob" },
-    userId: "user-456",
-  };
-
   it("returns error when request not found", async () => {
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null as never);
-
-    const result = await approveJoinRequest("jr-1");
+    const result = await approveJoinRequest("does-not-exist");
 
     expect(result).toEqual({ error: "Join request not found", success: false });
   });
 
   it("returns error when request is not PENDING", async () => {
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue({
-      ...pendingRequest,
-      status: "APPROVED",
-    } as never);
+    const id = await seedJoinRequest(REQUESTER_ID, "APPROVED");
 
-    const result = await approveJoinRequest("jr-1");
+    const result = await approveJoinRequest(id);
 
     expect(result).toEqual({ error: "Join request is no longer pending", success: false });
   });
 
   it("requires admin of the request's team", async () => {
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
+    const id = await seedJoinRequest(REQUESTER_ID, "PENDING");
     vi.mocked(requireTeamAdmin).mockRejectedValue(new Error("Not admin") as never);
 
-    const result = await approveJoinRequest("jr-1");
+    const result = await approveJoinRequest(id);
 
-    expect(requireTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
+    expect(requireTeamAdmin).toHaveBeenCalledWith(TEAM_ID);
     expect(result).toEqual({ error: "Failed to approve join request", success: false });
   });
 
-  it("creates membership and updates status in transaction", async () => {
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
+  it("creates membership and marks request APPROVED in a transaction", async () => {
+    const id = await seedJoinRequest(REQUESTER_ID, "PENDING");
     vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
 
-    const result = await approveJoinRequest("jr-1");
+    const result = await approveJoinRequest(id);
 
-    expect(prisma.$transaction).toHaveBeenCalled();
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.memberId).toBe("test-uuid");
     }
+    const request = await db.query.joinRequest.findFirst({ where: eq(joinRequest.id, id) });
+    expect(request?.status).toBe("APPROVED");
+    const created = await db.query.membership.findFirst({
+      where: eq(membership.userId, REQUESTER_ID),
+    });
+    expect(created?.role).toBe("MEMBER");
   });
 
   it("adds member to Redis cache after approval", async () => {
     const { redis } = await import("../redis");
-
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
+    const id = await seedJoinRequest(REQUESTER_ID, "PENDING");
     vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
 
-    await approveJoinRequest("jr-1");
+    await approveJoinRequest(id);
 
     expect(redis.set).toHaveBeenCalled();
   });
 });
 
 describe("denyJoinRequest", () => {
-  const pendingRequest = {
-    id: "jr-1",
-    status: "PENDING",
-    teamId: VALID_UUID,
-    userId: "user-456",
-  };
-
   it("returns error when request not found", async () => {
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null as never);
-
-    const result = await denyJoinRequest("jr-1");
+    const result = await denyJoinRequest("does-not-exist");
 
     expect(result).toEqual({ error: "Join request not found", success: false });
   });
 
   it("returns error when not PENDING", async () => {
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue({
-      ...pendingRequest,
-      status: "DENIED",
-    } as never);
+    const id = await seedJoinRequest(REQUESTER_ID, "DENIED");
 
-    const result = await denyJoinRequest("jr-1");
+    const result = await denyJoinRequest(id);
 
     expect(result).toEqual({ error: "Join request is no longer pending", success: false });
   });
 
   it("updates status to DENIED", async () => {
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
-    vi.mocked(prisma.joinRequest.update).mockResolvedValue(undefined as never);
+    const id = await seedJoinRequest(REQUESTER_ID, "PENDING");
 
-    const result = await denyJoinRequest("jr-1");
+    const result = await denyJoinRequest(id);
 
-    expect(prisma.joinRequest.update).toHaveBeenCalledWith({
-      data: { status: "DENIED" },
-      where: { id: "jr-1" },
-    });
     expect(result).toEqual({ data: undefined, success: true });
+    const row = await db.query.joinRequest.findFirst({ where: eq(joinRequest.id, id) });
+    expect(row?.status).toBe("DENIED");
   });
 });
 
@@ -195,37 +239,27 @@ describe("getPendingJoinRequests", () => {
   it("requires team admin", async () => {
     vi.mocked(requireTeamAdmin).mockRejectedValue(new Error("Not admin") as never);
 
-    const result = await getPendingJoinRequests(VALID_UUID);
+    const result = await getPendingJoinRequests(TEAM_ID);
 
-    expect(requireTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
+    expect(requireTeamAdmin).toHaveBeenCalledWith(TEAM_ID);
     expect(result).toEqual({ error: "Failed to get join requests", success: false });
   });
 
   it("returns formatted pending requests with user info", async () => {
-    const createdAt = new Date("2026-01-15");
-    vi.mocked(prisma.joinRequest.findMany).mockResolvedValue([
-      {
-        createdAt,
-        id: "jr-1",
-        user: { email: "bob@example.com", id: "user-456", name: "Bob" },
-        userId: "user-456",
-      },
-    ] as never);
+    await seedJoinRequest(REQUESTER_ID, "PENDING");
 
-    const result = await getPendingJoinRequests(VALID_UUID);
+    const result = await getPendingJoinRequests(TEAM_ID);
 
-    expect(result).toEqual({
-      data: [
-        {
-          createdAt,
-          id: "jr-1",
-          userEmail: "bob@example.com",
-          userId: "user-456",
-          userName: "Bob",
-        },
-      ],
-      success: true,
-    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]).toMatchObject({
+        userEmail: "jr-requester@example.com",
+        userId: REQUESTER_ID,
+        userName: "Bob",
+      });
+      expect(result.data[0].createdAt).toBeInstanceOf(Date);
+    }
   });
 });
 
@@ -233,25 +267,24 @@ describe("getMyTeamStatus", () => {
   it("returns role when user is a team member", async () => {
     vi.mocked(getTeamRole).mockResolvedValue({ role: "ADMIN" } as never);
 
-    const result = await getMyTeamStatus(VALID_UUID);
+    const result = await getMyTeamStatus(TEAM_ID);
 
     expect(result).toEqual({ data: { status: "ADMIN" }, success: true });
   });
 
   it("returns PENDING when user has pending request", async () => {
     vi.mocked(getTeamRole).mockResolvedValue(null as never);
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue({ status: "PENDING" } as never);
+    await seedJoinRequest(REQUESTER_ID, "PENDING");
 
-    const result = await getMyTeamStatus(VALID_UUID);
+    const result = await getMyTeamStatus(TEAM_ID);
 
     expect(result).toEqual({ data: { status: "PENDING" }, success: true });
   });
 
   it("returns none when user has no relationship", async () => {
     vi.mocked(getTeamRole).mockResolvedValue(null as never);
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null as never);
 
-    const result = await getMyTeamStatus(VALID_UUID);
+    const result = await getMyTeamStatus(TEAM_ID);
 
     expect(result).toEqual({ data: { status: "none" }, success: true });
   });
