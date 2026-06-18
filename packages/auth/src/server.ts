@@ -1,4 +1,11 @@
-import type { PrismaClient } from "@repo/db";
+import type { db } from "@repo/db";
+import {
+  account as accountTable,
+  rateLimit as rateLimitTable,
+  session as sessionTable,
+  user as userTable,
+  verification as verificationTable,
+} from "@repo/db";
 import { log } from "@repo/observability";
 import {
   sendChangeEmailConfirmation,
@@ -7,7 +14,7 @@ import {
   sendWelcomeEmail,
 } from "@repo/transactional";
 import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import type { BetterAuthPlugin } from "better-auth/types";
 
 type SecondaryStorage = {
@@ -24,6 +31,7 @@ type AuthLifecycleContext = {
 };
 
 type AuthConfig = {
+  db: typeof db;
   // Inject framework-specific plugins (e.g. nextCookies()) at the call site;
   // must be last in the plugins array
   extraPlugins?: Array<BetterAuthPlugin>;
@@ -35,7 +43,6 @@ type AuthConfig = {
   // Fired after Better Auth persists a new user (signup). Captures intent tied
   // to the user row, so it survives the cross-device email-verification step.
   onUserCreated?: (userId: string, ctx: AuthLifecycleContext) => Promise<void>;
-  prisma: PrismaClient;
   resendApiKey?: string;
   resendReplyTo?: string;
   secondaryStorage?: SecondaryStorage;
@@ -58,11 +65,11 @@ const parseEnvList = (value: string | undefined): Array<string> => {
 
 const createAuth = (config: AuthConfig) => {
   const {
+    db: database,
     extraPlugins = [],
     fromEmail = "Collab Time <noreply@email.collabtime.io>",
     onSessionCreated,
     onUserCreated,
-    prisma,
     resendApiKey,
     resendReplyTo,
     secondaryStorage,
@@ -123,8 +130,15 @@ const createAuth = (config: AuthConfig) => {
       protocol: "auto",
     },
 
-    database: prismaAdapter(prisma, {
-      provider: "postgresql",
+    database: drizzleAdapter(database, {
+      provider: "pg",
+      schema: {
+        account: accountTable,
+        rateLimit: rateLimitTable,
+        session: sessionTable,
+        user: userTable,
+        verification: verificationTable,
+      },
     }),
 
     // Domain side effects run via injected callbacks (see AuthConfig). user.create

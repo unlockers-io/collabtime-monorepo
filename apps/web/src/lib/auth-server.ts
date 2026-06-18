@@ -1,5 +1,5 @@
 import { createAuth, type Auth, type AuthConfig } from "@repo/auth/server";
-import { prisma } from "@repo/db";
+import { db } from "@repo/db";
 import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
 import { cache } from "react";
@@ -12,6 +12,7 @@ let cachedAuth: Auth | null = null;
 
 const getAuthConfig = (): AuthConfig => {
   return {
+    db,
     // nextCookies() must be last — lets better-auth read cookies in RSC/Server Actions
     extraPlugins: [nextCookies()],
     // Self-join private spaces the user holds a valid password cookie for.
@@ -20,7 +21,6 @@ const getAuthConfig = (): AuthConfig => {
     onSessionCreated: (userId, { cookieHeader }) =>
       joinPrivateSpacesFromCookies(userId, cookieHeader),
     onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
-    prisma,
     secret: process.env.BETTER_AUTH_SECRET ?? "",
     ...(process.env.RESEND_API_KEY
       ? {
