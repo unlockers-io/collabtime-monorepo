@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -152,7 +153,9 @@ export const space = pgTable(
   (table) => [
     index("Space_ownerId_idx").using("btree", table.ownerId.asc().nullsLast().op("text_ops")),
     index("Space_teamId_idx").using("btree", table.teamId.asc().nullsLast().op("text_ops")),
-    uniqueIndex("Space_teamId_key").using("btree", table.teamId.asc().nullsLast().op("text_ops")),
+    // unique() generates a real PG unique constraint (not just an index) so that
+    // Membership/JoinRequest/Invitation foreign keys referencing Space.teamId work.
+    unique("Space_teamId_key").on(table.teamId),
     foreignKey({
       columns: [table.ownerId],
       foreignColumns: [user.id],
