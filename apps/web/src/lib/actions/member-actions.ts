@@ -1,6 +1,7 @@
 "use server";
 
-import { prisma } from "@repo/db";
+import { db, membership as membershipTable } from "@repo/db";
+import { and, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
@@ -178,8 +179,8 @@ const updateOwnMember = async (
       if (!idCheck.ok) {
         return idCheck;
       }
-      const membership = await prisma.membership.findUnique({
-        where: { userId_teamId: { teamId, userId: session.user.id } },
+      const membership = await db.query.membership.findFirst({
+        where: and(eq(membershipTable.teamId, teamId), eq(membershipTable.userId, session.user.id)),
       });
       if (!membership) {
         return { error: "You are not a member of this team", ok: false };

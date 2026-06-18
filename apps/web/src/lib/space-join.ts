@@ -1,4 +1,5 @@
-import { prisma } from "@repo/db";
+import { db, membership as membershipTable, space as spaceTable } from "@repo/db";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { log } from "@/lib/observability";
 import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
@@ -50,12 +51,23 @@ const validSpaceIdsFromCookieHeader = (cookieHeader: string | null): Array<strin
  * keep their role.
  */
 const joinPrivateSpace = (userId: string, teamId: string) => {
-  return prisma.membership.upsert({
-    create: { role: "MEMBER", teamId, userId },
-    // Re-activate an archived membership; never demote an existing role.
-    update: { archivedAt: null },
-    where: { userId_teamId: { teamId, userId } },
-  });
+  return (
+    db
+      .insert(membershipTable)
+      .values({
+        id: crypto.randomUUID(),
+        role: "MEMBER",
+        teamId,
+        updatedAt: new Date().toISOString(),
+        userId,
+      })
+      // Re-activate an archived membership; never demote an existing role.
+      .onConflictDoUpdate({
+        set: { archivedAt: null },
+        target: [membershipTable.userId, membershipTable.teamId],
+      })
+      .returning()
+  );
 };
 
 /**
@@ -75,9 +87,9 @@ const joinPrivateSpacesFromCookies = async (
       return;
     }
 
-    const spaces = await prisma.space.findMany({
-      select: { teamId: true },
-      where: { id: { in: spaceIds }, isPrivate: true },
+    const spaces = await db.query.space.findMany({
+      columns: { teamId: true },
+      where: and(inArray(spaceTable.id, spaceIds), eq(spaceTable.isPrivate, true)),
     });
     if (spaces.length === 0) {
       return;

@@ -1,6 +1,7 @@
 "use server";
 
-import { prisma } from "@repo/db";
+import { db, joinRequest as joinRequestTable, membership as membershipTable } from "@repo/db";
+import { and, asc, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
@@ -24,21 +25,14 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
 
     const [teamResult, membershipResult, requestResult] = await Promise.allSettled([
       getTeamRecord(teamId),
-      prisma.membership.findUnique({
-        where: {
-          userId_teamId: {
-            teamId,
-            userId: session.user.id,
-          },
-        },
+      db.query.membership.findFirst({
+        where: and(eq(membershipTable.teamId, teamId), eq(membershipTable.userId, session.user.id)),
       }),
-      prisma.joinRequest.findUnique({
-        where: {
-          userId_teamId: {
-            teamId,
-            userId: session.user.id,
-          },
-        },
+      db.query.joinRequest.findFirst({
+        where: and(
+          eq(joinRequestTable.teamId, teamId),
+          eq(joinRequestTable.userId, session.user.id),
+        ),
       }),
     ]);
 
@@ -58,22 +52,20 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
       return { error: "You already have a pending request for this team", success: false };
     }
 
-    const joinRequest = await prisma.joinRequest.upsert({
-      create: {
+    const [joinRequest] = await db
+      .insert(joinRequestTable)
+      .values({
+        id: uuidv4(),
         status: "PENDING",
         teamId,
+        updatedAt: new Date().toISOString(),
         userId: session.user.id,
-      },
-      update: {
-        status: "PENDING",
-      },
-      where: {
-        userId_teamId: {
-          teamId,
-          userId: session.user.id,
-        },
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        set: { status: "PENDING" },
+        target: [joinRequestTable.userId, joinRequestTable.teamId],
+      })
+      .returning();
 
     return { data: { requestId: joinRequest.id }, success: true };
   } catch (error) {
@@ -86,9 +78,9 @@ const approveJoinRequest = async (
   requestId: string,
 ): Promise<ActionResult<{ memberId: string }>> => {
   try {
-    const joinRequest = await prisma.joinRequest.findUnique({
-      include: { user: true },
-      where: { id: requestId },
+    const joinRequest = await db.query.joinRequest.findFirst({
+      where: eq(joinRequestTable.id, requestId),
+      with: { user: true },
     });
 
     if (!joinRequest) {
@@ -102,19 +94,20 @@ const approveJoinRequest = async (
     await requireTeamAdmin(joinRequest.teamId);
 
     // Update request status + create membership atomically
-    await prisma.$transaction([
-      prisma.joinRequest.update({
-        data: { status: "APPROVED" },
-        where: { id: requestId },
-      }),
-      prisma.membership.create({
-        data: {
-          role: "MEMBER",
-          teamId: joinRequest.teamId,
-          userId: joinRequest.userId,
-        },
-      }),
-    ]);
+    const now = new Date().toISOString();
+    await db.transaction(async (tx) => {
+      await tx
+        .update(joinRequestTable)
+        .set({ status: "APPROVED" })
+        .where(eq(joinRequestTable.id, requestId));
+      await tx.insert(membershipTable).values({
+        id: uuidv4(),
+        role: "MEMBER",
+        teamId: joinRequest.teamId,
+        updatedAt: now,
+        userId: joinRequest.userId,
+      });
+    });
 
     // Post-commit cache update (best-effort)
     const memberName = joinRequest.user.name || joinRequest.user.email.split("@")[0] || "Unknown";
@@ -157,8 +150,8 @@ const approveJoinRequest = async (
 
 const denyJoinRequest = async (requestId: string): Promise<ActionResult<void>> => {
   try {
-    const joinRequest = await prisma.joinRequest.findUnique({
-      where: { id: requestId },
+    const joinRequest = await db.query.joinRequest.findFirst({
+      where: eq(joinRequestTable.id, requestId),
     });
 
     if (!joinRequest) {
@@ -171,10 +164,10 @@ const denyJoinRequest = async (requestId: string): Promise<ActionResult<void>> =
 
     await requireTeamAdmin(joinRequest.teamId);
 
-    await prisma.joinRequest.update({
-      data: { status: "DENIED" },
-      where: { id: requestId },
-    });
+    await db
+      .update(joinRequestTable)
+      .set({ status: "DENIED" })
+      .where(eq(joinRequestTable.id, requestId));
 
     return { data: undefined, success: true };
   } catch (error) {
@@ -198,27 +191,22 @@ const getPendingJoinRequests = async (
 
     await requireTeamAdmin(teamId);
 
-    const requests = await prisma.joinRequest.findMany({
-      include: {
+    const requests = await db.query.joinRequest.findMany({
+      orderBy: asc(joinRequestTable.createdAt),
+      where: and(eq(joinRequestTable.status, "PENDING"), eq(joinRequestTable.teamId, teamId)),
+      with: {
         user: {
-          select: {
+          columns: {
             email: true,
             id: true,
             name: true,
           },
         },
       },
-      orderBy: {
-        createdAt: "asc",
-      },
-      where: {
-        status: "PENDING",
-        teamId,
-      },
     });
 
     const data = requests.map((r) => ({
-      createdAt: r.createdAt,
+      createdAt: new Date(r.createdAt),
       id: r.id,
       userEmail: r.user.email,
       userId: r.userId,
@@ -252,13 +240,8 @@ const getMyTeamStatus = async (
       return { data: { status: teamRole.role }, success: true };
     }
 
-    const pendingRequest = await prisma.joinRequest.findUnique({
-      where: {
-        userId_teamId: {
-          teamId,
-          userId: session.user.id,
-        },
-      },
+    const pendingRequest = await db.query.joinRequest.findFirst({
+      where: and(eq(joinRequestTable.teamId, teamId), eq(joinRequestTable.userId, session.user.id)),
     });
 
     if (pendingRequest && pendingRequest.status === "PENDING") {

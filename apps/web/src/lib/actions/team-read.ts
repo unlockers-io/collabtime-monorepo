@@ -1,6 +1,7 @@
 "use server";
 
-import { prisma } from "@repo/db";
+import { db, membership as membershipTable, space as spaceTable } from "@repo/db";
+import { and, eq } from "drizzle-orm";
 import { cookies, headers } from "next/headers";
 import { cache } from "react";
 
@@ -30,8 +31,8 @@ const getPublicTeam = async (
       return { error: "Invalid team ID", success: false };
     }
 
-    const space = await prisma.space.findUnique({
-      where: { teamId },
+    const space = await db.query.space.findFirst({
+      where: eq(spaceTable.teamId, teamId),
     });
 
     if (!space) {
@@ -64,8 +65,8 @@ const getPublicTeam = async (
 
     let role: TeamRole = "MEMBER";
     if (userId) {
-      const membership = await prisma.membership.findUnique({
-        where: { userId_teamId: { teamId, userId } },
+      const membership = await db.query.membership.findFirst({
+        where: and(eq(membershipTable.teamId, teamId), eq(membershipTable.userId, userId)),
       });
       if (membership && isTeamRole(membership.role)) {
         role = membership.role;
@@ -91,12 +92,12 @@ const validateTeam = cache(async (teamId: string): Promise<boolean> => {
       return false;
     }
 
-    const space = await prisma.space.findUnique({
-      select: { id: true },
-      where: { teamId },
+    const space = await db.query.space.findFirst({
+      columns: { id: true },
+      where: eq(spaceTable.teamId, teamId),
     });
 
-    return space !== null;
+    return space !== undefined;
   } catch (error) {
     log.error({ error, message: "Failed to validate team", route: "actions/team-read" });
     return false;
@@ -131,8 +132,8 @@ const getTeamMembershipRole = async (teamId: string, userId: string): Promise<Te
       return null;
     }
 
-    const membership = await prisma.membership.findUnique({
-      where: { userId_teamId: { teamId, userId } },
+    const membership = await db.query.membership.findFirst({
+      where: and(eq(membershipTable.teamId, teamId), eq(membershipTable.userId, userId)),
     });
 
     if (membership && isTeamRole(membership.role)) {

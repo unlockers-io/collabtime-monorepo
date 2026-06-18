@@ -1,7 +1,13 @@
 "use server";
 
-import { prisma } from "@repo/db";
+import {
+  db,
+  invitation as invitationTable,
+  membership as membershipTable,
+  user as userTable,
+} from "@repo/db";
 import { sendInvitationEmail } from "@repo/transactional";
+import { and, eq } from "drizzle-orm";
 import { after } from "next/server";
 
 import { getEnv } from "@/lib/env";
@@ -40,7 +46,7 @@ const inviteMember = async (
 
     const [teamResult, existingUserResult] = await Promise.allSettled([
       getTeamRecord(teamId),
-      prisma.user.findUnique({ where: { email: trimmedEmail } }),
+      db.query.user.findFirst({ where: eq(userTable.email, trimmedEmail) }),
     ]);
 
     const team = teamResult.status === "fulfilled" ? teamResult.value : null;
@@ -61,13 +67,8 @@ const inviteMember = async (
       existingUserResult.status === "fulfilled" ? existingUserResult.value : null;
 
     if (existingUser) {
-      const existingMembership = await prisma.membership.findUnique({
-        where: {
-          userId_teamId: {
-            teamId,
-            userId: existingUser.id,
-          },
-        },
+      const existingMembership = await db.query.membership.findFirst({
+        where: and(eq(membershipTable.teamId, teamId), eq(membershipTable.userId, existingUser.id)),
       });
 
       if (existingMembership) {
@@ -76,25 +77,25 @@ const inviteMember = async (
     }
 
     // Upsert resets a previously declined invitation back to PENDING so it re-sends.
-    const invitation = await prisma.invitation.upsert({
-      create: {
+    const [invitation] = await db
+      .insert(invitationTable)
+      .values({
         email: trimmedEmail,
+        id: crypto.randomUUID(),
         invitedById: session.user.id,
         memberId,
         teamId,
-      },
-      update: {
-        invitedById: session.user.id,
-        memberId,
-        status: "PENDING",
-      },
-      where: {
-        email_teamId: {
-          email: trimmedEmail,
-          teamId,
+        updatedAt: new Date().toISOString(),
+      })
+      .onConflictDoUpdate({
+        set: {
+          invitedById: session.user.id,
+          memberId,
+          status: "PENDING",
         },
-      },
-    });
+        target: [invitationTable.email, invitationTable.teamId],
+      })
+      .returning();
 
     // Best-effort: a failed send is logged but doesn't fail the invitation.
     let emailSent = false;
@@ -144,8 +145,8 @@ const acceptInvitation = async (
   try {
     const session = await requireAuth();
 
-    const invitation = await prisma.invitation.findUnique({
-      where: { id: invitationId },
+    const invitation = await db.query.invitation.findFirst({
+      where: eq(invitationTable.id, invitationId),
     });
 
     if (!invitation) {
@@ -160,38 +161,36 @@ const acceptInvitation = async (
       return { error: "This invitation is no longer pending", success: false };
     }
 
-    const existingMembership = await prisma.membership.findUnique({
-      where: {
-        userId_teamId: {
-          teamId: invitation.teamId,
-          userId: session.user.id,
-        },
-      },
+    const existingMembership = await db.query.membership.findFirst({
+      where: and(
+        eq(membershipTable.teamId, invitation.teamId),
+        eq(membershipTable.userId, session.user.id),
+      ),
     });
 
     if (existingMembership) {
       // Already a member — just mark invitation as accepted
-      await prisma.invitation.update({
-        data: { status: "ACCEPTED" },
-        where: { id: invitationId },
-      });
+      await db
+        .update(invitationTable)
+        .set({ status: "ACCEPTED" })
+        .where(eq(invitationTable.id, invitationId));
       return { data: { teamId: invitation.teamId }, success: true };
     }
 
     // Create membership + update invitation atomically
-    await prisma.$transaction([
-      prisma.invitation.update({
-        data: { status: "ACCEPTED" },
-        where: { id: invitationId },
-      }),
-      prisma.membership.create({
-        data: {
-          role: "MEMBER",
-          teamId: invitation.teamId,
-          userId: session.user.id,
-        },
-      }),
-    ]);
+    await db.transaction(async (tx) => {
+      await tx
+        .update(invitationTable)
+        .set({ status: "ACCEPTED" })
+        .where(eq(invitationTable.id, invitationId));
+      await tx.insert(membershipTable).values({
+        id: crypto.randomUUID(),
+        role: "MEMBER",
+        teamId: invitation.teamId,
+        updatedAt: new Date().toISOString(),
+        userId: session.user.id,
+      });
+    });
 
     // Claim the member slot in Redis (best-effort)
     try {
@@ -227,8 +226,8 @@ const declineInvitation = async (invitationId: string): Promise<ActionResult<voi
   try {
     const session = await requireAuth();
 
-    const invitation = await prisma.invitation.findUnique({
-      where: { id: invitationId },
+    const invitation = await db.query.invitation.findFirst({
+      where: eq(invitationTable.id, invitationId),
     });
 
     if (!invitation) {
@@ -243,10 +242,10 @@ const declineInvitation = async (invitationId: string): Promise<ActionResult<voi
       return { error: "This invitation is no longer pending", success: false };
     }
 
-    await prisma.invitation.update({
-      data: { status: "DECLINED" },
-      where: { id: invitationId },
-    });
+    await db
+      .update(invitationTable)
+      .set({ status: "DECLINED" })
+      .where(eq(invitationTable.id, invitationId));
 
     return { data: undefined, success: true };
   } catch (error) {

@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@repo/db";
+import { db, membership as membershipTable, space as spaceTable } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
@@ -18,22 +18,23 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
     const teamId = uuidv4();
 
     // Create Space + Membership atomically in Postgres
-    await prisma.$transaction([
-      prisma.space.create({
-        data: {
-          isPrivate: false,
-          ownerId: session.user.id,
-          teamId,
-        },
-      }),
-      prisma.membership.create({
-        data: {
-          role: "ADMIN",
-          teamId,
-          userId: session.user.id,
-        },
-      }),
-    ]);
+    const now = new Date().toISOString();
+    await db.transaction(async (tx) => {
+      await tx.insert(spaceTable).values({
+        id: uuidv4(),
+        isPrivate: false,
+        ownerId: session.user.id,
+        teamId,
+        updatedAt: now,
+      });
+      await tx.insert(membershipTable).values({
+        id: uuidv4(),
+        role: "ADMIN",
+        teamId,
+        updatedAt: now,
+        userId: session.user.id,
+      });
+    });
 
     // Post-commit: populate Redis cache (best-effort)
     try {

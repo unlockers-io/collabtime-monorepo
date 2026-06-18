@@ -1,6 +1,7 @@
 "use server";
 
-import { prisma } from "@repo/db";
+import { db, membership as membershipTable } from "@repo/db";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth-server";
@@ -25,13 +26,8 @@ const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
     return null;
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      userId_teamId: {
-        teamId,
-        userId: session.user.id,
-      },
-    },
+  const membership = await db.query.membership.findFirst({
+    where: and(eq(membershipTable.teamId, teamId), eq(membershipTable.userId, session.user.id)),
   });
 
   if (!membership) {

@@ -1,4 +1,10 @@
-import { prisma } from "@repo/db";
+import {
+  db,
+  joinRequest as joinRequestTable,
+  membership as membershipTable,
+  space as spaceTable,
+} from "@repo/db";
+import { and, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -45,11 +51,11 @@ type TeamStatusResult = {
 
 const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatusResult> => {
   const [membershipResult, joinRequestResult] = await Promise.allSettled([
-    prisma.membership.findUnique({
-      where: { userId_teamId: { teamId, userId } },
+    db.query.membership.findFirst({
+      where: and(eq(membershipTable.teamId, teamId), eq(membershipTable.userId, userId)),
     }),
-    prisma.joinRequest.findUnique({
-      where: { userId_teamId: { teamId, userId } },
+    db.query.joinRequest.findFirst({
+      where: and(eq(joinRequestTable.teamId, teamId), eq(joinRequestTable.userId, userId)),
     }),
   ]);
 
@@ -74,7 +80,7 @@ const TeamPage = async ({ params }: TeamPageProps) => {
   const [existsResult, sessionResult, spaceResult] = await Promise.allSettled([
     validateTeam(teamId),
     getSession(),
-    prisma.space.findUnique({ where: { teamId } }),
+    db.query.space.findFirst({ where: eq(spaceTable.teamId, teamId) }),
   ]);
 
   const exists = existsResult.status === "fulfilled" ? existsResult.value : false;
@@ -97,8 +103,11 @@ const TeamPage = async ({ params }: TeamPageProps) => {
 
     if (!hasGuestAccess) {
       const membership = session
-        ? await prisma.membership.findUnique({
-            where: { userId_teamId: { teamId, userId: session.user.id } },
+        ? await db.query.membership.findFirst({
+            where: and(
+              eq(membershipTable.teamId, teamId),
+              eq(membershipTable.userId, session.user.id),
+            ),
           })
         : null;
 
