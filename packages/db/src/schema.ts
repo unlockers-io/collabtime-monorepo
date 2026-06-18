@@ -152,6 +152,7 @@ export const space = pgTable(
   (table) => [
     index("Space_ownerId_idx").using("btree", table.ownerId.asc().nullsLast().op("text_ops")),
     index("Space_teamId_idx").using("btree", table.teamId.asc().nullsLast().op("text_ops")),
+    uniqueIndex("Space_teamId_key").using("btree", table.teamId.asc().nullsLast().op("text_ops")),
     foreignKey({
       columns: [table.ownerId],
       foreignColumns: [user.id],
