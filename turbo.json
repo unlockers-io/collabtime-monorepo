@@ -6,7 +6,7 @@
   "tasks": {
     "build": {
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^build"],
       "env": [
         "AUTH_ALLOWED_HOSTS",
         "BETTER_AUTH_SECRET",

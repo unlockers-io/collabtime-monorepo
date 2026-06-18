@@ -7,7 +7,7 @@ Real-time team timezone visualizer. Launching soon.
 - **Framework:** Next.js 16
 - **Language:** TypeScript (strict)
 - **Styling:** Tailwind CSS v4, Radix UI, shadcn/ui patterns
-- **Database:** Prisma 7, PostgreSQL
+- **Database:** Drizzle ORM, PostgreSQL
 - **Auth:** Better Auth + Stripe
 - **Cache:** Redis via ioredis (Railway-hosted)
 - **Monorepo:** Turborepo, pnpm workspaces
@@ -26,7 +26,7 @@ Real-time team timezone visualizer. Launching soon.
 | Package                   | Description                    |
 | ------------------------- | ------------------------------ |
 | `@repo/ui`                | Shared React component library |
-| `@repo/db`                | Prisma database client         |
+| `@repo/db`                | Drizzle database client        |
 | `@repo/auth`              | Authentication module          |
 | `@repo/config-typescript` | Shared TypeScript configs      |
 | `@repo/config-tailwind`   | Shared Tailwind CSS config     |
@@ -58,7 +58,7 @@ pnpm install
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-The example values already point at the Docker stack below (`DATABASE_URL` on `:5433`, `REDIS_URL` on `:6379`) and the portless URL. Set `BETTER_AUTH_SECRET` to any 32+ char random string (`openssl rand -base64 32`). Create `packages/db/.env` with the same `DATABASE_URL` so Prisma CLI commands run from that package.
+The example values already point at the Docker stack below (`DATABASE_URL` on `:5433`, `REDIS_URL` on `:6379`) and the portless URL. Set `BETTER_AUTH_SECRET` to any 32+ char random string (`openssl rand -base64 32`). Create `packages/db/.env` with the same `DATABASE_URL` so drizzle-kit CLI commands run from that package.
 
 ### 3. Start the Docker stack
 
@@ -71,7 +71,7 @@ Brings up Postgres on `:5433`, Redis on `:6379`, and the Upstash REST shim on `:
 ### 4. Initialize the database
 
 ```bash
-pnpm db:generate    # generate the Prisma client
+pnpm db:generate    # run drizzle-kit generate
 pnpm db:push        # apply the schema to your database
 pnpm db:seed        # optional: seed sample data
 ```
@@ -98,7 +98,7 @@ Open <https://collabtime.web.localhost>. Branch worktrees auto-prefix the subdom
 | `pnpm format`       | Format with oxfmt             |
 | `pnpm format:check` | Check formatting              |
 | `pnpm typecheck`    | Run TypeScript checks         |
-| `pnpm db:generate`  | Generate Prisma client        |
+| `pnpm db:generate`  | Run drizzle-kit generate      |
 | `pnpm db:push`      | Push schema to database       |
 | `pnpm db:seed`      | Seed database                 |
 | `pnpm clean`        | Clean all build artifacts     |

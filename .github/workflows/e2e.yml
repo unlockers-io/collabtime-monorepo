@@ -52,7 +52,6 @@ jobs:
         with:
           runtime: node@24
           cache: true
-      - run: pnpm db:generate
       - run: pnpm db:push
       - run: pnpm build
       - name: Seed E2E test user

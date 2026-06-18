@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repo. `CLAUDE.md` is a symlink to 
 
 Project conventions and defaults live in [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md).
 
-Collabtime is a team timezone visualizer SaaS. Distributed teams create spaces, add members with timezones and working hours, and visualize overlap for scheduling. Single `web` app, pnpm monorepo, Better Auth + Stripe, Prisma/Postgres, Redis.
+Collabtime is a team timezone visualizer SaaS. Distributed teams create spaces, add members with timezones and working hours, and visualize overlap for scheduling. Single `web` app, pnpm monorepo, Better Auth + Stripe, Drizzle/Postgres, Redis.
 
 ## Stack
 
@@ -14,7 +14,7 @@ Collabtime is a team timezone visualizer SaaS. Distributed teams create spaces, 
 - **Forms**: `@tanstack/react-form` + Zod 4 (NOT react-hook-form)
 - **Data**: TanStack Query with 20s polling for team sync
 - **Auth**: Better Auth (email/password) + Stripe plugin
-- **DB**: Prisma 7 + PostgreSQL via `@prisma/adapter-pg`
+- **DB**: Drizzle ORM + PostgreSQL via `drizzle-orm/node-postgres`
 - **Cache / session**: Redis via `ioredis` (Railway in prod, supports `redis://` or `rediss://`)
 - **Payments**: Stripe subscriptions, webhooks, customer portal
 - **Email**: Resend (optional)
@@ -29,7 +29,7 @@ Collabtime is a team timezone visualizer SaaS. Distributed teams create spaces, 
 ```
 apps/web/                       # Next.js 16 App Router app (only app)
 packages/auth/                  # Better Auth server + client, Stripe plugin
-packages/db/                    # Prisma schema + generated client
+packages/db/                    # Drizzle schema + client singleton (src/schema.ts, src/relations.ts)
 packages/ui/                    # Shared component library (Tailwind + CVA)
 packages/transactional/         # Email templates (Resend)
 packages/config-typescript/     # Base / Next / library tsconfigs
@@ -53,7 +53,7 @@ pnpm format:check         # oxfmt --check
 pnpm test                 # turbo run test (vitest)
 pnpm test:e2e             # playwright test
 pnpm test:e2e:ui          # playwright test --ui
-pnpm db:generate          # Prisma client
+pnpm db:generate          # drizzle-kit generate
 pnpm db:push              # Push schema to DB
 pnpm db:seed              # Seed DB
 pnpm clean                # turbo clean + rm -rf node_modules
@@ -98,13 +98,13 @@ Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(k
 
 ## Conventions & gotchas
 
-- **Lazy init via Proxy**: Auth client, Redis, and Prisma instances defer initialization until first access. Avoids build-time errors when env vars are absent.
+- **Lazy init via Proxy**: Auth client, Redis, and the Drizzle `db` instance defer initialization until first access. Avoids build-time errors when env vars are absent.
 - **Server/client boundary**: `@repo/auth/auth-server` imports `"server-only"`; `@repo/auth/auth-client` uses `"use client"`. Never cross.
 - **Polling sync**: Team data fetched every 20s via `use-team-query.ts`. Mutations call `useUpdateTeamCache` for immediate optimistic update on the acting client.
 - **Forms**: validate `onBlur` + `onChange` with Zod. Show errors via `field.state.meta.isTouched && !field.state.meta.isValid`. Field primitives (`Field`, `FieldGroup`, `FieldLabel`, `FieldError`) live in `@repo/ui`.
 - **TanStack `field` in effect deps is banned** — never put `field.handleChange` inside `useEffect`/`useCallback` with `field` in deps. Use `field.form.setFieldValue(field.name, value)` with a stable ref.
-- **Prisma config**: `prisma.config.ts` uses `process.env.DATABASE_URL ?? ""` (not `env("DATABASE_URL")`) so `prisma generate` works in CI without DB creds.
-- **Turbo ordering**: root `turbo.json` `build.dependsOn` includes `db:generate` so the Prisma client exists before any app/package builds.
+- **Drizzle config**: `drizzle.config.ts` uses `process.env.DATABASE_URL ?? ""` so `drizzle-kit generate` works in CI without DB creds.
+- **Turbo ordering**: `db:generate` runs `drizzle-kit generate` to produce migration SQL; it is NOT in root `turbo.json` `build.dependsOn` (Drizzle's client needs no codegen before builds).
 - **Path alias**: `apps/web` uses `@/*` -> `src/*`.
 
 ## Linting & formatting
@@ -147,6 +147,6 @@ User -> Session, Account, Subscription, Space. Users have `subscriptionPlan` (FR
 - Sibling repos (control plane): `~/dev/orchestrator` (standards.md + verifiers)
 - Template / source of truth for `saas` profile: `~/dev/acme-monorepo`
 - Better Auth docs: <https://better-auth.com>
-- Prisma 7: <https://www.prisma.io/docs>
+- Drizzle ORM: <https://orm.drizzle.team/docs/overview>
 - oxlint: <https://oxc.rs>
 - portless: <https://portless.dev>
