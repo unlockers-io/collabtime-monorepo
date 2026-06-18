@@ -119,5 +119,15 @@ export default defineConfig({
         "require-unicode-regexp": "off",
       },
     },
+    // drizzle-kit pull generates these files from the live DB schema; column
+    // order and declaration order follow the DB introspection output rather
+    // than the project's sort conventions.
+    {
+      files: ["packages/db/migrations/**/*.ts"],
+      rules: {
+        "no-use-before-define": "off",
+        "perfectionist/sort-objects": "off",
+      },
+    },
   ],
 });

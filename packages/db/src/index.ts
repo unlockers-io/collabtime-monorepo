@@ -1,26 +1,15 @@
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+export * from "./client";
+export * from "./relations";
+export * from "./schema";
 
-import { PrismaClient } from "./generated/client";
+import type * as schema from "./schema";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-
-const connectionString = process.env.DATABASE_URL;
-
-const pool = new Pool({
-  connectionString,
-});
-
-const adapter = new PrismaPg(pool);
-
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    adapter,
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
-
-export * from "./generated/client";
+export type User = typeof schema.user.$inferSelect;
+export type Session = typeof schema.session.$inferSelect;
+export type Account = typeof schema.account.$inferSelect;
+export type Verification = typeof schema.verification.$inferSelect;
+export type RateLimit = typeof schema.rateLimit.$inferSelect;
+export type Space = typeof schema.space.$inferSelect;
+export type Membership = typeof schema.membership.$inferSelect;
+export type JoinRequest = typeof schema.joinRequest.$inferSelect;
+export type Invitation = typeof schema.invitation.$inferSelect;
