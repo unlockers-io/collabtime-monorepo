@@ -29,7 +29,7 @@
     "@tanstack/react-query": "^5.100.9",
     "bcryptjs": "^3.0.3",
     "better-auth": "^1.6.10",
-    "clsx": "^2.1.1",
+    "cnfast": "^0.0.8",
     "ioredis": "^5.10.1",
     "lucide-react": "^1.14.0",
     "motion": "^12.38.0",
@@ -38,7 +38,6 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "server-only": "^0.0.1",
-    "tailwind-merge": "^3.6.0",
     "uuid": "^14.0.0",
     "zod": "^4.4.3"
   },
