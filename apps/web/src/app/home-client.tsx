@@ -1,4 +1,5 @@
 "use client";
+// React Compiler todo: BuildHIR doesn't yet handle TryStatement with a finally clause — compiler limitation, not a code bug.
 "use no memo";
 
 import { buttonVariants } from "@repo/ui/components/button";
