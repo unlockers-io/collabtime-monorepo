@@ -1,9 +1,4 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-const cn = (...inputs: Array<ClassValue>) => {
-  return twMerge(clsx(inputs));
-};
+import { cn } from "cnfast";
 
 const formatHour = (hour: number): string => {
   return `${hour.toString().padStart(2, "0")}:00`;
