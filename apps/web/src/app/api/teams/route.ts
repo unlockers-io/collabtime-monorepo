@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
-import { useLogger, withEvlog } from "@/lib/observability";
+import { log, withEvlog } from "@/lib/observability";
 import { redis } from "@/lib/redis";
 
 const TeamCacheSchema = z.object({
@@ -69,7 +69,7 @@ export const GET = withEvlog(async () => {
 
     return NextResponse.json({ teams: validTeams });
   } catch (error) {
-    useLogger().error(error instanceof Error ? error : String(error), { route: "/api/teams" });
+    log.error({ error, message: "Failed to fetch teams", route: "/api/teams" });
     return NextResponse.json({ error: "Failed to fetch teams" }, { status: 500 });
   }
 });

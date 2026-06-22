@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
-import { useLogger, withEvlog } from "@/lib/observability";
+import { log, withEvlog } from "@/lib/observability";
 
 const createSpaceSchema = z.object({
   teamId: z.string().min(1, "Team ID is required"),
@@ -27,7 +27,7 @@ export const GET = withEvlog(async () => {
 
     return NextResponse.json({ spaces });
   } catch (error) {
-    useLogger().error(error instanceof Error ? error : String(error), { route: "/api/spaces" });
+    log.error({ error, message: "Failed to fetch spaces", route: "/api/spaces" });
     return NextResponse.json({ error: "Failed to fetch spaces" }, { status: 500 });
   }
 });
@@ -74,7 +74,7 @@ export const POST = withEvlog(async (request: Request) => {
         { status: 400 },
       );
     }
-    useLogger().error(error instanceof Error ? error : String(error), { route: "/api/spaces" });
+    log.error({ error, message: "Failed to create space", route: "/api/spaces" });
     return NextResponse.json({ error: "Failed to create space" }, { status: 500 });
   }
 });

@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { Button } from "@repo/ui/components/button";
 import { Card } from "@repo/ui/components/card";

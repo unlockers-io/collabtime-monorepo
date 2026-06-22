@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
-import { useLogger, withEvlog } from "@/lib/observability";
+import { log, withEvlog } from "@/lib/observability";
 import { UUIDSchema } from "@/lib/validation";
 
 const patchSchema = z.object({
@@ -61,7 +61,9 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
         { status: 400 },
       );
     }
-    useLogger().error(error instanceof Error ? error : String(error), {
+    log.error({
+      error,
+      message: "Failed to update membership",
       route: "/api/teams/[teamId]/membership",
     });
     return NextResponse.json({ error: "Failed to update membership" }, { status: 500 });

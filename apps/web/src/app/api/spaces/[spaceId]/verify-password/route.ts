@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { verifyPassword } from "@/lib/crypto";
-import { useLogger, withEvlog } from "@/lib/observability";
+import { log, withEvlog } from "@/lib/observability";
 import { createSpaceAccessToken, SPACE_ACCESS_COOKIE_PREFIX } from "@/lib/space-access";
 import { joinPrivateSpace } from "@/lib/space-join";
 import { checkRateLimit } from "@/lib/space-rate-limit";
@@ -68,7 +68,9 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       try {
         await joinPrivateSpace(session.user.id, space.teamId);
       } catch (joinError) {
-        useLogger().error(joinError instanceof Error ? joinError : String(joinError), {
+        log.error({
+          error: joinError,
+          message: "Failed to join private space",
           route: "/api/spaces/[spaceId]/verify-password",
         });
       }
@@ -96,7 +98,9 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
         { status: 400 },
       );
     }
-    useLogger().error(error instanceof Error ? error : String(error), {
+    log.error({
+      error,
+      message: "Failed to verify password",
       route: "/api/spaces/[spaceId]/verify-password",
     });
     return NextResponse.json({ error: "Failed to verify password" }, { status: 500 });

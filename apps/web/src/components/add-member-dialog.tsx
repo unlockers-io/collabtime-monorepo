@@ -24,7 +24,7 @@ import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
@@ -123,20 +123,15 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
   // setter is intentionally unused — the random placeholder must not change after mount
   const [titlePlaceholder, _setTitlePlaceholder] = useState(getRandomPlaceholder);
 
-  // Memoized so getUserTimezone() and the object literal are only evaluated once,
-  // not on every render triggered by parent state changes.
-  const defaultValues = useMemo(
-    (): FormValues => ({
-      email: "",
-      groupId: "",
-      name: "",
-      timezone: getUserTimezone() as FormValues["timezone"],
-      title: "",
-      workingHoursEnd: 17,
-      workingHoursStart: 9,
-    }),
-    [],
-  );
+  const defaultValues: FormValues = {
+    email: "",
+    groupId: "",
+    name: "",
+    timezone: getUserTimezone() as FormValues["timezone"],
+    title: "",
+    workingHoursEnd: 17,
+    workingHoursStart: 9,
+  };
 
   const form = useForm({
     defaultValues,

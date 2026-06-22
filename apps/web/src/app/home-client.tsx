@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { buttonVariants } from "@repo/ui/components/button";
 import { toast } from "@repo/ui/components/sonner";

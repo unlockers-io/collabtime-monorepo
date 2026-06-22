@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { toast } from "@repo/ui/components/sonner";
 import { captureException } from "@sentry/nextjs";

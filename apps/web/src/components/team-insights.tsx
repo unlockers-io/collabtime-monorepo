@@ -10,7 +10,7 @@ import {
 } from "@repo/ui/components/tooltip";
 import { cn } from "@repo/ui/lib/utils";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
-import { Fragment, useMemo, useSyncExternalStore } from "react";
+import { Fragment, useSyncExternalStore } from "react";
 
 import {
   SectionCard,
@@ -105,22 +105,15 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
   // computations below.
   useHalfMinuteTick();
 
-  // Intl.DateTimeFormat allocates dozens of objects per construction; only recreate when timezone changes
-  const hourFormatter = useMemo(
-    () =>
-      viewerTimezone
-        ? new Intl.DateTimeFormat("en-US", {
-            hour: "numeric",
-            hour12: false,
-            timeZone: viewerTimezone,
-          })
-        : null,
-    [viewerTimezone],
-  );
+  const hourFormatter = viewerTimezone
+    ? new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        hour12: false,
+        timeZone: viewerTimezone,
+      })
+    : null;
 
-  // Wrapped in useMemo so the 30-second tick doesn't re-run the member scan
-  // when members or formatter haven't changed.
-  const memberStatuses = useMemo((): Array<MemberStatus> => {
+  const memberStatuses = (): Array<MemberStatus> => {
     if (!viewerTimezone || !hourFormatter) {
       return [];
     }
@@ -171,18 +164,20 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
         member,
       };
     });
-  }, [members, viewerTimezone, hourFormatter]);
+  };
 
-  const onlineMembers = memberStatuses.filter((s) => s.isWorking);
+  const computedMemberStatuses = memberStatuses();
 
-  const comingSoonMembers = memberStatuses
+  const onlineMembers = computedMemberStatuses.filter((s) => s.isWorking);
+
+  const comingSoonMembers = computedMemberStatuses
     .filter(
       (s) =>
         !s.isWorking && s.hoursUntilStart !== null && s.hoursUntilStart <= SOON_THRESHOLD_HOURS,
     )
     .toSorted((a, b) => (a.hoursUntilStart ?? 0) - (b.hoursUntilStart ?? 0));
 
-  const leavingSoonMembers = memberStatuses
+  const leavingSoonMembers = computedMemberStatuses
     .filter(
       (s) => s.isWorking && s.hoursUntilEnd !== null && s.hoursUntilEnd <= SOON_THRESHOLD_HOURS,
     )
