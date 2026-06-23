@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth-server";
 import { hashPassword } from "@/lib/crypto";
-import { useLogger, withEvlog } from "@/lib/observability";
+import { log, withEvlog } from "@/lib/observability";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
 const updateSpaceSchema = z.object({
@@ -52,9 +52,7 @@ export const GET = withEvlog(async (_request: Request, { params }: Params) => {
       },
     });
   } catch (error) {
-    useLogger().error(error instanceof Error ? error : String(error), {
-      route: "/api/spaces/[spaceId]",
-    });
+    log.error({ error, message: "Space operation failed", route: "/api/spaces/[spaceId]" });
     return NextResponse.json({ error: "Failed to fetch space" }, { status: 500 });
   }
 });
@@ -123,9 +121,7 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
         { status: 400 },
       );
     }
-    useLogger().error(error instanceof Error ? error : String(error), {
-      route: "/api/spaces/[spaceId]",
-    });
+    log.error({ error, message: "Space operation failed", route: "/api/spaces/[spaceId]" });
     return NextResponse.json({ error: "Failed to update space" }, { status: 500 });
   }
 });
@@ -159,9 +155,7 @@ export const DELETE = withEvlog(async (_request: Request, { params }: Params) =>
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    useLogger().error(error instanceof Error ? error : String(error), {
-      route: "/api/spaces/[spaceId]",
-    });
+    log.error({ error, message: "Space operation failed", route: "/api/spaces/[spaceId]" });
     return NextResponse.json({ error: "Failed to delete space" }, { status: 500 });
   }
 });

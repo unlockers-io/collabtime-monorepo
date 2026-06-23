@@ -3,7 +3,7 @@
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { TooltipProvider } from "@repo/ui/components/tooltip";
 import { animate, AnimatePresence, m, useMotionValue } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useDragToScroll } from "@/hooks/use-drag-to-scroll";
 import { getUserTimezone } from "@/lib/timezones";
@@ -65,19 +65,14 @@ const TimezoneVisualizer = ({
   const [isComparing, setIsComparing] = useState(false);
   const [compareSelections, setCompareSelections] = useState<Array<Selection>>([]);
 
-  const collapsedSet = useMemo(() => new Set(collapsedGroupIds), [collapsedGroupIds]);
+  const collapsedSet = new Set(collapsedGroupIds);
 
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
 
   // Tick timestamp that updates every 30 seconds - triggers recalculation for timeline
   const tick = useHalfMinuteTick();
 
-  const nowPosition = useMemo(() => {
-    if (!tick || !viewerTimezone) {
-      return null;
-    }
-    return getCurrentTimePosition(viewerTimezone);
-  }, [viewerTimezone, tick]);
+  const nowPosition = !tick || !viewerTimezone ? null : getCurrentTimePosition(viewerTimezone);
 
   const {
     addSelection,

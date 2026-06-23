@@ -1,4 +1,6 @@
 "use client";
+// React Compiler todo: BuildHIR doesn't yet support ThrowStatement inside try/catch — compiler limitation, not a code bug.
+"use no memo";
 
 import { Button } from "@repo/ui/components/button";
 import {

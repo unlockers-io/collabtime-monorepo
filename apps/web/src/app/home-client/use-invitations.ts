@@ -1,4 +1,6 @@
 "use client";
+// React Compiler todo: BuildHIR doesn't yet handle TryStatement without a catch clause (try/finally only) — compiler limitation, not a code bug.
+"use no memo";
 
 import { toast } from "@repo/ui/components/sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

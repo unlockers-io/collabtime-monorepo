@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-
 import { convertHourToTimezone, getDayOffset } from "@/lib/timezones";
 import type { TeamGroup, TeamMember } from "@/types";
 
@@ -44,7 +42,7 @@ const useTimezoneData = ({
   members,
   viewerTimezone,
 }: UseTimezoneDataArgs) => {
-  const memberRows = useMemo((): Array<MemberRow> => {
+  const memberRows = (): Array<MemberRow> => {
     if (!viewerTimezone) {
       return [];
     }
@@ -78,24 +76,20 @@ const useTimezoneData = ({
       const dayOffset = getDayOffset(member.timezone, viewerTimezone);
       return { dayOffset, hours, member };
     });
-  }, [members, viewerTimezone]);
+  };
 
-  const memberRowById = useMemo(
-    () => new Map(memberRows.map((row) => [row.member.id, row])),
-    [memberRows],
-  );
+  const computedMemberRows = memberRows();
 
-  const groupNameById = useMemo(
-    () => new Map(groups.map((group) => [group.id, group.name])),
-    [groups],
-  );
+  const memberRowById = new Map(computedMemberRows.map((row) => [row.member.id, row]));
 
-  const groupedSections = useMemo((): Array<GroupedSection> => {
+  const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
+
+  const groupedSections = (): Array<GroupedSection> => {
     if (groups.length === 0) {
-      return [{ group: null, rows: memberRows }];
+      return [{ group: null, rows: computedMemberRows }];
     }
 
-    const rowByMemberId = new Map(memberRows.map((row) => [row.member.id, row]));
+    const rowByMemberId = new Map(computedMemberRows.map((row) => [row.member.id, row]));
     const sections: Array<GroupedSection> = [];
 
     const sortedGroups = [...groups].toSorted((a, b) => a.order - b.order);
@@ -131,18 +125,16 @@ const useTimezoneData = ({
     }
 
     return sections;
-  }, [groups, members, memberRows]);
+  };
 
-  const validSelections = useMemo(() => {
-    return compareSelections.filter((sel) => {
-      if (sel.type === "member") {
-        return members.some((m) => m.id === sel.id);
-      }
-      return groups.some((g) => g.id === sel.id);
-    });
-  }, [compareSelections, members, groups]);
+  const validSelections = compareSelections.filter((sel) => {
+    if (sel.type === "member") {
+      return members.some((m) => m.id === sel.id);
+    }
+    return groups.some((g) => g.id === sel.id);
+  });
 
-  const selectedMemberIds = useMemo(() => {
+  const selectedMemberIds = (() => {
     const ids = new Set<string>();
 
     for (const sel of validSelections) {
@@ -159,12 +151,12 @@ const useTimezoneData = ({
     }
 
     return ids;
-  }, [validSelections, members]);
+  })();
 
   const totalPeopleSelected = selectedMemberIds.size;
   const canShowOverlap = totalPeopleSelected >= 2;
 
-  const overlapData = useMemo((): OverlapData => {
+  const overlapData = (): OverlapData => {
     if (!canShowOverlap) {
       return EMPTY_OVERLAP_DATA;
     }
@@ -233,10 +225,12 @@ const useTimezoneData = ({
       overlapHours: full,
       partialOverlapHours: partial,
     };
-  }, [canShowOverlap, validSelections, memberRowById, members, selectedMemberIds]);
+  };
 
-  const overlapStatus = useMemo((): OverlapStatus => {
-    const { overlapHours, partialOverlapHours } = overlapData;
+  const computedOverlapData = overlapData();
+
+  const overlapStatus = (): OverlapStatus => {
+    const { overlapHours, partialOverlapHours } = computedOverlapData;
     const hasFullOverlap = overlapHours.some(Boolean);
     const hasPartialOverlap = partialOverlapHours.some(Boolean);
 
@@ -250,41 +244,38 @@ const useTimezoneData = ({
       return "full";
     }
     return "partial";
-  }, [overlapData]);
+  };
 
   // O(1) member-by-id lookup so `isMemberInCompare` doesn't `.find()` inside its loop
-  const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+  const memberById = new Map(members.map((m) => [m.id, m]));
 
-  const isMemberInCompare = useCallback(
-    (memberId: string, isComparing: boolean): boolean => {
-      if (!isComparing || validSelections.length === 0) {
-        return false;
-      }
-
-      const member = memberById.get(memberId);
-      for (const sel of validSelections) {
-        if (sel.type === "member" && sel.id === memberId) {
-          return true;
-        }
-        if (sel.type === "group" && member?.groupId === sel.id) {
-          return true;
-        }
-      }
+  const isMemberInCompare = (memberId: string, isComparing: boolean): boolean => {
+    if (!isComparing || validSelections.length === 0) {
       return false;
-    },
-    [validSelections, memberById],
-  );
+    }
+
+    const member = memberById.get(memberId);
+    for (const sel of validSelections) {
+      if (sel.type === "member" && sel.id === memberId) {
+        return true;
+      }
+      if (sel.type === "group" && member?.groupId === sel.id) {
+        return true;
+      }
+    }
+    return false;
+  };
 
   return {
     addSelection,
     canShowOverlap,
-    groupedSections,
+    groupedSections: groupedSections(),
     groupNameById,
     isMemberInCompare,
     memberRowById,
-    memberRows,
-    overlapData,
-    overlapStatus,
+    memberRows: computedMemberRows,
+    overlapData: computedOverlapData,
+    overlapStatus: overlapStatus(),
     removeSelection,
     selectedMemberIds,
     totalPeopleSelected,
