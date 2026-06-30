@@ -1,3 +1,4 @@
+import { Skeleton } from "@repo/ui/components/skeleton";
 import { Suspense } from "react";
 
 import { getSession } from "@/lib/auth-server";
@@ -16,11 +17,11 @@ const HomeSkeleton = () => (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-4 py-8 sm:gap-12 sm:px-6">
       <div className="flex flex-col items-center gap-6 text-center">
         <div className="flex flex-col items-center gap-2 sm:gap-3">
-          <div className="h-9 w-48 animate-pulse rounded-md bg-muted sm:h-12 sm:w-56" />
-          <div className="h-12 w-72 animate-pulse rounded-md bg-muted" />
+          <Skeleton className="h-9 w-48 sm:h-12 sm:w-56" />
+          <Skeleton className="h-12 w-72" />
         </div>
       </div>
-      <div className="h-12 w-full animate-pulse rounded-xl bg-muted sm:h-14 sm:w-72" />
+      <Skeleton className="h-12 w-full rounded-xl sm:h-14 sm:w-72" />
     </main>
   </div>
 );
