@@ -3,7 +3,9 @@ import "@/styles/globals.css";
 import { Toaster } from "@repo/ui/components/sonner";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 
+import { CopyrightYear } from "@/components/copyright-year";
 import { Providers } from "@/components/providers";
 import { getAppUrl } from "@/lib/app-url";
 import {
@@ -13,8 +15,6 @@ import {
   APP_NAME,
   APP_TITLE,
 } from "@/lib/constants";
-
-export const dynamic = "force-dynamic";
 
 const geistMono = Geist_Mono({
   display: "swap",
@@ -93,8 +93,12 @@ const RootLayout = ({
           <div className="flex flex-1 flex-col">{children}</div>
           <footer className="border-t border-border px-4 py-6 text-sm text-muted-foreground sm:px-6 lg:px-8 xl:px-12">
             <div className="mx-auto flex w-full max-w-450 items-center justify-between gap-3">
-              <span suppressHydrationWarning>
-                © {new Date().getFullYear()} Collab Time. All rights reserved.
+              <span>
+                ©{" "}
+                <Suspense fallback={null}>
+                  <CopyrightYear />
+                </Suspense>{" "}
+                Collab Time. All rights reserved.
               </span>
               <a
                 aria-label="View on GitHub"

@@ -56,7 +56,10 @@ test.describe("Password reset", () => {
     await page.waitForURL(/\/login/);
 
     await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(newPassword);
+    // Exact match: Instant Navigations keeps the outgoing reset-password page in
+    // the DOM (hidden) during the soft transition, so a substring "Password"
+    // match also resolves its "New password"/"Confirm password" inputs.
+    await page.getByLabel("Password", { exact: true }).fill(newPassword);
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await page.waitForURL("/");
