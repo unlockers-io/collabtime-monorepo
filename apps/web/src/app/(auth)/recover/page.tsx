@@ -15,6 +15,13 @@ const metadata: Metadata = {
   title: "Recover your account",
 };
 
+/**
+ * Auth-entry route gated by a layout that reads the session to bounce signed-in
+ * users; there is no per-user shell worth streaming, so block the navigation.
+ * @public Next.js app-router reads the `instant` route config via the module loader
+ */
+export const instant = false;
+
 const Page = () => (
   <Card>
     <CardHeader className="text-center">

@@ -4,6 +4,13 @@ import { getSession } from "@/lib/auth-server";
 
 import { SettingsClient } from "./client";
 
+/**
+ * Authenticated route gated by a session check that redirects unauthenticated
+ * visitors; there is no public shell to stream, so block the navigation.
+ * @public Next.js app-router reads the `instant` route config via the module loader
+ */
+export const instant = false;
+
 const SettingsPage = async () => {
   const session = await getSession();
 

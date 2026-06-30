@@ -2,8 +2,6 @@ import { ImageResponse } from "next/og";
 
 import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
 
-export const runtime = "edge";
-
 const loadGoogleFont = async (font: string, weight: number, text: string) => {
   const url = `https://fonts.googleapis.com/css2?family=${font}:wght@${weight}&text=${encodeURIComponent(text)}`;
   // 24h cache keeps OG generation off the cold-start critical path.
