@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet handle TryStatement with a finally clause — compiler limitation, not a code bug.
-"use no memo";
 
 import { toast } from "@repo/ui/components/sonner";
 import { captureException } from "@sentry/nextjs";
@@ -38,25 +36,23 @@ const useMyTeams = (isAuthenticated: boolean) => {
         method: "PATCH",
       });
 
-      if (!response.ok) {
+      if (response.ok) {
+        toast.success(archive ? "Workspace archived" : "Workspace restored");
+        await queryClient.invalidateQueries({ queryKey: ["my-teams"] });
+      } else {
         const body: unknown = await response.json().catch(() => null);
         const parsed = errorBodySchema.safeParse(body);
         toast.error(parsed.success ? parsed.data.error : "Failed to update workspace");
-        return;
       }
-
-      toast.success(archive ? "Workspace archived" : "Workspace restored");
-      await queryClient.invalidateQueries({ queryKey: ["my-teams"] });
     } catch (error) {
       captureException(error);
       toast.error("Failed to update workspace");
-    } finally {
-      setProcessingArchive((prev) => {
-        const next = new Set(prev);
-        next.delete(team.teamId);
-        return next;
-      });
     }
+    setProcessingArchive((prev) => {
+      const next = new Set(prev);
+      next.delete(team.teamId);
+      return next;
+    });
   };
 
   return {

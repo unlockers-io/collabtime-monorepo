@@ -1,8 +1,7 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet handle TryStatement without a catch clause (try/finally only) — compiler limitation, not a code bug.
-"use no memo";
 
 import { toast } from "@repo/ui/components/sonner";
+import { captureException } from "@sentry/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -39,13 +38,15 @@ const useInvitations = (isAuthenticated: boolean) => {
       } else {
         toast.error(result.error);
       }
-    } finally {
-      setProcessingInvitations((prev) => {
-        const next = new Set(prev);
-        next.delete(invitation.id);
-        return next;
-      });
+    } catch (error) {
+      captureException(error);
+      toast.error("Failed to accept invitation");
     }
+    setProcessingInvitations((prev) => {
+      const next = new Set(prev);
+      next.delete(invitation.id);
+      return next;
+    });
   };
 
   const handleDeclineInvitation = async (invitation: PendingInvitation) => {
@@ -58,13 +59,15 @@ const useInvitations = (isAuthenticated: boolean) => {
       } else {
         toast.error(result.error);
       }
-    } finally {
-      setProcessingInvitations((prev) => {
-        const next = new Set(prev);
-        next.delete(invitation.id);
-        return next;
-      });
+    } catch (error) {
+      captureException(error);
+      toast.error("Failed to decline invitation");
     }
+    setProcessingInvitations((prev) => {
+      const next = new Set(prev);
+      next.delete(invitation.id);
+      return next;
+    });
   };
 
   return {

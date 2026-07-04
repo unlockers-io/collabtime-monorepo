@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet handle TryStatement without a catch clause (try/finally only) — compiler limitation, not a code bug.
-"use no memo";
 
 import { Button } from "@repo/ui/components/button";
 import {
@@ -22,6 +20,7 @@ import {
 } from "@repo/ui/components/select";
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
+import { captureException } from "@sentry/nextjs";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Mail } from "lucide-react";
@@ -150,9 +149,11 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
       } else {
         toast.error(result.error);
       }
-    } finally {
-      setIsInviting(false);
+    } catch (error) {
+      captureException(error);
+      toast.error("Failed to send invitation");
     }
+    setIsInviting(false);
   };
 
   const defaultValues: FormValues = {

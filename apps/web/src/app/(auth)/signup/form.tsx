@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet support ThrowStatement inside try/catch — compiler limitation, not a code bug.
-"use no memo";
 
 import { Button } from "@repo/ui/components/button";
 import {
@@ -44,7 +42,8 @@ const SignupForm = () => {
             password: value.password,
           });
           if (result.error) {
-            throw new Error(result.error.message ?? "Failed to create account");
+            toast.error(result.error.message ?? "Failed to create account");
+            return;
           }
           // No token means requireEmailVerification suppressed auto-sign-in (or enumeration prevention
           // returned synthetic success); both paths show the same inline "check your email" state.
