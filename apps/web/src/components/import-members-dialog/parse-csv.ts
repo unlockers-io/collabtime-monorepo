@@ -123,8 +123,9 @@ const parseCSV = (text: string): Array<ParsedRow> => {
     const workEndRaw = (endIdx === null ? "17" : (cells[endIdx] ?? "17")).trim();
 
     const matchedTimezone = rawTimezone ? fuzzyMatchTimezone(rawTimezone) : null;
-    const workStart = Number.parseInt(workStartRaw, 10);
-    const workEnd = Number.parseInt(workEndRaw, 10);
+    // `Number("")` is 0, which would pass the 0–23 range check — keep NaN for empty cells.
+    const workStart = workStartRaw ? Math.trunc(Number(workStartRaw)) : Number.NaN;
+    const workEnd = workEndRaw ? Math.trunc(Number(workEndRaw)) : Number.NaN;
 
     const errors: Array<string> = [];
     if (!name) {

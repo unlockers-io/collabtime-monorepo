@@ -1,6 +1,6 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
-import { captureRouterTransitionStart, init, replayIntegration } from "@sentry/nextjs";
+import { init, replayIntegration } from "@sentry/nextjs";
 
 init({
   dsn: "https://bd738ae5e6e5e0cef0d00e240b17601b@o4507617812938752.ingest.us.sentry.io/4511229832396800",
@@ -15,4 +15,4 @@ init({
   tracesSampleRate: 1,
 });
 
-export const onRouterTransitionStart = captureRouterTransitionStart;
+export { captureRouterTransitionStart as onRouterTransitionStart } from "@sentry/nextjs";

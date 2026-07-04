@@ -120,7 +120,7 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
 
     const now = new Date();
     const hourPart = hourFormatter.formatToParts(now).find((p) => p.type === "hour");
-    const currentHourInViewer = hourPart ? Number.parseInt(hourPart.value, 10) : 0;
+    const currentHourInViewer = hourPart ? Math.trunc(Number(hourPart.value)) : 0;
 
     return members.map((member) => {
       const working = isCurrentlyWorking(
