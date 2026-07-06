@@ -86,13 +86,14 @@ const isCurrentlyWorking = (
   workingHoursEnd: number,
 ): boolean => {
   const now = new Date();
-  const currentHour = Number.parseInt(
-    now.toLocaleString("en-US", {
-      hour: "numeric",
-      hour12: false,
-      timeZone: timezone,
-    }),
-    10,
+  const currentHour = Math.trunc(
+    Number(
+      now.toLocaleString("en-US", {
+        hour: "numeric",
+        hour12: false,
+        timeZone: timezone,
+      }),
+    ),
   );
 
   if (workingHoursStart <= workingHoursEnd) {
@@ -131,20 +132,22 @@ const getMinutesUntilAvailable = (
   }
 
   const now = new Date();
-  const currentHour = Number.parseInt(
-    now.toLocaleString("en-US", {
-      hour: "numeric",
-      hour12: false,
-      timeZone: timezone,
-    }),
-    10,
+  const currentHour = Math.trunc(
+    Number(
+      now.toLocaleString("en-US", {
+        hour: "numeric",
+        hour12: false,
+        timeZone: timezone,
+      }),
+    ),
   );
-  const currentMinute = Number.parseInt(
-    now.toLocaleString("en-US", {
-      minute: "numeric",
-      timeZone: timezone,
-    }),
-    10,
+  const currentMinute = Math.trunc(
+    Number(
+      now.toLocaleString("en-US", {
+        minute: "numeric",
+        timeZone: timezone,
+      }),
+    ),
   );
 
   const currentMinutesFromMidnight = currentHour * 60 + currentMinute;

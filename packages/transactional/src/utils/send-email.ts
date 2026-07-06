@@ -20,22 +20,24 @@ const senderAddressSchema = z.string().refine(
   { message: "Must be a valid email or 'Display Name <email>' format" },
 );
 
+const recipientSchema = z.union([z.email(), z.array(z.email())]);
+
+const tagSchema = z.object({
+  name: z.string().transform(sanitizeTagSegment),
+  value: z.string().transform(sanitizeTagSegment),
+});
+
 const emailConfigSchema = z.object({
-  bcc: z.union([z.email(), z.array(z.email())]).optional(),
-  cc: z.union([z.email(), z.array(z.email())]).optional(),
+  bcc: recipientSchema.optional(),
+  cc: recipientSchema.optional(),
   from: senderAddressSchema.default("Collab Time <noreply@email.collabtime.io>"),
   replyTo: senderAddressSchema.optional(),
   subject: z.string(),
   tags: z
-    .array(
-      z.object({
-        name: z.string().transform(sanitizeTagSegment),
-        value: z.string().transform(sanitizeTagSegment),
-      }),
-    )
+    .array(tagSchema)
     .transform((arr) => arr.filter((t) => t.name.length > 0 && t.value.length > 0))
     .optional(),
-  to: z.union([z.email(), z.array(z.email())]),
+  to: recipientSchema,
 });
 
 // z.input keeps `from` optional for callers; the schema default fills it in during parse.
