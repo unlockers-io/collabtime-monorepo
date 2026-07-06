@@ -16,13 +16,6 @@ type TeamPageProps = {
   params: Promise<{ teamId: string }>;
 };
 
-/**
- * Bound to the `teamId` route param and the session, membership, and space
- * lookups it gates on; block rather than stream a shell.
- * @public Next.js app-router reads the `instant` route config via the module loader
- */
-export const instant = false;
-
 export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metadata> => {
   const { teamId } = await params;
 

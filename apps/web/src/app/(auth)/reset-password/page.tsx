@@ -16,13 +16,6 @@ const metadata: Metadata = {
   title: "Reset your password",
 };
 
-/**
- * Auth-entry route gated by a layout that reads the session, and the form is
- * bound to the reset-token search param; block rather than stream a shell.
- * @public Next.js app-router reads the `instant` route config via the module loader
- */
-export const instant = false;
-
 const Page = () => (
   <Card>
     <CardHeader className="text-center">
