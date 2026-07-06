@@ -1,17 +1,11 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { getSession } from "@/lib/auth-server";
 
 import { SettingsClient } from "./client";
 
-/**
- * Authenticated route gated by a session check that redirects unauthenticated
- * visitors; there is no public shell to stream, so block the navigation.
- * @public Next.js app-router reads the `instant` route config via the module loader
- */
-export const instant = false;
-
-const SettingsPage = async () => {
+const SettingsContent = async () => {
   const session = await getSession();
 
   if (!session) {
@@ -31,5 +25,25 @@ const SettingsPage = async () => {
     />
   );
 };
+
+// Static shell for the prerender: the content is bound to the session, so
+// cacheComponents needs a Suspense boundary above the uncached read.
+const SettingsSkeleton = () => (
+  <div aria-hidden className="mx-auto max-w-3xl px-4 py-8">
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-1">
+        <div className="h-8 w-32 animate-pulse rounded-md bg-muted" />
+        <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
+      </div>
+      <div className="h-56 animate-pulse rounded-xl bg-muted" />
+    </div>
+  </div>
+);
+
+const SettingsPage = () => (
+  <Suspense fallback={<SettingsSkeleton />}>
+    <SettingsContent />
+  </Suspense>
+);
 
 export default SettingsPage;
