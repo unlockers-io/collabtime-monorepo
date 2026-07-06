@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet support ThrowStatement inside try/catch — compiler limitation, not a code bug.
-"use no memo";
 
 import { Button } from "@repo/ui/components/button";
 import {
@@ -48,7 +46,8 @@ const LoginForm = () => {
               setShowUnverifiedNotice(true);
               return;
             }
-            throw new Error(result.error.message ?? "Failed to sign in");
+            toast.error(result.error.message ?? "Failed to sign in");
+            return;
           }
           push(redirect);
           refresh();

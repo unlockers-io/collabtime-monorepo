@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet support ThrowStatement inside try/catch — compiler limitation, not a code bug.
-"use no memo";
 
 import { Button } from "@repo/ui/components/button";
 import {
@@ -33,7 +31,8 @@ const RecoverForm = () => {
             redirectTo: `${window.location.origin}/reset-password`,
           });
           if (result.error) {
-            throw new Error(result.error.message ?? "Failed to send password reset email");
+            toast.error(result.error.message ?? "Failed to send password reset email");
+            return;
           }
           setSubmittedEmail(value.email);
         } catch (error) {

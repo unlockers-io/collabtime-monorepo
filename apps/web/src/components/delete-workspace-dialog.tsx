@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet handle TryStatement with a finally clause — compiler limitation, not a code bug.
-"use no memo";
 
 import { Button } from "@repo/ui/components/button";
 import {
@@ -45,22 +43,20 @@ const DeleteWorkspaceDialog = ({
         method: "DELETE",
       });
 
-      if (!response.ok) {
+      if (response.ok) {
+        toast.success("Workspace deleted");
+        onOpenChange(false);
+        await onDeleted?.();
+      } else {
         const body: unknown = await response.json().catch(() => null);
         const parsed = errorBodySchema.safeParse(body);
         toast.error(parsed.success ? parsed.data.error : "Failed to delete workspace");
-        return;
       }
-
-      toast.success("Workspace deleted");
-      onOpenChange(false);
-      await onDeleted?.();
     } catch (error) {
       captureException(error);
       toast.error("Failed to delete workspace");
-    } finally {
-      setIsDeleting(false);
     }
+    setIsDeleting(false);
   };
 
   const handleOpenChange = (next: boolean) => {

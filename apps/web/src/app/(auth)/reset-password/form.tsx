@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet support ThrowStatement inside try/catch — compiler limitation, not a code bug.
-"use no memo";
 
 import { Button } from "@repo/ui/components/button";
 import {
@@ -30,16 +28,18 @@ const ResetPasswordForm = () => {
     defaultValues: { confirmPassword: "", password: "" },
     onSubmit: ({ value }) => {
       startTransition(async () => {
+        if (!token) {
+          toast.error("Invalid reset token. Please request a new password reset.");
+          return;
+        }
         try {
-          if (!token) {
-            throw new Error("Invalid reset token. Please request a new password reset.");
-          }
           const result = await authClient.resetPassword({
             newPassword: value.password,
             token,
           });
           if (result.error) {
-            throw new Error(result.error.message ?? "Failed to reset password");
+            toast.error(result.error.message ?? "Failed to reset password");
+            return;
           }
           push("/login?message=password-reset-success");
         } catch (error) {

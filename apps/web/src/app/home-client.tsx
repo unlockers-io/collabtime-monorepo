@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet handle TryStatement with a finally clause — compiler limitation, not a code bug.
-"use no memo";
 
 import { buttonVariants } from "@repo/ui/components/button";
 import { toast } from "@repo/ui/components/sonner";
@@ -53,17 +51,16 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
     setIsCreating(true);
     try {
       const result = await createTeam(getUserTimezone());
-      if (!result.success) {
+      if (result.success) {
+        push(`/${result.data}`);
+      } else {
         toast.error(result.error);
-        return;
       }
-      push(`/${result.data}`);
     } catch (error) {
       captureException(error);
       toast.error("Failed to create team. Please try again.");
-    } finally {
-      setIsCreating(false);
     }
+    setIsCreating(false);
   };
 
   const activeTeams = myTeams.filter((team) => team.archivedAt === null);

@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet handle TryStatement with a finally clause — compiler limitation, not a code bug.
-"use no memo";
 
 import { toast } from "@repo/ui/components/sonner";
 import { captureException } from "@sentry/nextjs";
@@ -144,9 +142,8 @@ const TeamPageClient = ({
     } catch (error) {
       captureException(error);
       toast.error("Failed to send join request");
-    } finally {
-      setIsRequestingJoin(false);
     }
+    setIsRequestingJoin(false);
   };
 
   const orderedMembers = [...members].toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));

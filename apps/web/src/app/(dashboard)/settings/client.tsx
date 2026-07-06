@@ -1,6 +1,4 @@
 "use client";
-// React Compiler todo: BuildHIR doesn't yet handle TryStatement with a finally clause — compiler limitation, not a code bug.
-"use no memo";
 
 import { Button } from "@repo/ui/components/button";
 import { Card } from "@repo/ui/components/card";
@@ -44,17 +42,15 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
       if (error) {
         captureException(error);
         toast.error(error.message ?? "Failed to update name");
-        return;
+      } else {
+        toast.success("Name updated successfully");
+        refresh();
       }
-
-      toast.success("Name updated successfully");
-      refresh();
     } catch (error) {
       captureException(error);
       toast.error("Failed to update name");
-    } finally {
-      setIsSaving(false);
     }
+    setIsSaving(false);
   };
 
   return (
