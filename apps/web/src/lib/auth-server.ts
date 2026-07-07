@@ -12,6 +12,12 @@ import { joinPrivateSpacesFromCookies } from "./space-join";
 let cachedAuth: Auth | null = null;
 
 const getAuthConfig = (): AuthConfig => {
+  const secret = process.env.BETTER_AUTH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "BETTER_AUTH_SECRET must be set to at least 32 characters (generate with: openssl rand -base64 32)",
+    );
+  }
   return {
     // nextCookies() must be last — lets better-auth read cookies in RSC/Server Actions
     extraPlugins: [nextCookies()],
@@ -22,7 +28,7 @@ const getAuthConfig = (): AuthConfig => {
       joinPrivateSpacesFromCookies(userId, cookieHeader),
     onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
     prisma,
-    secret: process.env.BETTER_AUTH_SECRET ?? "",
+    secret,
     ...(process.env.RESEND_API_KEY
       ? {
           resendApiKey: process.env.RESEND_API_KEY,
