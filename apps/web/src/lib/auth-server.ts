@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
 import { cache } from "react";
 
+import { log } from "./observability";
 import { redis } from "./redis";
 import { joinPrivateSpacesFromCookies } from "./space-join";
 
@@ -76,7 +77,23 @@ const auth = new Proxy({} as Auth, {
 
 // React.cache() dedupes getSession within a single RSC request.
 const getSession = cache(async () => {
-  return auth.api.getSession({ headers: await headers() });
+  const headersList = await headers();
+
+  try {
+    const session = await auth.api.getSession({
+      headers: headersList,
+    });
+
+    return session;
+  } catch (error) {
+    // Auth failures (DB down, misconfiguration) must not be silent — they
+    // look identical to "logged out" without a log entry to diagnose.
+    log.error({
+      error: error instanceof Error ? error.message : String(error),
+      message: "getSession failed",
+    });
+    return null;
+  }
 });
 
 export { auth, getAuth, getSession };
