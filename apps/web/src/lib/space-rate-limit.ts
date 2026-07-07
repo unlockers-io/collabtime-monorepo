@@ -3,7 +3,7 @@ import { redis } from "@/lib/redis";
 type RateLimitResult = { allowed: boolean; remaining: number };
 
 // Atomic fixed-window limiter. Increments a per-key counter and sets the window
-// TTL only on the first hit (so the window truly expires after `windowSeconds`
+// TTL only on the first hit (so the window expires after `windowSeconds`
 // rather than sliding). Returns { allowed: false } once `max` attempts occur in
 // the window. Degrades OPEN when Redis is absent.
 //
