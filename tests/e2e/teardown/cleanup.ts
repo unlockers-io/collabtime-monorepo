@@ -10,9 +10,7 @@ const cleanup = async () => {
   const redis = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
 
   try {
-    // Find and delete all Redis keys created by E2E tests.
-    // Test teams use UUIDs as teamIds, stored as team:<uuid> keys.
-    // Filter to keys whose serialized payload references the e2e test user.
+    // Only delete team:* keys whose payload references the shared e2e test user.
     let cursor = "0";
     const keysToDelete: Array<string> = [];
 

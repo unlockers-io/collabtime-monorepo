@@ -9,7 +9,6 @@ import { makeTestEmail } from "../helpers/test-email";
 // different code path — these tests would assert against the wrong behavior.
 test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
-// Registration tests need a clean auth state.
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe("Sign-up with redirect context", () => {

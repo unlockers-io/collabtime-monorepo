@@ -246,7 +246,6 @@ const useTimezoneData = ({
     return "partial";
   };
 
-  // O(1) member-by-id lookup so `isMemberInCompare` doesn't `.find()` inside its loop
   const memberById = new Map(members.map((m) => [m.id, m]));
 
   const isMemberInCompare = (memberId: string, isComparing: boolean): boolean => {

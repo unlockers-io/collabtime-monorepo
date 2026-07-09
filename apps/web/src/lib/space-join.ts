@@ -3,12 +3,6 @@ import { prisma } from "@repo/db";
 import { log } from "@/lib/observability";
 import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
 
-/**
- * Read every `space-access-*` cookie from a raw Cookie header and return the
- * spaceIds whose tokens are valid (signed, unexpired, matching the spaceId in
- * the cookie name). Forged or mismatched cookies fail verification and are
- * dropped.
- */
 const validSpaceIdsFromCookieHeader = (cookieHeader: string | null): Array<string> => {
   if (!cookieHeader) {
     return [];
@@ -39,16 +33,7 @@ const validSpaceIdsFromCookieHeader = (cookieHeader: string | null): Array<strin
   return spaceIds;
 };
 
-/**
- * Upsert a durable MEMBER membership for a private team. A correct password is
- * the authorization for a private space, so this grants access without admin
- * approval.
- *
- * Idempotent via the Membership @@unique([userId, teamId]) constraint: an
- * existing membership is left untouched except that an archived one is
- * re-activated (a password join brings a removed member back in). ADMIN rows
- * keep their role.
- */
+// Idempotent via Membership @@unique([userId, teamId]).
 const joinPrivateSpace = (userId: string, teamId: string) => {
   return prisma.membership.upsert({
     create: { role: "MEMBER", teamId, userId },
@@ -58,13 +43,7 @@ const joinPrivateSpace = (userId: string, teamId: string) => {
   });
 };
 
-/**
- * Materialize durable memberships for a user from the private-space-access
- * cookies they carry. Used by the auth lifecycle hooks at signup/login.
- *
- * Best-effort: this runs inside Better Auth's user/session create flow, so it
- * never throws — failures are logged and swallowed.
- */
+// Best-effort inside Better Auth's user/session create flow; never throws.
 const joinPrivateSpacesFromCookies = async (
   userId: string,
   cookieHeader: string | null,

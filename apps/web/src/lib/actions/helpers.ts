@@ -52,7 +52,6 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
       team.members = [];
     }
 
-    // Backfill order for members that lack it
     team.members = team.members.map((m, i) => ({ ...m, order: m.order ?? i }));
 
     return team;
@@ -69,28 +68,13 @@ const persistTeam = async (teamId: string, team: TeamRecord): Promise<void> => {
 type MutationOutcome<TResult> = { error: string; ok: false } | { ok: true; value: TResult };
 
 type MutateTeamArgs<TPrelude, TResult> = {
-  // Logged on thrown errors and used as the user-facing fallback ("Failed to <errorContext>").
   errorContext: string;
   mutate: (team: TeamRecord, prelude: TPrelude) => MutationOutcome<TResult>;
-  // Validates secondary IDs and payloads, returning a parsed object for the mutator.
-  // Return `{ ok: false, error }` to short-circuit; `{ ok: true, value }` to proceed.
-  // Runs before auth + team load. May be async (e.g. for Postgres membership lookups).
   prelude?: () => MutationOutcome<TPrelude> | Promise<MutationOutcome<TPrelude>>;
-  // Skip the default `requireTeamAdmin` check (caller has done a custom one).
   skipAdminCheck?: boolean;
   teamId: string;
 };
 
-/**
- * The canonical "validate → auth → load → mutate → persist" pipeline for team-record
- * server actions. Concentrates UUID validation, admin auth, Redis I/O, the "team not
- * found" branch, and the try/catch + log error envelope behind a small interface so
- * each action writes only the meaningful domain logic.
- *
- * Domain errors (member-not-found, name-empty, etc.) are returned via
- * `{ ok: false, error }` from `prelude` or `mutate`. Thrown errors fall through to the
- * catch and produce `{ error: "Failed to <errorContext>", success: false }`.
- */
 const mutateTeam = async <TPrelude, TResult>(
   args: MutateTeamArgs<TPrelude, TResult>,
 ): Promise<ActionResult<TResult>> => {
@@ -131,9 +115,6 @@ const mutateTeam = async <TPrelude, TResult>(
   }
 };
 
-/**
- * Validate a UUID and return a `MutationOutcome` so it composes inside `prelude`.
- */
 const checkUuid = (value: string, label: string): MutationOutcome<void> => {
   const result = UUIDSchema.safeParse(value);
   if (!result.success) {

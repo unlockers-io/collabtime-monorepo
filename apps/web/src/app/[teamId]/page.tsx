@@ -87,8 +87,6 @@ const TeamPage = async ({ params }: TeamPageProps) => {
   const space = spaceResult.status === "fulfilled" ? spaceResult.value : null;
 
   if (space?.isPrivate) {
-    // A valid space-access cookie (set by verify-password) admits an
-    // unauthenticated guest without team membership.
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
     const hasGuestAccess = accessToken
@@ -102,12 +100,8 @@ const TeamPage = async ({ params }: TeamPageProps) => {
           })
         : null;
 
-      // No guest cookie and no membership: show a password gate instead of
-      // redirecting (logged-out) or 404ing (logged-in non-member). Tradeoff:
-      // a private team's existence becomes discoverable to anyone holding the
-      // link, but the verify-password route's generic errors, constant-time
-      // compare, and per-space+IP rate limit contain the leakage.
       if (!membership) {
+        // Password gate instead of redirect/404; verify-password route contains leakage.
         return (
           <PrivateSpaceGate isAuthenticated={Boolean(session)} spaceId={space.id} teamId={teamId} />
         );

@@ -45,10 +45,8 @@ const redis = new Proxy({} as Redis, {
   },
 });
 
-// TTL for newly created teams (2 months)
-const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60; // 60 days
+const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60;
 
-// TTL for teams with members (2 years)
-const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2; // 2 years
+const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2;
 
 export { redis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };

@@ -228,7 +228,6 @@ describe("importMembers", () => {
 
     expect(result.success).toBe(true);
     const saved = persistedTeam();
-    // Existing member at index 0, imported start at order 1
     expect(saved.members[1].order).toBe(1);
     expect(saved.members[2].order).toBe(2);
   });

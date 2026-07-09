@@ -22,10 +22,6 @@ import { safeRedirectPath } from "@/lib/redirect-validation";
 const SignupForm = () => {
   const { push, refresh } = useRouter();
   const searchParams = useSearchParams();
-  // Carried over from the login form's cross-link (workspace pages send
-  // logged-out users to /login?redirect=/<teamId>). Validated to an in-app
-  // path; Better Auth bakes it into the verification link as callbackURL,
-  // so the email clicker lands back on the page that started signup.
   const redirect = safeRedirectPath(searchParams.get("redirect"));
   const [isPending, startTransition] = useTransition();
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
@@ -45,9 +41,7 @@ const SignupForm = () => {
             toast.error(result.error.message ?? "Failed to create account");
             return;
           }
-          // No token means requireEmailVerification suppressed auto-sign-in (or enumeration prevention
-          // returned synthetic success); both paths show the same inline "check your email" state.
-          // Clicking the emailed link verifies AND signs in the clicking device.
+          // No token: requireEmailVerification suppressed auto-sign-in or enumeration prevention.
           if (!result.data?.token) {
             setSentToEmail(value.email);
             return;

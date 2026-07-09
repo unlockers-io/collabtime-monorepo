@@ -74,7 +74,6 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
       teamId,
       valid.map((r) => ({
         name: r.name,
-        // matchedTimezone is guaranteed non-null here due to the filter above
         timezone: r.matchedTimezone as (typeof COMMON_TIMEZONES)[number],
         title: r.title,
         workingHoursEnd: r.workingHoursEnd,
@@ -98,8 +97,6 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   const invalidCount = (rows?.length ?? 0) - validCount;
 
   return (
-    // Controlled: needs programmatic close on successful import and to reset
-    // CSV/parsed-rows state when the dialog closes.
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogTrigger render={<Button size="sm" type="button" variant="outline" />}>
         <Upload className="size-4" />

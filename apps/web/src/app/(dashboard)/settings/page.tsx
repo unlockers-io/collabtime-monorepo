@@ -13,8 +13,7 @@ const SettingsContent = async () => {
   }
 
   return (
-    // Keyed by name so the client draft resets when the canonical name
-    // changes (e.g. after router.refresh() picks up an update from another tab).
+    // Keyed by name so the client draft resets when the canonical name changes.
     <SettingsClient
       key={session.user.name ?? ""}
       user={{
@@ -26,8 +25,7 @@ const SettingsContent = async () => {
   );
 };
 
-// Static shell for the prerender: the content is bound to the session, so
-// cacheComponents needs a Suspense boundary above the uncached read.
+// Suspense boundary above session-bound content for cacheComponents.
 const SettingsSkeleton = () => (
   <div aria-hidden className="mx-auto max-w-3xl px-4 py-8">
     <div className="flex flex-col gap-8">

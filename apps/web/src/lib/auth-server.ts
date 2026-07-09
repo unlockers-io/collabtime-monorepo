@@ -21,9 +21,7 @@ const getAuthConfig = (): AuthConfig => {
   return {
     // nextCookies() must be last — lets better-auth read cookies in RSC/Server Actions
     extraPlugins: [nextCookies()],
-    // Self-join private spaces the user holds a valid password cookie for.
-    // user.create captures signup (device-independent); session.create covers
-    // an existing user logging in with the cookie present.
+    // Self-join private spaces from valid password cookies; user.create covers signup, session.create covers login.
     onSessionCreated: (userId, { cookieHeader }) =>
       joinPrivateSpacesFromCookies(userId, cookieHeader),
     onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
@@ -92,8 +90,7 @@ const getSession = cache(async () => {
 
     return session;
   } catch (error) {
-    // Auth failures (DB down, misconfiguration) must not be silent — they
-    // look identical to "logged out" without a log entry to diagnose.
+    // Auth failures look identical to "logged out" without a log entry.
     log.error({
       error: error instanceof Error ? error.message : String(error),
       message: "getSession failed",

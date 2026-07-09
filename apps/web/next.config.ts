@@ -16,8 +16,7 @@ export default withSentryConfig(nextConfig, {
   sourcemaps: {
     deleteSourcemapsAfterUpload: true,
   },
-  // Skip the tunnel in GH Actions: the proxy fetch to Sentry's ingest
-  // endpoint is unreachable from runners and hangs Playwright.
+  // Skip tunnel in GH Actions — proxy fetch to Sentry ingest hangs Playwright.
   ...(process.env.GITHUB_ACTIONS ? {} : { tunnelRoute: "/monitoring" }),
   widenClientFileUpload: true,
 });

@@ -170,7 +170,6 @@ const acceptInvitation = async (
     });
 
     if (existingMembership) {
-      // Already a member — just mark invitation as accepted
       await prisma.invitation.update({
         data: { status: "ACCEPTED" },
         where: { id: invitationId },
@@ -178,7 +177,6 @@ const acceptInvitation = async (
       return { data: { teamId: invitation.teamId }, success: true };
     }
 
-    // Create membership + update invitation atomically
     await prisma.$transaction([
       prisma.invitation.update({
         data: { status: "ACCEPTED" },
@@ -193,7 +191,6 @@ const acceptInvitation = async (
       }),
     ]);
 
-    // Claim the member slot in Redis (best-effort)
     try {
       const team = await getTeamRecord(invitation.teamId);
       if (team) {

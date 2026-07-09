@@ -1,19 +1,9 @@
 import { defineNodeInstrumentation } from "@repo/observability/next/instrumentation";
 
-// Lazily loads the Node-only observability instance so the edge bundle never
-// pulls `node:async_hooks`. Provides evlog's wide-event `register` + the
-// `onRequestError` hook Next.js calls for uncaught App Router errors.
+// Lazy init: keeps `node:async_hooks` out of the edge bundle.
 const evlog = defineNodeInstrumentation(() => import("./lib/observability"));
 
-/**
- * Next.js Instrumentation file.
- * Runs once when the Next.js server starts. Initializes evlog wide-event
- * logging, validates env vars, and loads the runtime-specific Sentry config.
- *
- * @see https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
- */
 const register = async () => {
-  // evlog's instrumentation gates its Node-only setup off the edge runtime.
   await evlog.register();
 
   if (process.env.NEXT_RUNTIME === "nodejs") {

@@ -24,7 +24,6 @@ try {
     where: { email: "test@collabtime.dev" },
   });
 
-  // Better Auth stores credentials in the Account table with providerId "credential"
   const hashedPassword = await hashPassword("password123");
 
   await prisma.account.upsert({

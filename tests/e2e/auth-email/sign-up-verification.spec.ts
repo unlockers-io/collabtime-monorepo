@@ -9,7 +9,6 @@ import { makeTestEmail } from "../helpers/test-email";
 // different code path — these tests would assert against the wrong behavior.
 test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
-// Registration tests need a clean auth state.
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe("Sign-up email verification", () => {
@@ -41,9 +40,6 @@ test.describe("Sign-up email verification", () => {
     });
     expect(preSignIn.status()).not.toBe(200);
 
-    // Assert the verification email actually left Resend. This is the
-    // regression we care about: "JWT format was valid but the email never
-    // sent" silently passed the old reconstruction-based path.
     const mail = await waitForEmail({
       sinceMs: since,
       subject: /verify/i,
@@ -65,7 +61,6 @@ test.describe("Sign-up email verification", () => {
     expect(clickerCookies.find((c) => c.name.includes("collabtime."))).toBeDefined();
     await clickerContext.close();
 
-    // The email is now verified, so a plain credentials sign-in succeeds too.
     const postSignIn = await request.post(`${webUrl}/api/auth/sign-in/email`, {
       data: { email, password },
     });

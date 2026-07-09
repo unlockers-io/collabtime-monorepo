@@ -17,11 +17,6 @@ const STORAGE_STATE_PATH = "tests/e2e/.auth/user.json";
 // `apps/web/scripts/ensure-e2e-user.ts` — that script writes directly to
 // Prisma with `emailVerified: true`, so this sign-in works even when
 // `requireEmailVerification` is on (the Resend-gated CI/prod path).
-//
-// The previous UI-form signup was racy: TanStack Form's onSubmit attaches
-// after React hydrates, and Playwright clicked the submit button before
-// that landed, falling back to a native GET form submit that left the
-// user stranded on /signup. API sign-in sidesteps that entirely.
 setup("create and authenticate test user", async ({ page, request }) => {
   await mkdir("tests/e2e/.auth", { recursive: true });
 

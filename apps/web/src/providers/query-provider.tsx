@@ -16,7 +16,7 @@ const QueryProvider = ({ children }: QueryProviderProps) => {
         defaultOptions: {
           queries: {
             refetchOnWindowFocus: true,
-            staleTime: 60 * 1000, // 1 minute
+            staleTime: 60 * 1000,
           },
         },
       }),

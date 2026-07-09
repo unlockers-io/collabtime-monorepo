@@ -26,8 +26,7 @@ const HomeSkeleton = () => (
   </div>
 );
 
-// Instant navigation: the static hero shell streams immediately as the fallback
-// while the session-bound content renders on the server.
+// Suspense streams the static hero shell while session-bound content renders.
 const Home = () => (
   <Suspense fallback={<HomeSkeleton />}>
     <HomeContent />

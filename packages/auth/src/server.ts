@@ -112,7 +112,6 @@ const createAuth = (config: AuthConfig) => {
         "**.localhost",
         "localhost:*",
         "127.0.0.1:*",
-        // Production marketing + app origins.
         "collabtime.io",
         "www.collabtime.io",
         // Vercel previews + any extra prod hosts come from env so this
@@ -267,11 +266,11 @@ const createAuth = (config: AuthConfig) => {
     session: {
       cookieCache: {
         enabled: true,
-        maxAge: 5 * 60, // 5 minutes
+        maxAge: 5 * 60,
       },
-      expiresIn: 60 * 60 * 24 * 7, // 7 days
+      expiresIn: 60 * 60 * 24 * 7,
       storeSessionInDatabase: true,
-      updateAge: 60 * 60 * 24, // Update session if older than 1 day
+      updateAge: 60 * 60 * 24,
     },
 
     // `allowedHosts` already feeds `trustedOrigins`; the loopback set below

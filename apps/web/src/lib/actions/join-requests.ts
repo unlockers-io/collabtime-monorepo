@@ -101,7 +101,6 @@ const approveJoinRequest = async (
 
     await requireTeamAdmin(joinRequest.teamId);
 
-    // Update request status + create membership atomically
     await prisma.$transaction([
       prisma.joinRequest.update({
         data: { status: "APPROVED" },
@@ -116,7 +115,6 @@ const approveJoinRequest = async (
       }),
     ]);
 
-    // Post-commit cache update (best-effort)
     const memberName = joinRequest.user.name || joinRequest.user.email.split("@")[0] || "Unknown";
     const team = await getTeamRecord(joinRequest.teamId);
     const newMember: TeamMember = {

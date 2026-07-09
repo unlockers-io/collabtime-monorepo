@@ -1,23 +1,10 @@
-// The auth forms forward a `?redirect=` param: login pushes it after
-// sign-in, signup passes it as the verification email's callbackURL so the
-// clicker lands back on the page that sent them to auth. This validator is
-// the open-redirect gate — Better Auth's server-side trustedOrigins check
-// is a backstop, not the contract.
+// Open-redirect gate for auth `?redirect=` params; Better Auth trustedOrigins is only a backstop.
 
 const FALLBACK_PATH = "/";
 
-// Fixed base for URL resolution: anything that escapes it (absolute URL,
-// scheme, protocol-relative host) resolves to a different origin.
+// Fixed base for URL resolution: anything that escapes it resolves to a different origin.
 const ANCHOR_ORIGIN = "https://collabtime.invalid";
 
-/**
- * Validate a redirect value as an in-app relative path.
- * Returns the path unchanged when safe, otherwise "/".
- *
- * Rejected: absolute URLs, protocol-relative ("//evil.com"), backslash
- * tricks ("/\evil.com" — browsers normalize "\" to "/"), schemes
- * ("javascript:"), and anything not starting with a single "/".
- */
 const safeRedirectPath = (value: string | null | undefined): string => {
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
     return FALLBACK_PATH;

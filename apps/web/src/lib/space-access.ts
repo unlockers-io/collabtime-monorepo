@@ -8,11 +8,7 @@ const TOKEN_VERSION = "v1";
 
 let warnedAboutFallback = false;
 
-/**
- * Get the signing secret from environment.
- * Falls back to BETTER_AUTH_SECRET if a dedicated secret isn't set, warning once
- * per process so the shared-secret case is observable in logs.
- */
+// Falls back to BETTER_AUTH_SECRET with a one-time warning if no dedicated secret is set.
 const getSigningSecret = (): string => {
   const dedicated = process.env.SPACE_ACCESS_SECRET;
   if (dedicated) {
@@ -54,10 +50,6 @@ type TokenPayload = {
   version: string;
 };
 
-/**
- * Create a signed access token for a space.
- * Token format: base64(payload).signature
- */
 const createSpaceAccessToken = (spaceId: string): string => {
   const secret = getSigningSecret();
   const expiresAt = Date.now() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
@@ -76,10 +68,6 @@ const createSpaceAccessToken = (spaceId: string): string => {
 
 type VerificationResult = { payload: TokenPayload; valid: true } | { reason: string; valid: false };
 
-/**
- * Verify a space access token.
- * Checks signature and expiration.
- */
 const verifySpaceAccessToken = (token: string, expectedSpaceId: string): VerificationResult => {
   try {
     const secret = getSigningSecret();

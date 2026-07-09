@@ -138,11 +138,7 @@ const importMembers = async (
   });
 };
 
-/**
- * Allows an authenticated user to edit their own member record. Verifies ownership via
- * userId match (or claims the slot if userId is unset). Skips the default admin check —
- * the auth boundary is "authenticated + has Postgres membership for this team".
- */
+// Skips requireTeamAdmin — auth boundary is Postgres membership + ownership.
 const updateOwnMember = async (
   teamId: string,
   memberId: string,
