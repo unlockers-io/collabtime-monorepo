@@ -36,7 +36,6 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
     });
     expect([200, 201]).toContain(second.status());
 
-    // Side-effect ceiling: exactly one user row.
     const users = await prisma.user.findMany({ where: { email } });
     expect(users).toHaveLength(1);
     expect(users[0]?.name).toBe("Original Name");

@@ -3,10 +3,7 @@ import { Suspense } from "react";
 
 import { getSession } from "@/lib/auth-server";
 
-// Bounce authenticated users away from login/signup/recover/reset-password.
-// Mirrors acme's proxy.ts pattern; collabtime has no middleware so the gate
-// lives in the route layout. Rendered as a Suspense-wrapped sibling (it emits
-// no UI) so the static auth shell stays prerenderable under cacheComponents.
+// Auth gate as a Suspense sibling so the static shell stays prerenderable under cacheComponents.
 const AuthGate = async () => {
   const session = await getSession();
   if (session) {

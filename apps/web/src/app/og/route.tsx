@@ -49,7 +49,6 @@ const GET = async () => {
         width: "100%",
       }}
     >
-      {/* Globe icon */}
       <div
         style={{
           alignItems: "center",

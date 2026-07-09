@@ -193,7 +193,6 @@ const waitForEmail = async (
 // Falls back to the text body if HTML is empty (some templates render text-only).
 const extractLink = (email: ResendEmail, pattern: RegExp): string => {
   const haystack = email.html ?? email.text ?? "";
-  // Match an href="..." attribute whose URL satisfies the pattern.
   const hrefMatches = haystack.matchAll(/href="(?<href>[^"]+)"/gv);
   for (const { groups } of hrefMatches) {
     const decoded = (groups?.href ?? "").replaceAll("&amp;", "&");
@@ -201,7 +200,6 @@ const extractLink = (email: ResendEmail, pattern: RegExp): string => {
       return decoded;
     }
   }
-  // Plain-text fallback — look for the bare URL.
   const direct = haystack.match(pattern);
   if (direct) {
     return direct[0];

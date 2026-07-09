@@ -17,10 +17,6 @@ import { UUIDSchema } from "../validation";
 import { getTeamRecord, sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
-/**
- * Get a team for public (read-only) access.
- * Private teams require the caller to be a member.
- */
 const getPublicTeam = async (
   teamId: string,
 ): Promise<ActionResult<{ role: TeamRole; team: Team }>> => {
@@ -41,8 +37,7 @@ const getPublicTeam = async (
     if (space.isPrivate) {
       const teamRole = await getTeamRole(teamId);
       if (!teamRole) {
-        // A valid space-access cookie admits a guest, matching the page gate so a
-        // guest who can see the page can also load its data.
+        // Guest cookie must match the page gate so guests can load team data.
         const cookieStore = await cookies();
         const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
         const hasGuestAccess = accessToken
@@ -82,8 +77,7 @@ const getPublicTeam = async (
   }
 };
 
-// Wrapped in `cache()` so generateMetadata + the page render share one lookup
-// per request. Both functions are called from both entry points.
+// `cache()` dedupes generateMetadata + page render lookups per request.
 const validateTeam = cache(async (teamId: string): Promise<boolean> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);

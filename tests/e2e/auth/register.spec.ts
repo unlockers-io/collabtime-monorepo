@@ -1,6 +1,5 @@
 import { test, expect } from "../fixtures/auth.fixture";
 
-// Use a fresh storageState so registration tests run unauthenticated
 test.use({ storageState: { cookies: [], origins: [] } });
 
 // Skip flag for the two tests that assert the pre-Resend signup flow.

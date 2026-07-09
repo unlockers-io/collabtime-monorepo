@@ -10,8 +10,7 @@ import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
 const updateSpaceSchema = z.object({
   isPrivate: z.boolean().optional(),
-  // accessPassword is only applied when updatePassword is set, so a PATCH that
-  // omits the flag leaves the stored password untouched.
+  // accessPassword only applied when updatePassword is set.
   accessPassword: SpaceAccessPasswordSchema.optional().nullable(),
   updatePassword: z.boolean().optional(),
 });
@@ -46,7 +45,7 @@ export const GET = withEvlog(async (_request: Request, { params }: Params) => {
     return NextResponse.json({
       space: {
         ...space,
-        // Expose a boolean, never the hash — and never a masked sentinel the client could echo back.
+        // Expose hasPassword boolean, never the hash or a masked sentinel the client could echo back.
         accessPassword: undefined,
         hasPassword: Boolean(space.accessPassword),
       },
@@ -92,8 +91,7 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
       updateData.isPrivate = updates.isPrivate;
     }
 
-    // Only touch the password when the client explicitly opts in, so the masked
-    // "********" value the form may resubmit never gets hashed and stored.
+    // Only touch password when client opts in — masked "********" resubmit must not get hashed.
     if (updates.updatePassword) {
       if (updates.accessPassword === null) {
         updateData.accessPassword = null;

@@ -45,7 +45,6 @@ const createTickStore = (intervalMs: number): TickStore => {
 const secondTickStore = createTickStore(1000);
 const halfMinuteTickStore = createTickStore(30_000);
 
-// Returns the current timestamp; use it as a dependency to force recalculation.
 const useSecondTick = (): number =>
   useSyncExternalStore(
     secondTickStore.subscribe,

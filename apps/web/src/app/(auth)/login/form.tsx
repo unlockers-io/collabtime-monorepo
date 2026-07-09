@@ -22,9 +22,6 @@ import { safeRedirectPath } from "@/lib/redirect-validation";
 const LoginForm = () => {
   const { push, refresh } = useRouter();
   const searchParams = useSearchParams();
-  // Workspace pages send logged-out users here with ?redirect=/<teamId>;
-  // validate it once and use it as both the post-sign-in destination and
-  // the signup cross-link context. Invalid or absent → "/".
   const redirect = safeRedirectPath(searchParams.get("redirect"));
   const [isPending, startTransition] = useTransition();
   const [showUnverifiedNotice, setShowUnverifiedNotice] = useState(false);
@@ -40,8 +37,7 @@ const LoginForm = () => {
             password: value.password,
           });
           if (result.error) {
-            // Better Auth 403s unverified accounts and (sendOnSignIn) re-sends
-            // the verification link — informational, not a credentials error.
+            // Better Auth 403 + re-sends verification link — informational, not a credentials error.
             if (result.error.code === "EMAIL_NOT_VERIFIED") {
               setShowUnverifiedNotice(true);
               return;

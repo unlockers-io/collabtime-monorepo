@@ -23,9 +23,7 @@ const useCollapsedGroups = (members: Array<TeamMember>) => {
     }
   });
 
-  // Computed in the handler (not a functional updater) so the localStorage
-  // write stays outside the updater — updaters must be pure, and StrictMode /
-  // the React Compiler may invoke them more than once.
+  // Computed outside the updater — updaters must be pure; StrictMode may invoke them twice.
   const toggleGroupCollapse = (groupId: string) => {
     const next = new Set(collapsedGroups);
     if (next.has(groupId)) {

@@ -27,9 +27,7 @@ const PrivateSpaceGate = ({ isAuthenticated, spaceId, teamId }: PrivateSpaceGate
   const { refresh } = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  // After a correct password from a signed-out visitor: the cookie is set but
-  // they aren't a member yet, so prompt them to sign up/log in to join. A
-  // signed-in visitor's membership is created by the route, so we just refresh.
+  // After correct password from a signed-out visitor: cookie is set but membership isn't yet.
   const [accepted, setAccepted] = useState(false);
 
   const redirectTarget = `/${teamId}`;
@@ -41,8 +39,7 @@ const PrivateSpaceGate = ({ isAuthenticated, spaceId, teamId }: PrivateSpaceGate
       setServerError(null);
       setIsPending(true);
 
-      // No try/catch: a TryStatement bails the React Compiler out of memoizing
-      // this component. Catch the network rejection on the promise instead.
+      // No try/catch — TryStatement bails the React Compiler out of memoizing this component.
       const response = await fetch(`/api/spaces/${spaceId}/verify-password`, {
         body: JSON.stringify({ password: value.password }),
         headers: { "Content-Type": "application/json" },
@@ -70,8 +67,7 @@ const PrivateSpaceGate = ({ isAuthenticated, spaceId, teamId }: PrivateSpaceGate
         return;
       }
 
-      // Signed-in visitor: the route already created the membership, so reload
-      // into the team (button stays busy through navigation).
+      // Signed-in visitor: route created membership; reload into the team.
       if (isAuthenticated) {
         refresh();
         return;

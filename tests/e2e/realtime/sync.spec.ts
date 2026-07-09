@@ -41,7 +41,6 @@ test.describe.skip("Realtime Sync", () => {
       timeout: 5000,
     });
 
-    // Verify member appears in context B via realtime
     await expect(pageB.getByText("Realtime Alice")).toBeVisible({
       timeout: 15_000,
     });
@@ -75,7 +74,6 @@ test.describe.skip("Realtime Sync", () => {
       timeout: 5000,
     });
 
-    // Verify group appears in context B via realtime
     await expect(pageB.getByText("Sync Test Group")).toBeVisible({
       timeout: 15_000,
     });
@@ -110,7 +108,6 @@ test.describe.skip("Realtime Sync", () => {
     await nameInput.pressSequentially("Synced Team Name", { delay: 10 });
     await pageA.keyboard.press("Tab");
 
-    // Verify name appears in context B via realtime
     await expect(pageB.getByText("Synced Team Name")).toBeVisible({
       timeout: 15_000,
     });
@@ -161,7 +158,6 @@ test.describe.skip("Realtime Sync", () => {
       await confirmButton.click();
     }
 
-    // Verify member disappears in context B via realtime
     await expect(pageB.getByText("Removal Target")).not.toBeVisible({
       timeout: 15_000,
     });

@@ -5,15 +5,15 @@ type TeamGroup = {
 };
 
 type TeamMember = {
-  groupId?: string; // Optional: undefined = ungrouped
+  groupId?: string;
   id: string;
   name: string;
   order: number;
   timezone: string;
   title: string;
-  userId?: string; // Links to authenticated user; undefined for manually-added members
-  workingHoursEnd: number; // 0-23 in their local timezone
-  workingHoursStart: number; // 0-23 in their local timezone
+  userId?: string;
+  workingHoursEnd: number;
+  workingHoursStart: number;
 };
 
 type Team = {

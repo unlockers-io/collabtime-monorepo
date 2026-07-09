@@ -1,26 +1,25 @@
-// Common timezones for the dropdown
 const COMMON_TIMEZONES = [
-  "Pacific/Honolulu", // UTC-10
-  "America/Anchorage", // UTC-9
-  "America/Los_Angeles", // UTC-8
-  "America/Denver", // UTC-7
-  "America/Chicago", // UTC-6
-  "America/New_York", // UTC-5
-  "America/Sao_Paulo", // UTC-3
-  "Atlantic/Azores", // UTC-1
-  "Europe/London", // UTC+0
-  "Europe/Paris", // UTC+1
-  "Europe/Berlin", // UTC+1
-  "Europe/Athens", // UTC+2
-  "Europe/Moscow", // UTC+3
-  "Asia/Dubai", // UTC+4
-  "Asia/Kolkata", // UTC+5:30
-  "Asia/Dhaka", // UTC+6
-  "Asia/Bangkok", // UTC+7
-  "Asia/Shanghai", // UTC+8
-  "Asia/Tokyo", // UTC+9
-  "Australia/Sydney", // UTC+10/11
-  "Pacific/Auckland", // UTC+12/13
+  "Pacific/Honolulu",
+  "America/Anchorage",
+  "America/Los_Angeles",
+  "America/Denver",
+  "America/Chicago",
+  "America/New_York",
+  "America/Sao_Paulo",
+  "Atlantic/Azores",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Europe/Athens",
+  "Europe/Moscow",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Dhaka",
+  "Asia/Bangkok",
+  "Asia/Shanghai",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "Pacific/Auckland",
 ] as const;
 
 const getTimezoneOffset = (timezone: string): number => {
@@ -70,7 +69,6 @@ const convertHourToTimezone = (hour: number, fromTimezone: string, toTimezone: s
   const diff = toOffset - fromOffset;
   let converted = Math.round(hour + diff);
 
-  // Wrap around 24-hour clock
   if (converted < 0) {
     converted += 24;
   } else if (converted >= 24) {
@@ -99,7 +97,6 @@ const isCurrentlyWorking = (
   if (workingHoursStart <= workingHoursEnd) {
     return currentHour >= workingHoursStart && currentHour < workingHoursEnd;
   }
-  // Working hours cross midnight
   return currentHour >= workingHoursStart || currentHour < workingHoursEnd;
 };
 
@@ -126,7 +123,6 @@ const getMinutesUntilAvailable = (
   workingHoursStart: number,
   workingHoursEnd: number,
 ): number => {
-  // If currently working, return 0
   if (isCurrentlyWorking(timezone, workingHoursStart, workingHoursEnd)) {
     return 0;
   }
@@ -156,10 +152,8 @@ const getMinutesUntilAvailable = (
   let minutesUntilAvailable: number;
 
   if (currentMinutesFromMidnight < workStartMinutes) {
-    // Work hasn't started yet today
     minutesUntilAvailable = workStartMinutes - currentMinutesFromMidnight;
   } else {
-    // Work already ended today, calculate time until tomorrow's start
     const minutesUntilMidnight = 24 * 60 - currentMinutesFromMidnight;
     minutesUntilAvailable = minutesUntilMidnight + workStartMinutes;
   }
@@ -186,34 +180,25 @@ const formatTimeUntilAvailable = (minutes: number): string => {
 
 const formatTimezoneAbbreviation = (timezone: string): string => {
   const now = new Date();
-  // Get the timezone abbreviation (e.g., "PST", "EST", "GMT")
   const parts = now
     .toLocaleTimeString("en-US", {
       timeZone: timezone,
       timeZoneName: "short",
     })
     .split(" ");
-  // The abbreviation is typically the last part
   return parts.at(-1) ?? timezone.split("/").pop() ?? timezone;
 };
 
-/**
- * Maps any IANA timezone string to the closest entry in COMMON_TIMEZONES.
- * Returns null if the input is not a valid IANA timezone string.
- */
 const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | null => {
   const trimmed = input.trim();
   if (!trimmed) {
     return null;
   }
 
-  // Exact match first
   if (COMMON_TIMEZONES.includes(trimmed as (typeof COMMON_TIMEZONES)[number])) {
     return trimmed as (typeof COMMON_TIMEZONES)[number];
   }
 
-  // Validate the input is a real IANA timezone using the Intl API,
-  // then compute its UTC offset for closest-match lookup.
   let inputOffset: number;
   try {
     // Intl.DateTimeFormat throws RangeError for invalid timeZone values
@@ -223,7 +208,6 @@ const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | 
     return null;
   }
 
-  // Find the COMMON_TIMEZONE with the smallest offset difference
   let best: (typeof COMMON_TIMEZONES)[number] | null = null;
   let bestDiff = Infinity;
 

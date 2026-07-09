@@ -71,13 +71,10 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
   };
 
   return (
-    // Controlled: needs programmatic close on successful submit and to reset
-    // form state on the open transition (and again after the close animation).
     <Dialog
       onOpenChange={handleOpenChange}
       onOpenChangeComplete={(nextOpen) => {
-        // Reset after the close animation completes to avoid input re-render
-        // flicker during fade-out.
+        // Reset after close animation to avoid input flicker during fade-out.
         if (!nextOpen) {
           form.reset();
         }

@@ -74,7 +74,6 @@ const removeGroup = async (teamId: string, groupId: string): Promise<ActionResul
       }
       team.groups = team.groups.filter((g) => g.id !== groupId);
       team.groups = team.groups.map((g, index) => ({ ...g, order: index }));
-      // Unassign all members from the removed group.
       team.members = team.members.map((m) =>
         m.groupId === groupId ? { ...m, groupId: undefined } : m,
       );

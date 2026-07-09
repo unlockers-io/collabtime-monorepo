@@ -13,14 +13,12 @@ describe("convertHourToTimezone", () => {
   });
 
   it("wraps around midnight going forward", () => {
-    // Converting a late hour east should wrap past 24
     const result = convertHourToTimezone(23, "America/New_York", "Europe/London");
     expect(result).toBeGreaterThanOrEqual(0);
     expect(result).toBeLessThan(24);
   });
 
   it("wraps around midnight going backward", () => {
-    // Converting an early hour west should wrap below 0
     const result = convertHourToTimezone(0, "Europe/London", "America/New_York");
     expect(result).toBeGreaterThanOrEqual(0);
     expect(result).toBeLessThan(24);

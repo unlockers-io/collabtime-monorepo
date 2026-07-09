@@ -37,7 +37,6 @@ test.describe("Password reset", () => {
     });
     expect(reset.status()).toBe(200);
 
-    // Assert the reset email actually left Resend — covers the "200 but never delivered" bug class.
     const mail = await waitForEmail({
       sinceMs: since,
       subject: /reset/i,
@@ -45,7 +44,6 @@ test.describe("Password reset", () => {
     });
     expect(mail.last_event).not.toBe("bounced");
 
-    // Better Auth puts the token as a path segment, then redirects to /reset-password?token=...
     const resetUrl = extractLink(mail, /\/reset-password\/[^"?]+\?callbackURL=/v);
     await page.goto(resetUrl);
 

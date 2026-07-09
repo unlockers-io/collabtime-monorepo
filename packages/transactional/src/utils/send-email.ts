@@ -124,7 +124,6 @@ const sendBatchEmails = async (
     const settledBatchData = await Promise.allSettled(
       emails.map(async ({ template, ...config }) => {
         const validatedConfig = emailConfigSchema.parse(config);
-        // HTML and plain-text renders are independent — run in parallel
         const [html, text] = await Promise.all([
           render(template),
           render(template, { plainText: true }),
@@ -190,7 +189,6 @@ const sendBatchEmails = async (
 };
 
 const previewEmail = async (template: ReactElement) => {
-  // HTML and plain-text renders are independent — run in parallel
   const [html, text] = await Promise.all([render(template), render(template, { plainText: true })]);
 
   return {

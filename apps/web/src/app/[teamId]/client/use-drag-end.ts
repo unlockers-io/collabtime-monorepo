@@ -45,7 +45,6 @@ const useDragEnd = ({
 
     const previousGroupId = member.groupId;
 
-    // Optimistic update
     updateTeamCache(teamId, (prev) => {
       if (!prev) {
         return prev;
@@ -65,7 +64,6 @@ const useDragEnd = ({
       const group = groups.find((g) => g.id === groupId);
       toast.success(`${member.name} added to ${group?.name ?? "group"}`);
     } else {
-      // Revert on failure
       updateTeamCache(teamId, (prev) => {
         if (!prev) {
           return prev;

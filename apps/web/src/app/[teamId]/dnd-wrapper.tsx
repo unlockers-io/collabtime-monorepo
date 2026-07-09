@@ -42,8 +42,7 @@ const DndWrapper = ({
 }: DndWrapperProps) => {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
-  // Read synchronously by `dropAnimation.keyframes` after `onDragEnd` fires,
-  // so it must be a ref — state updates would land too late for the animation.
+  // Read synchronously by dropAnimation.keyframes after onDragEnd — state would land too late.
   const droppedOnGroupRef = useRef(false);
 
   const sensors = useSensors(

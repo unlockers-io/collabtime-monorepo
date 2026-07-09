@@ -4,9 +4,7 @@ import { Suspense } from "react";
 import { Nav } from "@/components/nav";
 import { getSession } from "@/lib/auth-server";
 
-// Session gate rendered as a Suspense-wrapped sibling (it emits no UI) so the
-// static nav shell stays prerenderable under cacheComponents; pages below do
-// their own session-bound rendering.
+// Session gate as a Suspense sibling so the static shell stays prerenderable under cacheComponents.
 const DashboardGate = async () => {
   const session = await getSession();
 

@@ -17,7 +17,6 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
 
     const teamId = uuidv4();
 
-    // Create Space + Membership atomically in Postgres
     await prisma.$transaction([
       prisma.space.create({
         data: {
@@ -35,7 +34,6 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
       }),
     ]);
 
-    // Post-commit: populate Redis cache (best-effort)
     try {
       const creatorMember: TeamMember = {
         id: uuidv4(),

@@ -23,8 +23,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
     const body = await request.json();
     const { password } = verifyPasswordSchema.parse(body);
 
-    // Brute-force brake before the expensive bcrypt compare. The 429 body is
-    // generic so it does not leak whether the space exists or is private.
+    // Brute-force brake before bcrypt; generic 429 body does not leak space existence.
     const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
     const clientIp = forwardedFor.split(",")[0]?.trim() || "unknown";
     const { allowed } = await checkRateLimit(`space-verify:${spaceId}:${clientIp}`, 10, 60);
@@ -46,8 +45,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Space not found" }, { status: 404 });
     }
 
-    // Always perform password comparison if space has a password set.
-    // Prevents timing attacks that could reveal whether a space is private.
+    // Always compare when a password exists — prevents timing leaks about privacy.
     const accessPassword = space.accessPassword;
     const hasPassword = Boolean(accessPassword);
     const isValid = accessPassword ? await verifyPassword(password, accessPassword) : false;
@@ -60,9 +58,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
     }
 
-    // Already-logged-in user verifying the password: the cookie hasn't been set
-    // yet (this request sets it), so materialize the membership directly from
-    // the just-verified space. Signup/login flows are covered by the auth hooks.
+    // Cookie is set by this request — materialize membership directly; signup/login use auth hooks.
     const session = await getSession();
     if (session) {
       try {
@@ -85,7 +81,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
 
     response.cookies.set(`${SPACE_ACCESS_COOKIE_PREFIX}${spaceId}`, accessToken, {
       httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       sameSite: "lax",
       secure: process.env.WEB_APP_URL?.startsWith("https://") === true,
     });

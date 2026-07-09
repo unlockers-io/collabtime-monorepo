@@ -85,16 +85,13 @@ const parseCSV = (text: string): Array<ParsedRow> => {
 
   if (hasHeader) {
     startRow = 1;
-    // Map gives O(1) lookups; first-occurrence semantics differ from
-    // `indexOf` (Map keeps the last write) but CSV headers shouldn't repeat.
     const headerIndices = new Map<string, number>();
     for (let i = 0; i < firstCells.length; i++) {
       if (!headerIndices.has(firstCells[i])) {
         headerIndices.set(firstCells[i], i);
       }
     }
-    // Use null when a column isn't found — don't fall back to positional defaults
-    // so we don't silently read the wrong column.
+    // Use null when a column isn't found — positional defaults would silently read the wrong column.
     nameIdx = findColIndex(headerIndices, "name");
     tzIdx = findColIndex(headerIndices, "timezone", "tz");
     titleIdx = findColIndex(headerIndices, "title", "role", "position");

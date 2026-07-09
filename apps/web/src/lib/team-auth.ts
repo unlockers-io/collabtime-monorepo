@@ -12,10 +12,6 @@ type TeamAuthResult = {
   userId: string;
 };
 
-/**
- * Get the current user's role for a team via Membership lookup.
- * Returns null if not authenticated or not a member.
- */
 const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -48,10 +44,6 @@ const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
   };
 };
 
-/**
- * Require admin access to a team. Returns the userId.
- * Throws if not authenticated or not an admin member.
- */
 const requireTeamAdmin = async (teamId: string): Promise<string> => {
   const result = await getTeamRole(teamId);
 
@@ -66,10 +58,6 @@ const requireTeamAdmin = async (teamId: string): Promise<string> => {
   return result.userId;
 };
 
-/**
- * Require authentication. Returns the user session.
- * Throws if not authenticated.
- */
 const requireAuth = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),

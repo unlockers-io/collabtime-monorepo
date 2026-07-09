@@ -9,7 +9,6 @@ import { makeTestEmail } from "../helpers/test-email";
 // RESEND_API_KEY. Mirrors sign-up-redirect.spec.ts.
 test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
-// The self-join flow starts logged out.
 test.use({ storageState: { cookies: [], origins: [] } });
 
 const SPACE_PASSWORD = "SpacePassword1!";
@@ -22,9 +21,6 @@ test.describe("Private space password self-join", () => {
     const since = Date.now();
     const email = makeTestEmail(testInfo);
 
-    // --- Seed a private team owned by the pre-seeded e2e user (a different
-    // person than the one signing up below). createWorkspace seeds Postgres +
-    // Redis; the PATCH makes it private with a password.
     const owner = await browser.newContext({ storageState: "tests/e2e/.auth/user.json" });
     const ownerPage = await owner.newPage();
     await ownerPage.goto(`${webUrl}/`);
@@ -45,14 +41,11 @@ test.describe("Private space password self-join", () => {
     expect(patch.ok()).toBeTruthy();
     await owner.close();
 
-    // --- Logged-out visitor opens the private link: a password gate, not a
-    // redirect to /login or a 404.
     await page.goto(`${webUrl}/${teamId}`);
     await expect(page.getByRole("heading", { name: /private team/i })).toBeVisible();
     await page.getByLabel("Password").fill(SPACE_PASSWORD);
     await page.getByRole("button", { name: /^continue$/i }).click();
 
-    // Correct password but still logged out → prompted to sign up to join.
     const signUpToJoin = page.getByRole("link", { name: /sign up to join/i });
     await expect(signUpToJoin).toBeVisible();
     await expect(signUpToJoin).toHaveAttribute(
@@ -61,18 +54,16 @@ test.describe("Private space password self-join", () => {
     );
     await signUpToJoin.click();
 
-    // --- Sign up. The space-access cookie set by the gate rides along with the
-    // signUp request, so the user.create.after hook joins the private team.
     await expect(page).toHaveURL(/\/signup/u);
+    // The space-access cookie from the gate rides with signUp so user.create.after joins the team.
     await page.getByLabel("Full Name").fill("Gate Joiner");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill("SecurePassword1!");
     await page.getByRole("button", { name: /create account/i }).click();
     await expect(page.getByText(/check your email/i)).toBeVisible({ timeout: 10_000 });
 
-    // --- Open the verification link on a context that NEVER held the
-    // space-access cookie. Landing on the team (not the gate) proves the
-    // membership was created at signup — independent of the clicking device.
+    // Verification on a context that never held the space-access cookie proves
+    // membership was created at signup, not when the link is clicked.
     const mail = await waitForEmail({ sinceMs: since, subject: /verify/i, to: email });
     expect(mail.last_event).not.toBe("bounced");
     const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/v);
@@ -85,7 +76,6 @@ test.describe("Private space password self-join", () => {
       timeout: 15_000,
     });
 
-    // --- And the team is now in the new user's homepage list.
     await clickerPage.goto(`${webUrl}/`);
     await expect(clickerPage.getByRole("heading", { name: "My Teams" })).toBeVisible({
       timeout: 15_000,

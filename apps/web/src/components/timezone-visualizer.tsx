@@ -69,7 +69,6 @@ const TimezoneVisualizer = ({
 
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
 
-  // Tick timestamp that updates every 30 seconds - triggers recalculation for timeline
   const tick = useHalfMinuteTick();
 
   const nowPosition = !tick || !viewerTimezone ? null : getCurrentTimePosition(viewerTimezone);
@@ -229,9 +228,6 @@ const TimezoneVisualizer = ({
         </ScrollArea>
 
         {members.length >= 2 && (
-          // popLayout removes the exiting child from flow so the page height
-          // grows directly from button → panel, instead of collapsing to zero
-          // mid-transition (which scroll-jumps the viewport).
           <AnimatePresence mode="popLayout">
             {isComparing ? (
               <m.div

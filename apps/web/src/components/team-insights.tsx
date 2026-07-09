@@ -101,8 +101,6 @@ const StatusGroup = ({
 
 const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => {
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
-  // Re-render every 30s for live status. React Compiler memoizes the
-  // computations below.
   useHalfMinuteTick();
 
   const hourFormatter = viewerTimezone

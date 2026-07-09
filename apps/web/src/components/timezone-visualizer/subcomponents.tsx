@@ -19,7 +19,6 @@ type HourBlockProps = {
 };
 
 const HourBlock = ({ hour, isWorking, memberTimezone, viewerTimezone }: HourBlockProps) => {
-  // Convert the displayed hour (in viewer's timezone) back to member's local time
   const memberHour = convertHourToTimezone(hour, viewerTimezone, memberTimezone);
   const memberNextHour = (memberHour + 1) % HOURS_IN_DAY;
   const memberTzAbbrev = formatTimezoneAbbreviation(memberTimezone);

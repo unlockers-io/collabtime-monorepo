@@ -10,13 +10,11 @@ test.describe.skip("Logout", () => {
     page,
     signupPage,
   }) => {
-    // Create a fresh user for this test so logout doesn't affect other tests
     const logoutEmail = `e2e-logout-${Date.now()}@collabtime.localhost`;
     await signupPage.goto();
     await signupPage.signup("Logout Test User", logoutEmail, "TestPassword123!");
     await expect(page).toHaveURL("/", { timeout: 10_000 });
 
-    // Create a workspace so we can access the team page with the UserMenu
     await homePage.createWorkspace();
 
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
@@ -33,7 +31,6 @@ test.describe.skip("Logout", () => {
 
     await expect(page).toHaveURL("/", { timeout: 10_000 });
 
-    // Should see unauthenticated state (Get Started link instead of Create Team Workspace)
     await expect(page.getByRole("link", { name: /get started/i })).toBeVisible();
   });
 });
