@@ -24,14 +24,14 @@
     "@repo/observability": "workspace:*",
     "@repo/transactional": "workspace:*",
     "@repo/ui": "workspace:*",
-    "@sentry/nextjs": "^10.63.0",
-    "@tanstack/react-form": "^1.33.0",
+    "@sentry/nextjs": "^10.64.0",
+    "@tanstack/react-form": "^1.33.1",
     "@tanstack/react-query": "^5.101.2",
     "bcryptjs": "^3.0.3",
     "better-auth": "^1.6.23",
     "cnfast": "^0.0.8",
     "ioredis": "^5.11.1",
-    "lucide-react": "^1.23.0",
+    "lucide-react": "^1.24.0",
     "motion": "^12.42.2",
     "next": "^16.2.10",
     "next-themes": "^0.4.6",
@@ -47,12 +47,12 @@
     "@tailwindcss/postcss": "^4.3.2",
     "@testing-library/react": "^16.3.2",
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   }
 }
