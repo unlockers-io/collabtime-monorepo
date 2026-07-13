@@ -116,6 +116,7 @@ const ComparePanel = ({
           </div>
         </div>
         <Button
+          aria-label="Close meeting time comparison"
           className="size-8 p-0 text-muted-foreground hover:text-foreground"
           onClick={onClose}
           size="sm"
@@ -136,6 +137,7 @@ const ComparePanel = ({
             {sel.type === "group" && <Users className="size-3" />}
             <span>{getSelectionName(sel)}</span>
             <button
+              aria-label={`Remove ${getSelectionName(sel)} from comparison`}
               className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
               onClick={() => onRemoveSelection(sel)}
               type="button"
@@ -158,12 +160,18 @@ const ComparePanel = ({
           value=""
         >
           {validSelections.length === 0 ? (
-            <SelectTrigger className="h-8 w-auto gap-1.5 border-dashed px-3 [&>svg:last-child]:hidden">
+            <SelectTrigger
+              aria-label="Add people or groups to compare"
+              className="h-8 w-auto gap-1.5 border-dashed px-3 [&>svg:last-child]:hidden"
+            >
               <Plus className="size-4" />
               <span className="text-sm">Add</span>
             </SelectTrigger>
           ) : (
-            <SelectTrigger className="size-7 justify-center rounded-full border-dashed p-0 [&>svg:last-child]:hidden">
+            <SelectTrigger
+              aria-label="Add people or groups to compare"
+              className="size-7 justify-center rounded-full border-dashed p-0 [&>svg:last-child]:hidden"
+            >
               <Plus className="size-4" />
             </SelectTrigger>
           )}
