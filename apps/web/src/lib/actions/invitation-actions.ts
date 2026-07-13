@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@repo/db";
-import { sendInvitationEmail } from "@repo/transactional";
+import { sendTransactionalEmail } from "@repo/transactional";
 import { after } from "next/server";
 
 import { getEnv } from "@/lib/env";
@@ -103,13 +103,14 @@ const inviteMember = async (
     const webAppUrl = getEnv("WEB_APP_URL") ?? "";
 
     if (apiKey) {
-      const result = await sendInvitationEmail(
+      const result = await sendTransactionalEmail(
         {
           inviterName: session.user.name || session.user.email.split("@")[0] || "Someone",
           recipientEmail: trimmedEmail,
           teamId,
           teamName: team.name,
           teamUrl: webAppUrl,
+          type: "invitation",
         },
         { apiKey, ...(fromEmail && { from: fromEmail }) },
       );

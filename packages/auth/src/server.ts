@@ -1,11 +1,7 @@
 import type { PrismaClient } from "@repo/db";
 import { log } from "@repo/observability";
-import {
-  sendChangeEmailConfirmation,
-  sendPasswordResetEmail,
-  sendSignUpAttemptEmail,
-  sendWelcomeEmail,
-} from "@repo/transactional";
+import type { MailerConfig } from "@repo/transactional";
+import { sendTransactionalEmail } from "@repo/transactional";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import type { BetterAuthPlugin } from "better-auth/types";
@@ -68,6 +64,10 @@ const createAuth = (config: AuthConfig) => {
     secondaryStorage,
     secret,
   } = config;
+
+  const mailer: MailerConfig | null = resendApiKey
+    ? { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail }
+    : null;
 
   return betterAuth({
     account: {
@@ -161,18 +161,19 @@ const createAuth = (config: AuthConfig) => {
       // success response. onExistingUserSignUp below notifies the real account
       // holder so they're not left waiting for a verification email that won't
       // arrive. See better-auth docs "Email Enumeration Protection".
-      onExistingUserSignUp: resendApiKey
+      onExistingUserSignUp: mailer
         ? async ({ user }, request) => {
             const origin = request?.headers.get("origin") ?? "";
-            const result = await sendSignUpAttemptEmail(
+            const result = await sendTransactionalEmail(
               {
                 resetPasswordUrl: `${origin}/recover`,
                 signInUrl: `${origin}/login`,
+                type: "sign-up-attempt",
                 userEmail: user.email,
                 userId: user.id,
                 username: user.name,
               },
-              { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },
+              mailer,
             );
             if (!result.success) {
               // Don't throw — Better Auth's enumeration-prevention path needs
@@ -189,23 +190,24 @@ const createAuth = (config: AuthConfig) => {
       // Gate on Resend availability — we physically can't send a verification
       // email without an API key, and requiring verification under that
       // condition would lock new users out.
-      requireEmailVerification: Boolean(resendApiKey),
+      requireEmailVerification: Boolean(mailer),
       // Always defined so the Better Auth endpoint accepts the request. The
       // actual send only happens when Resend is configured; without it we
       // succeed silently — the test/dev environment doesn't have email infra
       // but the user-visible flow (form submit → redirect) still works.
       sendResetPassword: async ({ url, user }) => {
-        if (!resendApiKey) {
+        if (!mailer) {
           return;
         }
-        const result = await sendPasswordResetEmail(
+        const result = await sendTransactionalEmail(
           {
             resetUrl: url,
+            type: "password-reset",
             userEmail: user.email,
             userId: user.id,
             username: user.name,
           },
-          { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },
+          mailer,
         );
         if (!result.success) {
           throw new Error(`Failed to send password reset email: ${result.error}`);
@@ -227,17 +229,18 @@ const createAuth = (config: AuthConfig) => {
       sendOnSignIn: true,
       // Same no-op-without-Resend pattern as sendResetPassword above.
       sendVerificationEmail: async ({ url, user }) => {
-        if (!resendApiKey) {
+        if (!mailer) {
           return;
         }
-        const result = await sendWelcomeEmail(
+        const result = await sendTransactionalEmail(
           {
+            type: "welcome",
             userEmail: user.email,
             userId: user.id,
             username: user.name,
             verificationUrl: url,
           },
-          { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },
+          mailer,
         );
         if (!result.success) {
           throw new Error(`Failed to send verification email: ${result.error}`);
@@ -292,18 +295,19 @@ const createAuth = (config: AuthConfig) => {
         // above) targeting the NEW email to confirm mailbox ownership. Same
         // no-op-without-Resend pattern as the other hooks.
         sendChangeEmailConfirmation: async ({ newEmail, url, user }) => {
-          if (!resendApiKey) {
+          if (!mailer) {
             return;
           }
-          const result = await sendChangeEmailConfirmation(
+          const result = await sendTransactionalEmail(
             {
               changeUrl: url,
               currentEmail: user.email,
               newEmail,
+              type: "change-email-confirmation",
               userId: user.id,
               username: user.name,
             },
-            { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail },
+            mailer,
           );
           if (!result.success) {
             throw new Error(`Failed to send change-email confirmation: ${result.error}`);

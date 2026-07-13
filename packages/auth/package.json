@@ -30,7 +30,6 @@
     "vitest": "^4.1.9"
   },
   "peerDependencies": {
-    "@tanstack/react-form": "^1.29.0",
     "react": "^19.0.0"
   }
 }

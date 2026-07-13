@@ -8,7 +8,7 @@ import { WelcomeEmail } from "../emails/welcome";
 
 import { sendEmail } from "./send-email";
 
-type EmailConfig = {
+type MailerConfig = {
   apiKey: string;
   defaultReplyTo?: string;
   from?: string;
@@ -16,100 +16,87 @@ type EmailConfig = {
 
 const DEFAULT_FROM = "Collab Time <noreply@email.collabtime.io>";
 
-const sendWelcomeEmail = async (
-  {
-    userEmail,
-    userId,
-    username,
-    verificationUrl,
-  }: {
-    userEmail: string;
-    userId: string;
-    username?: string;
-    verificationUrl: string;
-  },
-  config: EmailConfig,
-) => {
-  return sendEmail({
-    apiKey: config.apiKey,
-    defaultReplyTo: config.defaultReplyTo,
-    from: config.from || DEFAULT_FROM,
-    subject: `Welcome to Collab Time${username ? `, ${username}` : ""}! Please verify your email`,
-    tags: [
-      { name: "type", value: "welcome" },
-      { name: "userId", value: userId },
-    ],
-    template: React.createElement(WelcomeEmail, {
-      userEmail,
-      username,
-      verificationUrl,
-    }),
-    to: userEmail,
-  });
+type WelcomePayload = {
+  userEmail: string;
+  userId: string;
+  username?: string;
+  verificationUrl: string;
 };
 
-const sendSignUpAttemptEmail = async (
-  {
-    resetPasswordUrl,
-    signInUrl,
-    userEmail,
-    userId,
-    username,
-  }: {
-    resetPasswordUrl: string;
-    signInUrl: string;
-    userEmail: string;
-    userId: string;
-    username?: string;
-  },
-  config: EmailConfig,
-) => {
-  return sendEmail({
-    apiKey: config.apiKey,
-    defaultReplyTo: config.defaultReplyTo,
-    from: config.from || DEFAULT_FROM,
-    subject: "Sign-up attempt with your Collab Time account",
-    tags: [
-      { name: "type", value: "sign-up-attempt" },
-      { name: "userId", value: userId },
-    ],
-    template: React.createElement(SignUpAttemptEmail, {
-      resetPasswordUrl,
-      signInUrl,
-      userEmail,
-      username,
-    }),
-    to: userEmail,
-  });
+type SignUpAttemptPayload = {
+  resetPasswordUrl: string;
+  signInUrl: string;
+  userEmail: string;
+  userId: string;
+  username?: string;
 };
 
-const sendPasswordResetEmail = async (
-  {
+type PasswordResetPayload = {
+  browserInfo?: string;
+  ipAddress?: string;
+  resetUrl: string;
+  userEmail: string;
+  userId: string;
+  username?: string;
+};
+
+type ChangeEmailPayload = {
+  changeUrl: string;
+  currentEmail: string;
+  newEmail: string;
+  userId: string;
+  username?: string;
+};
+
+type InvitationPayload = {
+  inviterName: string;
+  recipientEmail: string;
+  teamId: string;
+  teamName: string;
+  teamUrl: string;
+};
+
+type TransactionalEmail =
+  | ({ type: "welcome" } & WelcomePayload)
+  | ({ type: "sign-up-attempt" } & SignUpAttemptPayload)
+  | ({ type: "password-reset" } & PasswordResetPayload)
+  | ({ type: "change-email-confirmation" } & ChangeEmailPayload)
+  | ({ type: "invitation" } & InvitationPayload);
+
+type EmailBuild = { subject: string; template: React.ReactElement; to: string };
+
+type TemplateBuilder<P> = (payload: P) => EmailBuild;
+
+const TEMPLATES = {
+  "change-email-confirmation": ({
+    changeUrl,
+    currentEmail,
+    newEmail,
+    username,
+  }: ChangeEmailPayload) => ({
+    subject: "Confirm change of your Collab Time account email",
+    template: React.createElement(ChangeEmail, { changeUrl, currentEmail, newEmail, username }),
+    // Consent to current email; sendVerificationEmail handles new-email verification.
+    to: currentEmail,
+  }),
+  invitation: ({ inviterName, recipientEmail, teamName, teamUrl }: InvitationPayload) => ({
+    subject: `${inviterName} invited you to join ${teamName} on Collab Time`,
+    template: React.createElement(InvitationEmail, {
+      inviterName,
+      recipientEmail,
+      teamName,
+      teamUrl,
+    }),
+    to: recipientEmail,
+  }),
+  "password-reset": ({
     browserInfo,
     ipAddress,
     resetUrl,
     userEmail,
-    userId,
     username,
-  }: {
-    browserInfo?: string;
-    ipAddress?: string;
-    resetUrl: string;
-    userEmail: string;
-    userId: string;
-    username?: string;
-  },
-  config: EmailConfig,
-) => {
-  return sendEmail({
-    apiKey: config.apiKey,
-    defaultReplyTo: config.defaultReplyTo,
-    from: config.from || DEFAULT_FROM,
+  }: PasswordResetPayload) => ({
     subject: "Reset your Collab Time password",
-    tags: [
-      { name: "type", value: "password-reset" },
-      { name: "userId", value: userId },
-    ],
     template: React.createElement(PasswordResetEmail, {
       browserInfo,
       ipAddress,
@@ -118,84 +105,54 @@ const sendPasswordResetEmail = async (
       username,
     }),
     to: userEmail,
-  });
-};
-
-const sendInvitationEmail = async (
-  {
-    inviterName,
-    recipientEmail,
-    teamId,
-    teamName,
-    teamUrl,
-  }: {
-    inviterName: string;
-    recipientEmail: string;
-    teamId: string;
-    teamName: string;
-    teamUrl: string;
-  },
-  config: EmailConfig,
-) => {
-  return sendEmail({
-    apiKey: config.apiKey,
-    defaultReplyTo: config.defaultReplyTo,
-    from: config.from || DEFAULT_FROM,
-    subject: `${inviterName} invited you to join ${teamName} on Collab Time`,
-    tags: [
-      { name: "type", value: "invitation" },
-      { name: "teamId", value: teamId },
-    ],
-    template: React.createElement(InvitationEmail, {
-      inviterName,
-      recipientEmail,
-      teamName,
-      teamUrl,
-    }),
-    to: recipientEmail,
-  });
-};
-
-const sendChangeEmailConfirmation = async (
-  {
-    changeUrl,
-    currentEmail,
-    newEmail,
-    userId,
+  }),
+  "sign-up-attempt": ({
+    resetPasswordUrl,
+    signInUrl,
+    userEmail,
     username,
-  }: {
-    changeUrl: string;
-    currentEmail: string;
-    newEmail: string;
-    userId: string;
-    username?: string;
-  },
-  config: EmailConfig,
-) => {
-  return sendEmail({
-    apiKey: config.apiKey,
-    defaultReplyTo: config.defaultReplyTo,
-    from: config.from || DEFAULT_FROM,
-    subject: "Confirm change of your Collab Time account email",
-    tags: [
-      { name: "type", value: "change-email-confirmation" },
-      { name: "userId", value: userId },
-    ],
-    template: React.createElement(ChangeEmail, {
-      changeUrl,
-      currentEmail,
-      newEmail,
+  }: SignUpAttemptPayload) => ({
+    subject: "Sign-up attempt with your Collab Time account",
+    template: React.createElement(SignUpAttemptEmail, {
+      resetPasswordUrl,
+      signInUrl,
+      userEmail,
       username,
     }),
-    // Consent step goes to the current email; mailbox-ownership step on the new email is a separate hook.
-    to: currentEmail,
+    to: userEmail,
+  }),
+  welcome: ({ userEmail, username, verificationUrl }: WelcomePayload) => ({
+    subject: `Welcome to Collab Time${username ? `, ${username}` : ""}! Please verify your email`,
+    template: React.createElement(WelcomeEmail, { userEmail, username, verificationUrl }),
+    to: userEmail,
+  }),
+} satisfies {
+  "change-email-confirmation": TemplateBuilder<ChangeEmailPayload>;
+  invitation: TemplateBuilder<InvitationPayload>;
+  "password-reset": TemplateBuilder<PasswordResetPayload>;
+  "sign-up-attempt": TemplateBuilder<SignUpAttemptPayload>;
+  welcome: TemplateBuilder<WelcomePayload>;
+};
+
+const sendTransactionalEmail = (email: TransactionalEmail, config: MailerConfig) => {
+  const builder = TEMPLATES[email.type] as TemplateBuilder<typeof email>;
+  const { subject, template, to } = builder(email);
+  return sendEmail({
+    apiKey: config.apiKey,
+    defaultReplyTo: config.defaultReplyTo,
+    from: config.from || DEFAULT_FROM,
+    subject,
+    tags: [
+      { name: "type", value: email.type },
+      // Invitations are recipient-first: no user row exists yet, so tag the team instead.
+      email.type === "invitation"
+        ? { name: "teamId", value: email.teamId }
+        : { name: "userId", value: email.userId },
+    ],
+    template,
+    to,
   });
 };
 
-export {
-  sendChangeEmailConfirmation,
-  sendInvitationEmail,
-  sendPasswordResetEmail,
-  sendSignUpAttemptEmail,
-  sendWelcomeEmail,
-};
+export type { MailerConfig, TransactionalEmail };
+export { sendTransactionalEmail };
