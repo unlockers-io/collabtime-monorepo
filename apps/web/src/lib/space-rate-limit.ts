@@ -18,7 +18,7 @@ const checkRateLimit = async (
 ): Promise<RateLimitResult> => {
   const redisKey = `ratelimit:${key}`;
 
-  // Degrade OPEN: probe `get` first — unset REDIS_URL makes the proxy return null for get but throw on eval.
+  // Degrade OPEN: probe `get` first: unset REDIS_URL makes the proxy return null for get but throw on eval.
   const probe = await redis.get(redisKey);
   if (probe === null && !process.env.REDIS_URL) {
     return { allowed: true, remaining: max };

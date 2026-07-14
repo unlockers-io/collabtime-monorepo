@@ -46,7 +46,7 @@ import { checkRateLimit } from "./space-rate-limit";
 type Result = Awaited<ReturnType<typeof checkRateLimit>>;
 
 // Run `times` calls sequentially (via recursion, so no await-in-loop) and
-// collect the results in order — needed for the windowing/ordering assertions.
+// collect the results in order, needed for the windowing/ordering assertions.
 const runSequential = async (
   times: number,
   run: () => Promise<Result>,

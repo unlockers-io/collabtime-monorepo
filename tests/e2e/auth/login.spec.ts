@@ -1,7 +1,7 @@
 import { test, expect } from "../fixtures/auth.fixture";
 
 // `(auth)/layout.tsx` redirects authenticated users away from /login,
-// so login tests must run anonymously — otherwise the page-object
+// so login tests must run anonymously; otherwise the page-object
 // locators time out waiting for a form that never renders.
 test.use({ storageState: { cookies: [], origins: [] } });
 

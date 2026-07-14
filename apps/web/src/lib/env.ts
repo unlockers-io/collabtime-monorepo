@@ -7,9 +7,9 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  // Empty string is treated as unset — unset GitHub secrets expand to "" in CI.
+  // Empty string is treated as unset: unset GitHub secrets expand to "" in CI.
   REDIS_URL: z.url("REDIS_URL must be a valid URL").optional().or(z.literal("")),
-  // Accepts bare email or RFC 5322 "Display Name <email>" — both valid Resend sender formats.
+  // Accepts bare email or RFC 5322 "Display Name <email>", both valid Resend sender formats.
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z
     .string()

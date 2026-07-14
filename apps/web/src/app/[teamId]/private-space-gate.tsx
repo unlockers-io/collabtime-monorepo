@@ -39,7 +39,7 @@ const PrivateSpaceGate = ({ isAuthenticated, spaceId, teamId }: PrivateSpaceGate
       setServerError(null);
       setIsPending(true);
 
-      // No try/catch — TryStatement bails the React Compiler out of memoizing this component.
+      // No try/catch: TryStatement bails the React Compiler out of memoizing this component.
       const response = await fetch(`/api/spaces/${spaceId}/verify-password`, {
         body: JSON.stringify({ password: value.password }),
         headers: { "Content-Type": "application/json" },

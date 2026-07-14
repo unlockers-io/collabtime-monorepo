@@ -19,10 +19,10 @@ jobs:
       WEB_APP_URL: http://localhost:3000
       REDIS_URL: ${{ secrets.REDIS_URL }}
       # Drives the auth-email/ specs. When absent (forks, contributors without
-      # access), those specs `test.skip()` themselves — the rest of the suite
+      # access), those specs `test.skip()` themselves; the rest of the suite
       # still runs.
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      # Verified Resend domain — required so the auth-email/* specs can
+      # Verified Resend domain, required so the auth-email/* specs can
       # deliver to `delivered+<label>@resend.dev`. The code fallback
       # `onboarding@resend.dev` boots without errors but Resend silently
       # restricts that sender to test mode (account-owner email only).
@@ -59,7 +59,7 @@ jobs:
         run: pnpm --filter @repo/web exec tsx scripts/ensure-e2e-user.ts
       # Canonical Playwright CI pattern (playwright.dev/docs/ci): browser
       # download + apt system deps in one step. Caching is explicitly
-      # *not* recommended by the docs — restore time is comparable to a
+      # *not* recommended by the docs: restore time is comparable to a
       # fresh download. CI runs the chromium project only
       # (playwright.config.ts filters firefox/webkit out under CI).
       - name: Install Playwright browsers and system deps

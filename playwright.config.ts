@@ -25,7 +25,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   fullyParallel: true,
   globalTeardown: "./tests/e2e/teardown/cleanup.ts",
-  // CI runs chromium only — 67 tests × 3 browsers × 1 worker exceeds the
+  // CI runs chromium only: 67 tests × 3 browsers × 1 worker exceeds the
   // 30 min job budget. chromium is the canonical Playwright signal; firefox
   // and webkit run locally and via nightly/manual workflows.
   projects: [

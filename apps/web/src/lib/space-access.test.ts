@@ -60,7 +60,7 @@ describe("space-access tokens", () => {
   });
 
   it("signs and verifies with a dedicated secret (no fallback)", () => {
-    // Clear BETTER_AUTH_SECRET so the dedicated path is genuinely isolated —
+    // Clear BETTER_AUTH_SECRET so the dedicated path is genuinely isolated;
     // an empty string is falsy, so getSigningSecret cannot fall back to it.
     vi.stubEnv("SPACE_ACCESS_SECRET", "dedicated-space-secret-at-least-32-chars-long");
     vi.stubEnv("BETTER_AUTH_SECRET", "");

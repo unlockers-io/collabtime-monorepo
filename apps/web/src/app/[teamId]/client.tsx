@@ -89,7 +89,7 @@ const TeamPageClient = ({
   const updateTeamCache = useUpdateTeamCache();
 
   useEffect(() => {
-    // Silent fallback returns null on failure — transport errors need reporting.
+    // Silent fallback returns null on failure; transport errors need reporting.
     if (resolvedRoleError) {
       captureException(resolvedRoleError);
     }

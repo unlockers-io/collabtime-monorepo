@@ -27,7 +27,7 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
     // sign-up-attempt assertion below.
     const since = Date.now();
 
-    // Second sign-up with same email — Better Auth's enumeration-prevention
+    // Second sign-up with same email: Better Auth's enumeration-prevention
     // returns the same shape as a fresh signup; `onExistingUserSignUp` fires
     // server-side and dispatches a "someone tried to sign up" notification
     // to the real account holder.
@@ -42,7 +42,7 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
 
     // Side-effect floor: the notification email actually went out via Resend.
     // Without this assertion, a regression that disabled the hook would pass
-    // the test silently — exactly the bug class we're trying to catch.
+    // the test silently, exactly the bug class we're trying to catch.
     const mail = await waitForEmail({
       sinceMs: since,
       subject: /sign[\s-]?up|attempt|tried/i,

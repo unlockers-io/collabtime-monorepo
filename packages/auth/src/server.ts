@@ -93,7 +93,7 @@ const createAuth = (config: AuthConfig) => {
       // WEB_APP_URL is the explicit signal we already use everywhere:
       // set to `https://collabtime.web.localhost` in dev (.env.example)
       // and the prod web origin in prod; unset in CI (which runs on
-      // plain http://127.0.0.1) — so the gate naturally avoids the
+      // plain http://127.0.0.1), so the gate naturally avoids the
       // HTTPS-in-CI footgun that bare `true` or NODE_ENV gating would
       // re-introduce.
       useSecureCookies: process.env.WEB_APP_URL?.startsWith("https://") === true,
@@ -157,7 +157,7 @@ const createAuth = (config: AuthConfig) => {
       maxPasswordLength: 128,
       minPasswordLength: 12,
       // requireEmailVerification activates Better Auth's enumeration-prevention
-      // path — signing up with an already-registered email returns a synthetic
+      // path: signing up with an already-registered email returns a synthetic
       // success response. onExistingUserSignUp below notifies the real account
       // holder so they're not left waiting for a verification email that won't
       // arrive. See better-auth docs "Email Enumeration Protection".
@@ -176,7 +176,7 @@ const createAuth = (config: AuthConfig) => {
               mailer,
             );
             if (!result.success) {
-              // Don't throw — Better Auth's enumeration-prevention path needs
+              // Don't throw: Better Auth's enumeration-prevention path needs
               // to return success regardless. Log so delivery failures don't
               // break the auth response.
               log.error({
@@ -187,13 +187,13 @@ const createAuth = (config: AuthConfig) => {
             }
           }
         : undefined,
-      // Gate on Resend availability — we physically can't send a verification
+      // Gate on Resend availability: we physically can't send a verification
       // email without an API key, and requiring verification under that
       // condition would lock new users out.
       requireEmailVerification: Boolean(mailer),
       // Always defined so the Better Auth endpoint accepts the request. The
       // actual send only happens when Resend is configured; without it we
-      // succeed silently — the test/dev environment doesn't have email infra
+      // succeed silently: the test/dev environment doesn't have email infra
       // but the user-visible flow (form submit → redirect) still works.
       sendResetPassword: async ({ url, user }) => {
         if (!mailer) {
@@ -217,12 +217,12 @@ const createAuth = (config: AuthConfig) => {
 
     emailVerification: {
       // The link is the login: clicking it verifies the address AND signs in
-      // the clicking device. Tradeoff accepted (2026-06-12 fleet decision) —
+      // the clicking device. Tradeoff accepted (2026-06-12 fleet decision);
       // simpler than the retired pending-screen flow, at the cost of the
       // session landing on whichever device opens the link.
       autoSignInAfterVerification: true,
       // Where Better Auth's verify-email handler redirects after token
-      // exchange — the app root serves signed-in users directly.
+      // exchange; the app root serves signed-in users directly.
       callbackURL: "/",
       // Unverified sign-in attempts still 403, but get a fresh verification
       // link alongside it so the login form can say "we just sent a new one".

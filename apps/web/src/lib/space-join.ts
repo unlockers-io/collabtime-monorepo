@@ -24,7 +24,7 @@ const validSpaceIdsFromCookieHeader = (cookieHeader: string | null): Array<strin
     try {
       token = decodeURIComponent(rawValue);
     } catch {
-      // Malformed percent-encoding — verify the raw value as-is.
+      // Malformed percent-encoding; verify the raw value as-is.
     }
     if (verifySpaceAccessToken(token, spaceId).valid) {
       spaceIds.push(spaceId);

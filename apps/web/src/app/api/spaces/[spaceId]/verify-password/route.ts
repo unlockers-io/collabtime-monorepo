@@ -45,7 +45,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Space not found" }, { status: 404 });
     }
 
-    // Always compare when a password exists — prevents timing leaks about privacy.
+    // Always compare when a password exists; prevents timing leaks about privacy.
     const accessPassword = space.accessPassword;
     const hasPassword = Boolean(accessPassword);
     const isValid = accessPassword ? await verifyPassword(password, accessPassword) : false;
@@ -58,7 +58,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
     }
 
-    // Cookie is set by this request — materialize membership directly; signup/login use auth hooks.
+    // Cookie is set by this request, so materialize membership directly; signup/login use auth hooks.
     const session = await getSession();
     if (session) {
       try {

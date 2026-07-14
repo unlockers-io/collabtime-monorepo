@@ -4,7 +4,7 @@ import { cn } from "../lib/utils";
 
 function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
-    // Generic wrapper — callers are responsible for passing `htmlFor` or
+    // Generic wrapper: callers are responsible for passing `htmlFor` or
     // wrapping the associated control. jsx-a11y can't see that statically.
     // oxlint-disable-next-line jsx-a11y/label-has-associated-control
     <label

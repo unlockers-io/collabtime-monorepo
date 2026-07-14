@@ -41,7 +41,7 @@ describe("validateEnv", () => {
     expect(env.AUTH_ALLOWED_HOSTS).toBe("collabtime.io,*.collabtime.io,*.vercel.app");
   });
 
-  // Unset GitHub Actions secrets expand to "" — must not blow up env validation.
+  // Unset GitHub Actions secrets expand to "", which must not blow up env validation.
   it("accepts empty string for optional REDIS_URL (CI passes unset secrets as '')", () => {
     vi.stubEnv("REDIS_URL", "");
 

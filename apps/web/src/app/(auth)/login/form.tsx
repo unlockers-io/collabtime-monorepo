@@ -37,7 +37,7 @@ const LoginForm = () => {
             password: value.password,
           });
           if (result.error) {
-            // Better Auth 403 + re-sends verification link — informational, not a credentials error.
+            // Better Auth 403 + re-sends verification link: informational, not a credentials error.
             if (result.error.code === "EMAIL_NOT_VERIFIED") {
               setShowUnverifiedNotice(true);
               return;

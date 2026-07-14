@@ -5,7 +5,7 @@ export default defineConfig({
   extends: [awesomeness],
   overrides: [
     // Inline-edit inputs that mount on a user gesture (click "Edit" → render
-    // input) — focusing immediately matches user expectation and isn't a
+    // input); focusing immediately matches user expectation and isn't a
     // surprise focus jump.
     {
       files: [
@@ -16,7 +16,7 @@ export default defineConfig({
         "jsx-a11y/no-autofocus": "off",
       },
     },
-    // Design-system primitives — CVA variant maps order semantically
+    // Design-system primitives: CVA variant maps order semantically
     // (default first, sizes ascending, etc.) rather than alphabetically.
     {
       files: ["packages/ui/src/components/badge.tsx", "packages/ui/src/components/button.tsx"],
@@ -25,7 +25,7 @@ export default defineConfig({
         "perfectionist/sort-objects": "off",
       },
     },
-    // Generic Label wrapper — `htmlFor` is forwarded via `...props`, so the
+    // Generic Label wrapper: `htmlFor` is forwarded via `...props`, so the
     // associated-control link lives in the caller, not this file.
     {
       files: ["packages/ui/src/components/label.tsx"],
@@ -54,7 +54,7 @@ export default defineConfig({
       },
     },
     // next/font factories (Geist_Mono, Inter, etc.) and Intl.DateTimeFormat
-    // are callable without `new` — the rule's PascalCase heuristic
+    // are callable without `new`; the rule's PascalCase heuristic
     // misclassifies them as constructors.
     {
       files: ["apps/web/src/app/layout.tsx", "apps/web/src/lib/timezones.ts"],
@@ -80,7 +80,7 @@ export default defineConfig({
     },
     // Server actions wrapping `mutateTeam` must be syntactically `async` for
     // Next.js's `"use server"` directive even when the body returns a Promise
-    // directly — the awaitless body is a deliberate pipeline, not an oversight.
+    // directly; the awaitless body is a deliberate pipeline, not an oversight.
     {
       files: [
         "apps/web/src/lib/actions/group-actions.ts",
@@ -100,7 +100,7 @@ export default defineConfig({
         "no-console": "off",
       },
     },
-    // Playwright fixture signature requires `({}, use) =>` — the rule flags
+    // Playwright fixture signature requires `({}, use) =>`; the rule flags
     // the empty pattern but the shape is non-negotiable.
     {
       files: ["tests/e2e/fixtures/**/*.ts"],
@@ -119,7 +119,7 @@ export default defineConfig({
         "require-unicode-regexp": "off",
       },
     },
-    // Config files resolve portless URLs at load time — module scope can't await.
+    // Config files resolve portless URLs at load time; module scope can't await.
     {
       files: ["playwright.config.ts", "**/next.config.ts"],
       rules: {

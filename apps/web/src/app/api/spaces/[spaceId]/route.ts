@@ -91,7 +91,7 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
       updateData.isPrivate = updates.isPrivate;
     }
 
-    // Only touch password when client opts in — masked "********" resubmit must not get hashed.
+    // Only touch password when client opts in: masked "********" resubmit must not get hashed.
     if (updates.updatePassword) {
       if (updates.accessPassword === null) {
         updateData.accessPassword = null;
