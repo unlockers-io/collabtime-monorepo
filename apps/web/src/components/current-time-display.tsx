@@ -23,7 +23,7 @@ const formatTime = (timestamp: number, timezone: string): string => {
 };
 
 const CurrentTimeDisplay = () => {
-  // "" on server, real timezone on client — keeps the first paint hydration-safe.
+  // "" on server, real timezone on client; keeps the first paint hydration-safe.
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
 
   const tick = useSecondTick();

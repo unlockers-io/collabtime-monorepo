@@ -6,7 +6,7 @@ import { makeTestEmail } from "../helpers/test-email";
 
 // Skip the whole suite when Resend isn't configured. Without RESEND_API_KEY,
 // the auth server runs with requireEmailVerification: false, which is a
-// different code path — these tests would assert against the wrong behavior.
+// different code path; these tests would assert against the wrong behavior.
 test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -22,7 +22,7 @@ test.describe("Sign-up with redirect context", () => {
 
     // Drive the actual form: this is what validates the param and passes it
     // as callbackURL in the signUp.email body (the API would accept any
-    // callbackURL — the form wiring is what's under test).
+    // callbackURL; the form wiring is what's under test).
     await page.goto(`${webUrl}/signup?redirect=${encodeURIComponent(redirectPath)}`);
 
     // The login cross-link carries the context, so switching forms wouldn't
@@ -50,7 +50,7 @@ test.describe("Sign-up with redirect context", () => {
 
     // The link IS the login: autoSignInAfterVerification mints a session on
     // the clicking device, and the callbackURL from the signup body sends
-    // the clicker back to the page that started the flow — not "/".
+    // the clicker back to the page that started the flow, not "/".
     const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/v);
     const clickerContext = await browser.newContext();
     const clickerPage = await clickerContext.newPage();

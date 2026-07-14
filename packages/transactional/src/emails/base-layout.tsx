@@ -4,7 +4,7 @@ import { Body, Container, Head, Html, Link, Preview, Section, Tailwind, Text } f
 import { CollabTimeLogo } from "../components/collabtime-logo";
 import { tailwindConfig } from "../styles/theme";
 
-// Computed at module load — emails are server-rendered fresh per send, so the
+// Computed at module load: emails are server-rendered fresh per send, so the
 // year is correct at send-time. Hoisting keeps it out of the JSX tree so
 // static-analysis hydration linters don't flag it (emails don't hydrate).
 const COPYRIGHT_YEAR = new Date().getFullYear();

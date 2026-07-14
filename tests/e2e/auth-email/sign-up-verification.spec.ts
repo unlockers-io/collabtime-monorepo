@@ -6,7 +6,7 @@ import { makeTestEmail } from "../helpers/test-email";
 
 // Skip the whole suite when Resend isn't configured. Without RESEND_API_KEY,
 // the auth server runs with requireEmailVerification: false, which is a
-// different code path — these tests would assert against the wrong behavior.
+// different code path; these tests would assert against the wrong behavior.
 test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -31,7 +31,7 @@ test.describe("Sign-up email verification", () => {
 
     // Pre-verification: signIn fails (Better Auth blocks unverified users)
     // and, with sendOnSignIn, re-sends a fresh verification link alongside
-    // the 403 — so a SECOND verification email may exist by the time
+    // the 403, so a SECOND verification email may exist by the time
     // waitForEmail resolves. Either link verifies; the spec doesn't care
     // which one it follows.
     const preSignIn = await request.post(`${webUrl}/api/auth/sign-in/email`, {

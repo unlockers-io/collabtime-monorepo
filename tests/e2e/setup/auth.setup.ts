@@ -14,7 +14,7 @@ const STORAGE_STATE_PATH = "tests/e2e/.auth/user.json";
 
 // Seeds storageState by signing the pre-seeded e2e user in via the auth
 // API (no browser, no form). The user itself is created by
-// `apps/web/scripts/ensure-e2e-user.ts` — that script writes directly to
+// `apps/web/scripts/ensure-e2e-user.ts`; that script writes directly to
 // Prisma with `emailVerified: true`, so this sign-in works even when
 // `requireEmailVerification` is on (the Resend-gated CI/prod path).
 setup("create and authenticate test user", async ({ page, request }) => {

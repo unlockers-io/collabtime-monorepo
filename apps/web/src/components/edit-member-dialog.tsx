@@ -44,7 +44,7 @@ type EditMemberDialogProps = {
   teamId: string;
 };
 
-// Form does not receive `open` — that stays in the Dialog wrapper.
+// Form does not receive `open`; that stays in the Dialog wrapper.
 type EditMemberFormProps = Omit<EditMemberDialogProps, "open"> & { mode: "admin" | "claim" };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);

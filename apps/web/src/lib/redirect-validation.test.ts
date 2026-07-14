@@ -39,7 +39,7 @@ describe("safeRedirectPath", () => {
 
   it("rejects control-character smuggling", () => {
     // The WHATWG URL parser strips tab/LF/CR before parsing, so "/\t/evil.com"
-    // reaches the parser as "//evil.com" — protocol-relative. The prefix
+    // reaches the parser as "//evil.com": protocol-relative. The prefix
     // checks can't see it; the anchor-origin resolution is what catches it.
     expect(safeRedirectPath("/\t/evil.com")).toBe("/");
     expect(safeRedirectPath("/\n/evil.com")).toBe("/");

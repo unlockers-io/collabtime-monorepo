@@ -19,7 +19,7 @@ const getAuthConfig = (): AuthConfig => {
     );
   }
   return {
-    // nextCookies() must be last — lets better-auth read cookies in RSC/Server Actions
+    // nextCookies() must be last: lets better-auth read cookies in RSC/Server Actions
     extraPlugins: [nextCookies()],
     // Self-join private spaces from valid password cookies; user.create covers signup, session.create covers login.
     onSessionCreated: (userId, { cookieHeader }) =>

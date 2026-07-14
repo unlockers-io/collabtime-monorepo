@@ -138,7 +138,7 @@ const importMembers = async (
   });
 };
 
-// Skips requireTeamAdmin — auth boundary is Postgres membership + ownership.
+// Skips requireTeamAdmin: auth boundary is Postgres membership + ownership.
 const updateOwnMember = async (
   teamId: string,
   memberId: string,
@@ -184,7 +184,7 @@ const updateOwnMember = async (
       if (!result.success) {
         return { error: result.error.issues[0]?.message ?? "Invalid update data", ok: false };
       }
-      // Strip groupId — users can't self-assign to groups.
+      // Strip groupId: users can't self-assign to groups.
       const { groupId: _stripped, ...safe } = result.data;
       return { ok: true, value: safe };
     },
