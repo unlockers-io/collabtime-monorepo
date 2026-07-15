@@ -134,7 +134,8 @@ const getTeamMembershipRole = async (teamId: string, userId: string): Promise<Te
     }
 
     return null;
-  } catch {
+  } catch (error) {
+    log.error({ error, message: "Failed to get membership role", route: "actions/team-read" });
     return null;
   }
 };

@@ -199,7 +199,7 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
         <DialogTitle>{isClaim ? "Claim this profile" : "Edit Member"}</DialogTitle>
         <DialogDescription>
           {isClaim
-            ? "This looks like you — update your profile information."
+            ? "This looks like you. Update your profile information."
             : `Update ${member.name}'s profile information.`}
         </DialogDescription>
       </DialogHeader>

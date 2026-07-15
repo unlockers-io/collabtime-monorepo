@@ -20,7 +20,7 @@ Collabtime is a team timezone visualizer SaaS. Distributed teams create spaces, 
 - **Email**: Resend (optional)
 - **Monorepo**: Turborepo + pnpm workspaces, Node >=24, `packageManager: pnpm@11.1.3`
 - **Lint / format**: oxlint + oxfmt (NOT ESLint/Prettier), `oxlint-config-awesomeness`
-- **Tests**: Vitest (unit), Playwright (e2e — chromium, firefox, webkit)
+- **Tests**: Vitest (unit), Playwright (e2e: chromium, firefox, webkit)
 - **Bundler**: tsdown for library packages, Turbopack for Next.js dev
 - **Dead-code / circular deps**: `fallow`
 
@@ -71,7 +71,7 @@ pnpm fallow:audit         # --base main
 
 ## Portless dev URLs
 
-Dev server runs behind portless — HTTPS on `.localhost:443`, no port juggling. Cookies, OAuth redirects, and CORS allowlists stay valid across project switches.
+Dev server runs behind portless: HTTPS on `.localhost:443`, no port juggling. Cookies, OAuth redirects, and CORS allowlists stay valid across project switches.
 
 One-time per machine:
 
@@ -84,7 +84,7 @@ sudo portless proxy start --https
 | ------- | ---------------------------------- |
 | `web`   | `https://collabtime.web.localhost` |
 
-Branch worktrees auto-prefix the subdomain: `https://fix-styles.collabtime.web.localhost`. Each gets its own auto-assigned backing port — no collisions.
+Branch worktrees auto-prefix the subdomain: `https://fix-styles.collabtime.web.localhost`. Each gets its own auto-assigned backing port, so there are no collisions.
 
 Docker host ports: Postgres `5433`, Redis `6379`, Upstash REST shim `8079`. Only one project's stack runs at a time on these ports unless explicitly remapped.
 
@@ -99,10 +99,10 @@ Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(k
 ## Conventions & gotchas
 
 - **Lazy init via Proxy**: Auth client, Redis, and Prisma instances defer initialization until first access. Avoids build-time errors when env vars are absent.
-- **Server/client boundary**: `@repo/auth/auth-server` imports `"server-only"`; `@repo/auth/auth-client` uses `"use client"`. Never cross.
+- **Server/client boundary**: `@repo/auth/server` holds the Better Auth server instance; `@repo/auth/client` re-exports the React auth client. Never cross.
 - **Polling sync**: Team data fetched every 20s via `use-team-query.ts`. Mutations call `useUpdateTeamCache` for immediate optimistic update on the acting client.
 - **Forms**: validate `onBlur` + `onChange` with Zod. Show errors via `field.state.meta.isTouched && !field.state.meta.isValid`. Field primitives (`Field`, `FieldGroup`, `FieldLabel`, `FieldError`) live in `@repo/ui`.
-- **TanStack `field` in effect deps is banned** — never put `field.handleChange` inside `useEffect`/`useCallback` with `field` in deps. Use `field.form.setFieldValue(field.name, value)` with a stable ref.
+- **TanStack `field` in effect deps is banned**: never put `field.handleChange` inside `useEffect`/`useCallback` with `field` in deps. Use `field.form.setFieldValue(field.name, value)` with a stable ref.
 - **Prisma config**: `prisma.config.ts` uses `process.env.DATABASE_URL ?? ""` (not `env("DATABASE_URL")`) so `prisma generate` works in CI without DB creds.
 - **Turbo ordering**: root `turbo.json` `build.dependsOn` includes `db:generate` so the Prisma client exists before any app/package builds.
 - **Path alias**: `apps/web` uses `@/*` -> `src/*`.
@@ -110,23 +110,23 @@ Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(k
 ## Linting & formatting
 
 - **oxlint** extending `oxlint-config-awesomeness` (450 rules across 10 plugins) in `oxlint.config.ts`. Narrow per-file overrides live there, each with a WHY comment.
-- Notable enforced rules: `no-console` (error; `off` for E2E teardown scripts via repo override, plus seed/migration/CLI scripts and stories via the shared preset — app and package code logs via `@repo/observability`), `typescript/no-explicit-any`, `perfectionist/sort-objects` + `sort-jsx-props`, `unicorn/consistent-function-scoping`, `jsx-a11y/*` (labels, roles, no-autofocus), `require-unicode-regexp` (`/v` regexes — off under `tests/`), `prefer-named-capture-group`, `curly`, `max-lines` (400), `unused-imports/no-unused-imports`.
+- Notable enforced rules: `no-console` (error; `off` for E2E teardown scripts via repo override, plus seed/migration/CLI scripts and stories via the shared preset; app and package code logs via `@repo/observability`), `typescript/no-explicit-any`, `perfectionist/sort-objects` + `sort-jsx-props`, `unicorn/consistent-function-scoping`, `jsx-a11y/*` (labels, roles, no-autofocus), `require-unicode-regexp` (`/v` regexes, off under `tests/`), `prefer-named-capture-group`, `curly`, `max-lines` (400), `unused-imports/no-unused-imports`.
 - **oxfmt** (config in `.oxfmtrc.json`) formats TS/JS/JSON/MD and sorts Tailwind classes + imports.
 - Pre-commit (husky + lint-staged): `oxlint` on JS/TS files, `oxfmt` on JS/TS/JSON/MD.
 
 ## Dev tools (development only)
 
-- **React Scan** — flags unnecessary re-renders, loaded via `<script>` in root layout when `NODE_ENV=development`
-- **React Grab** — inspect component tree, loaded the same way
+- **React Scan**: flags unnecessary re-renders, loaded via `<script>` in root layout when `NODE_ENV=development`
+- **React Grab**: inspect component tree, loaded the same way
 - Neither runs in production builds
 
 ## API routes
 
 All under `apps/web/src/app/api/`:
 
-- `auth/[...all]` — Better Auth catch-all
-- `spaces/` and `spaces/[spaceId]/` — Space CRUD, password verification
-- `subscription/checkout/` and `subscription/portal/` — Stripe checkout + customer portal
+- `auth/[...all]`: Better Auth catch-all
+- `spaces/` and `spaces/[spaceId]/`: Space CRUD, password verification
+- `subscription/checkout/` and `subscription/portal/`: Stripe checkout + customer portal
 
 ## Data model
 
@@ -134,11 +134,11 @@ User -> Session, Account, Subscription, Space. Users have `subscriptionPlan` (FR
 
 ## CI (GitHub Actions)
 
-- `test.yml` — `pnpm test`
-- `lint.yml` — `pnpm oxlint --format=github .`
-- `format.yml` — `pnpm run format:check`
-- `fallow.yml` — `pnpm fallow:dead`
-- `e2e.yml` — Playwright
+- `test.yml`: `pnpm test`
+- `lint.yml`: `pnpm oxlint --format=github .`
+- `format.yml`: `pnpm run format:check`
+- `fallow.yml`: `pnpm fallow:dead`
+- `e2e.yml`: Playwright
 - All workflows use `permissions: { contents: read }`
 
 ## References
