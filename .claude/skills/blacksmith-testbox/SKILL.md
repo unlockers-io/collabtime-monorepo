@@ -47,13 +47,13 @@ dashboard auth page, and blocks for up to 2 minutes. The user completes sign-in
 and authorization in the browser. The dashboard redirects to localhost with the
 token; the CLI saves credentials and exits. The agent then proceeds.
 
-**Do not use** `--api-token` for this flow — that is for headless/token-based
+**Do not use** `--api-token` for this flow; that is for headless/token-based
 auth. This skill focuses on browser-based auth when the user prefers signing in
 via the web UI.
 
 Optional flags:
 
-- `--dashboard-url <url>` — Override dashboard URL (e.g. for staging)
+- `--dashboard-url <url>`: Override dashboard URL (e.g. for staging)
 
 ## Setup: Warmup before coding
 
@@ -81,14 +81,14 @@ ALWAYS invoke `blacksmith testbox` commands from the **root of the git
 repository**. The CLI syncs the current working directory to the testbox
 using rsync with `--delete`. If you run from a subdirectory (e.g.
 `cd backend && blacksmith testbox run ...`), rsync will mirror only that
-subdirectory and **delete everything else** on the testbox — wiping other
+subdirectory and **delete everything else** on the testbox, wiping other
 directories like `dashboard/`, `cli/`, etc.
 
-    # CORRECT — run from repo root, use paths in the command
+    # CORRECT: run from repo root, use paths in the command
     blacksmith testbox run --id <ID> "cd backend && php artisan test"
     blacksmith testbox run --id <ID> "cd dashboard && npm test"
 
-    # WRONG — do NOT cd into a subdirectory before invoking the CLI
+    # WRONG: do NOT cd into a subdirectory before invoking the CLI
     cd backend && blacksmith testbox run --id <ID> "php artisan test"
 
 If your shell is in a subdirectory, `cd` back to the repo root first:
@@ -116,7 +116,7 @@ The remote path is relative to the testbox working directory (same as `run`).
 If no local path is specified, the file is saved to the current directory
 using the same base name.
 
-To download a directory, append a trailing `/` to the remote path — this
+To download a directory, append a trailing `/` to the remote path; this
 triggers recursive mode:
 
     # Download a single file
@@ -203,7 +203,7 @@ The ONLY exception is trivial checks with zero external dependencies
 2. Write code while the testbox boots in the background.
 3. Run tests (the CLI auto-waits if the testbox isn't ready yet):
    `blacksmith testbox run --id <ID> "npm test"`
-4. If tests fail, fix code and re-run (fast — same warm testbox, only
+4. If tests fail, fix code and re-run (fast: same warm testbox, only
    changed files are synced).
 5. If you changed dependency manifests (package.json, etc.), prepend
    the install command: `blacksmith testbox run --id <ID> "npm install && npm test"`
@@ -243,7 +243,7 @@ Correct: block until ready with a timeout:
 
 Wrong: never use sleep + status in a loop:
 
-    # BAD — do not do this
+    # BAD: do not do this
     sleep 30 && blacksmith testbox status --id <ID>
     while ! blacksmith testbox status --id <ID> | grep ready; do sleep 5; done
 
