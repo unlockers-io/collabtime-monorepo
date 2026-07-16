@@ -28,7 +28,10 @@ const redis = new Proxy({} as Redis, {
   get(_, prop) {
     const instance = getRedis();
     if (!instance) {
-      // Graceful degradation when Redis isn't configured.
+      // Graceful degradation when Redis isn't configured (REDIS_URL is optional so CI
+      // and builds work without it). Gotcha: writes (set/setex/del) resolve as no-ops,
+      // so callers like mutateTeam report success while persisting nothing. Production
+      // must set REDIS_URL; this branch is for environments without real traffic.
       if (
         typeof prop === "string" &&
         ["get", "set", "setex", "del", "scan", "publish"].includes(prop)
