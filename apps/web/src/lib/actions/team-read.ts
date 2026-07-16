@@ -1,13 +1,12 @@
 "use server";
 
 import { prisma } from "@repo/db";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { cache } from "react";
 
-import { auth } from "@/lib/auth-server";
+import { getSession } from "@/lib/auth-server";
 import { log } from "@/lib/observability";
 import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
-import { getTeamRole } from "@/lib/team-auth";
 import { isTeamRole } from "@/types";
 import type { Team, TeamRole } from "@/types";
 
@@ -17,9 +16,29 @@ import { UUIDSchema } from "../validation";
 import { getTeamRecord, sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
-const getPublicTeam = async (
-  teamId: string,
-): Promise<ActionResult<{ role: TeamRole; team: Team }>> => {
+const getTeamMembershipRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
+  try {
+    const uuidResult = UUIDSchema.safeParse(teamId);
+    if (!uuidResult.success) {
+      return null;
+    }
+
+    const membership = await prisma.membership.findUnique({
+      where: { userId_teamId: { teamId, userId } },
+    });
+
+    if (membership && isTeamRole(membership.role)) {
+      return membership.role;
+    }
+
+    return null;
+  } catch (error) {
+    log.error({ error, message: "Failed to get membership role", route: "actions/team-read" });
+    return null;
+  }
+};
+
+const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team }>> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -34,9 +53,12 @@ const getPublicTeam = async (
       return { error: "Team not found", success: false };
     }
 
+    const session = await getSession();
+    const userId = session?.user?.id;
+
     if (space.isPrivate) {
-      const teamRole = await getTeamRole(teamId);
-      if (!teamRole) {
+      const memberRole = userId ? await getTeamMembershipRole(teamId, userId) : null;
+      if (!memberRole) {
         // Guest cookie must match the page gate so guests can load team data.
         const cookieStore = await cookies();
         const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
@@ -54,21 +76,8 @@ const getPublicTeam = async (
       return { error: "Team not found", success: false };
     }
 
-    const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
-    const userId = session?.user?.id;
-
-    let role: TeamRole = "MEMBER";
-    if (userId) {
-      const membership = await prisma.membership.findUnique({
-        where: { userId_teamId: { teamId, userId } },
-      });
-      if (membership && isTeamRole(membership.role)) {
-        role = membership.role;
-      }
-    }
-
     return {
-      data: { role, team: sanitizeTeam(team, userId) },
+      data: { team: sanitizeTeam(team, userId) },
       success: true,
     };
   } catch (error) {
@@ -117,27 +126,5 @@ const getTeamName = cache(async (teamId: string): Promise<string | null> => {
     return null;
   }
 });
-
-const getTeamMembershipRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
-  try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return null;
-    }
-
-    const membership = await prisma.membership.findUnique({
-      where: { userId_teamId: { teamId, userId } },
-    });
-
-    if (membership && isTeamRole(membership.role)) {
-      return membership.role;
-    }
-
-    return null;
-  } catch (error) {
-    log.error({ error, message: "Failed to get membership role", route: "actions/team-read" });
-    return null;
-  }
-};
 
 export { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam };

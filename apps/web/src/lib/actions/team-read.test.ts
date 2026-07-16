@@ -8,8 +8,7 @@ vi.mock("@repo/db", () => ({
     space: { findUnique: vi.fn() },
   },
 }));
-vi.mock("@/lib/auth-server", () => ({ auth: { api: { getSession: vi.fn() } } }));
-vi.mock("@/lib/team-auth", () => ({ getTeamRole: vi.fn(), requireTeamAdmin: vi.fn() }));
+vi.mock("@/lib/auth-server", () => ({ getSession: vi.fn() }));
 vi.mock("../redis", () => ({ redis: { get: vi.fn() } }));
 vi.mock("./helpers", () => ({ getTeamRecord: vi.fn(), sanitizeTeam: vi.fn((t: unknown) => t) }));
 vi.mock("next/headers", () => ({
@@ -22,8 +21,7 @@ vi.mock("@/types", () => ({
 
 import { prisma } from "@repo/db";
 
-import { auth } from "@/lib/auth-server";
-import { getTeamRole } from "@/lib/team-auth";
+import { getSession } from "@/lib/auth-server";
 
 import { redis } from "../redis";
 
@@ -33,6 +31,7 @@ import { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam } from 
 describe("getPublicTeam", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getSession).mockResolvedValue(null as never);
   });
 
   it("returns error when space not found", async () => {
@@ -43,29 +42,55 @@ describe("getPublicTeam", () => {
     expect(result).toEqual({ error: "Team not found", success: false });
   });
 
-  it("blocks private team access for non-members", async () => {
-    vi.mocked(prisma.space.findUnique).mockResolvedValue({ isPrivate: true } as never);
-    vi.mocked(getTeamRole).mockResolvedValue(null as never);
+  it("blocks private team access for guests without an access cookie", async () => {
+    vi.mocked(prisma.space.findUnique).mockResolvedValue({
+      id: "space-1",
+      isPrivate: true,
+    } as never);
 
     const result = await getPublicTeam(VALID_UUID);
 
     expect(result).toEqual({ error: "This team is private", success: false });
   });
 
-  it("returns team with correct role for authenticated users", async () => {
+  it("allows private team access for members via their membership", async () => {
     const team = createTestTeamRecord();
-    vi.mocked(prisma.space.findUnique).mockResolvedValue({ isPrivate: false } as never);
+    vi.mocked(prisma.space.findUnique).mockResolvedValue({
+      id: "space-1",
+      isPrivate: true,
+    } as never);
+    vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
+    vi.mocked(prisma.membership.findUnique).mockResolvedValue({ role: "MEMBER" } as never);
     vi.mocked(getTeamRecord).mockResolvedValue(team as never);
-    const session = createMockSession();
-    vi.mocked(auth.api.getSession).mockResolvedValue(session as never);
-    vi.mocked(prisma.membership.findUnique).mockResolvedValue({ role: "ADMIN" } as never);
 
     const result = await getPublicTeam(VALID_UUID);
 
-    expect(result).toEqual({
-      data: { role: "ADMIN", team },
-      success: true,
-    });
+    expect(result).toEqual({ data: { team }, success: true });
+  });
+
+  it("returns team without a role field for authenticated users", async () => {
+    const team = createTestTeamRecord();
+    vi.mocked(prisma.space.findUnique).mockResolvedValue({ isPrivate: false } as never);
+    vi.mocked(getTeamRecord).mockResolvedValue(team as never);
+    vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
+
+    const result = await getPublicTeam(VALID_UUID);
+
+    expect(result).toEqual({ data: { team }, success: true });
+    if (result.success) {
+      expect(result.data).not.toHaveProperty("role");
+    }
+  });
+
+  it("skips the membership lookup for public teams", async () => {
+    const team = createTestTeamRecord();
+    vi.mocked(prisma.space.findUnique).mockResolvedValue({ isPrivate: false } as never);
+    vi.mocked(getTeamRecord).mockResolvedValue(team as never);
+    vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
+
+    await getPublicTeam(VALID_UUID);
+
+    expect(prisma.membership.findUnique).not.toHaveBeenCalled();
   });
 });
 
