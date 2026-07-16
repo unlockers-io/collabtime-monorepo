@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getEnv, isEnvValid, validateEnv } from "./env";
+import { getEnv, validateEnv } from "./env";
 
 describe("validateEnv", () => {
   beforeEach(() => {
@@ -88,25 +88,5 @@ describe("getEnv", () => {
 
   it("returns undefined for unset optional vars", () => {
     expect(getEnv("RESEND_API_KEY")).toBeUndefined();
-  });
-});
-
-describe("isEnvValid", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it("returns true when all required vars are set", () => {
-    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/test");
-    vi.stubEnv("BETTER_AUTH_SECRET", "a-secret-that-is-at-least-32-characters-long");
-
-    expect(isEnvValid()).toBe(true);
-  });
-
-  it("returns false when required vars are missing", () => {
-    vi.stubEnv("DATABASE_URL", "");
-    vi.stubEnv("BETTER_AUTH_SECRET", "");
-
-    expect(isEnvValid()).toBe(false);
   });
 });

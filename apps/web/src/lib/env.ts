@@ -52,9 +52,4 @@ const getEnv = <K extends keyof Env>(key: K): Env[K] => {
   return value as Env[K];
 };
 
-const isEnvValid = (): boolean => {
-  const result = envSchema.safeParse(process.env);
-  return result.success;
-};
-
-export { validateEnv, getEnv, isEnvValid };
+export { validateEnv, getEnv };
