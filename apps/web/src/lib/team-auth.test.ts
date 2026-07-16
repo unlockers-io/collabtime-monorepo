@@ -1,11 +1,10 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth-server", () => ({
-  auth: {
-    api: {
-      getSession: vi.fn(),
-    },
-  },
+  getSession: vi.fn(),
 }));
 
 vi.mock("@repo/db", () => ({
@@ -16,18 +15,23 @@ vi.mock("@repo/db", () => ({
   },
 }));
 
-vi.mock("next/headers", () => ({
-  headers: vi.fn(() => Promise.resolve(new Headers())),
-}));
-
 import { prisma } from "@repo/db";
 
-import { auth } from "@/lib/auth-server";
+import { getSession } from "@/lib/auth-server";
 
 import { getTeamRole, requireAuth, requireTeamAdmin } from "./team-auth";
 
-const mockedGetSession = vi.mocked(auth.api.getSession);
+const mockedGetSession = vi.mocked(getSession);
 const mockedFindMembership = vi.mocked(prisma.membership.findUnique);
+
+describe("module surface", () => {
+  // "use server" would register these auth helpers as public POST endpoints
+  // (requireAuth returns the caller's full session); all importers are server modules.
+  it("is not a server-action module", async () => {
+    const source = await readFile(path.resolve(process.cwd(), "src/lib/team-auth.ts"), "utf8");
+    expect(source).not.toContain('"use server"');
+  });
+});
 
 describe("getTeamRole", () => {
   beforeEach(() => {
