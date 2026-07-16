@@ -4,7 +4,7 @@ import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
-import { getTeamRole, requireAuth, requireTeamAdmin } from "@/lib/team-auth";
+import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 import type { TeamMember } from "@/types";
 
 import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
@@ -234,46 +234,4 @@ const getPendingJoinRequests = async (
   }
 };
 
-const getMyTeamStatus = async (
-  teamId: string,
-): Promise<ActionResult<{ status: "ADMIN" | "MEMBER" | "PENDING" | "none" }>> => {
-  try {
-    const session = await requireAuth();
-
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return { error: "Invalid team ID", success: false };
-    }
-
-    const teamRole = await getTeamRole(teamId);
-    if (teamRole) {
-      return { data: { status: teamRole.role }, success: true };
-    }
-
-    const pendingRequest = await prisma.joinRequest.findUnique({
-      where: {
-        userId_teamId: {
-          teamId,
-          userId: session.user.id,
-        },
-      },
-    });
-
-    if (pendingRequest && pendingRequest.status === "PENDING") {
-      return { data: { status: "PENDING" }, success: true };
-    }
-
-    return { data: { status: "none" }, success: true };
-  } catch (error) {
-    log.error({ error, message: "Failed to get team status", route: "actions/join-requests" });
-    return { error: "Failed to get team status", success: false };
-  }
-};
-
-export {
-  approveJoinRequest,
-  denyJoinRequest,
-  getMyTeamStatus,
-  getPendingJoinRequests,
-  requestToJoin,
-};
+export { approveJoinRequest, denyJoinRequest, getPendingJoinRequests, requestToJoin };

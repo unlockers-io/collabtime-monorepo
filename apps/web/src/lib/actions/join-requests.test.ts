@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockSession, createTestTeamRecord, VALID_UUID } from "./test-helpers";
 
 vi.mock("@/lib/team-auth", () => ({
-  getTeamRole: vi.fn(),
   requireAuth: vi.fn(),
   requireTeamAdmin: vi.fn(),
 }));
@@ -23,16 +22,12 @@ vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
 import { prisma } from "@repo/db";
 
-import { getTeamRole, requireAuth, requireTeamAdmin } from "@/lib/team-auth";
+import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 
 import { getTeamRecord } from "./helpers";
-import {
-  approveJoinRequest,
-  denyJoinRequest,
-  getMyTeamStatus,
-  getPendingJoinRequests,
-  requestToJoin,
-} from "./join-requests";
+import * as joinRequests from "./join-requests";
+
+const { approveJoinRequest, denyJoinRequest, getPendingJoinRequests, requestToJoin } = joinRequests;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -229,30 +224,10 @@ describe("getPendingJoinRequests", () => {
   });
 });
 
-describe("getMyTeamStatus", () => {
-  it("returns role when user is a team member", async () => {
-    vi.mocked(getTeamRole).mockResolvedValue({ role: "ADMIN" } as never);
-
-    const result = await getMyTeamStatus(VALID_UUID);
-
-    expect(result).toEqual({ data: { status: "ADMIN" }, success: true });
-  });
-
-  it("returns PENDING when user has pending request", async () => {
-    vi.mocked(getTeamRole).mockResolvedValue(null as never);
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue({ status: "PENDING" } as never);
-
-    const result = await getMyTeamStatus(VALID_UUID);
-
-    expect(result).toEqual({ data: { status: "PENDING" }, success: true });
-  });
-
-  it("returns none when user has no relationship", async () => {
-    vi.mocked(getTeamRole).mockResolvedValue(null as never);
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null as never);
-
-    const result = await getMyTeamStatus(VALID_UUID);
-
-    expect(result).toEqual({ data: { status: "none" }, success: true });
+describe("module surface", () => {
+  // "use server" makes every export a public POST endpoint; the dead getMyTeamStatus
+  // (duplicate of page.tsx getTeamStatus) must stay deleted.
+  it("does not expose getMyTeamStatus as a server action", () => {
+    expect(Object.keys(joinRequests)).not.toContain("getMyTeamStatus");
   });
 });
