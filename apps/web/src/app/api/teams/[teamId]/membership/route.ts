@@ -1,9 +1,8 @@
 import { prisma } from "@repo/db";
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { auth } from "@/lib/auth-server";
+import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
 import { UUIDSchema } from "@/lib/validation";
 
@@ -24,9 +23,7 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Invalid team ID" }, { status: 400 });
     }
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getSession();
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
