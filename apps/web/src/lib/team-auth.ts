@@ -1,9 +1,6 @@
-"use server";
-
 import { prisma } from "@repo/db";
-import { headers } from "next/headers";
 
-import { auth } from "@/lib/auth-server";
+import { getSession } from "@/lib/auth-server";
 import { isTeamRole } from "@/types";
 import type { TeamRole } from "@/types";
 
@@ -13,9 +10,7 @@ type TeamAuthResult = {
 };
 
 const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getSession();
 
   if (!session) {
     return null;
@@ -59,9 +54,7 @@ const requireTeamAdmin = async (teamId: string): Promise<string> => {
 };
 
 const requireAuth = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getSession();
 
   if (!session) {
     throw new Error("Authentication required");

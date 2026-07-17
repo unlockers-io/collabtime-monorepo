@@ -1,9 +1,8 @@
 import { prisma } from "@repo/db";
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { auth } from "@/lib/auth-server";
+import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
 
 const createSpaceSchema = z.object({
@@ -12,9 +11,7 @@ const createSpaceSchema = z.object({
 
 export const GET = withEvlog(async () => {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getSession();
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -34,9 +31,7 @@ export const GET = withEvlog(async () => {
 
 export const POST = withEvlog(async (request: Request) => {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getSession();
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

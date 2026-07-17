@@ -1,9 +1,8 @@
 import { prisma } from "@repo/db";
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { auth } from "@/lib/auth-server";
+import { getSession } from "@/lib/auth-server";
 import { hashPassword } from "@/lib/crypto";
 import { log, withEvlog } from "@/lib/observability";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
@@ -22,9 +21,7 @@ type Params = {
 export const GET = withEvlog(async (_request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getSession();
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -59,9 +56,7 @@ export const GET = withEvlog(async (_request: Request, { params }: Params) => {
 export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getSession();
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -127,9 +122,7 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
 export const DELETE = withEvlog(async (_request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getSession();
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

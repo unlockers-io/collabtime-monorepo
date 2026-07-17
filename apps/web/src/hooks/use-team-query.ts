@@ -3,14 +3,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getPublicTeam } from "@/lib/actions/team-read";
-import type { Team, TeamRole } from "@/types";
+import type { Team } from "@/types";
 
 type UseTeamQueryOptions = {
   teamId: string;
 };
 
 type TeamQueryData = {
-  role: TeamRole;
   team: Team;
 };
 
@@ -29,7 +28,6 @@ const useTeamQuery = ({ teamId }: UseTeamQueryOptions) => {
       }
 
       return {
-        role: result.data.role,
         team: result.data.team,
       };
     },
