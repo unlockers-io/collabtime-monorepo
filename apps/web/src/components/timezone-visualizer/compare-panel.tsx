@@ -139,7 +139,9 @@ const ComparePanel = ({
             <button
               aria-label={`Remove ${getSelectionName(sel)} from comparison`}
               className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
-              onClick={() => onRemoveSelection(sel)}
+              onClick={() => {
+                onRemoveSelection(sel);
+              }}
               type="button"
             >
               <X className="size-3" />

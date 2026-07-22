@@ -87,10 +87,10 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
     }
 
     // Only touch password when client opts in: masked "********" resubmit must not get hashed.
-    if (updates.updatePassword) {
+    if (updates.updatePassword === true) {
       if (updates.accessPassword === null) {
         updateData.accessPassword = null;
-      } else if (updates.accessPassword) {
+      } else if (updates.accessPassword !== undefined && updates.accessPassword !== "") {
         updateData.accessPassword = await hashPassword(updates.accessPassword);
       }
     }

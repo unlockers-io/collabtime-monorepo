@@ -34,7 +34,8 @@ const GroupSelector = ({
     onValueChange(newValue === NO_GROUP_VALUE ? undefined : newValue);
   };
 
-  const displayLabel = value ? groups.find((g) => g.id === value)?.name : "No group";
+  const displayLabel =
+    value !== undefined && value !== "" ? groups.find((g) => g.id === value)?.name : "No group";
 
   return (
     <Select onValueChange={handleChange} value={value ?? NO_GROUP_VALUE}>

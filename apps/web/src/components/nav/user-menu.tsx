@@ -33,7 +33,7 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
       <DropdownMenuTrigger
         render={<Button aria-label="Account menu" size="icon" variant="outline" />}
       >
-        {isAdmin ? <Shield className="size-4" /> : <User className="size-4" />}
+        {isAdmin === true ? <Shield className="size-4" /> : <User className="size-4" />}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 bg-popover">
         <div className="px-2 py-1.5 text-sm">
@@ -73,7 +73,9 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
             <DropdownMenuItem
               className="flex cursor-pointer items-center gap-2"
               disabled={isSigningOut}
-              onClick={handleSignOut}
+              onClick={() => {
+                void handleSignOut();
+              }}
             >
               <LogOut className="size-4" />
               {isSigningOut ? "Signing out..." : "Sign out"}

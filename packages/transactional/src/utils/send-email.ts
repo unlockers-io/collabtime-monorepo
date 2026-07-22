@@ -14,7 +14,7 @@ const sanitizeTagSegment = (s: string): string =>
 // Accepts bare email or RFC 5322 "Display Name <email>"; z.email() alone rejects the bracketed form.
 const senderAddressSchema = z.string().refine(
   (val) => {
-    const email = val.match(/^.+<(?<email>[^<>\s]+)>$/v)?.groups?.email ?? val;
+    const email = /^.+<(?<email>[^<>\s]+)>$/v.exec(val)?.groups?.email ?? val;
     return z.email().safeParse(email).success;
   },
   { message: "Must be a valid email or 'Display Name <email>' format" },
@@ -78,7 +78,10 @@ const sendEmail = async ({ apiKey, defaultReplyTo, template, ...config }: SendEm
       cc: validatedConfig.cc,
       from: validatedConfig.from,
       html,
-      replyTo: validatedConfig.replyTo || defaultReplyTo,
+      replyTo:
+        validatedConfig.replyTo !== undefined && validatedConfig.replyTo !== ""
+          ? validatedConfig.replyTo
+          : defaultReplyTo,
       subject: validatedConfig.subject,
       tags: validatedConfig.tags,
       text,
@@ -134,7 +137,10 @@ const sendBatchEmails = async (
           cc: validatedConfig.cc,
           from: validatedConfig.from,
           html,
-          replyTo: validatedConfig.replyTo || defaultReplyTo,
+          replyTo:
+            validatedConfig.replyTo !== undefined && validatedConfig.replyTo !== ""
+              ? validatedConfig.replyTo
+              : defaultReplyTo,
           subject: validatedConfig.subject,
           tags: validatedConfig.tags,
           text,

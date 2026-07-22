@@ -154,7 +154,7 @@ test.describe.skip("Realtime Sync", () => {
     const confirmButton = pageA.getByRole("button", {
       name: /confirm|remove|delete/i,
     });
-    if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+    if (await confirmButton.isVisible().catch(() => false)) {
       await confirmButton.click();
     }
 

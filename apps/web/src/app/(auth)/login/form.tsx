@@ -80,7 +80,9 @@ const LoginForm = () => {
                   disabled={isPending}
                   id="login-email"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="m@example.com"
                   type="email"
                   value={field.state.value}
@@ -114,7 +116,9 @@ const LoginForm = () => {
                   disabled={isPending}
                   id="login-password"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   type="password"
                   value={field.state.value}
                 />

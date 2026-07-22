@@ -189,14 +189,17 @@ const formatTimezoneAbbreviation = (timezone: string): string => {
   return parts.at(-1) ?? timezone.split("/").pop() ?? timezone;
 };
 
+const isCommonTimezone = (value: string): value is (typeof COMMON_TIMEZONES)[number] =>
+  (COMMON_TIMEZONES as ReadonlyArray<string>).includes(value);
+
 const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | null => {
   const trimmed = input.trim();
   if (!trimmed) {
     return null;
   }
 
-  if (COMMON_TIMEZONES.includes(trimmed as (typeof COMMON_TIMEZONES)[number])) {
-    return trimmed as (typeof COMMON_TIMEZONES)[number];
+  if (isCommonTimezone(trimmed)) {
+    return trimmed;
   }
 
   let inputOffset: number;
@@ -227,6 +230,7 @@ export {
   formatTimezoneLabel,
   fuzzyMatchTimezone,
   getUserTimezone,
+  isCommonTimezone,
   convertHourToTimezone,
   isCurrentlyWorking,
   getDayOffset,

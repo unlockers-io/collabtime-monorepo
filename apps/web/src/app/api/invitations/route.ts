@@ -8,6 +8,14 @@ import { redis } from "@/lib/redis";
 
 const TeamCacheSchema = z.object({ name: z.string().optional() });
 
+const displayName = (name: string | null, email: string): string => {
+  if (name !== null && name !== "") {
+    return name;
+  }
+  const localPart = email.split("@")[0];
+  return localPart !== undefined && localPart !== "" ? localPart : "Someone";
+};
+
 export const GET = withEvlog(async () => {
   try {
     const session = await getSession();
@@ -32,15 +40,19 @@ export const GET = withEvlog(async () => {
     const results = await Promise.allSettled(
       invitations.map(async (inv) => {
         const data = await redis.get(`team:${inv.teamId}`);
-        const parsed = data ? TeamCacheSchema.safeParse(JSON.parse(data)) : null;
-        const team = parsed?.success ? parsed.data : null;
+        const parsed =
+          data !== null && data !== "" ? TeamCacheSchema.safeParse(JSON.parse(data)) : null;
+        const team = parsed?.success === true ? parsed.data : null;
 
         return {
           id: inv.id,
-          inviterName: inv.invitedBy.name || inv.invitedBy.email.split("@")[0] || "Someone",
+          inviterName: displayName(inv.invitedBy.name, inv.invitedBy.email),
           memberId: inv.memberId,
           teamId: inv.teamId,
-          teamName: team?.name || "Unknown Team",
+          teamName:
+            team !== null && team.name !== undefined && team.name !== ""
+              ? team.name
+              : "Unknown Team",
         };
       }),
     );

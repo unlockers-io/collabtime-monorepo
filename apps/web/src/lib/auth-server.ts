@@ -13,7 +13,7 @@ let cachedAuth: Auth | null = null;
 
 const getAuthConfig = (): AuthConfig => {
   const secret = process.env.BETTER_AUTH_SECRET;
-  if (!secret || secret.length < 32) {
+  if (secret === undefined || secret.length < 32) {
     throw new Error(
       "BETTER_AUTH_SECRET must be set to at least 32 characters (generate with: openssl rand -base64 32)",
     );
@@ -27,13 +27,15 @@ const getAuthConfig = (): AuthConfig => {
     onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
     prisma,
     secret,
-    ...(process.env.RESEND_API_KEY
+    ...(process.env.RESEND_API_KEY !== undefined && process.env.RESEND_API_KEY !== ""
       ? {
           resendApiKey: process.env.RESEND_API_KEY,
-          ...(process.env.RESEND_FROM_EMAIL && { fromEmail: process.env.RESEND_FROM_EMAIL }),
+          ...(process.env.RESEND_FROM_EMAIL !== undefined && process.env.RESEND_FROM_EMAIL !== ""
+            ? { fromEmail: process.env.RESEND_FROM_EMAIL }
+            : {}),
         }
       : {}),
-    ...(process.env.REDIS_URL
+    ...(process.env.REDIS_URL !== undefined && process.env.REDIS_URL !== ""
       ? {
           secondaryStorage: {
             delete: async (key: string) => {
@@ -53,7 +55,9 @@ const getAuthConfig = (): AuthConfig => {
               return String(value);
             },
             set: async (key: string, value: string, ttl?: number) => {
-              await (ttl ? redis.setex(key, ttl, value) : redis.set(key, value));
+              await (ttl !== undefined && ttl !== 0
+                ? redis.setex(key, ttl, value)
+                : redis.set(key, value));
             },
           },
         }
@@ -62,14 +66,13 @@ const getAuthConfig = (): AuthConfig => {
 };
 
 const getAuth = (): Auth => {
-  if (!cachedAuth) {
-    cachedAuth = createAuth(getAuthConfig());
-  }
+  cachedAuth ??= createAuth(getAuthConfig());
   return cachedAuth;
 };
 
+// oxlint-disable no-unsafe-type-assertion -- the Proxy impersonates Auth by design; its target is an empty stand-in and property access is forwarded dynamically.
 const auth = new Proxy({} as Auth, {
-  get(_, prop) {
+  get(_, prop): unknown {
     const instance = getAuth();
     const value = instance[prop as keyof Auth];
     if (typeof value === "function") {
@@ -78,6 +81,7 @@ const auth = new Proxy({} as Auth, {
     return value;
   },
 });
+// oxlint-enable no-unsafe-type-assertion
 
 // React.cache() dedupes getSession within a single RSC request.
 const getSession = cache(async () => {

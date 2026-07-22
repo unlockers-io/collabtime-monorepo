@@ -91,7 +91,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
         >
           <DialogHeader>
@@ -116,7 +116,9 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
                       aria-invalid={isInvalid}
                       id="group-name"
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value);
+                      }}
                       placeholder="e.g., Engineering, Design, Marketing..."
                       value={field.state.value}
                     />
@@ -132,7 +134,9 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
           <DialogFooter>
             <Button
               disabled={form.state.isSubmitting}
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+              }}
               type="button"
               variant="outline"
             >

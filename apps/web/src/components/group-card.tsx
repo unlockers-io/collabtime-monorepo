@@ -92,8 +92,12 @@ const GroupCard = ({
       autoFocus
       className="h-9 text-sm font-medium"
       onBlur={handleSave}
-      onChange={(e) => setEditingName(e.target.value)}
-      onFocus={(e) => e.currentTarget.select()}
+      onChange={(e) => {
+        setEditingName(e.target.value);
+      }}
+      onFocus={(e) => {
+        e.currentTarget.select();
+      }}
       onKeyDown={handleKeyDown}
       type="text"
       value={editingName}

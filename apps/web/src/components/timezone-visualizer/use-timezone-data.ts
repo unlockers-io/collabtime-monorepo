@@ -111,7 +111,7 @@ const useTimezoneData = ({
       sections.push({ group, rows });
     }
 
-    const ungroupedMembers = members.filter((m) => !m.groupId);
+    const ungroupedMembers = members.filter((m) => m.groupId === undefined || m.groupId === "");
     if (ungroupedMembers.length > 0) {
       const rows: Array<MemberRow> = [];
       for (const m of ungroupedMembers) {

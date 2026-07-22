@@ -12,11 +12,15 @@ const useCollapsedGroups = (members: Array<TeamMember>) => {
       return new Set();
     }
     const stored = localStorage.getItem(COLLAPSED_GROUPS_KEY);
-    if (!stored) {
+    if (stored === null || stored === "") {
       return new Set();
     }
     try {
-      return new Set(JSON.parse(stored) as Array<string>);
+      const parsed: unknown = JSON.parse(stored);
+      if (!Array.isArray(parsed)) {
+        return new Set();
+      }
+      return new Set(parsed.filter((id): id is string => typeof id === "string"));
     } catch {
       // Silently reset: corrupt storage shouldn't break the UI
       return new Set();
@@ -30,9 +34,11 @@ const useCollapsedGroups = (members: Array<TeamMember>) => {
       next.delete(groupId);
     } else {
       const collapsedAfter = new Set([...collapsedGroups, groupId]);
-      const ungroupedCount = members.filter((m) => !m.groupId).length;
+      const ungroupedCount = members.filter(
+        (m) => m.groupId === undefined || m.groupId === "",
+      ).length;
       const visibleGroupedCount = members.filter((m) => {
-        if (!m.groupId) {
+        if (m.groupId === undefined || m.groupId === "") {
           return false;
         }
         return !collapsedAfter.has(m.groupId);

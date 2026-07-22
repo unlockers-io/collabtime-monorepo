@@ -163,7 +163,11 @@ const updateOwnMember = async (
       }
       const member = team.members[memberIndex];
       // Ownership: must match session user, or the slot must be unclaimed.
-      if (member.userId && member.userId !== session.user.id) {
+      if (
+        member.userId !== undefined &&
+        member.userId !== "" &&
+        member.userId !== session.user.id
+      ) {
         return { error: "You can only edit your own member record", ok: false };
       }
       team.members[memberIndex] = { ...member, ...parsed, userId: session.user.id };

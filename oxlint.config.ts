@@ -3,6 +3,10 @@ import awesomeness from "oxlint-config-awesomeness";
 
 export default defineConfig({
   extends: [awesomeness],
+  options: {
+    typeAware: true,
+    typeCheck: true,
+  },
   overrides: [
     // Inline-edit inputs that mount on a user gesture (click "Edit" → render
     // input); focusing immediately matches user expectation and isn't a
@@ -43,12 +47,17 @@ export default defineConfig({
         "jsx-a11y/prefer-tag-over-role": "off",
       },
     },
-    // `add-member-dialog.tsx` is a complex multi-field form dialog that
-    // crosses 400 code lines; a11y improvements (isTouched guards,
-    // aria-describedby wiring) added ~20 lines. Splitting would fracture the
-    // cohesive form composition pattern used across all dialogs.
+    // `add-member-dialog.tsx` and `edit-member-dialog.tsx` are complex
+    // multi-field form dialogs that cross 400 code lines; a11y improvements
+    // (isTouched guards, aria-describedby wiring) and type-aware lint fixes
+    // (void-wrapped handlers, timezone narrowing) added the overage.
+    // Splitting would fracture the cohesive form composition pattern used
+    // across all dialogs.
     {
-      files: ["apps/web/src/components/add-member-dialog.tsx"],
+      files: [
+        "apps/web/src/components/add-member-dialog.tsx",
+        "apps/web/src/components/edit-member-dialog.tsx",
+      ],
       rules: {
         "max-lines": "off",
       },

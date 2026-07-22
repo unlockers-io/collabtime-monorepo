@@ -8,7 +8,19 @@ init({
   integrations: [replayIntegration()],
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
-  sendDefaultPii: true,
+  // frameContextLines must stay 7, not the documented default 5: the legacy
+  // sendDefaultPii bridge applied 7, and dropping to 5 would change what
+  // reaches Sentry after the deprecated flag's removal in v11.
+  dataCollection: {
+    cookies: true,
+    frameContextLines: 7,
+    genAI: { inputs: true, outputs: true },
+    httpBodies: ["incomingRequest", "outgoingRequest", "incomingResponse", "outgoingResponse"],
+    httpHeaders: { request: true, response: true },
+    queryParams: true,
+    stackFrameVariables: true,
+    userInfo: true,
+  },
   tracesSampleRate: 1,
 });
 

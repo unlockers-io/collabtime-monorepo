@@ -46,8 +46,8 @@ describe("createTeam", () => {
   it("creates space and membership in a transaction", async () => {
     const session = createMockSession();
     vi.mocked(requireAuth).mockResolvedValue(session as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
-    vi.mocked(redis.set).mockResolvedValue("OK" as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(redis.set).mockResolvedValue("OK");
 
     await createTeam(TEST_TIMEZONE);
 
@@ -64,8 +64,8 @@ describe("createTeam", () => {
   it("populates redis cache with creator as first member", async () => {
     const session = createMockSession();
     vi.mocked(requireAuth).mockResolvedValue(session as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
-    vi.mocked(redis.set).mockResolvedValue("OK" as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(redis.set).mockResolvedValue("OK");
 
     await createTeam(TEST_TIMEZONE);
 
@@ -88,7 +88,7 @@ describe("createTeam", () => {
   it("succeeds even if redis cache fails", async () => {
     const session = createMockSession();
     vi.mocked(requireAuth).mockResolvedValue(session as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
     vi.mocked(redis.set).mockRejectedValue(new Error("Redis down"));
 
     const result = await createTeam(TEST_TIMEZONE);
@@ -105,8 +105,8 @@ describe("createTeam", () => {
   it("returns the generated teamId on success", async () => {
     const session = createMockSession();
     vi.mocked(requireAuth).mockResolvedValue(session as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
-    vi.mocked(redis.set).mockResolvedValue("OK" as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(redis.set).mockResolvedValue("OK");
 
     const result = await createTeam(TEST_TIMEZONE);
 

@@ -99,16 +99,16 @@ const errorToMessage = (e: unknown): string => {
   if (typeof e === "string") {
     return e;
   }
-  if (typeof e === "object" && e !== null && "message" in e) {
-    return (e as { message: string }).message;
+  if (typeof e === "object" && e !== null && "message" in e && typeof e.message === "string") {
+    return e.message;
   }
   return String(e);
 };
 
 const FieldError = ({ children, className, errors, ref, ...props }: FieldErrorProps) => {
-  const message = children ?? errors?.map(errorToMessage).find(Boolean);
+  const message = children ?? errors?.map(errorToMessage).find((text) => text !== "");
 
-  if (!message) {
+  if (message === undefined || message === null || message === "" || message === false) {
     return null;
   }
 

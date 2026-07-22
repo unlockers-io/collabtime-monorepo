@@ -39,7 +39,7 @@ test.describe.skip("Member Management", () => {
     await memberCard.getByRole("button", { name: /remove|delete/i }).click();
 
     const confirmButton = page.getByRole("button", { name: /confirm|remove|delete/i });
-    if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+    if (await confirmButton.isVisible().catch(() => false)) {
       await confirmButton.click();
     }
 

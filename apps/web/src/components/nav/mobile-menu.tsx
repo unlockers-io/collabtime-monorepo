@@ -39,12 +39,12 @@ const MobileMenu = ({
     <AnimatePresence>
       {isOpen && (
         <m.div
-          animate={prefersReducedMotion ? { opacity: 1 } : { height: "auto", opacity: 1 }}
+          animate={prefersReducedMotion === true ? { opacity: 1 } : { height: "auto", opacity: 1 }}
           className="overflow-hidden sm:hidden"
-          exit={prefersReducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+          exit={prefersReducedMotion === true ? { opacity: 0 } : { height: 0, opacity: 0 }}
           id="mobile-menu"
-          initial={prefersReducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-          transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+          initial={prefersReducedMotion === true ? { opacity: 0 } : { height: 0, opacity: 0 }}
+          transition={{ duration: prefersReducedMotion === true ? 0 : 0.2 }}
         >
           <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
             <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
