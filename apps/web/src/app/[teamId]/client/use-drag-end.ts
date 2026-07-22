@@ -89,8 +89,8 @@ const useDragEnd = ({
       return;
     }
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
     if (activeId === overId) {
       return;

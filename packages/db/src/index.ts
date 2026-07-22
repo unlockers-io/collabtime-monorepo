@@ -3,7 +3,10 @@ import { Pool } from "pg";
 
 import { PrismaClient } from "./generated/client";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+// oxlint-disable-next-line no-unsafe-type-assertion -- canonical Prisma singleton: globalThis carries no typed slot for the cached client
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -14,7 +17,7 @@ const pool = new Pool({
 const adapter = new PrismaPg(pool);
 
 export const prisma =
-  globalForPrisma.prisma ||
+  globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
   });

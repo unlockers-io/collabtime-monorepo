@@ -31,11 +31,11 @@ import { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam } from 
 describe("getPublicTeam", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getSession).mockResolvedValue(null as never);
+    vi.mocked(getSession).mockResolvedValue(null);
   });
 
   it("returns error when space not found", async () => {
-    vi.mocked(prisma.space.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.space.findUnique).mockResolvedValue(null);
 
     const result = await getPublicTeam(VALID_UUID);
 
@@ -61,7 +61,7 @@ describe("getPublicTeam", () => {
     } as never);
     vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
     vi.mocked(prisma.membership.findUnique).mockResolvedValue({ role: "MEMBER" } as never);
-    vi.mocked(getTeamRecord).mockResolvedValue(team as never);
+    vi.mocked(getTeamRecord).mockResolvedValue(team);
 
     const result = await getPublicTeam(VALID_UUID);
 
@@ -71,7 +71,7 @@ describe("getPublicTeam", () => {
   it("returns team without a role field for authenticated users", async () => {
     const team = createTestTeamRecord();
     vi.mocked(prisma.space.findUnique).mockResolvedValue({ isPrivate: false } as never);
-    vi.mocked(getTeamRecord).mockResolvedValue(team as never);
+    vi.mocked(getTeamRecord).mockResolvedValue(team);
     vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
 
     const result = await getPublicTeam(VALID_UUID);
@@ -85,7 +85,7 @@ describe("getPublicTeam", () => {
   it("skips the membership lookup for public teams", async () => {
     const team = createTestTeamRecord();
     vi.mocked(prisma.space.findUnique).mockResolvedValue({ isPrivate: false } as never);
-    vi.mocked(getTeamRecord).mockResolvedValue(team as never);
+    vi.mocked(getTeamRecord).mockResolvedValue(team);
     vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
 
     await getPublicTeam(VALID_UUID);
@@ -108,7 +108,7 @@ describe("validateTeam", () => {
   });
 
   it("returns false when space does not exist", async () => {
-    vi.mocked(prisma.space.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.space.findUnique).mockResolvedValue(null);
 
     const result = await validateTeam(VALID_UUID);
 
@@ -122,7 +122,7 @@ describe("getTeamName", () => {
   });
 
   it("returns trimmed name from redis", async () => {
-    vi.mocked(redis.get).mockResolvedValue(JSON.stringify({ name: "  My Team  " }) as never);
+    vi.mocked(redis.get).mockResolvedValue(JSON.stringify({ name: "  My Team  " }));
 
     const result = await getTeamName(VALID_UUID);
 
@@ -130,7 +130,7 @@ describe("getTeamName", () => {
   });
 
   it("returns null for empty name", async () => {
-    vi.mocked(redis.get).mockResolvedValue(JSON.stringify({ name: "   " }) as never);
+    vi.mocked(redis.get).mockResolvedValue(JSON.stringify({ name: "   " }));
 
     const result = await getTeamName(VALID_UUID);
 
@@ -138,7 +138,7 @@ describe("getTeamName", () => {
   });
 
   it("returns null when no data in redis", async () => {
-    vi.mocked(redis.get).mockResolvedValue(null as never);
+    vi.mocked(redis.get).mockResolvedValue(null);
 
     const result = await getTeamName(VALID_UUID);
 
@@ -160,7 +160,7 @@ describe("getTeamMembershipRole", () => {
   });
 
   it("returns null when no membership exists", async () => {
-    vi.mocked(prisma.membership.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.membership.findUnique).mockResolvedValue(null);
 
     const result = await getTeamMembershipRole(VALID_UUID, "user-123");
 

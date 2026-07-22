@@ -54,7 +54,7 @@ const BaseLayout = ({
                 >
                   Visit Collab Time
                 </Link>
-                {unsubscribeUrl && (
+                {unsubscribeUrl !== undefined && unsubscribeUrl !== "" && (
                   <>
                     <span className="px-2 text-sm text-border">·</span>
                     <Link

@@ -15,10 +15,11 @@ type MemberAvatarProps = {
 
 const MemberAvatar = ({ dayOffset, isSelected, member, totalMembers }: MemberAvatarProps) => {
   const dayOffsetLabel = formatDayOffset(dayOffset);
+  const hasDayOffset = dayOffsetLabel !== null && dayOffsetLabel !== "";
 
   const content = (
     <div
-      className={`flex h-8 items-center justify-center sm:justify-start sm:gap-2 ${dayOffsetLabel ? "cursor-help" : ""}`}
+      className={`flex h-8 items-center justify-center sm:justify-start sm:gap-2 ${hasDayOffset ? "cursor-help" : ""}`}
     >
       <div className="relative">
         <div
@@ -45,7 +46,7 @@ const MemberAvatar = ({ dayOffset, isSelected, member, totalMembers }: MemberAva
     </div>
   );
 
-  if (dayOffsetLabel) {
+  if (hasDayOffset) {
     return (
       <Tooltip>
         <TooltipTrigger render={<div />}>{content}</TooltipTrigger>

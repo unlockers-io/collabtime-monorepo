@@ -51,7 +51,7 @@ const DndWrapper = ({
   );
 
   const handleDragStart = (event: DragStartEvent) => {
-    const id = event.active.id as string;
+    const id = String(event.active.id);
     if (members.some((m) => m.id === id)) {
       setActiveDragType("member");
       setActiveDragId(id);
@@ -94,10 +94,14 @@ const DndWrapper = ({
   };
 
   const activeMember =
-    activeDragId && activeDragType === "member" ? members.find((m) => m.id === activeDragId) : null;
+    activeDragId !== null && activeDragId !== "" && activeDragType === "member"
+      ? members.find((m) => m.id === activeDragId)
+      : null;
 
   const activeGroup =
-    activeDragId && activeDragType === "group" ? groups.find((g) => g.id === activeDragId) : null;
+    activeDragId !== null && activeDragId !== "" && activeDragType === "group"
+      ? groups.find((g) => g.id === activeDragId)
+      : null;
 
   return (
     <DndContext

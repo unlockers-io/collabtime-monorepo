@@ -21,8 +21,9 @@ const ChangeEmail = ({ changeUrl, currentEmail, newEmail, username }: ChangeEmai
 
       <Text className="m-0 mb-6 text-base text-pretty break-words text-muted-foreground">
         You requested to change the email on your Collab Time account
-        {username ? ` (${username})` : ""} from <strong>{currentEmail}</strong> to{" "}
-        <strong>{newEmail}</strong>. Confirm to complete the change.
+        {username !== undefined && username !== "" ? ` (${username})` : ""} from{" "}
+        <strong>{currentEmail}</strong> to <strong>{newEmail}</strong>. Confirm to complete the
+        change.
       </Text>
 
       <div className="mb-6">

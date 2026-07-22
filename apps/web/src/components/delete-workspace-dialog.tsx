@@ -79,13 +79,22 @@ const DeleteWorkspaceDialog = ({
         <DialogFooter>
           <Button
             disabled={isDeleting}
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              onOpenChange(false);
+            }}
             type="button"
             variant="outline"
           >
             Cancel
           </Button>
-          <Button disabled={isDeleting} onClick={handleDelete} type="button" variant="destructive">
+          <Button
+            disabled={isDeleting}
+            onClick={() => {
+              void handleDelete();
+            }}
+            type="button"
+            variant="destructive"
+          >
             {isDeleting ? (
               <span className="flex items-center gap-2">
                 <Spinner />

@@ -13,6 +13,14 @@ import { UUIDSchema } from "../validation";
 import { getTeamRecord } from "./helpers";
 import type { ActionResult } from "./types";
 
+const displayName = (name: string | null, email: string): string => {
+  if (name !== null && name !== "") {
+    return name;
+  }
+  const localPart = email.split("@")[0];
+  return localPart !== undefined && localPart !== "" ? localPart : "Unknown";
+};
+
 const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: string }>> => {
   try {
     const session = await requireAuth();
@@ -115,7 +123,7 @@ const approveJoinRequest = async (
       }),
     ]);
 
-    const memberName = joinRequest.user.name || joinRequest.user.email.split("@")[0] || "Unknown";
+    const memberName = displayName(joinRequest.user.name, joinRequest.user.email);
     const team = await getTeamRecord(joinRequest.teamId);
     const newMember: TeamMember = {
       id: uuidv4(),
@@ -220,7 +228,7 @@ const getPendingJoinRequests = async (
       id: r.id,
       userEmail: r.user.email,
       userId: r.userId,
-      userName: r.user.name || r.user.email.split("@")[0] || "Unknown",
+      userName: displayName(r.user.name, r.user.email),
     }));
 
     return { data, success: true };

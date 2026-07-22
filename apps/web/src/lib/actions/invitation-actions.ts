@@ -53,7 +53,7 @@ const inviteMember = async (
       return { error: "Member not found", success: false };
     }
 
-    if (member.userId) {
+    if (member.userId !== undefined && member.userId !== "") {
       return { error: "This member slot is already claimed", success: false };
     }
 
@@ -102,7 +102,7 @@ const inviteMember = async (
     const fromEmail = getEnv("RESEND_FROM_EMAIL");
     const webAppUrl = getEnv("WEB_APP_URL") ?? "";
 
-    if (apiKey) {
+    if (apiKey !== undefined && apiKey !== "") {
       const result = await sendTransactionalEmail(
         {
           inviterName: session.user.name || session.user.email.split("@")[0] || "Someone",
@@ -112,7 +112,7 @@ const inviteMember = async (
           teamUrl: webAppUrl,
           type: "invitation",
         },
-        { apiKey, ...(fromEmail && { from: fromEmail }) },
+        { apiKey, ...(fromEmail !== undefined && fromEmail !== "" ? { from: fromEmail } : {}) },
       );
       emailSent = result.success;
       if (!result.success) {
@@ -196,7 +196,8 @@ const acceptInvitation = async (
       const team = await getTeamRecord(invitation.teamId);
       if (team) {
         const memberIndex = team.members.findIndex((m) => m.id === invitation.memberId);
-        if (memberIndex !== -1 && !team.members[memberIndex].userId) {
+        const slotUserId = memberIndex === -1 ? undefined : team.members[memberIndex].userId;
+        if (memberIndex !== -1 && (slotUserId === undefined || slotUserId === "")) {
           team.members[memberIndex].userId = session.user.id;
           await redis.set(
             `team:${invitation.teamId}`,

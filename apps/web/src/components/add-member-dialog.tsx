@@ -126,6 +126,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
     email: "",
     groupId: "",
     name: "",
+    // oxlint-disable-next-line no-unsafe-type-assertion -- the browser timezone can sit outside COMMON_TIMEZONES; zod rejects it on submit, while a fallback here would silently mis-assign a zone
     timezone: getUserTimezone() as FormValues["timezone"],
     title: "",
     workingHoursEnd: 17,
@@ -174,7 +175,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        form.handleSubmit();
+        void form.handleSubmit();
       }}
     >
       <DialogHeader>
@@ -201,7 +202,9 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                   aria-invalid={isInvalid}
                   id="member-name"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="John Doe"
                   value={field.state.value}
                 />
@@ -226,7 +229,9 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                   id="member-email"
                   inputMode="email"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="m@example.com"
                   type="email"
                   value={field.state.value}
@@ -253,7 +258,9 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                   aria-invalid={isInvalid}
                   id="member-title"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder={titlePlaceholder}
                   value={field.state.value}
                 />
@@ -276,7 +283,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                     if (value === null) {
                       return;
                     }
-                    field.handleChange(value as FormValues["timezone"]);
+                    field.handleChange(value);
                     field.handleBlur();
                   }}
                   value={field.state.value}
@@ -354,7 +361,9 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
         {!isFirstMember && (
           <Button
             disabled={form.state.isSubmitting}
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              onOpenChange(false);
+            }}
             type="button"
             variant="outline"
           >

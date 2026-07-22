@@ -4,9 +4,20 @@ import { toast } from "@repo/ui/components/sonner";
 import { captureException } from "@sentry/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { z } from "zod";
 
 import { acceptInvitation, declineInvitation } from "@/lib/actions/invitation-actions";
 import type { PendingInvitation } from "@/types";
+
+const InvitationSchema = z.object({
+  id: z.string(),
+  inviterName: z.string(),
+  memberId: z.string(),
+  teamId: z.string(),
+  teamName: z.string(),
+});
+
+const InvitationsResponseSchema = z.object({ invitations: z.array(InvitationSchema) });
 
 const useInvitations = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
@@ -19,7 +30,7 @@ const useInvitations = (isAuthenticated: boolean) => {
       if (!response.ok) {
         throw new Error("Failed to fetch invitations");
       }
-      const data = (await response.json()) as { invitations: Array<PendingInvitation> };
+      const data = InvitationsResponseSchema.parse(await response.json());
       return data.invitations;
     },
     queryKey: ["my-invitations"],

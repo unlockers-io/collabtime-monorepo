@@ -35,10 +35,10 @@ const renderTeamNav = () =>
       isAdmin
       isAuthenticated
       isEditingName={false}
-      onCancelEdit={vi.fn()}
-      onEditName={vi.fn()}
-      onNameChange={vi.fn()}
-      onSaveName={vi.fn()}
+      onCancelEdit={vi.fn<() => void>()}
+      onEditName={vi.fn<() => void>()}
+      onNameChange={vi.fn<(name: string) => void>()}
+      onSaveName={vi.fn<() => void>()}
       teamName="Product"
       variant="team"
     />,

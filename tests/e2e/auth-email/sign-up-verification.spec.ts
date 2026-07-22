@@ -50,7 +50,7 @@ test.describe("Sign-up email verification", () => {
     // Follow the link in a fresh BrowserContext. The link IS the login:
     // autoSignInAfterVerification mints a session on the clicking device and
     // the callback lands on the app root.
-    const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/v);
+    const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/);
     const clickerContext = await browser.newContext();
     const clickerPage = await clickerContext.newPage();
     await clickerPage.goto(verifyUrl);

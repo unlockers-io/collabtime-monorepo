@@ -10,6 +10,17 @@ import type { MyTeam } from "./types";
 
 const errorBodySchema = z.object({ error: z.string() });
 
+const TeamSchema = z.object({
+  archivedAt: z.string().nullable(),
+  memberCount: z.number(),
+  role: z.string(),
+  spaceId: z.string().nullable(),
+  teamId: z.string(),
+  teamName: z.string(),
+});
+
+const TeamsResponseSchema = z.object({ teams: z.array(TeamSchema) });
+
 const useMyTeams = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
   const [processingArchive, setProcessingArchive] = useState<Set<string>>(new Set());
@@ -21,7 +32,7 @@ const useMyTeams = (isAuthenticated: boolean) => {
       if (!response.ok) {
         throw new Error("Failed to fetch teams");
       }
-      const data = (await response.json()) as { teams: Array<MyTeam> };
+      const data = TeamsResponseSchema.parse(await response.json());
       return data.teams;
     },
     queryKey: ["my-teams"],

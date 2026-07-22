@@ -42,7 +42,8 @@ const SignupForm = () => {
             return;
           }
           // No token: requireEmailVerification suppressed auto-sign-in or enumeration prevention.
-          if (!result.data?.token) {
+          const sessionToken = result.data?.token;
+          if (typeof sessionToken !== "string" || sessionToken === "") {
             setSentToEmail(value.email);
             return;
           }
@@ -58,7 +59,7 @@ const SignupForm = () => {
     validators: { onSubmit: signupSchema },
   });
 
-  if (sentToEmail) {
+  if (sentToEmail !== null && sentToEmail !== "") {
     return (
       <output aria-live="polite" className="block space-y-1 text-center">
         <span className="block font-medium">Check your email</span>
@@ -92,7 +93,9 @@ const SignupForm = () => {
                   disabled={isPending}
                   id="signup-name"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="John Doe"
                   type="text"
                   value={field.state.value}
@@ -115,7 +118,9 @@ const SignupForm = () => {
                   disabled={isPending}
                   id="signup-email"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="m@example.com"
                   type="email"
                   value={field.state.value}
@@ -138,7 +143,9 @@ const SignupForm = () => {
                   disabled={isPending}
                   id="signup-password"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   type="password"
                   value={field.state.value}
                 />

@@ -83,9 +83,10 @@ const OverlapBar = ({
         const bucketByTeam = (list: Array<TeamMember>) => {
           const buckets = new Map<string, Array<string>>();
           for (const member of list) {
-            const key = member.groupId
-              ? (groupNameById.get(member.groupId) ?? "Team")
-              : "Ungrouped";
+            const key =
+              member.groupId !== undefined && member.groupId !== ""
+                ? (groupNameById.get(member.groupId) ?? "Team")
+                : "Ungrouped";
             const names = buckets.get(key) ?? [];
             names.push(member.name);
             buckets.set(key, names);

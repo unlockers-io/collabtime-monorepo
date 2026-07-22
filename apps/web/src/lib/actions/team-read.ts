@@ -57,14 +57,16 @@ const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team 
     const userId = session?.user?.id;
 
     if (space.isPrivate) {
-      const memberRole = userId ? await getTeamMembershipRole(teamId, userId) : null;
+      const memberRole =
+        userId !== undefined && userId !== "" ? await getTeamMembershipRole(teamId, userId) : null;
       if (!memberRole) {
         // Guest cookie must match the page gate so guests can load team data.
         const cookieStore = await cookies();
         const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
-        const hasGuestAccess = accessToken
-          ? verifySpaceAccessToken(accessToken, space.id).valid
-          : false;
+        const hasGuestAccess =
+          accessToken !== undefined && accessToken !== ""
+            ? verifySpaceAccessToken(accessToken, space.id).valid
+            : false;
         if (!hasGuestAccess) {
           return { error: "This team is private", success: false };
         }
@@ -114,12 +116,15 @@ const getTeamName = cache(async (teamId: string): Promise<string | null> => {
     }
 
     const data = await redis.get(`team:${teamId}`);
-    if (!data) {
+    if (data === null || data === "") {
       return null;
     }
 
-    const team = JSON.parse(data) as { name?: string };
-    const name = typeof team?.name === "string" ? team.name.trim() : "";
+    const team: unknown = JSON.parse(data);
+    const name =
+      typeof team === "object" && team !== null && "name" in team && typeof team.name === "string"
+        ? team.name.trim()
+        : "";
     return name.length > 0 ? name : null;
   } catch (error) {
     log.error({ error, message: "Failed to get team name", route: "actions/team-read" });

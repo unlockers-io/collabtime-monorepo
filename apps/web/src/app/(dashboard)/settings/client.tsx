@@ -80,13 +80,17 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
                   <Input
                     autoComplete="name"
                     id="name"
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                    }}
                     placeholder="Your name"
                     value={name}
                   />
                   <Button
                     disabled={isSaving || name.trim() === user.name}
-                    onClick={handleSaveName}
+                    onClick={() => {
+                      void handleSaveName();
+                    }}
                     variant="outline"
                   >
                     {isSaving ? <Spinner /> : "Save"}
