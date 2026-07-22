@@ -6,13 +6,13 @@ const Loading = () => {
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <div className="size-9 animate-pulse rounded-lg bg-muted" />
-              <div className="h-7 w-40 animate-pulse rounded-lg bg-muted" />
+              <div className="h-7 w-40 animate-pulse rounded-lg bg-muted sm:h-8" />
             </div>
             <div className="hidden items-center gap-2 sm:flex">
               <div className="h-9 w-36 animate-pulse rounded-lg bg-muted" />
-              <div className="h-9 w-24 animate-pulse rounded-lg bg-muted" />
-              <div className="size-9 animate-pulse rounded-lg bg-muted" />
-              <div className="size-9 animate-pulse rounded-lg bg-muted" />
+              <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
+              <div className="size-8 animate-pulse rounded-md bg-muted" />
+              <div className="size-8 animate-pulse rounded-md bg-muted" />
             </div>
             <div className="flex items-center sm:hidden">
               <div className="size-9 animate-pulse rounded-lg bg-muted" />
@@ -55,20 +55,20 @@ const Loading = () => {
             <div className="h-3 w-36 animate-pulse rounded bg-muted" />
           </div>
           <div className="flex flex-col gap-6 px-4 sm:px-5">
-            <div className="flex items-center gap-3">
-              <div className="w-28" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 shrink-0 sm:w-24" />
               <div className="flex flex-1 justify-between">
                 {["tick-1", "tick-2", "tick-3", "tick-4", "tick-5"].map((id) => (
-                  <div className="h-3 w-12 animate-pulse rounded bg-muted" key={id} />
+                  <div className="h-3 w-8 animate-pulse rounded bg-muted sm:w-12" key={id} />
                 ))}
               </div>
             </div>
             <div className="flex flex-col gap-3">
               {["row-1", "row-2", "row-3"].map((id) => (
-                <div className="flex items-center gap-3" key={id}>
-                  <div className="flex w-28 items-center gap-2">
-                    <div className="size-7 animate-pulse rounded-full bg-muted" />
-                    <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+                <div className="flex items-center gap-2 sm:gap-3" key={id}>
+                  <div className="flex w-8 shrink-0 items-center gap-2 sm:w-24">
+                    <div className="size-6 animate-pulse rounded-full bg-muted sm:size-7" />
+                    <div className="hidden h-4 w-16 animate-pulse rounded bg-muted sm:block" />
                   </div>
                   <div className="h-8 flex-1 animate-pulse rounded-lg bg-muted" />
                 </div>
@@ -86,7 +86,7 @@ const Loading = () => {
               </div>
               <div className="h-5 w-8 animate-pulse rounded-full bg-muted" />
             </div>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,320px))] gap-4 px-4 sm:px-5">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4 pr-8 pl-4 sm:pr-9 sm:pl-5">
               {["member-1", "member-2", "member-3", "member-4"].map((id) => (
                 <div
                   className="flex h-full flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm"
@@ -121,7 +121,7 @@ const Loading = () => {
               </div>
               <div className="h-5 w-8 animate-pulse rounded-full bg-muted" />
             </div>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,320px))] gap-4 px-4 sm:px-5">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4 pr-8 pl-4 sm:pr-9 sm:pl-5">
               {["group-1", "group-2"].map((id) => (
                 <div
                   className="flex h-full flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm"
