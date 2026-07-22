@@ -33,7 +33,7 @@ const SettingsSkeleton = () => (
         <div className="h-8 w-32 animate-pulse rounded-md bg-muted" />
         <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
       </div>
-      <div className="h-56 animate-pulse rounded-xl bg-muted" />
+      <div className="h-67 animate-pulse rounded-xl bg-muted" />
     </div>
   </div>
 );

@@ -13,12 +13,21 @@ const HomeContent = async () => {
 
 const HomeSkeleton = () => (
   <div aria-hidden className="flex flex-1 flex-col">
-    <div className="h-16 border-b border-border" />
+    <div className="flex items-center justify-between px-4 py-6 sm:px-6">
+      <div className="flex items-center gap-3">
+        <Skeleton className="size-9 rounded-lg" />
+        <Skeleton className="h-6 w-28" />
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="size-8" />
+        <Skeleton className="size-8" />
+      </div>
+    </div>
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-4 py-8 sm:gap-12 sm:px-6">
       <div className="flex flex-col items-center gap-6 text-center">
         <div className="flex flex-col items-center gap-2 sm:gap-3">
           <Skeleton className="h-9 w-48 sm:h-12 sm:w-56" />
-          <Skeleton className="h-12 w-72" />
+          <Skeleton className="h-12 w-72 sm:h-14 sm:w-80" />
         </div>
       </div>
       <Skeleton className="h-12 w-full rounded-xl sm:h-14 sm:w-72" />
