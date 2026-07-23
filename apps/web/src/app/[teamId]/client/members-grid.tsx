@@ -45,8 +45,8 @@ const MembersGrid = ({
   const memberIds = orderedMembers.map((m) => m.id);
 
   return (
-    <ScrollArea className="max-h-150">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4 pr-4">
+    <ScrollArea className="-m-px max-h-150">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4 p-px pr-4">
         {isAdmin ? (
           <SortableContext items={memberIds} strategy={rectSortingStrategy}>
             {orderedMembers.map((member) => (
