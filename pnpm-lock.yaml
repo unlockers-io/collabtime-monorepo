@@ -37,8 +37,8 @@ importers:
         specifier: ^1.75.0
         version: 1.75.0(oxlint-tsgolint@7.0.2001)
       oxlint-config-awesomeness:
-        specifier: ^3.1.0
-        version: 3.1.0(eslint@9.39.4(jiti@2.7.0))(oxlint@1.75.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3)
+        specifier: ^3.2.0
+        version: 3.2.0(eslint@9.39.4(jiti@2.7.0))(oxlint@1.75.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3)
       oxlint-tsgolint:
         specifier: ^7.0.2001
         version: 7.0.2001
@@ -4823,12 +4823,12 @@ packages:
       vite-plus:
         optional: true
 
-  oxlint-config-awesomeness@3.1.0:
-    resolution: {integrity: sha512-XBPffgZEiaqloROHJx4UEqkNHR+FNlDLFDzdEEhX2Ber8UTT12IzqK3zw06gBU2fGLpa8tk86X0wboBE1EcASQ==}
+  oxlint-config-awesomeness@3.2.0:
+    resolution: {integrity: sha512-LmmHThVt8hoB9BieydMSgVgmbcSsXuqaYIN98+L17+u7tcVV8oZU3SHiIKSeoexpuUvHuiQhEh0NL6nqRQgGiw==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
-      oxlint: '>=1.63.0 <2.0.0'
+      oxlint: '>=1.75.0 <2.0.0'
 
   oxlint-plugin-react-doctor@0.5.8:
     resolution: {integrity: sha512-L0jveKAMbqF1qAqA2Ksu8aH0/Q8FDQxLwXmHYgALa2XlsxEUuamJ+1Da2MhPWJ2ahn+ekFbnWK20qixxD+fw6A==}
@@ -9811,7 +9811,7 @@ snapshots:
       '@oxfmt/binding-win32-ia32-msvc': 0.58.0
       '@oxfmt/binding-win32-x64-msvc': 0.58.0
 
-  oxlint-config-awesomeness@3.1.0(eslint@9.39.4(jiti@2.7.0))(oxlint@1.75.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3):
+  oxlint-config-awesomeness@3.2.0(eslint@9.39.4(jiti@2.7.0))(oxlint@1.75.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3):
     dependencies:
       eslint-plugin-no-only-tests: 3.4.0
       eslint-plugin-perfectionist: 5.9.0(eslint@9.39.4(jiti@2.7.0))(typescript@6.0.3)
