@@ -86,12 +86,13 @@ const TeamPage = async ({ params }: TeamPageProps) => {
   const session = sessionResult.status === "fulfilled" ? sessionResult.value : null;
   const space = spaceResult.status === "fulfilled" ? spaceResult.value : null;
 
-  if (space?.isPrivate) {
+  if (space?.isPrivate === true) {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
-    const hasGuestAccess = accessToken
-      ? verifySpaceAccessToken(accessToken, space.id).valid
-      : false;
+    const hasGuestAccess =
+      accessToken !== undefined && accessToken !== ""
+        ? verifySpaceAccessToken(accessToken, space.id).valid
+        : false;
 
     if (!hasGuestAccess) {
       const membership = session

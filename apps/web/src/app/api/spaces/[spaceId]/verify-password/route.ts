@@ -48,7 +48,10 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
     // Always compare when a password exists; prevents timing leaks about privacy.
     const accessPassword = space.accessPassword;
     const hasPassword = Boolean(accessPassword);
-    const isValid = accessPassword ? await verifyPassword(password, accessPassword) : false;
+    const isValid =
+      accessPassword !== null && accessPassword !== ""
+        ? await verifyPassword(password, accessPassword)
+        : false;
 
     if (!space.isPrivate || !hasPassword) {
       return NextResponse.json({ success: true, teamId: space.teamId });

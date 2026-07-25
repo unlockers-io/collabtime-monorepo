@@ -42,7 +42,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
   mockedRequireTeamAdmin.mockResolvedValue(undefined as never);
-  mockedRedisSet.mockResolvedValue("OK" as never);
+  mockedRedisSet.mockResolvedValue("OK");
 });
 
 describe("createGroup", () => {

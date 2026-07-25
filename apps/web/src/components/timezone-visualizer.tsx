@@ -243,9 +243,13 @@ const TimezoneVisualizer = ({
                   groups={groups}
                   memberRowById={memberRowById}
                   members={members}
-                  onAddSelection={(sel) => addSelection(sel, setCompareSelections)}
+                  onAddSelection={(sel) => {
+                    addSelection(sel, setCompareSelections);
+                  }}
                   onClose={closeComparePanel}
-                  onRemoveSelection={(sel) => removeSelection(sel, setCompareSelections)}
+                  onRemoveSelection={(sel) => {
+                    removeSelection(sel, setCompareSelections);
+                  }}
                   overlapData={overlapData}
                   overlapStatus={overlapStatus}
                   selectedMemberIds={selectedMemberIds}

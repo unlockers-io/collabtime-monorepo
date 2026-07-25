@@ -3,11 +3,11 @@ import * as React from "react";
 
 import { cn } from "../lib/utils";
 
-function ScrollBar({
+const ScrollBar = ({
   className,
   orientation = "vertical",
   ...props
-}: ScrollAreaPrimitive.Scrollbar.Props) {
+}: ScrollAreaPrimitive.Scrollbar.Props) => {
   return (
     <ScrollAreaPrimitive.Scrollbar
       className={cn(
@@ -25,9 +25,9 @@ function ScrollBar({
       />
     </ScrollAreaPrimitive.Scrollbar>
   );
-}
+};
 
-function ScrollArea({ children, className, ...props }: ScrollAreaPrimitive.Root.Props) {
+const ScrollArea = ({ children, className, ...props }: ScrollAreaPrimitive.Root.Props) => {
   return (
     <ScrollAreaPrimitive.Root
       className={cn("relative", className)}
@@ -44,6 +44,6 @@ function ScrollArea({ children, className, ...props }: ScrollAreaPrimitive.Root.
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   );
-}
+};
 
 export { ScrollArea, ScrollBar };

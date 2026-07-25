@@ -15,14 +15,6 @@ import {
   getPendingJoinRequests,
 } from "@/lib/actions/join-requests";
 
-type JoinRequest = {
-  createdAt: Date;
-  id: string;
-  userEmail: string;
-  userId: string;
-  userName: string;
-};
-
 type JoinRequestsPanelProps = {
   teamId: string;
 };
@@ -44,13 +36,13 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
       if (!result.success) {
         throw new Error(result.error ?? "Failed to load join requests");
       }
-      return result.data as Array<JoinRequest>;
+      return result.data;
     },
     queryKey: joinRequestsQueryKey(teamId),
   });
 
   const invalidateRequests = () => {
-    queryClient.invalidateQueries({ queryKey: joinRequestsQueryKey(teamId) });
+    void queryClient.invalidateQueries({ queryKey: joinRequestsQueryKey(teamId) });
   };
 
   const handleApprove = (requestId: string) => {
@@ -154,7 +146,9 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
                         aria-label={`Approve ${request.userName}`}
                         className="text-success hover:bg-success/10 hover:text-success"
                         disabled={isThisRequest}
-                        onClick={() => handleApprove(request.id)}
+                        onClick={() => {
+                          handleApprove(request.id);
+                        }}
                         size="icon-sm"
                         variant="ghost"
                       >
@@ -164,7 +158,9 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
                         aria-label={`Deny ${request.userName}`}
                         className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         disabled={isThisRequest}
-                        onClick={() => handleDeny(request.id)}
+                        onClick={() => {
+                          handleDeny(request.id);
+                        }}
                         size="icon-sm"
                         variant="ghost"
                       >

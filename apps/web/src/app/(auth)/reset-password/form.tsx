@@ -28,7 +28,7 @@ const ResetPasswordForm = () => {
     defaultValues: { confirmPassword: "", password: "" },
     onSubmit: ({ value }) => {
       startTransition(async () => {
-        if (!token) {
+        if (token === null || token === "") {
           toast.error("Invalid reset token. Please request a new password reset.");
           return;
         }
@@ -75,7 +75,9 @@ const ResetPasswordForm = () => {
                   disabled={isPending}
                   id="reset-password"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   type="password"
                   value={field.state.value}
                 />
@@ -100,7 +102,9 @@ const ResetPasswordForm = () => {
                   disabled={isPending}
                   id="reset-confirm-password"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   type="password"
                   value={field.state.value}
                 />

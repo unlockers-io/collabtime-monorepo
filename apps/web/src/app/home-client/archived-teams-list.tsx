@@ -47,7 +47,9 @@ const ArchivedTeamsList = ({
           <button
             aria-expanded={showArchived}
             className="flex items-center justify-between rounded-md text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-            onClick={() => setShowArchived((prev) => !prev)}
+            onClick={() => {
+              setShowArchived((prev) => !prev);
+            }}
             type="button"
           >
             <span>
@@ -116,15 +118,17 @@ const ArchivedTeamsList = ({
                             <DropdownMenuContent align="end" sideOffset={4}>
                               <DropdownMenuItem
                                 disabled={isArchivePending}
-                                onClick={() => onUnarchive(team)}
+                                onClick={() => {
+                                  onUnarchive(team);
+                                }}
                               >
                                 <ArchiveRestore />
                                 Unarchive
                               </DropdownMenuItem>
-                              {team.spaceId && (
+                              {team.spaceId !== null && team.spaceId !== "" && (
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    if (!team.spaceId) {
+                                    if (team.spaceId === null || team.spaceId === "") {
                                       return;
                                     }
                                     onRequestDelete({

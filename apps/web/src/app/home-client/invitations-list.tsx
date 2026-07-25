@@ -69,7 +69,9 @@ const InvitationsList = ({
                     <Button
                       aria-label={`Decline invitation to ${invitation.teamName}`}
                       disabled={isProcessing}
-                      onClick={() => onDecline(invitation)}
+                      onClick={() => {
+                        onDecline(invitation);
+                      }}
                       size="sm"
                       variant="ghost"
                     >
@@ -78,7 +80,9 @@ const InvitationsList = ({
                     <Button
                       aria-label={`Accept invitation to ${invitation.teamName}`}
                       disabled={isProcessing}
-                      onClick={() => onAccept(invitation)}
+                      onClick={() => {
+                        onAccept(invitation);
+                      }}
                       size="sm"
                     >
                       {isProcessing ? (

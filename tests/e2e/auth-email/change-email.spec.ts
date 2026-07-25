@@ -66,7 +66,7 @@ test.describe("Change email (two-stage confirmation + verification)", () => {
       to: currentEmail,
     });
     expect(stage1Mail.last_event).not.toBe("bounced");
-    const stage1Url = extractLink(stage1Mail, /\/api\/auth\/verify-email\?token=/v);
+    const stage1Url = extractLink(stage1Mail, /\/api\/auth\/verify-email\?token=/);
 
     await page.goto(stage1Url);
     await page.waitForURL("/");
@@ -76,7 +76,7 @@ test.describe("Change email (two-stage confirmation + verification)", () => {
       to: newEmail,
     });
     expect(stage2Mail.last_event).not.toBe("bounced");
-    const stage2Url = extractLink(stage2Mail, /\/api\/auth\/verify-email\?token=/v);
+    const stage2Url = extractLink(stage2Mail, /\/api\/auth\/verify-email\?token=/);
 
     await page.goto(stage2Url);
     await page.waitForURL("/");

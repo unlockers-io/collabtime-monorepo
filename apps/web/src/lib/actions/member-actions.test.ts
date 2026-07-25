@@ -71,14 +71,14 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
   mockedRequireTeamAdmin.mockResolvedValue(undefined as never);
-  mockedRedisSet.mockResolvedValue("OK" as never);
+  mockedRedisSet.mockResolvedValue("OK");
 });
 
 describe("addMember", () => {
   it("returns error when auth fails", async () => {
     mockedRequireTeamAdmin.mockRejectedValue(new Error("Unauthorized"));
 
-    const result = await addMember(VALID_UUID, validMemberInput as never);
+    const result = await addMember(VALID_UUID, validMemberInput);
 
     expect(result).toEqual({ error: "Failed to add member", success: false });
   });
@@ -86,7 +86,7 @@ describe("addMember", () => {
   it("returns error when team not found", async () => {
     mockedRedisGet.mockResolvedValue(null);
 
-    const result = await addMember(VALID_UUID, validMemberInput as never);
+    const result = await addMember(VALID_UUID, validMemberInput);
 
     expect(result).toEqual({ error: "Team not found", success: false });
   });
@@ -95,7 +95,7 @@ describe("addMember", () => {
     const existingMember = createTestMember({ id: VALID_UUID_2, order: 0 });
     seedTeam(createTestTeamRecord({ members: [existingMember] }));
 
-    const result = await addMember(VALID_UUID, validMemberInput as never);
+    const result = await addMember(VALID_UUID, validMemberInput);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -107,7 +107,7 @@ describe("addMember", () => {
   it("pushes member to team and persists", async () => {
     seedTeam(createTestTeamRecord({ members: [] }));
 
-    await addMember(VALID_UUID, validMemberInput as never);
+    await addMember(VALID_UUID, validMemberInput);
 
     expect(persistedTeam().members).toHaveLength(1);
   });
@@ -209,7 +209,7 @@ describe("importMembers", () => {
       name: `Member ${i}`,
     }));
 
-    const result = await importMembers(VALID_UUID, members as never);
+    const result = await importMembers(VALID_UUID, members);
 
     expect(result).toEqual({
       error: "Cannot import more than 100 members at once",
@@ -222,8 +222,8 @@ describe("importMembers", () => {
     seedTeam(createTestTeamRecord({ members: [existing] }));
 
     const result = await importMembers(VALID_UUID, [
-      validMemberInput as never,
-      { ...validMemberInput, name: "Bob" } as never,
+      validMemberInput,
+      { ...validMemberInput, name: "Bob" },
     ]);
 
     expect(result.success).toBe(true);
@@ -235,7 +235,7 @@ describe("importMembers", () => {
   it("returns error when team not found", async () => {
     mockedRedisGet.mockResolvedValue(null);
 
-    const result = await importMembers(VALID_UUID, [validMemberInput as never]);
+    const result = await importMembers(VALID_UUID, [validMemberInput]);
 
     expect(result).toEqual({ error: "Team not found", success: false });
   });

@@ -51,7 +51,7 @@ test.describe("Sign-up with redirect context", () => {
     // The link IS the login: autoSignInAfterVerification mints a session on
     // the clicking device, and the callbackURL from the signup body sends
     // the clicker back to the page that started the flow, not "/".
-    const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/v);
+    const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/);
     const clickerContext = await browser.newContext();
     const clickerPage = await clickerContext.newPage();
     await clickerPage.goto(verifyUrl);

@@ -1,6 +1,6 @@
 import { log } from "@/lib/observability";
 import { requireTeamAdmin } from "@/lib/team-auth";
-import type { Team, TeamRecord } from "@/types";
+import type { Team, TeamGroup, TeamMember, TeamRecord } from "@/types";
 
 import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
 import { UUIDSchema } from "../validation";
@@ -14,7 +14,7 @@ const sanitizeMemberUserId = (
   if (userId === currentUserId) {
     return userId === undefined ? {} : { userId };
   }
-  if (userId) {
+  if (userId !== undefined && userId !== "") {
     return { userId: "claimed" };
   }
   return {};
@@ -30,6 +30,12 @@ const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
   };
 };
 
+// Legacy rows may predate `groups`, `members`, or per-member `order`.
+type StoredTeamRecord = Omit<TeamRecord, "groups" | "members"> & {
+  groups?: Array<TeamGroup>;
+  members?: Array<Omit<TeamMember, "order"> & { order?: number }>;
+};
+
 const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
@@ -39,22 +45,18 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
 
     const data = await redis.get(`team:${teamId}`);
 
-    if (!data) {
+    if (data === null || data === "") {
       return null;
     }
 
-    const team = JSON.parse(data) as TeamRecord;
+    // oxlint-disable-next-line no-unsafe-type-assertion -- team:* keys are written only by persistTeam with a typed TeamRecord; StoredTeamRecord models the legacy gaps backfilled below
+    const stored = JSON.parse(data) as StoredTeamRecord;
 
-    if (!team.groups) {
-      team.groups = [];
-    }
-    if (!team.members) {
-      team.members = [];
-    }
-
-    team.members = team.members.map((m, i) => ({ ...m, order: m.order ?? i }));
-
-    return team;
+    return {
+      ...stored,
+      groups: stored.groups ?? [],
+      members: (stored.members ?? []).map((m, i) => Object.assign(m, { order: m.order ?? i })),
+    };
   } catch (error) {
     log.error({ error, message: "Failed to get team", route: "actions/helpers" });
     return null;
@@ -87,12 +89,13 @@ const mutateTeam = async <TPrelude, TResult>(
 
     const preludeOutcome = prelude
       ? await prelude()
-      : ({ ok: true, value: undefined as TPrelude } as const);
+      : // oxlint-disable-next-line no-unsafe-type-assertion -- callers omit `prelude` only when TPrelude is undefined, so there is no runtime value to fabricate
+        ({ ok: true, value: undefined as TPrelude } as const);
     if (!preludeOutcome.ok) {
       return { error: preludeOutcome.error, success: false };
     }
 
-    if (!skipAdminCheck) {
+    if (skipAdminCheck !== true) {
       await requireTeamAdmin(teamId);
     }
 

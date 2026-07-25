@@ -20,7 +20,7 @@ const checkRateLimit = async (
 
   // Degrade OPEN: probe `get` first: unset REDIS_URL makes the proxy return null for get but throw on eval.
   const probe = await redis.get(redisKey);
-  if (probe === null && !process.env.REDIS_URL) {
+  if (probe === null && (process.env.REDIS_URL === undefined || process.env.REDIS_URL === "")) {
     return { allowed: true, remaining: max };
   }
 

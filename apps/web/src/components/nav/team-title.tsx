@@ -46,8 +46,12 @@ const TeamTitle = ({
         autoFocus
         className="h-9 w-full max-w-48 rounded-lg border border-input bg-background px-3 text-base font-bold tracking-tight text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:text-lg"
         onBlur={onSave}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
+        onFocus={(e) => {
+          e.currentTarget.select();
+        }}
         onKeyDown={handleKeyDown}
         placeholder="Team name…"
         type="text"

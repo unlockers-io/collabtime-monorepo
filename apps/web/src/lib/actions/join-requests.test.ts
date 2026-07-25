@@ -38,7 +38,7 @@ beforeEach(() => {
 
 describe("requestToJoin", () => {
   it("returns error when team not found", async () => {
-    vi.mocked(getTeamRecord).mockResolvedValue(null as never);
+    vi.mocked(getTeamRecord).mockResolvedValue(null);
 
     const result = await requestToJoin(VALID_UUID);
 
@@ -46,7 +46,7 @@ describe("requestToJoin", () => {
   });
 
   it("returns error when already a member", async () => {
-    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
+    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord());
     vi.mocked(prisma.membership.findUnique).mockResolvedValue({ id: "m-1" } as never);
 
     const result = await requestToJoin(VALID_UUID);
@@ -55,8 +55,8 @@ describe("requestToJoin", () => {
   });
 
   it("returns error when already has pending request", async () => {
-    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
-    vi.mocked(prisma.membership.findUnique).mockResolvedValue(null as never);
+    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord());
+    vi.mocked(prisma.membership.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue({ status: "PENDING" } as never);
 
     const result = await requestToJoin(VALID_UUID);
@@ -68,9 +68,9 @@ describe("requestToJoin", () => {
   });
 
   it("creates join request via upsert on success", async () => {
-    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
-    vi.mocked(prisma.membership.findUnique).mockResolvedValue(null as never);
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null as never);
+    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord());
+    vi.mocked(prisma.membership.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.joinRequest.upsert).mockResolvedValue({ id: "jr-1" } as never);
 
     const result = await requestToJoin(VALID_UUID);
@@ -90,7 +90,7 @@ describe("approveJoinRequest", () => {
   };
 
   it("returns error when request not found", async () => {
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null);
 
     const result = await approveJoinRequest("jr-1");
 
@@ -110,7 +110,7 @@ describe("approveJoinRequest", () => {
 
   it("requires admin of the request's team", async () => {
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
-    vi.mocked(requireTeamAdmin).mockRejectedValue(new Error("Not admin") as never);
+    vi.mocked(requireTeamAdmin).mockRejectedValue(new Error("Not admin"));
 
     const result = await approveJoinRequest("jr-1");
 
@@ -120,8 +120,8 @@ describe("approveJoinRequest", () => {
 
   it("creates membership and updates status in transaction", async () => {
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
-    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord());
 
     const result = await approveJoinRequest("jr-1");
 
@@ -136,8 +136,8 @@ describe("approveJoinRequest", () => {
     const { redis } = await import("../redis");
 
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
-    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord() as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(getTeamRecord).mockResolvedValue(createTestTeamRecord());
 
     await approveJoinRequest("jr-1");
 
@@ -154,7 +154,7 @@ describe("denyJoinRequest", () => {
   };
 
   it("returns error when request not found", async () => {
-    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null);
 
     const result = await denyJoinRequest("jr-1");
 
@@ -188,7 +188,7 @@ describe("denyJoinRequest", () => {
 
 describe("getPendingJoinRequests", () => {
   it("requires team admin", async () => {
-    vi.mocked(requireTeamAdmin).mockRejectedValue(new Error("Not admin") as never);
+    vi.mocked(requireTeamAdmin).mockRejectedValue(new Error("Not admin"));
 
     const result = await getPendingJoinRequests(VALID_UUID);
 

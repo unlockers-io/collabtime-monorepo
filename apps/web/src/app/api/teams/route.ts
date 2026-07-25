@@ -38,7 +38,7 @@ export const GET = withEvlog(async () => {
     const teams = await Promise.allSettled(
       memberships.map(async (membership) => {
         const data = await redis.get(`team:${membership.teamId}`);
-        if (!data) {
+        if (data === null || data === "") {
           return null;
         }
 
@@ -55,7 +55,7 @@ export const GET = withEvlog(async () => {
           role: membership.role,
           spaceId: ownedSpaceByTeamId.get(membership.teamId) ?? null,
           teamId: membership.teamId,
-          teamName: parsed.name || "",
+          teamName: parsed.name ?? "",
         };
       }),
     );

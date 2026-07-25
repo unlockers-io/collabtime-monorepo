@@ -31,7 +31,7 @@ import { GroupSelector } from "@/components/group-selector";
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
-import { COMMON_TIMEZONES, formatTimezoneLabel } from "@/lib/timezones";
+import { COMMON_TIMEZONES, formatTimezoneLabel, isCommonTimezone } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 import type { TeamGroup, TeamMember } from "@/types";
 
@@ -159,6 +159,7 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
   const defaultValues: FormValues = {
     groupId: member.groupId ?? "",
     name: member.name,
+    // oxlint-disable-next-line no-unsafe-type-assertion -- stored member timezones predate the COMMON_TIMEZONES enum; zod rejects unlisted zones on submit, while a fallback here would silently rewrite them
     timezone: member.timezone as FormValues["timezone"],
     title: member.title ?? "",
     workingHoursEnd: member.workingHoursEnd,
@@ -209,7 +210,7 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          form.handleSubmit();
+          void form.handleSubmit();
         }}
       >
         <div className="flex flex-col gap-4 py-2">
@@ -224,7 +225,9 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
                     aria-invalid={isInvalid}
                     id="edit-name"
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value);
+                    }}
                     placeholder="John Doe"
                     value={field.state.value}
                   />
@@ -247,7 +250,9 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
                     aria-invalid={isInvalid}
                     id="edit-title"
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value);
+                    }}
                     placeholder="Software Engineer"
                     value={field.state.value}
                   />
@@ -267,7 +272,9 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
                   <FieldLabel htmlFor="edit-timezone">Timezone</FieldLabel>
                   <Select
                     onValueChange={(value) => {
-                      field.handleChange(value as FormValues["timezone"]);
+                      if (value !== null && isCommonTimezone(value)) {
+                        field.handleChange(value);
+                      }
                       field.handleBlur();
                     }}
                     value={field.state.value}
@@ -347,7 +354,7 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
           </div>
         </div>
 
-        {!isClaim && !member.userId && (
+        {!isClaim && (member.userId === undefined || member.userId === "") && (
           <div className="border-t border-border pt-4">
             <FieldLabel htmlFor="invite-email">Invite User</FieldLabel>
             <div className="flex gap-2">
@@ -355,7 +362,9 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
                 autoComplete="email"
                 id="invite-email"
                 inputMode="email"
-                onChange={(e) => setInviteEmail(e.target.value)}
+                onChange={(e) => {
+                  setInviteEmail(e.target.value);
+                }}
                 placeholder="m@example.com"
                 type="email"
                 value={inviteEmail}
@@ -363,7 +372,9 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
               <Button
                 aria-label="Send invitation"
                 disabled={isInviting || !inviteEmail}
-                onClick={handleSendInvitation}
+                onClick={() => {
+                  void handleSendInvitation();
+                }}
                 type="button"
                 variant="outline"
               >
@@ -376,7 +387,9 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
         <DialogFooter>
           <Button
             disabled={isPending}
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              onOpenChange(false);
+            }}
             type="button"
             variant="outline"
           >

@@ -74,7 +74,8 @@ const TeamPageClient = ({
   // Resolve admin status when server-side session detection fails.
   const { data: resolvedRole, error: resolvedRoleError } = useQuery({
     enabled: initialStatus === "none" && Boolean(userId),
-    queryFn: () => (userId ? getTeamMembershipRole(teamId, userId) : null),
+    queryFn: () =>
+      userId !== undefined && userId !== "" ? getTeamMembershipRole(teamId, userId) : null,
     queryKey: ["membership-role", teamId, userId],
   });
 
@@ -108,9 +109,10 @@ const TeamPageClient = ({
   const groups = teamData?.team?.groups ?? [];
 
   const currentUserId = isMember ? userId : undefined;
-  const hasClaimedProfile = Boolean(
-    currentUserId && members.some((member) => member.userId === currentUserId),
-  );
+  const hasClaimedProfile =
+    currentUserId !== undefined &&
+    currentUserId !== "" &&
+    members.some((member) => member.userId === currentUserId);
 
   const teamName = teamData?.team?.name ?? "";
 
@@ -177,7 +179,9 @@ const TeamPageClient = ({
           isAuthenticated={isAuthenticated}
           isEditingName={isEditingName}
           onCancelEdit={handleCancelEditName}
-          onDeleteWorkspace={() => setIsDeleteWorkspaceOpen(true)}
+          onDeleteWorkspace={() => {
+            setIsDeleteWorkspaceOpen(true);
+          }}
           onEditName={handleStartEditName}
           onNameChange={setEditingTeamName}
           onSaveName={handleSaveName}
@@ -231,7 +235,9 @@ const TeamPageClient = ({
                 <JoinPrompt
                   isAuthenticated={isAuthenticated}
                   isRequestingJoin={isRequestingJoin}
-                  onRequestJoin={handleRequestJoin}
+                  onRequestJoin={() => {
+                    void handleRequestJoin();
+                  }}
                   teamId={teamId}
                   teamStatus={teamStatus}
                 />
@@ -303,7 +309,9 @@ const TeamPageClient = ({
           groups={groups}
           hasClaimedProfile={hasClaimedProfile}
           members={members}
-          onDragEnd={handleDragEnd}
+          onDragEnd={(event, dragType) => {
+            void handleDragEnd(event, dragType);
+          }}
           onDragTypeChange={handleDragTypeChange}
           teamId={teamId}
         >

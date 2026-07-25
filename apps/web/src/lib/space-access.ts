@@ -11,11 +11,11 @@ let warnedAboutFallback = false;
 // Falls back to BETTER_AUTH_SECRET with a one-time warning if no dedicated secret is set.
 const getSigningSecret = (): string => {
   const dedicated = process.env.SPACE_ACCESS_SECRET;
-  if (dedicated) {
+  if (dedicated !== undefined && dedicated !== "") {
     return dedicated;
   }
   const fallback = process.env.BETTER_AUTH_SECRET;
-  if (!fallback) {
+  if (fallback === undefined || fallback === "") {
     throw new Error("Missing SPACE_ACCESS_SECRET or BETTER_AUTH_SECRET environment variable");
   }
   if (!warnedAboutFallback) {
@@ -88,6 +88,7 @@ const verifySpaceAccessToken = (token: string, expectedSpaceId: string): Verific
     }
 
     const payloadJson = Buffer.from(payloadStr, "base64url").toString("utf8");
+    // oxlint-disable-next-line no-unsafe-type-assertion -- the HMAC signature was verified above, so the payload can only have been minted by issueSpaceAccessToken with a TokenPayload
     const payload = JSON.parse(payloadJson) as TokenPayload;
 
     if (payload.version !== TOKEN_VERSION) {

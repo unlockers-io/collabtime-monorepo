@@ -45,7 +45,7 @@ const RecoverForm = () => {
     validators: { onSubmit: recoverSchema },
   });
 
-  if (submittedEmail) {
+  if (submittedEmail !== null && submittedEmail !== "") {
     return (
       <div className="flex flex-col items-center gap-2 text-center">
         <p className="font-semibold">Check your email</p>
@@ -87,7 +87,9 @@ const RecoverForm = () => {
                   disabled={isPending}
                   id="recover-email"
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="m@example.com"
                   type="email"
                   value={field.state.value}

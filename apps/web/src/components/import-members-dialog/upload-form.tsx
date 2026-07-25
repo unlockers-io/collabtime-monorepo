@@ -29,8 +29,8 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (!file) {
+    const file = e.dataTransfer.files.item(0);
+    if (file === null) {
       return;
     }
     const text = await file.text();
@@ -47,12 +47,16 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
             : "border-border bg-muted/50 hover:border-muted-foreground hover:bg-muted"
         }`}
         onClick={() => fileInputRef.current?.click()}
-        onDragLeave={() => setIsDragging(false)}
+        onDragLeave={() => {
+          setIsDragging(false);
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragging(true);
         }}
-        onDrop={handleDrop}
+        onDrop={(e) => {
+          void handleDrop(e);
+        }}
         type="button"
       >
         <Upload className="size-8 text-muted-foreground" />
@@ -66,7 +70,9 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
           accept=".csv,text/csv,text/plain"
           aria-label="CSV file"
           className="sr-only"
-          onChange={handleFileUpload}
+          onChange={(e) => {
+            void handleFileUpload(e);
+          }}
           ref={fileInputRef}
           tabIndex={-1}
           type="file"
@@ -82,7 +88,9 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
       <Textarea
         aria-label="Paste CSV data here"
         className="h-32 resize-none font-mono text-xs"
-        onChange={(e) => onCsvTextChange(e.target.value)}
+        onChange={(e) => {
+          onCsvTextChange(e.target.value);
+        }}
         placeholder={`name,timezone,title,work_start,work_end\nAlice Johnson,America/New_York,Engineering Lead,9,17`}
         spellCheck={false}
         value={csvText}

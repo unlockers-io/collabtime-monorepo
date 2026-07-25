@@ -28,7 +28,7 @@ const SectionCardHeader = ({ bordered, className, ...props }: SectionCardHeaderP
     <div
       className={cn(
         "flex items-start justify-between gap-3 px-4 sm:px-5",
-        bordered && "border-b pb-4 sm:pb-5",
+        bordered === true && "border-b pb-4 sm:pb-5",
         className,
       )}
       data-slot="section-card-header"
@@ -47,10 +47,13 @@ const SectionCardTitle = ({ children, description, icon: Icon }: SectionCardTitl
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
-        {Icon && <Icon className="size-4 shrink-0 text-muted-foreground" />}
+        {Icon !== undefined && <Icon className="size-4 shrink-0 text-muted-foreground" />}
         {children}
       </h2>
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      {description !== undefined &&
+        description !== null &&
+        description !== "" &&
+        description !== false && <p className="text-xs text-muted-foreground">{description}</p>}
     </div>
   );
 };
@@ -82,7 +85,7 @@ const SectionCardFooter = ({ bordered, className, ...props }: SectionCardFooterP
     <div
       className={cn(
         "flex items-center gap-2 px-4 sm:px-5",
-        bordered && "border-t pt-4 sm:pt-5",
+        bordered === true && "border-t pt-4 sm:pt-5",
         className,
       )}
       data-slot="section-card-footer"

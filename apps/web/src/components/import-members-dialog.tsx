@@ -18,7 +18,6 @@ import { useState } from "react";
 
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { importMembers } from "@/lib/actions/member-actions";
-import type { COMMON_TIMEZONES } from "@/lib/timezones";
 
 import type { ParsedRow } from "./import-members-dialog/parse-csv";
 import { parseCSV } from "./import-members-dialog/parse-csv";
@@ -64,22 +63,25 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
     if (!rows) {
       return;
     }
-    const valid = rows.filter((r) => r.errors.length === 0 && r.matchedTimezone);
+    const valid = rows.flatMap((r) =>
+      r.errors.length === 0 && r.matchedTimezone !== null
+        ? [
+            {
+              name: r.name,
+              timezone: r.matchedTimezone,
+              title: r.title,
+              workingHoursEnd: r.workingHoursEnd,
+              workingHoursStart: r.workingHoursStart,
+            },
+          ]
+        : [],
+    );
     if (valid.length === 0) {
       return;
     }
 
     setIsImporting(true);
-    const result = await importMembers(
-      teamId,
-      valid.map((r) => ({
-        name: r.name,
-        timezone: r.matchedTimezone as (typeof COMMON_TIMEZONES)[number],
-        title: r.title,
-        workingHoursEnd: r.workingHoursEnd,
-        workingHoursStart: r.workingHoursStart,
-      })),
-    );
+    const result = await importMembers(teamId, valid);
     setIsImporting(false);
 
     if (result.success) {
@@ -132,7 +134,12 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
             <DialogFooter>
               {rows === null ? (
                 <>
-                  <Button onClick={() => handleOpenChange(false)} variant="outline">
+                  <Button
+                    onClick={() => {
+                      handleOpenChange(false);
+                    }}
+                    variant="outline"
+                  >
                     Cancel
                   </Button>
                   <Button disabled={!csvText.trim()} onClick={handlePreview}>
@@ -144,7 +151,12 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                   <Button onClick={handleReset} variant="outline">
                     ← Back
                   </Button>
-                  <Button disabled={isImporting || validCount === 0} onClick={handleImport}>
+                  <Button
+                    disabled={isImporting || validCount === 0}
+                    onClick={() => {
+                      void handleImport();
+                    }}
+                  >
                     {isImporting ? (
                       <span className="flex items-center gap-2">
                         <Spinner />

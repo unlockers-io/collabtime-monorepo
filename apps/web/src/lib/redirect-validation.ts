@@ -6,7 +6,13 @@ const FALLBACK_PATH = "/";
 const ANCHOR_ORIGIN = "https://collabtime.invalid";
 
 const safeRedirectPath = (value: string | null | undefined): string => {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+  if (
+    value === null ||
+    value === undefined ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\")
+  ) {
     return FALLBACK_PATH;
   }
 

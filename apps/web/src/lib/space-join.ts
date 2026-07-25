@@ -4,7 +4,7 @@ import { log } from "@/lib/observability";
 import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
 
 const validSpaceIdsFromCookieHeader = (cookieHeader: string | null): Array<string> => {
-  if (!cookieHeader) {
+  if (cookieHeader === null || cookieHeader === "") {
     return [];
   }
 

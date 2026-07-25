@@ -15,7 +15,7 @@ const envSchema = z.object({
     .string()
     .refine(
       (val) => {
-        const email = val.match(/^.+<(?<email>[^<>\s]+)>$/v)?.groups?.email ?? val;
+        const email = /^.+<(?<email>[^<>\s]+)>$/v.exec(val)?.groups?.email ?? val;
         return z.email().safeParse(email).success;
       },
       { message: "Must be a valid email or 'Display Name <email>' format" },
@@ -43,13 +43,8 @@ const validateEnv = (): Env => {
 };
 
 const getEnv = <K extends keyof Env>(key: K): Env[K] => {
-  const value = process.env[key];
-
-  if (value === undefined) {
-    return undefined as Env[K];
-  }
-
-  return value as Env[K];
+  // oxlint-disable-next-line no-unsafe-type-assertion -- validateEnv() has vetted process.env at boot; narrowing the raw string to Env[K] per key would require re-parsing the schema
+  return process.env[key] as Env[K];
 };
 
 export { validateEnv, getEnv };

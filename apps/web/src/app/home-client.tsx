@@ -88,7 +88,9 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
             <button
               className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg"
               disabled={isCreating}
-              onClick={handleCreateTeam}
+              onClick={() => {
+                void handleCreateTeam();
+              }}
               type="button"
             >
               {isCreating ? (
@@ -125,15 +127,21 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         {isAuthenticated && (
           <InvitationsList
             invitations={invitations}
-            onAccept={handleAcceptInvitation}
-            onDecline={handleDeclineInvitation}
+            onAccept={(invitation) => {
+              void handleAcceptInvitation(invitation);
+            }}
+            onDecline={(invitation) => {
+              void handleDeclineInvitation(invitation);
+            }}
             processingInvitations={processingInvitations}
           />
         )}
 
         {isAuthenticated && !isLoadingTeams && (
           <TeamsList
-            onArchive={(team) => handleToggleArchive(team, true)}
+            onArchive={(team) => {
+              void handleToggleArchive(team, true);
+            }}
             onRequestDelete={setWorkspaceToDelete}
             processingArchive={processingArchive}
             teams={activeTeams}
@@ -143,7 +151,9 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         {isAuthenticated && !isLoadingTeams && (
           <ArchivedTeamsList
             onRequestDelete={setWorkspaceToDelete}
-            onUnarchive={(team) => handleToggleArchive(team, false)}
+            onUnarchive={(team) => {
+              void handleToggleArchive(team, false);
+            }}
             processingArchive={processingArchive}
             teams={archivedTeams}
           />

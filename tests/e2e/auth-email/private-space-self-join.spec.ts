@@ -66,7 +66,7 @@ test.describe("Private space password self-join", () => {
     // membership was created at signup, not when the link is clicked.
     const mail = await waitForEmail({ sinceMs: since, subject: /verify/i, to: email });
     expect(mail.last_event).not.toBe("bounced");
-    const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/v);
+    const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/);
 
     const clicker = await browser.newContext();
     const clickerPage = await clicker.newPage();

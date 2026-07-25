@@ -10,7 +10,7 @@ const getRedis = (): Redis | null => {
 
   const url = process.env.REDIS_URL;
 
-  if (!url) {
+  if (url === undefined || url === "") {
     return null;
   }
 
@@ -24,6 +24,7 @@ const getRedis = (): Redis | null => {
   return cachedRedis;
 };
 
+// oxlint-disable no-unsafe-type-assertion -- the Proxy impersonates Redis by design; its target is an empty stand-in and property access is forwarded dynamically.
 const redis = new Proxy({} as Redis, {
   get(_, prop) {
     const instance = getRedis();
@@ -47,6 +48,7 @@ const redis = new Proxy({} as Redis, {
     return value;
   },
 });
+// oxlint-enable no-unsafe-type-assertion
 
 const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60;
 

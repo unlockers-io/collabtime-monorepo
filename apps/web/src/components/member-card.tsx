@@ -50,8 +50,10 @@ const MemberCard = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
 
-  const isOwnProfile = Boolean(currentUserId && member.userId === currentUserId);
-  const canClaim = Boolean(currentUserId && !member.userId && !hasClaimedProfile);
+  const hasCurrentUser = currentUserId !== undefined && currentUserId !== "";
+  const isOwnProfile = hasCurrentUser && member.userId === currentUserId;
+  const canClaim =
+    hasCurrentUser && (member.userId === undefined || member.userId === "") && !hasClaimedProfile;
 
   // Re-render every 30s and derive availability during render (no mirror-into-state effect).
   useHalfMinuteTick();
@@ -78,7 +80,10 @@ const MemberCard = ({
     });
   };
 
-  const memberGroupName = member.groupId ? groups.find((g) => g.id === member.groupId)?.name : null;
+  const memberGroupName =
+    member.groupId !== undefined && member.groupId !== ""
+      ? groups.find((g) => g.id === member.groupId)?.name
+      : undefined;
 
   return (
     <>
@@ -98,7 +103,9 @@ const MemberCard = ({
               <Button
                 aria-label={`Edit ${member.name}`}
                 className="text-muted-foreground hover:text-foreground"
-                onClick={() => setIsEditDialogOpen(true)}
+                onClick={() => {
+                  setIsEditDialogOpen(true);
+                }}
                 size="icon-sm"
                 variant="ghost"
               >
@@ -120,7 +127,9 @@ const MemberCard = ({
             <Button
               aria-label={`Claim ${member.name}'s profile`}
               className="gap-1.5 text-xs"
-              onClick={() => setIsClaimDialogOpen(true)}
+              onClick={() => {
+                setIsClaimDialogOpen(true);
+              }}
               size="sm"
               variant="outline"
             >
@@ -167,7 +176,9 @@ const MemberCard = ({
                 </Tooltip>
               </TooltipProvider>
             )}
-            {memberGroupName && <Badge variant="secondary">{memberGroupName}</Badge>}
+            {memberGroupName !== undefined && memberGroupName !== "" && (
+              <Badge variant="secondary">{memberGroupName}</Badge>
+            )}
           </div>
         </div>
       </Card>

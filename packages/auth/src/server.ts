@@ -39,7 +39,7 @@ type AuthConfig = {
 };
 
 const parseEnvList = (value: string | undefined): Array<string> => {
-  if (!value) {
+  if (value === undefined || value === "") {
     return [];
   }
   const result: Array<string> = [];
@@ -65,9 +65,10 @@ const createAuth = (config: AuthConfig) => {
     secret,
   } = config;
 
-  const mailer: MailerConfig | null = resendApiKey
-    ? { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail }
-    : null;
+  const mailer: MailerConfig | null =
+    resendApiKey !== undefined && resendApiKey !== ""
+      ? { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail }
+      : null;
 
   return betterAuth({
     account: {
@@ -256,7 +257,9 @@ const createAuth = (config: AuthConfig) => {
     // Falls back to database (persistent) instead of memory (non-deterministic
     // on serverless cold starts) when secondary storage isn't configured.
     rateLimit: {
-      enabled: process.env.NODE_ENV === "production" && !process.env.CI,
+      enabled:
+        process.env.NODE_ENV === "production" &&
+        (process.env.CI === undefined || process.env.CI === ""),
       max: 100,
       storage: secondaryStorage ? "secondary-storage" : "database",
       window: 60,

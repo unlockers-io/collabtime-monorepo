@@ -156,7 +156,7 @@ describe("mutateTeam", () => {
     vi.clearAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockedRequireTeamAdmin.mockResolvedValue(undefined as never);
-    mockedRedisSet.mockResolvedValue("OK" as never);
+    mockedRedisSet.mockResolvedValue("OK");
   });
 
   it("returns 'Invalid team ID' for non-UUID teamId without auth or load", async () => {

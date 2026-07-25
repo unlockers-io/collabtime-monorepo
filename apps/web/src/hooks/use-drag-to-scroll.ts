@@ -6,7 +6,7 @@ const useDragToScroll = (ref: RefObject<HTMLElement | null>) => {
   useEffect(() => {
     const el = ref.current;
     if (!el) {
-      return;
+      return undefined;
     }
 
     let isDown = false;

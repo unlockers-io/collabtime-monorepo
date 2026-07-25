@@ -86,15 +86,17 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
                       <DropdownMenuContent align="end" sideOffset={4}>
                         <DropdownMenuItem
                           disabled={isArchivePending}
-                          onClick={() => onArchive(team)}
+                          onClick={() => {
+                            onArchive(team);
+                          }}
                         >
                           <Archive />
                           Archive
                         </DropdownMenuItem>
-                        {team.spaceId && (
+                        {team.spaceId !== null && team.spaceId !== "" && (
                           <DropdownMenuItem
                             onClick={() => {
-                              if (!team.spaceId) {
+                              if (team.spaceId === null || team.spaceId === "") {
                                 return;
                               }
                               onRequestDelete({

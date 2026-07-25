@@ -108,7 +108,9 @@ const PrivateSpaceGate = ({ isAuthenticated, spaceId, teamId }: PrivateSpaceGate
             </Link>
             <button
               className="mt-1 text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-              onClick={() => refresh()}
+              onClick={() => {
+                refresh();
+              }}
               type="button"
             >
               Continue as guest
@@ -145,7 +147,7 @@ const PrivateSpaceGate = ({ isAuthenticated, spaceId, teamId }: PrivateSpaceGate
                         type="password"
                         value={field.state.value}
                       />
-                      {serverError ? (
+                      {serverError !== null && serverError !== "" ? (
                         <FieldError errors={[serverError]} />
                       ) : (
                         isInvalid && <FieldError errors={field.state.meta.errors} />

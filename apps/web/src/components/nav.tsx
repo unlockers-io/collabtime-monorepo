@@ -52,14 +52,16 @@ const Nav = (props: NavProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { handleSignOut, isSigningOut } = useSignOut();
 
-  const variant = props.variant || "default";
+  const variant = props.variant ?? "default";
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setHasCopied(true);
       toast.success("Link copied to clipboard");
-      setTimeout(() => setHasCopied(false), 2000);
+      setTimeout(() => {
+        setHasCopied(false);
+      }, 2000);
     } catch {
       toast.error("Failed to copy link");
     }
@@ -118,7 +120,12 @@ const Nav = (props: NavProps) => {
 
           <div className="hidden items-center gap-2 sm:flex">
             <CurrentTimeDisplay />
-            <CopyLinkButton hasCopied={hasCopied} onCopy={handleCopyLink} />
+            <CopyLinkButton
+              hasCopied={hasCopied}
+              onCopy={() => {
+                void handleCopyLink();
+              }}
+            />
             <ModeToggle />
             {canDeleteWorkspace && <WorkspaceMenu onDeleteWorkspace={handleDeleteWorkspace} />}
             <UserMenu isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
@@ -130,7 +137,9 @@ const Nav = (props: NavProps) => {
               aria-expanded={mobileMenuOpen}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               className="size-9"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={() => {
+                setMobileMenuOpen(!mobileMenuOpen);
+              }}
               size="icon"
               variant="outline"
             >
@@ -144,10 +153,16 @@ const Nav = (props: NavProps) => {
           hasCopied={hasCopied}
           isOpen={mobileMenuOpen}
           isSigningOut={isSigningOut}
-          onClose={() => setMobileMenuOpen(false)}
-          onCopy={handleCopyLink}
+          onClose={() => {
+            setMobileMenuOpen(false);
+          }}
+          onCopy={() => {
+            void handleCopyLink();
+          }}
           onDeleteWorkspace={handleDeleteWorkspace}
-          onSignOut={handleSignOut}
+          onSignOut={() => {
+            void handleSignOut();
+          }}
           role={getMobileMenuRole(isAdmin, isAuthenticated)}
         />
       </header>
