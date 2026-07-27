@@ -12,17 +12,60 @@ import { Input } from "@repo/ui/components/input";
 import { toast } from "@repo/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Suspense, use, useState, useTransition } from "react";
 
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
 import { safeRedirectPath } from "@/lib/redirect-validation";
 
-const SignupForm = () => {
+type Props = {
+  searchParams: Promise<{ redirect?: string }>;
+};
+
+type FormActionsProps = {
+  isPending: boolean;
+  searchParams: Props["searchParams"];
+};
+
+const SignupFormActionsFallback = () => (
+  <>
+    <Button disabled type="submit">
+      Create account
+    </Button>
+    <FieldDescription className="text-center">
+      Already have an account?{" "}
+      <Link className="text-foreground underline underline-offset-4" href="/login">
+        Sign in
+      </Link>
+    </FieldDescription>
+  </>
+);
+
+const SignupFormActions = ({ isPending, searchParams }: FormActionsProps) => {
+  const { redirect: redirectParam } = use(searchParams);
+  const redirect = safeRedirectPath(redirectParam);
+
+  return (
+    <>
+      <Button aria-busy={isPending} disabled={isPending} type="submit">
+        {isPending ? "Creating account…" : "Create account"}
+      </Button>
+      <FieldDescription className="text-center">
+        Already have an account?{" "}
+        <Link
+          className="text-foreground underline underline-offset-4"
+          href={redirect === "/" ? "/login" : `/login?redirect=${encodeURIComponent(redirect)}`}
+        >
+          Sign in
+        </Link>
+      </FieldDescription>
+    </>
+  );
+};
+
+const SignupForm = ({ searchParams }: Props) => {
   const { push, refresh } = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = safeRedirectPath(searchParams.get("redirect"));
   const [isPending, startTransition] = useTransition();
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
 
@@ -31,6 +74,8 @@ const SignupForm = () => {
     onSubmit: ({ value }) => {
       startTransition(async () => {
         try {
+          const { redirect: redirectParam } = await searchParams;
+          const redirect = safeRedirectPath(redirectParam);
           const result = await signUp.email({
             callbackURL: redirect,
             email: value.email,
@@ -72,6 +117,7 @@ const SignupForm = () => {
   }
 
   return (
+    // oxlint-disable-next-line react-doctor/no-prevent-default -- TanStack Form + Better Auth client drives submit; JS-off progressive enhancement is N/A
     <form
       noValidate
       onSubmit={(e) => {
@@ -160,18 +206,9 @@ const SignupForm = () => {
         </form.Field>
 
         <Field>
-          <Button aria-busy={isPending} disabled={isPending} type="submit">
-            {isPending ? "Creating account…" : "Create account"}
-          </Button>
-          <FieldDescription className="text-center">
-            Already have an account?{" "}
-            <Link
-              className="text-foreground underline underline-offset-4"
-              href={redirect === "/" ? "/login" : `/login?redirect=${encodeURIComponent(redirect)}`}
-            >
-              Sign in
-            </Link>
-          </FieldDescription>
+          <Suspense fallback={<SignupFormActionsFallback />}>
+            <SignupFormActions isPending={isPending} searchParams={searchParams} />
+          </Suspense>
         </Field>
       </FieldGroup>
     </form>
