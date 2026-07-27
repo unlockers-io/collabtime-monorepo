@@ -10,6 +10,17 @@ type GlobalErrorProps = {
 
 // global-error replaces the root layout, so globals.css never loads here and Tailwind
 // classes would resolve to nothing. Every rule below has to be inline.
+//
+// The app resolves its theme from next-themes (`defaultTheme="system"`, storage key
+// `theme`), whose own pre-paint script ships with the root layout this boundary replaces.
+// Without the copy below, a visitor who picked Light on a dark-OS machine (or Dark on a
+// light-OS one) would get an error page in the opposite scheme, because `light-dark()`
+// reads `color-scheme` and nothing else would set it here. `next/script`'s
+// `beforeInteractive` is only honored in the root layout, so a parser-blocking inline
+// script is the only pre-paint hook available. Values outside light/dark/system resolve to
+// light, which is where next-themes' script also lands them.
+const THEME_SCRIPT = `try{var t=localStorage.getItem("theme")||"system";var r=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.style.colorScheme=r==="dark"?"dark":"light"}catch(e){}`;
+
 const styles = {
   body: {
     alignItems: "center",
@@ -71,7 +82,11 @@ const GlobalError = ({ error, reset }: GlobalErrorProps) => {
   }, [error]);
 
   return (
-    <html lang="en" style={{ colorScheme: "light dark" }}>
+    <html lang="en" style={{ colorScheme: "light dark" }} suppressHydrationWarning>
+      <head>
+        {/* oxlint-disable-next-line react-doctor/nextjs-no-native-script, react/no-danger -- blocking the parser is the point (the scheme must settle before first paint) and next/script's beforeInteractive is ignored outside the root layout; the body is a literal, no user data */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body style={styles.body}>
         <main style={styles.main}>
           <h1 ref={headingRef} style={styles.heading} tabIndex={-1}>
