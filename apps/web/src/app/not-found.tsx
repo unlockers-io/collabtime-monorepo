@@ -7,9 +7,14 @@ export const metadata = {
   title: "Page not found",
 };
 
+// Rendered above the segment layouts, so its <main> is the only element the root layout's
+// skip link can target.
 const NotFound = () => {
   return (
-    <main className="flex min-h-screen flex-1 items-center justify-center px-4 py-10 sm:px-6">
+    <main
+      className="flex min-h-screen flex-1 items-center justify-center px-4 py-10 sm:px-6"
+      id="main"
+    >
       <div className="flex max-w-xl flex-col items-center gap-4 text-center">
         <p className="text-7xl font-semibold tracking-tight text-foreground sm:text-8xl">404</p>
         <h1 className="text-2xl font-semibold tracking-tight text-balance text-foreground sm:text-3xl">
