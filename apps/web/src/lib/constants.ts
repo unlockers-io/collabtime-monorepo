@@ -10,6 +10,8 @@ const APP_DESCRIPTION_SHORT =
 
 const APP_TAGLINE = "Visualize your team's working hours across timezones";
 
+const APP_REPO_URL = "https://github.com/unlockers-io/collabtime-monorepo";
+
 const APP_KEYWORDS = [
   "timezone",
   "team collaboration",
@@ -21,4 +23,12 @@ const APP_KEYWORDS = [
   "overlap hours",
 ];
 
-export { APP_DESCRIPTION, APP_DESCRIPTION_SHORT, APP_KEYWORDS, APP_NAME, APP_TAGLINE, APP_TITLE };
+export {
+  APP_DESCRIPTION,
+  APP_DESCRIPTION_SHORT,
+  APP_KEYWORDS,
+  APP_NAME,
+  APP_REPO_URL,
+  APP_TAGLINE,
+  APP_TITLE,
+};

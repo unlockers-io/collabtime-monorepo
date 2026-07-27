@@ -33,7 +33,7 @@ const TeamTitle = ({
 
   if (!isAdmin) {
     return (
-      <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
+      <h1 className="truncate font-display text-xl font-semibold tracking-tight sm:text-2xl">
         {teamName || "Team Workspace"}
       </h1>
     );
@@ -67,7 +67,7 @@ const TeamTitle = ({
       onClick={onEdit}
       type="button"
     >
-      <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
+      <h1 className="truncate font-display text-xl font-semibold tracking-tight sm:text-2xl">
         {teamName || "Team Workspace"}
       </h1>
       <Pencil

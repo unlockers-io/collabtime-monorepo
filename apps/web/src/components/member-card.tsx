@@ -154,7 +154,7 @@ const MemberCard = ({
 
           <div className="mt-auto flex flex-col gap-1 text-xs text-muted-foreground">
             <span className="truncate">{formatTimezoneLabel(member.timezone)}</span>
-            <span className="tabular-nums">
+            <span className="font-display tabular-nums">
               {formatHour(member.workingHoursStart)} – {formatHour(member.workingHoursEnd)}
             </span>
           </div>

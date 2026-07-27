@@ -1,6 +1,7 @@
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Suspense } from "react";
 
+import { LandingPage } from "@/components/landing";
 import { getSession } from "@/lib/auth-server";
 
 import { HomeClient } from "./home-client";
@@ -8,9 +9,11 @@ import { HomeClient } from "./home-client";
 const HomeContent = async () => {
   const session = await getSession();
 
-  return <HomeClient isAuthenticated={Boolean(session)} />;
+  return session ? <HomeClient /> : <LandingPage />;
 };
 
+// Neutral shell: the route resolves to either the landing page or the dashboard,
+// so this must not commit to either layout.
 const HomeSkeleton = () => (
   <div aria-hidden className="flex flex-1 flex-col">
     <div className="flex items-center justify-between px-4 py-6 sm:px-6">
@@ -23,19 +26,14 @@ const HomeSkeleton = () => (
         <Skeleton className="size-8" />
       </div>
     </div>
-    <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-4 py-8 sm:gap-12 sm:px-6">
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex flex-col items-center gap-2 sm:gap-3">
-          <Skeleton className="h-9 w-48 sm:h-12 sm:w-56" />
-          <Skeleton className="h-12 w-72 sm:h-14 sm:w-80" />
-        </div>
-      </div>
+    <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-6 px-4 py-8 sm:px-6">
+      <Skeleton className="h-10 w-64 sm:h-12 sm:w-80" />
+      <Skeleton className="h-6 w-full max-w-sm" />
       <Skeleton className="h-12 w-full rounded-xl sm:h-14 sm:w-72" />
-    </main>
+    </div>
   </div>
 );
 
-// Suspense streams the static hero shell while session-bound content renders.
 const Home = () => (
   <Suspense fallback={<HomeSkeleton />}>
     <HomeContent />

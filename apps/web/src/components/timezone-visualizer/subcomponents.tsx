@@ -44,10 +44,10 @@ const HourBlock = ({ hour, isWorking, memberTimezone, viewerTimezone }: HourBloc
 
       <TooltipContent side="top">
         <div className="flex flex-col gap-1">
-          <span className="font-medium tabular-nums">
+          <span className="font-display font-medium tabular-nums">
             {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
           </span>
-          <span className="text-xs text-background/70 tabular-nums">
+          <span className="font-display text-xs text-background/70 tabular-nums">
             {formatHour(memberHour)} – {formatHour(memberNextHour)} {memberTzAbbrev}
           </span>
         </div>

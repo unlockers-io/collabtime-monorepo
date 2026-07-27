@@ -1,13 +1,10 @@
 "use client";
 
-import { buttonVariants } from "@repo/ui/components/button";
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
-import { cn } from "@repo/ui/lib/utils";
 import { captureException } from "@sentry/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -23,31 +20,21 @@ import type { WorkspaceToDelete } from "./home-client/types";
 import { useInvitations } from "./home-client/use-invitations";
 import { useMyTeams } from "./home-client/use-my-teams";
 
-type HomeClientProps = {
-  isAuthenticated: boolean;
-};
-
-const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
+const HomeClient = () => {
   const { push } = useRouter();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<WorkspaceToDelete | null>(null);
 
   const { handleAcceptInvitation, handleDeclineInvitation, invitations, processingInvitations } =
-    useInvitations(isAuthenticated);
-  const { handleToggleArchive, isLoadingTeams, myTeams, processingArchive } =
-    useMyTeams(isAuthenticated);
+    useInvitations();
+  const { handleToggleArchive, isLoadingTeams, myTeams, processingArchive } = useMyTeams();
 
   const handleWorkspaceDeleted = async () => {
     await queryClient.invalidateQueries({ queryKey: ["my-teams"] });
   };
 
   const handleCreateTeam = async () => {
-    if (!isAuthenticated) {
-      push("/login");
-      return;
-    }
-
     setIsCreating(true);
     try {
       const result = await createTeam(getUserTimezone());
@@ -68,15 +55,18 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
 
   return (
     <div className="flex flex-1 flex-col">
-      <Nav isAuthenticated={isAuthenticated} />
+      <Nav isAuthenticated />
 
-      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-4 py-8 sm:gap-12 sm:px-6">
+      <main
+        className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-4 py-8 sm:gap-12 sm:px-6"
+        id="main"
+      >
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex flex-col gap-2 sm:gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
               Collab Time
             </h1>
-            <p className="max-w-sm text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="max-w-sm text-base text-pretty text-muted-foreground sm:text-lg">
               Visualize your team&apos;s working hours across timezones. Find the perfect moment to
               connect.
             </p>
@@ -84,60 +74,40 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
         </div>
 
         <div className="flex w-full flex-col items-center gap-4">
-          {isAuthenticated ? (
-            <button
-              className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg"
-              disabled={isCreating}
-              onClick={() => {
-                void handleCreateTeam();
-              }}
-              type="button"
-            >
-              {isCreating ? (
-                <>
-                  <Spinner className="size-5 text-primary-foreground" />
-                  Creating workspace…
-                </>
-              ) : (
-                <>
-                  Create Team Workspace
-                  <ArrowRight className="size-5 transition-transform duration-300 group-hover:translate-x-1" />
-                </>
-              )}
-            </button>
-          ) : (
-            <div className="flex w-full flex-col items-center gap-3">
-              <Link
-                className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto sm:min-w-72")}
-                href="/signup"
-              >
-                Get Started
-                <ArrowRight className="ml-2 size-5" />
-              </Link>
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link className="font-medium text-foreground hover:underline" href="/login">
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          )}
+          <button
+            className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg"
+            disabled={isCreating}
+            onClick={() => {
+              void handleCreateTeam();
+            }}
+            type="button"
+          >
+            {isCreating ? (
+              <>
+                <Spinner className="size-5 shrink-0 text-primary-foreground" />
+                Creating workspace…
+              </>
+            ) : (
+              <>
+                Create Team Workspace
+                <ArrowRight className="size-5 shrink-0 transition-transform duration-300 group-hover:translate-x-1" />
+              </>
+            )}
+          </button>
         </div>
 
-        {isAuthenticated && (
-          <InvitationsList
-            invitations={invitations}
-            onAccept={(invitation) => {
-              void handleAcceptInvitation(invitation);
-            }}
-            onDecline={(invitation) => {
-              void handleDeclineInvitation(invitation);
-            }}
-            processingInvitations={processingInvitations}
-          />
-        )}
+        <InvitationsList
+          invitations={invitations}
+          onAccept={(invitation) => {
+            void handleAcceptInvitation(invitation);
+          }}
+          onDecline={(invitation) => {
+            void handleDeclineInvitation(invitation);
+          }}
+          processingInvitations={processingInvitations}
+        />
 
-        {isAuthenticated && !isLoadingTeams && (
+        {!isLoadingTeams && (
           <TeamsList
             onArchive={(team) => {
               void handleToggleArchive(team, true);
@@ -148,7 +118,7 @@ const HomeClient = ({ isAuthenticated }: HomeClientProps) => {
           />
         )}
 
-        {isAuthenticated && !isLoadingTeams && (
+        {!isLoadingTeams && (
           <ArchivedTeamsList
             onRequestDelete={setWorkspaceToDelete}
             onUnarchive={(team) => {

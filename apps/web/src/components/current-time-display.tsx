@@ -31,8 +31,8 @@ const CurrentTimeDisplay = () => {
   if (!viewerTimezone) {
     return (
       <div className="flex h-9 items-center gap-2 rounded-lg border bg-card px-3 py-2 font-medium text-card-foreground shadow-xs">
-        <Clock className="size-4 text-muted-foreground" />
-        <span className="tabular-nums">--:--:-- --</span>
+        <Clock className="size-4 shrink-0 text-muted-foreground" />
+        <span className="font-display tabular-nums">--:--:-- --</span>
       </div>
     );
   }
@@ -42,9 +42,9 @@ const CurrentTimeDisplay = () => {
 
   return (
     <div className="flex h-9 items-center gap-2 rounded-lg border bg-card px-3 py-2 font-medium text-card-foreground shadow-xs">
-      <Clock className="size-4 text-muted-foreground" />
-      <span className="text-sm tabular-nums">{currentTime}</span>
-      <span className="text-xs text-muted-foreground">{timezoneAbbr}</span>
+      <Clock className="size-4 shrink-0 text-muted-foreground" />
+      <span className="font-display text-sm tabular-nums">{currentTime}</span>
+      <span className="font-display text-xs text-muted-foreground">{timezoneAbbr}</span>
     </div>
   );
 };

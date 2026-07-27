@@ -19,12 +19,11 @@ const InvitationSchema = z.object({
 
 const InvitationsResponseSchema = z.object({ invitations: z.array(InvitationSchema) });
 
-const useInvitations = (isAuthenticated: boolean) => {
+const useInvitations = () => {
   const queryClient = useQueryClient();
   const [processingInvitations, setProcessingInvitations] = useState<Set<string>>(new Set());
 
   const { data: invitations = [] } = useQuery<Array<PendingInvitation>>({
-    enabled: isAuthenticated,
     queryFn: async () => {
       const response = await fetch("/api/invitations");
       if (!response.ok) {

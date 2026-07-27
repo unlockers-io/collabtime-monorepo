@@ -21,12 +21,11 @@ const TeamSchema = z.object({
 
 const TeamsResponseSchema = z.object({ teams: z.array(TeamSchema) });
 
-const useMyTeams = (isAuthenticated: boolean) => {
+const useMyTeams = () => {
   const queryClient = useQueryClient();
   const [processingArchive, setProcessingArchive] = useState<Set<string>>(new Set());
 
   const { data: myTeams = [], isLoading: isLoadingTeams } = useQuery({
-    enabled: isAuthenticated,
     queryFn: async () => {
       const response = await fetch("/api/teams");
       if (!response.ok) {

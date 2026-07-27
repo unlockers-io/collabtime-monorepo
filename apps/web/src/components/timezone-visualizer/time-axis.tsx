@@ -21,7 +21,7 @@ const TimeAxis = () => (
             }}
           >
             <div className="flex flex-col items-center gap-1">
-              <span className="text-[10px] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
+              <span className="font-display text-[0.625rem] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
                 {formatHour(hour % HOURS_IN_DAY)}
               </span>
               <div className="h-1.5 w-px bg-border" />

@@ -51,7 +51,7 @@ const OverlapBar = ({
                 render={<div className={`h-6 flex-1 bg-muted ${getRoundedCornerClass(hour)}`} />}
               />
               <TooltipContent side="top">
-                <div className="font-medium tabular-nums">
+                <div className="font-display font-medium tabular-nums">
                   {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
                 </div>
               </TooltipContent>
@@ -112,14 +112,14 @@ const OverlapBar = ({
             <TooltipContent side="top">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-0.5">
-                  <div className="font-medium text-foreground tabular-nums">
+                  <div className="font-display font-medium text-foreground tabular-nums">
                     {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
                   </div>
                   <div className="text-xs text-muted-foreground">{overlapLabel}</div>
                 </div>
                 {availableByTeam.size > 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-medium tracking-wide text-success uppercase">
+                    <span className="text-[0.625rem] font-medium tracking-wide text-success uppercase">
                       Available by team
                     </span>
                     {[...availableByTeam.entries()].map(([teamName, names]) => (
@@ -135,7 +135,7 @@ const OverlapBar = ({
                 )}
                 {!isFullOverlap && unavailableByTeam.size > 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-medium tracking-wide text-destructive uppercase">
+                    <span className="text-[0.625rem] font-medium tracking-wide text-destructive uppercase">
                       Unavailable
                     </span>
                     {/* Teams with no one available - shown with strikethrough */}
