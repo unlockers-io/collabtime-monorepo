@@ -57,7 +57,9 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+            Settings
+          </h1>
           <p className="text-sm text-muted-foreground">Manage your account</p>
         </div>
 

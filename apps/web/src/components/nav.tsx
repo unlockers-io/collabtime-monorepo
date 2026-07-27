@@ -177,8 +177,12 @@ const Nav = (props: NavProps) => {
         {isAuthenticated ? (
           <UserMenu isAuthenticated={isAuthenticated} />
         ) : (
-          <Link className={buttonVariants({ variant: "outline" })} href="/login">
-            <LogIn className="size-4" />
+          <Link
+            aria-label="Sign in"
+            className={buttonVariants({ size: "icon", variant: "outline" })}
+            href="/login"
+          >
+            <LogIn aria-hidden className="size-4" />
           </Link>
         )}
       </div>

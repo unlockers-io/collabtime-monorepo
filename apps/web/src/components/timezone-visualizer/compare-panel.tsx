@@ -235,7 +235,7 @@ const ComparePanel = ({
 
       {canShowOverlap && (
         <div className="flex flex-col gap-3 border-t border-border pt-3">
-          <p className="text-right text-xs text-muted-foreground tabular-nums">
+          <p className="text-right font-display text-xs text-muted-foreground tabular-nums">
             <OverlapSummary overlapHours={overlapHours} partialOverlapHours={partialOverlapHours} />
           </p>
 
@@ -276,7 +276,7 @@ const ComparePanel = ({
                     }}
                   >
                     <div className="h-1.5 w-px bg-border" />
-                    <span className="text-[10px] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
+                    <span className="font-display text-[0.625rem] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
                       {formatHour(hour % HOURS_IN_DAY)}
                     </span>
                   </div>

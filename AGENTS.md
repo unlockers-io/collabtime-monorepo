@@ -4,21 +4,21 @@ Guidance for AI coding agents working in this repo. `CLAUDE.md` is a symlink to 
 
 Project conventions and defaults live in [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md).
 
-Collabtime is a team timezone visualizer SaaS. Distributed teams create spaces, add members with timezones and working hours, and visualize overlap for scheduling. Single `web` app, pnpm monorepo, Better Auth + Stripe, Prisma/Postgres, Redis.
+Collabtime is a team timezone visualizer. Distributed teams create spaces, add members with timezones and working hours, and visualize overlap for scheduling. Single `web` app, pnpm monorepo, Better Auth, Prisma/Postgres, Redis. There is no billing: no Stripe, no plans, no paid tier.
 
 ## Stack
 
 - **Framework**: Next.js 16 App Router (Turbopack, React Compiler enabled)
 - **Language**: TypeScript strict, ESNext, Bundler module resolution
-- **UI**: React 19, Tailwind CSS v4, Radix UI, Motion, Sonner, Lucide
+- **UI**: React 19, Tailwind CSS v4, Base UI (`@base-ui/react`), Motion, Sonner, Lucide
+- **Fonts**: Inter as `--font-sans` (body / UI), Geist Mono as `--font-display` (headings, clock and hour numerals). Both loaded via `next/font` in `apps/web/src/app/layout.tsx`, registered in the `@theme inline` block of `packages/ui/src/styles/globals.css`
 - **Forms**: `@tanstack/react-form` + Zod 4 (NOT react-hook-form)
 - **Data**: TanStack Query with 20s polling for team sync
-- **Auth**: Better Auth (email/password) + Stripe plugin
+- **Auth**: Better Auth (email/password)
 - **DB**: Prisma 7 + PostgreSQL via `@prisma/adapter-pg`
 - **Cache / session**: Redis via `ioredis` (Railway in prod, supports `redis://` or `rediss://`)
-- **Payments**: Stripe subscriptions, webhooks, customer portal
 - **Email**: Resend (optional)
-- **Monorepo**: Turborepo + pnpm workspaces, Node >=24, `packageManager: pnpm@11.1.3`
+- **Monorepo**: Turborepo + pnpm workspaces, Node >=24, `packageManager: pnpm@11.13.1`
 - **Lint / format**: oxlint + oxfmt (NOT ESLint/Prettier), `oxlint-config-awesomeness`
 - **Tests**: Vitest (unit), Playwright (e2e: chromium, firefox, webkit)
 - **Bundler**: tsdown for library packages, Turbopack for Next.js dev
@@ -28,9 +28,10 @@ Collabtime is a team timezone visualizer SaaS. Distributed teams create spaces, 
 
 ```
 apps/web/                       # Next.js 16 App Router app (only app)
-packages/auth/                  # Better Auth server + client, Stripe plugin
+packages/auth/                  # Better Auth server + client
 packages/db/                    # Prisma schema + generated client
 packages/ui/                    # Shared component library (Tailwind + CVA)
+packages/observability/         # Structured logging (`@repo/observability`)
 packages/transactional/         # Email templates (Resend)
 packages/config-typescript/     # Base / Next / library tsconfigs
 packages/config-vitest/         # Shared Vitest configs (react.ts, node.ts)
@@ -90,9 +91,11 @@ Docker host ports: Postgres `5433`, Redis `6379`, Upstash REST shim `8079`. Only
 
 ## Environment variables
 
-Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (>=32 chars), `STRIPE_SECRET_KEY` (`sk_*`), `STRIPE_WEBHOOK_SECRET` (`whsec_*`), `STRIPE_PRO_PRICE_ID` (`price_*`), `REDIS_URL` (`redis://` or `rediss://`).
+Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (>=32 chars). Those are the only two the schema rejects when absent.
 
-Optional: `WEB_APP_URL`, `AUTH_ALLOWED_HOSTS`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SPACE_ACCESS_SECRET`, `NODE_ENV`.
+Optional: `REDIS_URL` (`redis://` or `rediss://`), `WEB_APP_URL`, `AUTH_ALLOWED_HOSTS`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (bare email or `Display Name <email>`), `SPACE_ACCESS_SECRET` (>=32 chars), `NODE_ENV`.
+
+`REDIS_URL` also accepts an empty string, because unset GitHub secrets expand to `""` in CI.
 
 Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(key)`.
 
@@ -106,6 +109,9 @@ Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(k
 - **Prisma config**: `prisma.config.ts` uses `process.env.DATABASE_URL ?? ""` (not `env("DATABASE_URL")`) so `prisma generate` works in CI without DB creds.
 - **Turbo ordering**: root `turbo.json` `build.dependsOn` includes `db:generate` so the Prisma client exists before any app/package builds.
 - **Path alias**: `apps/web` uses `@/*` -> `src/*`.
+- **`/` serves two pages**: `app/page.tsx` reads the session and renders `components/landing/` when logged out, `app/home-client.tsx` (the dashboard) when logged in. The `Suspense` fallback must stay layout-neutral because either can follow it.
+- **Landing product demo**: `components/landing/product-preview.tsx` renders the real `TimezoneVisualizer` against the static team in `demo-team.ts`, lazily via `next/dynamic` with `ssr: false`. `useTimezoneData` is pure, so the demo needs no fetching. Keep `demo-team.ts` hours as they are unless you re-check the overlap: they are picked so four of five members share a real window.
+- **Design guidelines**: landing work follows the `design` skill's rule files. Two deliberate deviations, both because the repo's own lint wins: no `role="list"` on `<ul>` (oxlint `no-redundant-roles` errors on it), and the shared button keeps its ring-based `focus-visible` treatment rather than `outline-*`.
 
 ## Linting & formatting
 
@@ -126,11 +132,16 @@ All under `apps/web/src/app/api/`:
 
 - `auth/[...all]`: Better Auth catch-all
 - `spaces/` and `spaces/[spaceId]/`: Space CRUD, password verification
-- `subscription/checkout/` and `subscription/portal/`: Stripe checkout + customer portal
+- `teams/`: the caller's teams, plus `teams/[teamId]/membership` for archive toggling
+- `invitations/`: the caller's pending invitations
 
 ## Data model
 
-User -> Session, Account, Subscription, Space. Users have `subscriptionPlan` (FREE|PRO) and optional `stripeCustomerId`. Spaces link to teams via unique `teamId` and support private access with passwords.
+`User` -> `Session`, `Account`, `Space` (owned), `Membership`, `JoinRequest`, `Invitation` (sent). Plus `Verification` for auth tokens and `RateLimit`.
+
+Enums: `MemberRole` (ADMIN | MEMBER), `JoinRequestStatus`, `InvitationStatus`.
+
+Spaces link to teams via a unique `teamId` and support private access through `isPrivate` + `accessPassword`. A public space is readable by anyone with the link, with no session at all: see the guest path in `apps/web/src/app/[teamId]/page.tsx`.
 
 ## CI (GitHub Actions)
 

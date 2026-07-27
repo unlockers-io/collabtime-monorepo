@@ -85,7 +85,7 @@ const PrivateSpaceGate = ({ isAuthenticated, spaceId, teamId }: PrivateSpaceGate
           <span className="flex size-10 items-center justify-center rounded-full bg-muted">
             <Lock aria-hidden className="size-5 text-muted-foreground" />
           </span>
-          <h1 className="text-base font-semibold tracking-tight">Private team</h1>
+          <h1 className="font-display text-base font-semibold tracking-tight">Private team</h1>
           <p className="text-sm text-muted-foreground">
             {accepted
               ? "Password accepted. Sign up or log in to join this team so it stays in your list."
