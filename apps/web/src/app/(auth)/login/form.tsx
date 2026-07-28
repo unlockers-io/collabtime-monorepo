@@ -23,44 +23,23 @@ type Props = {
   searchParams: Promise<{ redirect?: string }>;
 };
 
-type FormActionsProps = {
-  isPending: boolean;
-  searchParams: Props["searchParams"];
-};
-
-const LoginFormActionsFallback = () => (
-  <>
-    <Button disabled type="submit">
-      Sign in
-    </Button>
-    <FieldDescription className="text-center">
-      Don&apos;t have an account?{" "}
-      <Link className="text-foreground underline underline-offset-4" href="/signup">
-        Sign up
-      </Link>
-    </FieldDescription>
-  </>
+const SignUpLinkFallback = () => (
+  <Link className="text-foreground underline underline-offset-4" href="/signup">
+    Sign up
+  </Link>
 );
 
-const LoginFormActions = ({ isPending, searchParams }: FormActionsProps) => {
+const SignUpLink = ({ searchParams }: Props) => {
   const { redirect: redirectParam } = use(searchParams);
   const redirect = safeRedirectPath(redirectParam);
 
   return (
-    <>
-      <Button aria-busy={isPending} disabled={isPending} type="submit">
-        {isPending ? "Signing in…" : "Sign in"}
-      </Button>
-      <FieldDescription className="text-center">
-        Don&apos;t have an account?{" "}
-        <Link
-          className="text-foreground underline underline-offset-4"
-          href={redirect === "/" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirect)}`}
-        >
-          Sign up
-        </Link>
-      </FieldDescription>
-    </>
+    <Link
+      className="text-foreground underline underline-offset-4"
+      href={redirect === "/" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirect)}`}
+    >
+      Sign up
+    </Link>
   );
 };
 
@@ -182,9 +161,15 @@ const LoginForm = ({ searchParams }: Props) => {
         )}
 
         <Field>
-          <Suspense fallback={<LoginFormActionsFallback />}>
-            <LoginFormActions isPending={isPending} searchParams={searchParams} />
-          </Suspense>
+          <Button aria-busy={isPending} disabled={isPending} type="submit">
+            {isPending ? "Signing in…" : "Sign in"}
+          </Button>
+          <FieldDescription className="text-center">
+            Don&apos;t have an account?{" "}
+            <Suspense fallback={<SignUpLinkFallback />}>
+              <SignUpLink searchParams={searchParams} />
+            </Suspense>
+          </FieldDescription>
         </Field>
       </FieldGroup>
     </form>
