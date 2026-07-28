@@ -12,17 +12,39 @@ import { Input } from "@repo/ui/components/input";
 import { toast } from "@repo/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Suspense, use, useState, useTransition } from "react";
 
 import { signIn } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/form-schemas";
 import { safeRedirectPath } from "@/lib/redirect-validation";
 
-const LoginForm = () => {
+type Props = {
+  searchParams: Promise<{ redirect?: string }>;
+};
+
+const SignUpLinkFallback = () => (
+  <Link className="text-foreground underline underline-offset-4" href="/signup">
+    Sign up
+  </Link>
+);
+
+const SignUpLink = ({ searchParams }: Props) => {
+  const { redirect: redirectParam } = use(searchParams);
+  const redirect = safeRedirectPath(redirectParam);
+
+  return (
+    <Link
+      className="text-foreground underline underline-offset-4"
+      href={redirect === "/" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirect)}`}
+    >
+      Sign up
+    </Link>
+  );
+};
+
+const LoginForm = ({ searchParams }: Props) => {
   const { push, refresh } = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = safeRedirectPath(searchParams.get("redirect"));
   const [isPending, startTransition] = useTransition();
   const [showUnverifiedNotice, setShowUnverifiedNotice] = useState(false);
 
@@ -32,6 +54,7 @@ const LoginForm = () => {
       setShowUnverifiedNotice(false);
       startTransition(async () => {
         try {
+          const { redirect: redirectParam } = await searchParams;
           const result = await signIn.email({
             email: value.email,
             password: value.password,
@@ -45,7 +68,7 @@ const LoginForm = () => {
             toast.error(result.error.message ?? "Failed to sign in");
             return;
           }
-          push(redirect);
+          push(safeRedirectPath(redirectParam));
           refresh();
         } catch (error) {
           const message =
@@ -58,6 +81,7 @@ const LoginForm = () => {
   });
 
   return (
+    // oxlint-disable-next-line react-doctor/no-prevent-default -- TanStack Form + Better Auth client drives submit; JS-off progressive enhancement is N/A
     <form
       noValidate
       onSubmit={(e) => {
@@ -142,14 +166,9 @@ const LoginForm = () => {
           </Button>
           <FieldDescription className="text-center">
             Don&apos;t have an account?{" "}
-            <Link
-              className="text-foreground underline underline-offset-4"
-              href={
-                redirect === "/" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirect)}`
-              }
-            >
-              Sign up
-            </Link>
+            <Suspense fallback={<SignUpLinkFallback />}>
+              <SignUpLink searchParams={searchParams} />
+            </Suspense>
           </FieldDescription>
         </Field>
       </FieldGroup>
