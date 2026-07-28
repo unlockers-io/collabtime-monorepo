@@ -9,7 +9,19 @@ vi.mock("@repo/db", () => ({
   },
 }));
 vi.mock("@/lib/auth-server", () => ({ getSession: vi.fn() }));
-vi.mock("../redis", () => ({ redis: { get: vi.fn() } }));
+const { redisMock } = vi.hoisted(() => ({
+  redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
+}));
+
+vi.mock("../redis", () => ({
+  readTeamJson: async (teamId: string): Promise<string | null> => {
+    const data: unknown = await redisMock.get(`team:${teamId}`);
+    return typeof data === "string" && data !== "" ? data : null;
+  },
+  redis: redisMock,
+  TEAM_ACTIVE_TTL_SECONDS: 100,
+  teamKey: (teamId: string): string => `team:${teamId}`,
+}));
 vi.mock("./helpers", () => ({ getTeamRecord: vi.fn(), sanitizeTeam: vi.fn((t: unknown) => t) }));
 vi.mock("next/headers", () => ({
   cookies: vi.fn(() => Promise.resolve({ get: vi.fn(() => undefined) })),

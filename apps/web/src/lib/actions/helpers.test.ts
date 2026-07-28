@@ -8,9 +8,18 @@ import { createTestMember, createTestTeamRecord, VALID_UUID } from "./test-helpe
 
 vi.mock("@/lib/team-auth", () => ({ requireTeamAdmin: vi.fn() }));
 
+const { redisMock } = vi.hoisted(() => ({
+  redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
+}));
+
 vi.mock("../redis", () => ({
-  redis: { get: vi.fn(), set: vi.fn() },
+  readTeamJson: async (teamId: string): Promise<string | null> => {
+    const data: unknown = await redisMock.get(`team:${teamId}`);
+    return typeof data === "string" && data !== "" ? data : null;
+  },
+  redis: redisMock,
   TEAM_ACTIVE_TTL_SECONDS: 100,
+  teamKey: (teamId: string): string => `team:${teamId}`,
 }));
 
 vi.mock("../validation", async (importOriginal) => {

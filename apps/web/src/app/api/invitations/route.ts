@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
-import { redis } from "@/lib/redis";
+import { readTeamJson } from "@/lib/redis";
 
 const TeamCacheSchema = z.object({ name: z.string().optional() });
 
@@ -39,9 +39,8 @@ export const GET = withEvlog(async () => {
 
     const results = await Promise.allSettled(
       invitations.map(async (inv) => {
-        const data = await redis.get(`team:${inv.teamId}`);
-        const parsed =
-          data !== null && data !== "" ? TeamCacheSchema.safeParse(JSON.parse(data)) : null;
+        const data = await readTeamJson(inv.teamId);
+        const parsed = data === null ? null : TeamCacheSchema.safeParse(JSON.parse(data));
         const team = parsed?.success === true ? parsed.data : null;
 
         return {

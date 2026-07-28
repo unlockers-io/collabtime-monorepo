@@ -1,5 +1,7 @@
 import { Redis } from "ioredis";
 
+import { log } from "@/lib/observability";
+
 let cachedRedis: Redis | null = null;
 
 // Lazy init: env vars may be missing at build time, and we defer the TCP handshake on cold starts.
@@ -35,7 +37,7 @@ const redis = new Proxy({} as Redis, {
       // must set REDIS_URL; this branch is for environments without real traffic.
       if (
         typeof prop === "string" &&
-        ["get", "set", "setex", "del", "scan", "publish"].includes(prop)
+        ["get", "set", "setex", "expire", "del", "scan", "publish"].includes(prop)
       ) {
         return () => Promise.resolve(null);
       }
@@ -54,4 +56,32 @@ const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60;
 
 const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2;
 
-export { redis, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };
+const teamKey = (teamId: string): string => `team:${teamId}`;
+
+/**
+ * Redis is the only store for a team's contents, so an expiring key is a
+ * deleted team, not a cold cache. Only writes used to extend the TTL, which
+ * meant a team that people read every day but never renamed vanished silently
+ * on the 60th day. Every read re-extends the key instead.
+ *
+ * A failed refresh must not fail the read: the caller already has the data,
+ * and the next read gets another chance to extend.
+ */
+const readTeamJson = async (teamId: string): Promise<string | null> => {
+  const key = teamKey(teamId);
+  const data = await redis.get(key);
+
+  if (data === null || data === "") {
+    return null;
+  }
+
+  try {
+    await redis.expire(key, TEAM_ACTIVE_TTL_SECONDS);
+  } catch (error) {
+    log.error({ error, message: "Failed to refresh team TTL", route: "lib/redis" });
+  }
+
+  return data;
+};
+
+export { readTeamJson, redis, teamKey, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };

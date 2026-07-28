@@ -99,11 +99,11 @@ export default defineConfig({
         "require-await": "off",
       },
     },
-    // E2E teardown scripts: `console.*` output is the whole point, and the
+    // Operational scripts: `console.*` output is the whole point, and the
     // Redis SCAN loop is sequential by design (each page needs the previous
     // cursor).
     {
-      files: ["tests/e2e/teardown/**/*.ts"],
+      files: ["tests/e2e/teardown/**/*.ts", "apps/web/scripts/**/*.ts"],
       rules: {
         "no-await-in-loop": "off",
         "no-console": "off",

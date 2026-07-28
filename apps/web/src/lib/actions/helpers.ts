@@ -2,7 +2,7 @@ import { log } from "@/lib/observability";
 import { requireTeamAdmin } from "@/lib/team-auth";
 import type { Team, TeamGroup, TeamMember, TeamRecord } from "@/types";
 
-import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
+import { readTeamJson, redis, teamKey, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
 import { UUIDSchema } from "../validation";
 
 import type { ActionResult } from "./types";
@@ -43,9 +43,9 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
       return null;
     }
 
-    const data = await redis.get(`team:${teamId}`);
+    const data = await readTeamJson(teamId);
 
-    if (data === null || data === "") {
+    if (data === null) {
       return null;
     }
 
@@ -64,7 +64,7 @@ const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
 };
 
 const persistTeam = async (teamId: string, team: TeamRecord): Promise<void> => {
-  await redis.set(`team:${teamId}`, JSON.stringify(team), "EX", TEAM_ACTIVE_TTL_SECONDS);
+  await redis.set(teamKey(teamId), JSON.stringify(team), "EX", TEAM_ACTIVE_TTL_SECONDS);
 };
 
 type MutationOutcome<TResult> = { error: string; ok: false } | { ok: true; value: TResult };
