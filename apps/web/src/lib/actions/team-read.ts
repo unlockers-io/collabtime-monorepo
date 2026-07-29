@@ -10,7 +10,7 @@ import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-
 import { isTeamRole } from "@/types";
 import type { Team, TeamRole } from "@/types";
 
-import { redis } from "../redis";
+import { readTeamJson } from "../redis";
 import { UUIDSchema } from "../validation";
 
 import { getTeamRecord, sanitizeTeam } from "./helpers";
@@ -115,8 +115,8 @@ const getTeamName = cache(async (teamId: string): Promise<string | null> => {
       return null;
     }
 
-    const data = await redis.get(`team:${teamId}`);
-    if (data === null || data === "") {
+    const data = await readTeamJson(teamId);
+    if (data === null) {
       return null;
     }
 

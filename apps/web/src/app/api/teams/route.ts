@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
-import { redis } from "@/lib/redis";
+import { readTeamJson } from "@/lib/redis";
 
 const TeamCacheSchema = z.object({
   members: z.array(z.unknown()).optional(),
@@ -37,8 +37,8 @@ export const GET = withEvlog(async () => {
 
     const teams = await Promise.allSettled(
       memberships.map(async (membership) => {
-        const data = await redis.get(`team:${membership.teamId}`);
-        if (data === null || data === "") {
+        const data = await readTeamJson(membership.teamId);
+        if (data === null) {
           return null;
         }
 
