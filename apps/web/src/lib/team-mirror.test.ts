@@ -58,6 +58,17 @@ describe("diffTeamMirror", () => {
     expect(diffTeamMirror(expected, actual)).toEqual(["members differ (1 vs 1)"]);
   });
 
+  it("reports drift that only moves a word across a field boundary", () => {
+    const expected = createTestTeamRecord({
+      members: [createTestMember({ name: "Ada Byron", title: "Engineer" })],
+    });
+    const actual = createTestTeamRecord({
+      members: [createTestMember({ name: "Ada", title: "Byron Engineer" })],
+    });
+
+    expect(diffTeamMirror(expected, actual)).toEqual(["members differ (1 vs 1)"]);
+  });
+
   it("reports a missing group", () => {
     const expected = createTestTeamRecord({ groups: [createTestGroup()] });
     const actual = createTestTeamRecord({ groups: [] });
