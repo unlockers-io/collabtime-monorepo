@@ -1,12 +1,8 @@
 import { prisma } from "@repo/db";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
-import { readTeamJson } from "@/lib/redis";
-
-const TeamCacheSchema = z.object({ name: z.string().optional() });
 
 const displayName = (name: string | null, email: string): string => {
   if (name !== null && name !== "") {
@@ -37,28 +33,28 @@ export const GET = withEvlog(async () => {
       },
     });
 
-    const results = await Promise.allSettled(
-      invitations.map(async (inv) => {
-        const data = await readTeamJson(inv.teamId);
-        const parsed = data === null ? null : TeamCacheSchema.safeParse(JSON.parse(data));
-        const team = parsed?.success === true ? parsed.data : null;
+    const spaces = await prisma.space.findMany({
+      select: { name: true, teamId: true },
+      where: { teamId: { in: invitations.map((inv) => inv.teamId) } },
+    });
 
-        return {
-          id: inv.id,
-          inviterName: displayName(inv.invitedBy.name, inv.invitedBy.email),
-          memberId: inv.memberId,
-          teamId: inv.teamId,
-          teamName:
-            team !== null && team.name !== undefined && team.name !== ""
-              ? team.name
-              : "Unknown Team",
-        };
-      }),
-    );
+    const nameByTeamId = new Map(spaces.map((space) => [space.teamId, space.name]));
 
-    const validInvitations = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+    // An invitation outlives the space it points at, so a missing or blank name
+    // stays a rendered row rather than a dropped one.
+    const results = invitations.map((inv) => {
+      const name = nameByTeamId.get(inv.teamId);
 
-    return NextResponse.json({ invitations: validInvitations });
+      return {
+        id: inv.id,
+        inviterName: displayName(inv.invitedBy.name, inv.invitedBy.email),
+        memberId: inv.memberId,
+        teamId: inv.teamId,
+        teamName: name === undefined || name === "" ? "Unknown Team" : name,
+      };
+    });
+
+    return NextResponse.json({ invitations: results });
   } catch (error) {
     log.error({ error, message: "Failed to fetch invitations", route: "/api/invitations" });
     return NextResponse.json({ error: "Failed to fetch invitations" }, { status: 500 });

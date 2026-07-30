@@ -10,7 +10,6 @@ import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-
 import { isTeamRole } from "@/types";
 import type { Team, TeamRole } from "@/types";
 
-import { readTeamJson } from "../redis";
 import { readTeamRecord } from "../team-store";
 import { UUIDSchema } from "../validation";
 
@@ -116,16 +115,13 @@ const getTeamName = cache(async (teamId: string): Promise<string | null> => {
       return null;
     }
 
-    const data = await readTeamJson(teamId);
-    if (data === null) {
-      return null;
-    }
+    const space = await prisma.space.findUnique({
+      select: { name: true },
+      where: { teamId },
+    });
 
-    const team: unknown = JSON.parse(data);
-    const name =
-      typeof team === "object" && team !== null && "name" in team && typeof team.name === "string"
-        ? team.name.trim()
-        : "";
+    const name = space?.name.trim() ?? "";
+
     return name.length > 0 ? name : null;
   } catch (error) {
     log.error({ error, message: "Failed to get team name", route: "actions/team-read" });

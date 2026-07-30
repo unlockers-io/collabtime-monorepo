@@ -9,19 +9,6 @@ vi.mock("@repo/db", () => ({
   },
 }));
 vi.mock("@/lib/auth-server", () => ({ getSession: vi.fn() }));
-const { redisMock } = vi.hoisted(() => ({
-  redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
-}));
-
-vi.mock("../redis", () => ({
-  readTeamJson: async (teamId: string): Promise<string | null> => {
-    const data: unknown = await redisMock.get(`team:${teamId}`);
-    return typeof data === "string" && data !== "" ? data : null;
-  },
-  redis: redisMock,
-  TEAM_ACTIVE_TTL_SECONDS: 100,
-  teamKey: (teamId: string): string => `team:${teamId}`,
-}));
 vi.mock("../team-store", () => ({ readTeamRecord: vi.fn() }));
 vi.mock("./helpers", () => ({ sanitizeTeam: vi.fn((t: unknown) => t) }));
 vi.mock("next/headers", () => ({
@@ -36,7 +23,6 @@ import { prisma } from "@repo/db";
 
 import { getSession } from "@/lib/auth-server";
 
-import { redis } from "../redis";
 import { readTeamRecord } from "../team-store";
 
 import { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam } from "./team-read";
@@ -134,24 +120,24 @@ describe("getTeamName", () => {
     vi.clearAllMocks();
   });
 
-  it("returns trimmed name from redis", async () => {
-    vi.mocked(redis.get).mockResolvedValue(JSON.stringify({ name: "  My Team  " }));
+  it("returns the trimmed space name", async () => {
+    vi.mocked(prisma.space.findUnique).mockResolvedValue({ name: "  My Team  " } as never);
 
     const result = await getTeamName(VALID_UUID);
 
     expect(result).toBe("My Team");
   });
 
-  it("returns null for empty name", async () => {
-    vi.mocked(redis.get).mockResolvedValue(JSON.stringify({ name: "   " }));
+  it("returns null for a blank name", async () => {
+    vi.mocked(prisma.space.findUnique).mockResolvedValue({ name: "   " } as never);
 
     const result = await getTeamName(VALID_UUID);
 
     expect(result).toBeNull();
   });
 
-  it("returns null when no data in redis", async () => {
-    vi.mocked(redis.get).mockResolvedValue(null);
+  it("returns null when the space is gone", async () => {
+    vi.mocked(prisma.space.findUnique).mockResolvedValue(null);
 
     const result = await getTeamName(VALID_UUID);
 
