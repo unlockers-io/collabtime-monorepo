@@ -11,9 +11,10 @@ import { isTeamRole } from "@/types";
 import type { Team, TeamRole } from "@/types";
 
 import { readTeamJson } from "../redis";
+import { readTeamRecord } from "../team-store";
 import { UUIDSchema } from "../validation";
 
-import { getTeamRecord, sanitizeTeam } from "./helpers";
+import { sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
 const getTeamMembershipRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
@@ -73,7 +74,7 @@ const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team 
       }
     }
 
-    const team = await getTeamRecord(teamId);
+    const team = await readTeamRecord(teamId);
     if (!team) {
       return { error: "Team not found", success: false };
     }

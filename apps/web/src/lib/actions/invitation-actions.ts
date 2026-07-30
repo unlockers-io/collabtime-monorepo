@@ -8,10 +8,9 @@ import { getEnv } from "@/lib/env";
 import { log } from "@/lib/observability";
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 
-import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
+import { readTeamRecord, writeTeamRecord } from "../team-store";
 import { UUIDSchema } from "../validation";
 
-import { getTeamRecord } from "./helpers";
 import type { ActionResult } from "./types";
 
 const inviteMember = async (
@@ -39,7 +38,7 @@ const inviteMember = async (
     }
 
     const [teamResult, existingUserResult] = await Promise.allSettled([
-      getTeamRecord(teamId),
+      readTeamRecord(teamId),
       prisma.user.findUnique({ where: { email: trimmedEmail } }),
     ]);
 
@@ -193,24 +192,19 @@ const acceptInvitation = async (
     ]);
 
     try {
-      const team = await getTeamRecord(invitation.teamId);
+      const team = await readTeamRecord(invitation.teamId);
       if (team) {
         const memberIndex = team.members.findIndex((m) => m.id === invitation.memberId);
         const slotUserId = memberIndex === -1 ? undefined : team.members[memberIndex].userId;
         if (memberIndex !== -1 && (slotUserId === undefined || slotUserId === "")) {
           team.members[memberIndex].userId = session.user.id;
-          await redis.set(
-            `team:${invitation.teamId}`,
-            JSON.stringify(team),
-            "EX",
-            TEAM_ACTIVE_TTL_SECONDS,
-          );
+          await writeTeamRecord(invitation.teamId, team);
         }
       }
     } catch (cacheError) {
       log.error({
         error: cacheError,
-        message: "Failed to claim member slot in Redis",
+        message: "Failed to claim member slot",
         route: "actions/invitation",
       });
     }

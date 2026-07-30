@@ -124,20 +124,53 @@ model JoinRequest {
 }
 
 model Space {
-  id             String        @id @default(cuid())
-  teamId         String        @unique
-  isPrivate      Boolean       @default(false)
-  accessPassword String?       @db.VarChar(255)
-  ownerId        String
-  owner          User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  memberships    Membership[]
-  joinRequests   JoinRequest[]
-  invitations    Invitation[]
+  id                String        @id @default(cuid())
+  teamId            String        @unique
+  name              String        @default("")
+  isPrivate         Boolean       @default(false)
+  accessPassword    String?       @db.VarChar(255)
+  adminPasswordHash String?       @db.VarChar(255)
+  ownerId           String
+  owner             User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  memberships       Membership[]
+  joinRequests      JoinRequest[]
+  invitations       Invitation[]
+  groups            TeamGroup[]
+  members           TeamMember[]
 
   @@index([ownerId])
   @@index([teamId])
+}
+
+model TeamGroup {
+  id      String       @id
+  teamId  String
+  name    String
+  order   Int
+  space   Space        @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
+  members TeamMember[]
+
+  @@index([teamId])
+}
+
+model TeamMember {
+  id                String     @id
+  teamId            String
+  groupId           String?
+  name              String
+  title             String     @default("")
+  order             Int
+  timezone          String
+  workingHoursStart Int
+  workingHoursEnd   Int
+  userId            String?
+  space             Space      @relation(fields: [teamId], references: [teamId], onDelete: Cascade)
+  group             TeamGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@index([teamId])
+  @@index([groupId])
 }
 
 model Invitation {

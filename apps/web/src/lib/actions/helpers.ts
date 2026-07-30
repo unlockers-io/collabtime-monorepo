@@ -1,8 +1,8 @@
 import { log } from "@/lib/observability";
 import { requireTeamAdmin } from "@/lib/team-auth";
-import type { Team, TeamGroup, TeamMember, TeamRecord } from "@/types";
+import type { Team, TeamRecord } from "@/types";
 
-import { readTeamJson, redis, teamKey, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
+import { readTeamRecord, writeTeamRecord } from "../team-store";
 import { UUIDSchema } from "../validation";
 
 import type { ActionResult } from "./types";
@@ -28,43 +28,6 @@ const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
       Object.assign(member, sanitizeMemberUserId(userId, currentUserId)),
     ),
   };
-};
-
-// Legacy rows may predate `groups`, `members`, or per-member `order`.
-type StoredTeamRecord = Omit<TeamRecord, "groups" | "members"> & {
-  groups?: Array<TeamGroup>;
-  members?: Array<Omit<TeamMember, "order"> & { order?: number }>;
-};
-
-const getTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
-  try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return null;
-    }
-
-    const data = await readTeamJson(teamId);
-
-    if (data === null) {
-      return null;
-    }
-
-    // oxlint-disable-next-line no-unsafe-type-assertion -- team:* keys are written only by persistTeam with a typed TeamRecord; StoredTeamRecord models the legacy gaps backfilled below
-    const stored = JSON.parse(data) as StoredTeamRecord;
-
-    return {
-      ...stored,
-      groups: stored.groups ?? [],
-      members: (stored.members ?? []).map((m, i) => Object.assign(m, { order: m.order ?? i })),
-    };
-  } catch (error) {
-    log.error({ error, message: "Failed to get team", route: "actions/helpers" });
-    return null;
-  }
-};
-
-const persistTeam = async (teamId: string, team: TeamRecord): Promise<void> => {
-  await redis.set(teamKey(teamId), JSON.stringify(team), "EX", TEAM_ACTIVE_TTL_SECONDS);
 };
 
 type MutationOutcome<TResult> = { error: string; ok: false } | { ok: true; value: TResult };
@@ -99,7 +62,7 @@ const mutateTeam = async <TPrelude, TResult>(
       await requireTeamAdmin(teamId);
     }
 
-    const team = await getTeamRecord(teamId);
+    const team = await readTeamRecord(teamId);
     if (!team) {
       return { error: "Team not found", success: false };
     }
@@ -109,7 +72,7 @@ const mutateTeam = async <TPrelude, TResult>(
       return { error: outcome.error, success: false };
     }
 
-    await persistTeam(teamId, team);
+    await writeTeamRecord(teamId, team);
 
     return { data: outcome.value, success: true };
   } catch (error) {
@@ -126,4 +89,4 @@ const checkUuid = (value: string, label: string): MutationOutcome<void> => {
   return { ok: true, value: undefined };
 };
 
-export { checkUuid, getTeamRecord, mutateTeam, sanitizeTeam };
+export { checkUuid, mutateTeam, sanitizeTeam };
