@@ -1,4 +1,6 @@
-// LOCAL-only: creates a known-password user. DATABASE_URL is gated to localhost below.
+// LOCAL-only: creates a known-password user. Both datastore URLs are gated to
+// localhost below, and this runs as the last step before the suite, so it is the
+// gate that keeps a misconfigured CI environment from writing into a real one.
 
 import { prisma } from "@repo/db";
 
@@ -9,16 +11,23 @@ const NAME = "E2E Test User";
 const PASSWORD = "TestPassword123!";
 const SLUG = "e2e-test-user";
 
-const main = async () => {
-  const dbUrl = process.env.DATABASE_URL ?? "";
-  const isLocal =
-    (dbUrl.startsWith("postgres://") || dbUrl.startsWith("postgresql://")) &&
-    (dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1"));
-  if (!isLocal) {
+const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
+
+// Reports the hostname and never the URL: these values carry credentials, and a
+// throw here lands in a CI log.
+const assertLocal = (name: string, value: string): void => {
+  const host = URL.canParse(value) ? new URL(value).hostname : "";
+
+  if (!LOCAL_HOSTS.has(host)) {
     throw new Error(
-      `Refusing to run ensure-e2e-user.ts against non-local DATABASE_URL (${dbUrl}).`,
+      `Refusing to run ensure-e2e-user.ts: ${name} points at ${host || "an unparsable URL"}, not localhost.`,
     );
   }
+};
+
+const main = async () => {
+  assertLocal("DATABASE_URL", process.env.DATABASE_URL ?? "");
+  assertLocal("REDIS_URL", process.env.REDIS_URL ?? "");
 
   const ctx = await auth.$context;
   const hashed = await ctx.password.hash(PASSWORD);
