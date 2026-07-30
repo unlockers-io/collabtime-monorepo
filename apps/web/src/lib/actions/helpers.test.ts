@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireTeamAdmin } from "@/lib/team-auth";
 
@@ -22,6 +22,8 @@ vi.mock("../redis", () => ({
   teamKey: (teamId: string): string => `team:${teamId}`,
 }));
 
+vi.mock("../team-mirror", () => ({ writeTeamMirror: vi.fn() }));
+
 vi.mock("../validation", async (importOriginal) => {
   const actual = await importOriginal<typeof ValidationModule>();
   return actual;
@@ -29,7 +31,7 @@ vi.mock("../validation", async (importOriginal) => {
 
 import { redis } from "../redis";
 
-import { checkUuid, getTeamRecord, mutateTeam, sanitizeTeam } from "./helpers";
+import { checkUuid, mutateTeam, sanitizeTeam } from "./helpers";
 
 const mockedRedisGet = vi.mocked(redis.get);
 const mockedRedisSet = vi.mocked(redis.set);
@@ -75,75 +77,6 @@ describe("sanitizeTeam", () => {
     const result = sanitizeTeam(team);
 
     expect(result.members).toEqual([]);
-  });
-});
-
-describe("getTeamRecord", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("returns null for invalid UUID", async () => {
-    const result = await getTeamRecord("not-a-uuid");
-    expect(result).toBeNull();
-    expect(mockedRedisGet).not.toHaveBeenCalled();
-  });
-
-  it("returns null when redis returns null", async () => {
-    mockedRedisGet.mockResolvedValue(null);
-    const result = await getTeamRecord(VALID_UUID);
-
-    expect(result).toBeNull();
-  });
-
-  it("parses string data from redis", async () => {
-    const team = createTestTeamRecord();
-    mockedRedisGet.mockResolvedValue(JSON.stringify(team));
-
-    const result = await getTeamRecord(VALID_UUID);
-    expect(result).not.toBeNull();
-    expect(result?.id).toBe(team.id);
-  });
-
-  it("backfills empty groups array when missing", async () => {
-    const team = createTestTeamRecord();
-    const { groups: _, ...teamWithoutGroups } = team;
-    mockedRedisGet.mockResolvedValue(JSON.stringify(teamWithoutGroups));
-
-    const result = await getTeamRecord(VALID_UUID);
-    expect(result?.groups).toEqual([]);
-  });
-
-  it("backfills empty members array when missing", async () => {
-    const team = createTestTeamRecord();
-    const { members: _, ...teamWithoutMembers } = team;
-    mockedRedisGet.mockResolvedValue(JSON.stringify(teamWithoutMembers));
-
-    const result = await getTeamRecord(VALID_UUID);
-    expect(result?.members).toEqual([]);
-  });
-
-  it("backfills missing order on members", async () => {
-    const memberWithoutOrder = { ...createTestMember(), order: undefined };
-    const team = createTestTeamRecord({ members: [memberWithoutOrder as never] });
-    mockedRedisGet.mockResolvedValue(JSON.stringify(team));
-
-    const result = await getTeamRecord(VALID_UUID);
-    expect(result?.members[0].order).toBe(0);
-  });
-
-  it("returns null on redis error", async () => {
-    mockedRedisGet.mockRejectedValue(new Error("connection failed"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    const result = await getTeamRecord(VALID_UUID);
-    expect(result).toBeNull();
-
-    consoleSpy.mockRestore();
   });
 });
 

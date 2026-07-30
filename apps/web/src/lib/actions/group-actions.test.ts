@@ -25,6 +25,7 @@ vi.mock("../redis", () => ({
   TEAM_ACTIVE_TTL_SECONDS: 100,
   teamKey: (teamId: string): string => `team:${teamId}`,
 }));
+vi.mock("../team-mirror", () => ({ writeTeamMirror: vi.fn() }));
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
 import { redis } from "../redis";

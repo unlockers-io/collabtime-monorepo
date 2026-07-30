@@ -22,7 +22,8 @@ vi.mock("../redis", () => ({
   TEAM_ACTIVE_TTL_SECONDS: 100,
   teamKey: (teamId: string): string => `team:${teamId}`,
 }));
-vi.mock("./helpers", () => ({ getTeamRecord: vi.fn(), sanitizeTeam: vi.fn((t: unknown) => t) }));
+vi.mock("../team-store", () => ({ readTeamRecord: vi.fn() }));
+vi.mock("./helpers", () => ({ sanitizeTeam: vi.fn((t: unknown) => t) }));
 vi.mock("next/headers", () => ({
   cookies: vi.fn(() => Promise.resolve({ get: vi.fn(() => undefined) })),
   headers: vi.fn(() => Promise.resolve(new Headers())),
@@ -36,8 +37,8 @@ import { prisma } from "@repo/db";
 import { getSession } from "@/lib/auth-server";
 
 import { redis } from "../redis";
+import { readTeamRecord } from "../team-store";
 
-import { getTeamRecord } from "./helpers";
 import { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam } from "./team-read";
 
 describe("getPublicTeam", () => {
@@ -73,7 +74,7 @@ describe("getPublicTeam", () => {
     } as never);
     vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
     vi.mocked(prisma.membership.findUnique).mockResolvedValue({ role: "MEMBER" } as never);
-    vi.mocked(getTeamRecord).mockResolvedValue(team);
+    vi.mocked(readTeamRecord).mockResolvedValue(team);
 
     const result = await getPublicTeam(VALID_UUID);
 
@@ -83,7 +84,7 @@ describe("getPublicTeam", () => {
   it("returns team without a role field for authenticated users", async () => {
     const team = createTestTeamRecord();
     vi.mocked(prisma.space.findUnique).mockResolvedValue({ isPrivate: false } as never);
-    vi.mocked(getTeamRecord).mockResolvedValue(team);
+    vi.mocked(readTeamRecord).mockResolvedValue(team);
     vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
 
     const result = await getPublicTeam(VALID_UUID);
@@ -97,7 +98,7 @@ describe("getPublicTeam", () => {
   it("skips the membership lookup for public teams", async () => {
     const team = createTestTeamRecord();
     vi.mocked(prisma.space.findUnique).mockResolvedValue({ isPrivate: false } as never);
-    vi.mocked(getTeamRecord).mockResolvedValue(team);
+    vi.mocked(readTeamRecord).mockResolvedValue(team);
     vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
 
     await getPublicTeam(VALID_UUID);

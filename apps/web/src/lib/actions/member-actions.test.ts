@@ -34,6 +34,7 @@ vi.mock("../redis", () => ({
   teamKey: (teamId: string): string => `team:${teamId}`,
 }));
 
+vi.mock("../team-mirror", () => ({ writeTeamMirror: vi.fn() }));
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
 import { prisma } from "@repo/db";

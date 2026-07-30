@@ -13,7 +13,13 @@ vi.mock("@repo/db", () => ({
     space: { create: vi.fn() },
   },
 }));
-vi.mock("../redis", () => ({ redis: { set: vi.fn() }, TEAM_INITIAL_TTL_SECONDS: 100 }));
+vi.mock("../redis", () => ({
+  redis: { set: vi.fn() },
+  TEAM_ACTIVE_TTL_SECONDS: 100,
+  TEAM_INITIAL_TTL_SECONDS: 100,
+  teamKey: (teamId: string): string => `team:${teamId}`,
+}));
+vi.mock("../team-mirror", () => ({ writeTeamMirror: vi.fn() }));
 
 let uuidCounter = 0;
 vi.mock("uuid", () => ({ v4: vi.fn(() => `test-uuid-${uuidCounter++}`) }));
@@ -85,7 +91,7 @@ describe("createTeam", () => {
     });
   });
 
-  it("succeeds even if redis cache fails", async () => {
+  it("succeeds even if the team-contents write fails", async () => {
     const session = createMockSession();
     vi.mocked(requireAuth).mockResolvedValue(session as never);
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
@@ -96,7 +102,7 @@ describe("createTeam", () => {
     expect(result).toEqual({ data: "test-uuid-0", success: true });
     expect(log.error).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Post-commit Redis cache failed (team created in Postgres)",
+        message: "Post-commit team-contents write failed (team created in Postgres)",
         route: "actions/team-create",
       }),
     );

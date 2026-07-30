@@ -7,7 +7,8 @@ import { log } from "@/lib/observability";
 import { requireAuth } from "@/lib/team-auth";
 import type { TeamMember, TeamRecord } from "@/types";
 
-import { redis, TEAM_INITIAL_TTL_SECONDS } from "../redis";
+import { TEAM_INITIAL_TTL_SECONDS } from "../redis";
+import { writeTeamRecord } from "../team-store";
 
 import type { ActionResult } from "./types";
 
@@ -54,11 +55,11 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
         name: "",
       };
 
-      await redis.set(`team:${teamId}`, JSON.stringify(team), "EX", TEAM_INITIAL_TTL_SECONDS);
+      await writeTeamRecord(teamId, team, TEAM_INITIAL_TTL_SECONDS);
     } catch (cacheError) {
       log.error({
         error: cacheError,
-        message: "Post-commit Redis cache failed (team created in Postgres)",
+        message: "Post-commit team-contents write failed (team created in Postgres)",
         route: "actions/team-create",
       });
     }

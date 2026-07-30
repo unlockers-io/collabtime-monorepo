@@ -7,10 +7,9 @@ import { log } from "@/lib/observability";
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 import type { TeamMember } from "@/types";
 
-import { redis, TEAM_ACTIVE_TTL_SECONDS } from "../redis";
+import { readTeamRecord, writeTeamRecord } from "../team-store";
 import { UUIDSchema } from "../validation";
 
-import { getTeamRecord } from "./helpers";
 import type { ActionResult } from "./types";
 
 const displayName = (name: string | null, email: string): string => {
@@ -31,7 +30,7 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
     }
 
     const [teamResult, membershipResult, requestResult] = await Promise.allSettled([
-      getTeamRecord(teamId),
+      readTeamRecord(teamId),
       prisma.membership.findUnique({
         where: {
           userId_teamId: {
@@ -124,7 +123,7 @@ const approveJoinRequest = async (
     ]);
 
     const memberName = displayName(joinRequest.user.name, joinRequest.user.email);
-    const team = await getTeamRecord(joinRequest.teamId);
+    const team = await readTeamRecord(joinRequest.teamId);
     const newMember: TeamMember = {
       id: uuidv4(),
       name: memberName,
@@ -139,12 +138,7 @@ const approveJoinRequest = async (
     try {
       if (team) {
         team.members.push(newMember);
-        await redis.set(
-          `team:${joinRequest.teamId}`,
-          JSON.stringify(team),
-          "EX",
-          TEAM_ACTIVE_TTL_SECONDS,
-        );
+        await writeTeamRecord(joinRequest.teamId, team);
       }
     } catch (cacheError) {
       log.error({
