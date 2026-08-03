@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
+import { requireAuth, requireTeamAdmin, requireTeamMember } from "@/lib/team-auth";
 
 import {
   createMockSession,
@@ -14,10 +14,7 @@ import {
 vi.mock("@/lib/team-auth", () => ({
   requireAuth: vi.fn(),
   requireTeamAdmin: vi.fn(),
-}));
-
-vi.mock("@repo/db", () => ({
-  prisma: { membership: { findUnique: vi.fn() } },
+  requireTeamMember: vi.fn(),
 }));
 
 const { redisMock } = vi.hoisted(() => ({
@@ -37,8 +34,6 @@ vi.mock("../redis", () => ({
 vi.mock("../team-mirror", () => ({ writeTeamMirror: vi.fn() }));
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
-import { prisma } from "@repo/db";
-
 import { redis } from "../redis";
 
 import {
@@ -53,7 +48,7 @@ import {
 
 const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
 const mockedRequireAuth = vi.mocked(requireAuth);
-const mockedFindUnique = vi.mocked(prisma.membership.findUnique);
+const mockedRequireTeamMember = vi.mocked(requireTeamMember);
 const mockedRedisGet = vi.mocked(redis.get);
 const mockedRedisSet = vi.mocked(redis.set);
 
@@ -256,7 +251,7 @@ describe("updateOwnMember", () => {
 
   beforeEach(() => {
     mockedRequireAuth.mockResolvedValue(session as never);
-    mockedFindUnique.mockResolvedValue({ id: "membership-1" } as never);
+    mockedRequireTeamMember.mockResolvedValue("user-123");
   });
 
   it("uses requireAuth instead of requireTeamAdmin", async () => {
@@ -273,7 +268,7 @@ describe("updateOwnMember", () => {
   });
 
   it("returns error when user is not a team member (no membership)", async () => {
-    mockedFindUnique.mockResolvedValue(null);
+    mockedRequireTeamMember.mockRejectedValue(new Error("Not a member of this team"));
 
     const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       name: "X",

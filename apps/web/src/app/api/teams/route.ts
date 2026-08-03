@@ -1,15 +1,9 @@
 import { prisma } from "@repo/db";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
-import { readTeamJson } from "@/lib/redis";
-
-const TeamCacheSchema = z.object({
-  members: z.array(z.unknown()).optional(),
-  name: z.string().optional(),
-});
+import { readTeamSummary } from "@/lib/team-store";
 
 export const GET = withEvlog(async () => {
   try {
@@ -37,25 +31,18 @@ export const GET = withEvlog(async () => {
 
     const teams = await Promise.allSettled(
       memberships.map(async (membership) => {
-        const data = await readTeamJson(membership.teamId);
-        if (data === null) {
-          return null;
-        }
-
-        let parsed: z.infer<typeof TeamCacheSchema>;
-        try {
-          parsed = TeamCacheSchema.parse(JSON.parse(data));
-        } catch {
+        const summary = await readTeamSummary(membership.teamId);
+        if (summary === null) {
           return null;
         }
 
         return {
           archivedAt: membership.archivedAt ? membership.archivedAt.toISOString() : null,
-          memberCount: parsed.members?.length ?? 0,
+          memberCount: summary.memberCount,
           role: membership.role,
           spaceId: ownedSpaceByTeamId.get(membership.teamId) ?? null,
           teamId: membership.teamId,
-          teamName: parsed.name ?? "",
+          teamName: summary.name,
         };
       }),
     );

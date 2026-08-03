@@ -1,12 +1,9 @@
 import { prisma } from "@repo/db";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
-import { readTeamJson } from "@/lib/redis";
-
-const TeamCacheSchema = z.object({ name: z.string().optional() });
+import { readTeamSummary } from "@/lib/team-store";
 
 const displayName = (name: string | null, email: string): string => {
   if (name !== null && name !== "") {
@@ -39,19 +36,14 @@ export const GET = withEvlog(async () => {
 
     const results = await Promise.allSettled(
       invitations.map(async (inv) => {
-        const data = await readTeamJson(inv.teamId);
-        const parsed = data === null ? null : TeamCacheSchema.safeParse(JSON.parse(data));
-        const team = parsed?.success === true ? parsed.data : null;
+        const summary = await readTeamSummary(inv.teamId);
 
         return {
           id: inv.id,
           inviterName: displayName(inv.invitedBy.name, inv.invitedBy.email),
           memberId: inv.memberId,
           teamId: inv.teamId,
-          teamName:
-            team !== null && team.name !== undefined && team.name !== ""
-              ? team.name
-              : "Unknown Team",
+          teamName: summary !== null && summary.name !== "" ? summary.name : "Unknown Team",
         };
       }),
     );

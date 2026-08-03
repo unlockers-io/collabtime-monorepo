@@ -10,8 +10,7 @@ import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-
 import { isTeamRole } from "@/types";
 import type { Team, TeamRole } from "@/types";
 
-import { readTeamJson } from "../redis";
-import { readTeamRecord } from "../team-store";
+import { readTeamRecord, readTeamSummary } from "../team-store";
 import { UUIDSchema } from "../validation";
 
 import { sanitizeTeam } from "./helpers";
@@ -111,21 +110,9 @@ const validateTeam = cache(async (teamId: string): Promise<boolean> => {
 
 const getTeamName = cache(async (teamId: string): Promise<string | null> => {
   try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return null;
-    }
+    const summary = await readTeamSummary(teamId);
+    const name = summary?.name.trim() ?? "";
 
-    const data = await readTeamJson(teamId);
-    if (data === null) {
-      return null;
-    }
-
-    const team: unknown = JSON.parse(data);
-    const name =
-      typeof team === "object" && team !== null && "name" in team && typeof team.name === "string"
-        ? team.name.trim()
-        : "";
     return name.length > 0 ? name : null;
   } catch (error) {
     log.error({ error, message: "Failed to get team name", route: "actions/team-read" });

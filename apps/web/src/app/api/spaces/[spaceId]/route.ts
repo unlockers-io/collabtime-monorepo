@@ -18,35 +18,55 @@ type Params = {
   params: Promise<{ spaceId: string }>;
 };
 
+type Space = NonNullable<Awaited<ReturnType<typeof prisma.space.findUnique>>>;
+
+type OwnedSpaceResult = { ok: false; response: NextResponse } | { ok: true; space: Space };
+
+const loadOwnedSpace = async (spaceId: string): Promise<OwnedSpaceResult> => {
+  const session = await getSession();
+
+  if (!session) {
+    return { ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+  });
+
+  if (!space) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Space not found" }, { status: 404 }),
+    };
+  }
+
+  if (space.ownerId !== session.user.id) {
+    return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
+  return { ok: true, space };
+};
+
+const spaceResponse = (space: Space): NextResponse =>
+  NextResponse.json({
+    space: {
+      ...space,
+      // Expose hasPassword boolean, never the hash or a masked sentinel the client could echo back.
+      accessPassword: undefined,
+      hasPassword: Boolean(space.accessPassword),
+    },
+  });
+
 export const GET = withEvlog(async (_request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
-    const session = await getSession();
+    const owned = await loadOwnedSpace(spaceId);
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!owned.ok) {
+      return owned.response;
     }
 
-    const space = await prisma.space.findUnique({
-      where: { id: spaceId },
-    });
-
-    if (!space) {
-      return NextResponse.json({ error: "Space not found" }, { status: 404 });
-    }
-
-    if (space.ownerId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    return NextResponse.json({
-      space: {
-        ...space,
-        // Expose hasPassword boolean, never the hash or a masked sentinel the client could echo back.
-        accessPassword: undefined,
-        hasPassword: Boolean(space.accessPassword),
-      },
-    });
+    return spaceResponse(owned.space);
   } catch (error) {
     log.error({ error, message: "Space operation failed", route: "/api/spaces/[spaceId]" });
     return NextResponse.json({ error: "Failed to fetch space" }, { status: 500 });
@@ -56,22 +76,10 @@ export const GET = withEvlog(async (_request: Request, { params }: Params) => {
 export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
-    const session = await getSession();
+    const owned = await loadOwnedSpace(spaceId);
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const space = await prisma.space.findUnique({
-      where: { id: spaceId },
-    });
-
-    if (!space) {
-      return NextResponse.json({ error: "Space not found" }, { status: 404 });
-    }
-
-    if (space.ownerId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!owned.ok) {
+      return owned.response;
     }
 
     const body = await request.json();
@@ -100,13 +108,7 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
       where: { id: spaceId },
     });
 
-    return NextResponse.json({
-      space: {
-        ...updatedSpace,
-        accessPassword: undefined,
-        hasPassword: Boolean(updatedSpace.accessPassword),
-      },
-    });
+    return spaceResponse(updatedSpace);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -122,22 +124,10 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
 export const DELETE = withEvlog(async (_request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
-    const session = await getSession();
+    const owned = await loadOwnedSpace(spaceId);
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const space = await prisma.space.findUnique({
-      where: { id: spaceId },
-    });
-
-    if (!space) {
-      return NextResponse.json({ error: "Space not found" }, { status: 404 });
-    }
-
-    if (space.ownerId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!owned.ok) {
+      return owned.response;
     }
 
     await prisma.space.delete({

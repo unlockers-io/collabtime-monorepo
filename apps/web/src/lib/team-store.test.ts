@@ -20,7 +20,7 @@ vi.mock("./team-mirror", () => ({ writeTeamMirror: vi.fn() }));
 
 import { redis } from "./redis";
 import { writeTeamMirror } from "./team-mirror";
-import { readTeamRecord, writeTeamRecord } from "./team-store";
+import { readTeamRecord, readTeamSummary, writeTeamRecord } from "./team-store";
 
 const mockedRedisGet = vi.mocked(redis.get);
 const mockedRedisSet = vi.mocked(redis.set);
@@ -84,6 +84,37 @@ describe("readTeamRecord", () => {
     mockedRedisGet.mockRejectedValue(new Error("connection failed"));
 
     expect(await readTeamRecord(VALID_UUID)).toBeNull();
+  });
+
+  it("returns null when the stored blob does not match the schema", async () => {
+    mockedRedisGet.mockResolvedValue(JSON.stringify({ ...createTestTeamRecord(), name: 42 }));
+
+    expect(await readTeamRecord(VALID_UUID)).toBeNull();
+  });
+});
+
+describe("readTeamSummary", () => {
+  it("returns the name and member count", async () => {
+    const team = createTestTeamRecord({ members: [createTestMember()] });
+    mockedRedisGet.mockResolvedValue(JSON.stringify(team));
+
+    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: team.name });
+  });
+
+  it("counts zero members for a team stored without a members array", async () => {
+    const { members: _, ...teamWithoutMembers } = createTestTeamRecord();
+    mockedRedisGet.mockResolvedValue(JSON.stringify(teamWithoutMembers));
+
+    expect(await readTeamSummary(VALID_UUID)).toEqual({
+      memberCount: 0,
+      name: teamWithoutMembers.name,
+    });
+  });
+
+  it("returns null for an unparseable blob rather than throwing", async () => {
+    mockedRedisGet.mockResolvedValue("not json");
+
+    expect(await readTeamSummary(VALID_UUID)).toBeNull();
   });
 });
 
