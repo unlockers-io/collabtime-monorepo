@@ -52,14 +52,9 @@ const mutateTeam = async <TPrelude, TResult>(
       return { error: "Invalid team ID", success: false };
     }
 
-    const preludeOutcome = prelude
-      ? await prelude()
-      : // oxlint-disable-next-line no-unsafe-type-assertion -- callers omit `prelude` only when TPrelude is undefined, so there is no runtime value to fabricate
-        ({ ok: true, value: undefined as TPrelude } as const);
-    if (!preludeOutcome.ok) {
-      return { error: preludeOutcome.error, success: false };
-    }
-
+    // Ahead of the prelude: authorization keys off teamId alone, so a caller who
+    // is not allowed here should never reach payload validation and learn from its
+    // error message that the payload was the problem.
     if (authorize) {
       const authorizeOutcome = await authorize(teamId);
       if (!authorizeOutcome.ok) {
@@ -67,6 +62,14 @@ const mutateTeam = async <TPrelude, TResult>(
       }
     } else {
       await requireTeamAdmin(teamId);
+    }
+
+    const preludeOutcome = prelude
+      ? await prelude()
+      : // oxlint-disable-next-line no-unsafe-type-assertion -- callers omit `prelude` only when TPrelude is undefined, so there is no runtime value to fabricate
+        ({ ok: true, value: undefined as TPrelude } as const);
+    if (!preludeOutcome.ok) {
+      return { error: preludeOutcome.error, success: false };
     }
 
     const team = await readTeamRecord(teamId);

@@ -116,7 +116,7 @@ describe("mutateTeam", () => {
     expect(mutate).not.toHaveBeenCalled();
   });
 
-  it("short-circuits on prelude failure before auth or load", async () => {
+  it("short-circuits on prelude failure before load", async () => {
     const mutate = vi.fn();
 
     const result = await mutateTeam({
@@ -127,9 +127,24 @@ describe("mutateTeam", () => {
     });
 
     expect(result).toEqual({ error: "Bad input", success: false });
-    expect(mockedRequireTeamAdmin).not.toHaveBeenCalled();
     expect(mockedRedisGet).not.toHaveBeenCalled();
     expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it("authorizes before running the prelude, so a denied caller never sees a payload error", async () => {
+    const prelude = vi.fn();
+
+    const result = await mutateTeam({
+      authorize: () => Promise.resolve({ error: "Not a member", ok: false }),
+      errorContext: "do thing",
+      mutate: () => ({ ok: true, value: 1 }),
+      prelude,
+      teamId: VALID_UUID,
+    });
+
+    expect(result).toEqual({ error: "Not a member", success: false });
+    expect(prelude).not.toHaveBeenCalled();
+    expect(mockedRedisGet).not.toHaveBeenCalled();
   });
 
   it("converts thrown auth errors to 'Failed to <errorContext>'", async () => {
