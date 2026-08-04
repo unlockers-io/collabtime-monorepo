@@ -20,7 +20,7 @@ vi.mock("./team-mirror", () => ({ writeTeamMirror: vi.fn() }));
 
 import { redis } from "./redis";
 import { writeTeamMirror } from "./team-mirror";
-import { readTeamRecord, writeTeamRecord } from "./team-store";
+import { readTeamRecord, readTeamSummary, writeTeamRecord } from "./team-store";
 
 const mockedRedisGet = vi.mocked(redis.get);
 const mockedRedisSet = vi.mocked(redis.set);
@@ -84,6 +84,70 @@ describe("readTeamRecord", () => {
     mockedRedisGet.mockRejectedValue(new Error("connection failed"));
 
     expect(await readTeamRecord(VALID_UUID)).toBeNull();
+  });
+
+  it("still reads a legacy blob the schema rejects", async () => {
+    const memberWithoutTitle = { ...createTestMember(), title: undefined };
+    const { createdAt: _, ...legacyTeam } = createTestTeamRecord({
+      members: [memberWithoutTitle as never],
+    });
+    mockedRedisGet.mockResolvedValue(JSON.stringify(legacyTeam));
+
+    const result = await readTeamRecord(VALID_UUID);
+
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe(legacyTeam.id);
+    expect(result?.name).toBe(legacyTeam.name);
+    expect(result?.members).toHaveLength(1);
+    expect(result?.members[0]).toMatchObject({ name: "Alice", order: 0 });
+  });
+
+  it("keeps unrecognised keys on a rescued blob so a write does not erase them", async () => {
+    const { name: _, ...legacyTeam } = createTestTeamRecord();
+    mockedRedisGet.mockResolvedValue(JSON.stringify({ ...legacyTeam, futureField: "keep me" }));
+
+    expect(await readTeamRecord(VALID_UUID)).toMatchObject({ futureField: "keep me", name: "" });
+  });
+
+  it("returns null when the blob holds no fields to read", async () => {
+    mockedRedisGet.mockResolvedValue("42");
+
+    expect(await readTeamRecord(VALID_UUID)).toBeNull();
+  });
+});
+
+describe("readTeamSummary", () => {
+  it("returns the name and member count", async () => {
+    const team = createTestTeamRecord({ members: [createTestMember()] });
+    mockedRedisGet.mockResolvedValue(JSON.stringify(team));
+
+    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: team.name });
+  });
+
+  it("counts zero members for a team stored without a members array", async () => {
+    const { members: _, ...teamWithoutMembers } = createTestTeamRecord();
+    mockedRedisGet.mockResolvedValue(JSON.stringify(teamWithoutMembers));
+
+    expect(await readTeamSummary(VALID_UUID)).toEqual({
+      memberCount: 0,
+      name: teamWithoutMembers.name,
+    });
+  });
+
+  it("returns null for an unparseable blob rather than throwing", async () => {
+    mockedRedisGet.mockResolvedValue("not json");
+
+    expect(await readTeamSummary(VALID_UUID)).toBeNull();
+  });
+
+  it("summarises a legacy blob the schema rejects instead of hiding the team", async () => {
+    const memberWithoutTitle = { ...createTestMember(), title: undefined };
+    const { createdAt: _, ...legacyTeam } = createTestTeamRecord({
+      members: [memberWithoutTitle as never],
+    });
+    mockedRedisGet.mockResolvedValue(JSON.stringify(legacyTeam));
+
+    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: legacyTeam.name });
   });
 });
 

@@ -116,7 +116,7 @@ describe("mutateTeam", () => {
     expect(mutate).not.toHaveBeenCalled();
   });
 
-  it("short-circuits on prelude failure before auth or load", async () => {
+  it("short-circuits on prelude failure before load", async () => {
     const mutate = vi.fn();
 
     const result = await mutateTeam({
@@ -127,9 +127,24 @@ describe("mutateTeam", () => {
     });
 
     expect(result).toEqual({ error: "Bad input", success: false });
-    expect(mockedRequireTeamAdmin).not.toHaveBeenCalled();
     expect(mockedRedisGet).not.toHaveBeenCalled();
     expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it("authorizes before running the prelude, so a denied caller never sees a payload error", async () => {
+    const prelude = vi.fn();
+
+    const result = await mutateTeam({
+      authorize: () => Promise.resolve({ error: "Not a member", ok: false }),
+      errorContext: "do thing",
+      mutate: () => ({ ok: true, value: 1 }),
+      prelude,
+      teamId: VALID_UUID,
+    });
+
+    expect(result).toEqual({ error: "Not a member", success: false });
+    expect(prelude).not.toHaveBeenCalled();
+    expect(mockedRedisGet).not.toHaveBeenCalled();
   });
 
   it("converts thrown auth errors to 'Failed to <errorContext>'", async () => {
@@ -191,18 +206,35 @@ describe("mutateTeam", () => {
     expect(mockedRedisSet).not.toHaveBeenCalled();
   });
 
-  it("skips requireTeamAdmin when skipAdminCheck is true", async () => {
+  it("uses a supplied authorize callback instead of requireTeamAdmin", async () => {
     mockedRedisGet.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
+    const authorize = vi.fn(() => Promise.resolve({ ok: true as const, value: undefined }));
 
     await mutateTeam({
+      authorize,
       errorContext: "do thing",
       mutate: () => ({ ok: true, value: undefined }),
-      skipAdminCheck: true,
       teamId: VALID_UUID,
     });
 
+    expect(authorize).toHaveBeenCalledWith(VALID_UUID);
     expect(mockedRequireTeamAdmin).not.toHaveBeenCalled();
     expect(mockedRedisSet).toHaveBeenCalled();
+  });
+
+  it("returns the authorize error without loading or mutating", async () => {
+    const mutate = vi.fn();
+
+    const result = await mutateTeam({
+      authorize: () => Promise.resolve({ error: "Not allowed", ok: false }),
+      errorContext: "do thing",
+      mutate,
+      teamId: VALID_UUID,
+    });
+
+    expect(result).toEqual({ error: "Not allowed", success: false });
+    expect(mockedRedisGet).not.toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
   });
 
   it("supports async preludes", async () => {

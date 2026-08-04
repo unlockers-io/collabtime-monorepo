@@ -53,6 +53,16 @@ const requireTeamAdmin = async (teamId: string): Promise<string> => {
   return result.userId;
 };
 
+const requireTeamMember = async (teamId: string): Promise<string> => {
+  const result = await getTeamRole(teamId);
+
+  if (!result) {
+    throw new Error("Not a member of this team");
+  }
+
+  return result.userId;
+};
+
 const requireAuth = async () => {
   const session = await getSession();
 
@@ -63,4 +73,4 @@ const requireAuth = async () => {
   return session;
 };
 
-export { getTeamRole, requireTeamAdmin, requireAuth };
+export { getTeamRole, requireTeamAdmin, requireTeamMember, requireAuth };

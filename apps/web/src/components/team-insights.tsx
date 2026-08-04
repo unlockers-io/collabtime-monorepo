@@ -10,7 +10,6 @@ import {
 } from "@repo/ui/components/tooltip";
 import { cn } from "@repo/ui/lib/utils";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
-import { Fragment, useSyncExternalStore } from "react";
 
 import {
   SectionCard,
@@ -18,6 +17,7 @@ import {
   SectionCardHeader,
   SectionCardTitle,
 } from "@/components/section-card";
+import { HOURS_IN_DAY, useClientValue } from "@/components/timezone-visualizer/helpers";
 import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
 import { useHalfMinuteTick } from "@/lib/use-tick";
 import type { TeamGroup, TeamMember } from "@/types";
@@ -28,12 +28,6 @@ const EMPTY_GROUPS: Array<TeamGroup> = [];
 type TeamInsightsProps = {
   groups?: Array<TeamGroup>;
   members: Array<TeamMember>;
-};
-
-const emptySubscribe = () => () => {};
-
-const useClientValue = <T,>(clientValue: () => T, serverValue: T): T => {
-  return useSyncExternalStore(emptySubscribe, clientValue, () => serverValue);
 };
 
 type MemberStatus = {
@@ -99,6 +93,34 @@ const StatusGroup = ({
   );
 };
 
+type StatusBadgeProps = {
+  children: React.ReactNode;
+  groupName: string | null;
+  tone: StatusTone;
+};
+
+const StatusBadge = ({ children, groupName, tone }: StatusBadgeProps) => {
+  const hasGroup = groupName !== null && groupName !== "";
+  const badge = (
+    <Badge className={cn(hasGroup && "cursor-help")} variant={tone}>
+      {children}
+    </Badge>
+  );
+
+  if (!hasGroup) {
+    return badge;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
+      <TooltipContent>
+        <p>{groupName}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+};
+
 const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => {
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
   useHalfMinuteTick();
@@ -138,26 +160,12 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
         viewerTimezone,
       );
 
-      let hoursUntilStart: number | null = null;
-      let hoursUntilEnd: number | null = null;
-
-      if (working) {
-        let diff = endInViewer - currentHourInViewer;
-        if (diff < 0) {
-          diff += 24;
-        }
-        hoursUntilEnd = diff;
-      } else {
-        let diff = startInViewer - currentHourInViewer;
-        if (diff < 0) {
-          diff += 24;
-        }
-        hoursUntilStart = diff;
-      }
+      const hoursUntil = (hourInViewer: number) =>
+        (hourInViewer - currentHourInViewer + HOURS_IN_DAY) % HOURS_IN_DAY;
 
       return {
-        hoursUntilEnd,
-        hoursUntilStart,
+        hoursUntilEnd: working ? hoursUntil(endInViewer) : null,
+        hoursUntilStart: working ? null : hoursUntil(startInViewer),
         isWorking: working,
         member,
       };
@@ -207,26 +215,12 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
             label="Online Now"
             tone="success"
           >
-            {onlineMembers.map(({ member }) => {
-              const groupName = getGroupName(member.groupId);
-              const hasGroup = groupName !== null && groupName !== "";
-              const badge = (
-                <Badge className={cn(hasGroup && "cursor-help")} variant="success">
-                  <span className="size-1.5 rounded-full bg-success" />
-                  {member.name}
-                </Badge>
-              );
-              return hasGroup ? (
-                <Tooltip key={member.id}>
-                  <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
-                  <TooltipContent>
-                    <p>{groupName}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Fragment key={member.id}>{badge}</Fragment>
-              );
-            })}
+            {onlineMembers.map(({ member }) => (
+              <StatusBadge groupName={getGroupName(member.groupId)} key={member.id} tone="success">
+                <span className="size-1.5 rounded-full bg-success" />
+                {member.name}
+              </StatusBadge>
+            ))}
           </StatusGroup>
 
           <StatusGroup
@@ -236,26 +230,12 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
             label="Starting Soon"
             tone="warning"
           >
-            {comingSoonMembers.map(({ hoursUntilStart, member }) => {
-              const groupName = getGroupName(member.groupId);
-              const hasGroup = groupName !== null && groupName !== "";
-              const badge = (
-                <Badge className={cn(hasGroup && "cursor-help")} variant="warning">
-                  {member.name}
-                  <span className="text-xs tabular-nums opacity-80">in {hoursUntilStart}h</span>
-                </Badge>
-              );
-              return hasGroup ? (
-                <Tooltip key={member.id}>
-                  <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
-                  <TooltipContent>
-                    <p>{groupName}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Fragment key={member.id}>{badge}</Fragment>
-              );
-            })}
+            {comingSoonMembers.map(({ hoursUntilStart, member }) => (
+              <StatusBadge groupName={getGroupName(member.groupId)} key={member.id} tone="warning">
+                {member.name}
+                <span className="text-xs tabular-nums opacity-80">in {hoursUntilStart}h</span>
+              </StatusBadge>
+            ))}
           </StatusGroup>
 
           <StatusGroup
@@ -266,26 +246,12 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
             label="Wrapping Up"
             tone="info"
           >
-            {leavingSoonMembers.map(({ hoursUntilEnd, member }) => {
-              const groupName = getGroupName(member.groupId);
-              const hasGroup = groupName !== null && groupName !== "";
-              const badge = (
-                <Badge className={cn(hasGroup && "cursor-help")} variant="info">
-                  {member.name}
-                  <span className="text-xs tabular-nums opacity-80">{hoursUntilEnd}h left</span>
-                </Badge>
-              );
-              return hasGroup ? (
-                <Tooltip key={member.id}>
-                  <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
-                  <TooltipContent>
-                    <p>{groupName}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Fragment key={member.id}>{badge}</Fragment>
-              );
-            })}
+            {leavingSoonMembers.map(({ hoursUntilEnd, member }) => (
+              <StatusBadge groupName={getGroupName(member.groupId)} key={member.id} tone="info">
+                {member.name}
+                <span className="text-xs tabular-nums opacity-80">{hoursUntilEnd}h left</span>
+              </StatusBadge>
+            ))}
           </StatusGroup>
         </div>
       </SectionCardContent>

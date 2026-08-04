@@ -28,11 +28,11 @@ import { useState, useTransition } from "react";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
+import { HourSelectField } from "@/components/hour-select-field";
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
 import { COMMON_TIMEZONES, formatTimezoneLabel, isCommonTimezone } from "@/lib/timezones";
-import { formatHour } from "@/lib/utils";
 import type { TeamGroup, TeamMember } from "@/types";
 
 type EditMemberDialogProps = {
@@ -46,8 +46,6 @@ type EditMemberDialogProps = {
 
 // Form does not receive `open`; that stays in the Dialog wrapper.
 type EditMemberFormProps = Omit<EditMemberDialogProps, "open"> & { mode: "admin" | "claim" };
-
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 const formSchema = z.object({
   groupId: z.string(),
@@ -79,55 +77,6 @@ const SaveButtonLabel = ({ isClaim, isPending }: SaveButtonLabelProps) => {
   }
   return <>Save Changes</>;
 };
-
-type HourSelectProps = {
-  errorId: string;
-  errors: Array<unknown>;
-  id: string;
-  isInvalid: boolean;
-  label: string;
-  onBlur: () => void;
-  onChange: (v: number) => void;
-  value: number;
-};
-
-const HourSelect = ({
-  errorId,
-  errors,
-  id,
-  isInvalid,
-  label,
-  onBlur,
-  onChange,
-  value,
-}: HourSelectProps) => (
-  <Field data-invalid={isInvalid || undefined}>
-    <FieldLabel htmlFor={id}>{label}</FieldLabel>
-    <Select
-      onValueChange={(v) => {
-        onChange(Number(v));
-        onBlur();
-      }}
-      value={String(value)}
-    >
-      <SelectTrigger
-        aria-describedby={isInvalid ? errorId : undefined}
-        aria-invalid={isInvalid}
-        id={id}
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {HOURS.map((hour) => (
-          <SelectItem key={hour} value={String(hour)}>
-            {formatHour(hour)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-    {isInvalid && <FieldError errors={errors} id={errorId} />}
-  </Field>
-);
 
 const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemberFormProps) => {
   const queryClient = useQueryClient();
@@ -324,7 +273,7 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
           <div className="grid grid-cols-2 gap-4">
             <form.Field name="workingHoursStart">
               {(field) => (
-                <HourSelect
+                <HourSelectField
                   errorId="edit-work-start-error"
                   errors={field.state.meta.errors}
                   id="edit-work-start"
@@ -339,7 +288,7 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
 
             <form.Field name="workingHoursEnd">
               {(field) => (
-                <HourSelect
+                <HourSelectField
                   errorId="edit-work-end-error"
                   errors={field.state.meta.errors}
                   id="edit-work-end"
