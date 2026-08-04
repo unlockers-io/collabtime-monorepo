@@ -1,7 +1,7 @@
 const Loading = () => {
   return (
     <div className="min-h-dvh w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
-      <main className="mx-auto flex w-full max-w-450 flex-col gap-6">
+      <main className="mx-auto flex w-full max-w-450 flex-col gap-6" id="main">
         <header className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
