@@ -41,13 +41,17 @@ const useInvitations = () => {
       const result = await acceptInvitation(invitation.id);
       if (result.success) {
         toast.success(`Joined ${invitation.teamName}`);
-        await Promise.allSettled([
-          queryClient.invalidateQueries({ queryKey: ["my-invitations"] }),
-          queryClient.invalidateQueries({ queryKey: ["my-teams"] }),
-        ]);
       } else {
         toast.error(result.error);
       }
+      // Also on failure: the invitation is marked ACCEPTED and the membership
+      // created before the step that can fail, so the invitation is gone either
+      // way and leaving it on screen invites a retry that reports something
+      // different.
+      await Promise.allSettled([
+        queryClient.invalidateQueries({ queryKey: ["my-invitations"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-teams"] }),
+      ]);
     } catch (error) {
       captureException(error);
       toast.error("Failed to accept invitation");

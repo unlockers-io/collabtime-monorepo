@@ -17,7 +17,10 @@ const { redisMock } = vi.hoisted(() => ({
   redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
 }));
 
+// The real team-store runs against this stub so the durability tests exercise the
+// actual read/mutate/write path instead of a mocked one.
 vi.mock("../redis", () => ({
+  isRedisConfigured: (): boolean => true,
   readTeamJson: async (teamId: string): Promise<string | null> => {
     const data: unknown = await redisMock.get(`team:${teamId}`);
     return typeof data === "string" && data !== "" ? data : null;
@@ -26,29 +29,32 @@ vi.mock("../redis", () => ({
   TEAM_ACTIVE_TTL_SECONDS: 100,
   teamKey: (teamId: string): string => `team:${teamId}`,
 }));
-vi.mock("../team-store", () => ({ readTeamRecord: vi.fn(), writeTeamRecord: vi.fn() }));
+vi.mock("../team-mirror", () => ({ writeTeamMirror: vi.fn() }));
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
 import { prisma } from "@repo/db";
 
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 
-import { readTeamRecord, writeTeamRecord } from "../team-store";
-
 import * as joinRequests from "./join-requests";
 
 const { approveJoinRequest, denyJoinRequest, getPendingJoinRequests, requestToJoin } = joinRequests;
+
+const storedTeam = (team = createTestTeamRecord()) => {
+  redisMock.get.mockResolvedValue(JSON.stringify(team));
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(requireAuth).mockResolvedValue(createMockSession() as never);
   vi.mocked(requireTeamAdmin).mockResolvedValue(undefined as never);
+  redisMock.set.mockResolvedValue("OK");
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 describe("requestToJoin", () => {
   it("returns error when team not found", async () => {
-    vi.mocked(readTeamRecord).mockResolvedValue(null);
+    redisMock.get.mockResolvedValue(null);
 
     const result = await requestToJoin(VALID_UUID);
 
@@ -56,7 +62,7 @@ describe("requestToJoin", () => {
   });
 
   it("returns error when already a member", async () => {
-    vi.mocked(readTeamRecord).mockResolvedValue(createTestTeamRecord());
+    storedTeam();
     vi.mocked(prisma.membership.findUnique).mockResolvedValue({ id: "m-1" } as never);
 
     const result = await requestToJoin(VALID_UUID);
@@ -65,7 +71,7 @@ describe("requestToJoin", () => {
   });
 
   it("returns error when already has pending request", async () => {
-    vi.mocked(readTeamRecord).mockResolvedValue(createTestTeamRecord());
+    storedTeam();
     vi.mocked(prisma.membership.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue({ status: "PENDING" } as never);
 
@@ -78,7 +84,7 @@ describe("requestToJoin", () => {
   });
 
   it("creates join request via upsert on success", async () => {
-    vi.mocked(readTeamRecord).mockResolvedValue(createTestTeamRecord());
+    storedTeam();
     vi.mocked(prisma.membership.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.joinRequest.upsert).mockResolvedValue({ id: "jr-1" } as never);
@@ -131,7 +137,7 @@ describe("approveJoinRequest", () => {
   it("creates membership and updates status in transaction", async () => {
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
-    vi.mocked(readTeamRecord).mockResolvedValue(createTestTeamRecord());
+    storedTeam();
 
     const result = await approveJoinRequest("jr-1");
 
@@ -145,11 +151,51 @@ describe("approveJoinRequest", () => {
   it("persists the claimed member slot after approval", async () => {
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
-    vi.mocked(readTeamRecord).mockResolvedValue(createTestTeamRecord());
+    storedTeam();
 
     await approveJoinRequest("jr-1");
 
-    expect(writeTeamRecord).toHaveBeenCalledWith(VALID_UUID, expect.anything());
+    const written = JSON.parse(redisMock.set.mock.calls[0][1] as string) as {
+      members: Array<{ id: string; userId: string }>;
+    };
+    expect(written.members).toEqual([
+      expect.objectContaining({ id: "test-uuid", userId: "user-456" }),
+    ]);
+  });
+
+  it("does not report success when the member write fails", async () => {
+    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    storedTeam();
+    redisMock.set.mockRejectedValue(new Error("redis down"));
+
+    const result = await approveJoinRequest("jr-1");
+
+    expect(result.success).toBe(false);
+  });
+
+  it("does not report success when the team has no contents record", async () => {
+    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    redisMock.get.mockResolvedValue(null);
+
+    const result = await approveJoinRequest("jr-1");
+
+    expect(result.success).toBe(false);
+    expect(redisMock.set).not.toHaveBeenCalled();
+  });
+
+  it("says the team was unreachable when the read failed, not that it is missing", async () => {
+    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    redisMock.get.mockRejectedValue(new Error("redis down"));
+
+    const result = await approveJoinRequest("jr-1");
+
+    expect(result).toEqual({
+      error: "The request was approved, but the team could not be reached. Try again in a moment.",
+      success: false,
+    });
   });
 });
 

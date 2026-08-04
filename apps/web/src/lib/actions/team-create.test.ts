@@ -10,10 +10,12 @@ vi.mock("@repo/db", () => ({
   prisma: {
     $transaction: vi.fn(),
     membership: { create: vi.fn() },
-    space: { create: vi.fn() },
+    space: { create: vi.fn(), delete: vi.fn() },
   },
 }));
 vi.mock("../redis", () => ({
+  isRedisConfigured: (): boolean => true,
+  readTeamJson: (): Promise<string | null> => Promise.resolve(null),
   redis: { set: vi.fn() },
   TEAM_ACTIVE_TTL_SECONDS: 100,
   TEAM_INITIAL_TTL_SECONDS: 100,
@@ -91,7 +93,7 @@ describe("createTeam", () => {
     });
   });
 
-  it("succeeds even if the team-contents write fails", async () => {
+  it("does not report success when the team-contents write fails", async () => {
     const session = createMockSession();
     vi.mocked(requireAuth).mockResolvedValue(session as never);
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
@@ -99,13 +101,54 @@ describe("createTeam", () => {
 
     const result = await createTeam(TEST_TIMEZONE);
 
-    expect(result).toEqual({ data: "test-uuid-0", success: true });
+    expect(result).toEqual({ error: "Failed to create team", success: false });
     expect(log.error).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Post-commit team-contents write failed (team created in Postgres)",
+        message: "Space and membership committed but the team contents were not stored",
+        reason: "write-failed",
         route: "actions/team-create",
       }),
     );
+  });
+
+  it("rolls back the Space row when the team-contents write fails", async () => {
+    const session = createMockSession();
+    vi.mocked(requireAuth).mockResolvedValue(session as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(redis.set).mockRejectedValue(new Error("Redis down"));
+
+    await createTeam(TEST_TIMEZONE);
+
+    expect(prisma.space.delete).toHaveBeenCalledWith({ where: { teamId: "test-uuid-0" } });
+  });
+
+  it("reports the original failure when the rollback also fails", async () => {
+    const session = createMockSession();
+    vi.mocked(requireAuth).mockResolvedValue(session as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(redis.set).mockRejectedValue(new Error("Redis down"));
+    vi.mocked(prisma.space.delete).mockRejectedValue(new Error("Postgres down"));
+
+    const result = await createTeam(TEST_TIMEZONE);
+
+    expect(result).toEqual({ error: "Failed to create team", success: false });
+    expect(log.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Failed to roll back the Space row for a team with no contents",
+        route: "actions/team-create",
+      }),
+    );
+  });
+
+  it("keeps the Space row when the team is created", async () => {
+    const session = createMockSession();
+    vi.mocked(requireAuth).mockResolvedValue(session as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(redis.set).mockResolvedValue("OK");
+
+    await createTeam(TEST_TIMEZONE);
+
+    expect(prisma.space.delete).not.toHaveBeenCalled();
   });
 
   it("returns the generated teamId on success", async () => {

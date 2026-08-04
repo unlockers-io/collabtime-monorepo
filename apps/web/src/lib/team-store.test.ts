@@ -2,11 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTestMember, createTestTeamRecord, VALID_UUID } from "./actions/test-helpers";
 
-const { redisMock } = vi.hoisted(() => ({
+const { isRedisConfiguredMock, redisMock } = vi.hoisted(() => ({
+  isRedisConfiguredMock: vi.fn(() => true),
   redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
 }));
 
 vi.mock("./redis", () => ({
+  isRedisConfigured: isRedisConfiguredMock,
   readTeamJson: async (teamId: string): Promise<string | null> => {
     const data: unknown = await redisMock.get(`team:${teamId}`);
     return typeof data === "string" && data !== "" ? data : null;
@@ -17,10 +19,17 @@ vi.mock("./redis", () => ({
 }));
 
 vi.mock("./team-mirror", () => ({ writeTeamMirror: vi.fn() }));
+vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
 import { redis } from "./redis";
 import { writeTeamMirror } from "./team-mirror";
-import { readTeamRecord, readTeamSummary, writeTeamRecord } from "./team-store";
+import {
+  applyTeamContents,
+  newTeamMember,
+  readTeamRecord,
+  readTeamSummary,
+  writeTeamRecord,
+} from "./team-store";
 
 const mockedRedisGet = vi.mocked(redis.get);
 const mockedRedisSet = vi.mocked(redis.set);
@@ -30,6 +39,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
   mockedRedisSet.mockResolvedValue("OK");
+  isRedisConfiguredMock.mockReturnValue(true);
 });
 
 describe("readTeamRecord", () => {
@@ -186,5 +196,117 @@ describe("writeTeamRecord", () => {
       "connection failed",
     );
     expect(mockedWriteTeamMirror).not.toHaveBeenCalled();
+  });
+});
+
+describe("newTeamMember", () => {
+  it("fills the shared defaults and lets a caller override them", () => {
+    expect(newTeamMember()).toEqual({
+      id: "test-uuid",
+      name: "",
+      order: 0,
+      timezone: "America/New_York",
+      title: "",
+      workingHoursEnd: 17,
+      workingHoursStart: 9,
+    });
+    expect(newTeamMember({ order: 3, timezone: "Europe/Berlin" })).toMatchObject({
+      order: 3,
+      timezone: "Europe/Berlin",
+      workingHoursStart: 9,
+    });
+  });
+});
+
+describe("applyTeamContents", () => {
+  it("writes the mutated record and returns the mutation's value", async () => {
+    mockedRedisGet.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
+
+    const result = await applyTeamContents(VALID_UUID, (team) => {
+      if (team === null) {
+        return { error: "Team not found", ok: false };
+      }
+      team.members.push(createTestMember());
+      return { ok: true, team, value: "written" };
+    });
+
+    expect(result).toEqual({ ok: true, value: "written" });
+    const written = JSON.parse(mockedRedisSet.mock.calls[0][1] as string) as {
+      members: Array<unknown>;
+    };
+    expect(written.members).toHaveLength(1);
+  });
+
+  it("does not report success when the write fails", async () => {
+    mockedRedisGet.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
+    mockedRedisSet.mockRejectedValue(new Error("connection failed"));
+
+    const result = await applyTeamContents(VALID_UUID, (team) => ({
+      ok: true,
+      team,
+      value: undefined,
+    }));
+
+    expect(result).toEqual({
+      error: "Failed to save the team",
+      ok: false,
+      reason: "write-failed",
+    });
+  });
+
+  it("reports an unconfigured store instead of a phantom success", async () => {
+    isRedisConfiguredMock.mockReturnValue(false);
+
+    const result = await applyTeamContents(VALID_UUID, (team) => ({
+      ok: true,
+      team,
+      value: undefined,
+    }));
+
+    expect(result).toEqual({
+      error: "Team storage is unavailable",
+      ok: false,
+      reason: "unconfigured",
+    });
+    expect(mockedRedisSet).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed read rather than passing it off as a team with no contents", async () => {
+    mockedRedisGet.mockRejectedValue(new Error("connection failed"));
+    const mutate = vi.fn((): { ok: true; team: null; value: undefined } => ({
+      ok: true,
+      team: null,
+      value: undefined,
+    }));
+
+    const result = await applyTeamContents(VALID_UUID, mutate);
+
+    expect(result).toEqual({ error: "Could not read the team", ok: false, reason: "read-failed" });
+    expect(mutate).not.toHaveBeenCalled();
+    expect(mockedRedisSet).not.toHaveBeenCalled();
+  });
+
+  it("passes a null record through so the mutation can refuse", async () => {
+    mockedRedisGet.mockResolvedValue(null);
+
+    const result = await applyTeamContents(VALID_UUID, (team) =>
+      team === null ? { error: "Team not found", ok: false } : { ok: true, team, value: undefined },
+    );
+
+    expect(result).toEqual({ error: "Team not found", ok: false, reason: "rejected" });
+    expect(mockedRedisSet).not.toHaveBeenCalled();
+  });
+
+  it("skips the write when the mutation has nothing to persist", async () => {
+    mockedRedisGet.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
+
+    const result = await applyTeamContents(VALID_UUID, () => ({
+      ok: true,
+      team: null,
+      value: "unchanged",
+    }));
+
+    expect(result).toEqual({ ok: true, value: "unchanged" });
+    expect(mockedRedisSet).not.toHaveBeenCalled();
   });
 });

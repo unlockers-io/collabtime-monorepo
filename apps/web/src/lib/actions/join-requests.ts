@@ -1,13 +1,11 @@
 "use server";
 
 import { prisma } from "@repo/db";
-import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
-import type { TeamMember } from "@/types";
 
-import { readTeamRecord, writeTeamRecord } from "../team-store";
+import { applyTeamContents, newTeamMember, readTeamRecord } from "../team-store";
 import { UUIDSchema } from "../validation";
 
 import type { ActionResult } from "./types";
@@ -123,32 +121,42 @@ const approveJoinRequest = async (
     ]);
 
     const memberName = displayName(joinRequest.user.name, joinRequest.user.email);
-    const team = await readTeamRecord(joinRequest.teamId);
-    const newMember: TeamMember = {
-      id: uuidv4(),
-      name: memberName,
-      order: team?.members.length ?? 0,
-      timezone: "America/New_York",
-      title: "",
-      userId: joinRequest.userId,
-      workingHoursEnd: 17,
-      workingHoursStart: 9,
-    };
 
-    try {
-      if (team) {
-        team.members.push(newMember);
-        await writeTeamRecord(joinRequest.teamId, team);
+    const applied = await applyTeamContents(joinRequest.teamId, (team) => {
+      if (team === null) {
+        return { error: "Team not found", ok: false };
       }
-    } catch (cacheError) {
+
+      const member = newTeamMember({
+        name: memberName,
+        order: team.members.length,
+        userId: joinRequest.userId,
+      });
+      team.members.push(member);
+
+      return { ok: true, team, value: member.id };
+    });
+
+    if (!applied.ok) {
       log.error({
-        error: cacheError,
-        message: "Post-commit cache failed (approval committed)",
+        message: "Approval committed but the member was not stored",
+        reason: applied.reason,
+        requestId,
         route: "actions/join-requests",
       });
+      // "Add them from the team page" is only good advice when the store answered
+      // and the team simply has no room for the member. A read that failed says
+      // the store is unreachable, and the team page would fail the same way.
+      return {
+        error:
+          applied.reason === "read-failed" || applied.reason === "unconfigured"
+            ? "The request was approved, but the team could not be reached. Try again in a moment."
+            : "The request was approved, but adding the member failed. Add them from the team page.",
+        success: false,
+      };
     }
 
-    return { data: { memberId: newMember.id }, success: true };
+    return { data: { memberId: applied.value }, success: true };
   } catch (error) {
     log.error({ error, message: "Failed to approve join request", route: "actions/join-requests" });
     return { error: "Failed to approve join request", success: false };

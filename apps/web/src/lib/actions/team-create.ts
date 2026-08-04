@@ -5,10 +5,9 @@ import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
 import { requireAuth } from "@/lib/team-auth";
-import type { TeamMember, TeamRecord } from "@/types";
 
 import { TEAM_INITIAL_TTL_SECONDS } from "../redis";
-import { writeTeamRecord } from "../team-store";
+import { applyTeamContents, newTeamMember } from "../team-store";
 
 import type { ActionResult } from "./types";
 
@@ -35,33 +34,47 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
       }),
     ]);
 
-    try {
-      const creatorMember: TeamMember = {
-        id: uuidv4(),
-        name: session.user.name ?? "",
-        order: 0,
-        timezone,
-        title: "",
-        userId: session.user.id,
-        workingHoursEnd: 17,
-        workingHoursStart: 9,
-      };
+    const applied = await applyTeamContents(
+      teamId,
+      () => ({
+        ok: true,
+        team: {
+          createdAt: new Date().toISOString(),
+          groups: [],
+          id: teamId,
+          members: [
+            newTeamMember({ name: session.user.name ?? "", timezone, userId: session.user.id }),
+          ],
+          name: "",
+        },
+        value: undefined,
+      }),
+      TEAM_INITIAL_TTL_SECONDS,
+    );
 
-      const team: TeamRecord = {
-        createdAt: new Date().toISOString(),
-        groups: [],
-        id: teamId,
-        members: [creatorMember],
-        name: "",
-      };
-
-      await writeTeamRecord(teamId, team, TEAM_INITIAL_TTL_SECONDS);
-    } catch (cacheError) {
+    if (!applied.ok) {
       log.error({
-        error: cacheError,
-        message: "Post-commit team-contents write failed (team created in Postgres)",
+        message: "Space and membership committed but the team contents were not stored",
+        reason: applied.reason,
         route: "actions/team-create",
+        teamId,
       });
+
+      // The Space row is what makes a team listable and routable, so keeping it
+      // after the contents write failed publishes a team that resolves to
+      // nothing. Deleting it cascades the membership through the teamId relation.
+      try {
+        await prisma.space.delete({ where: { teamId } });
+      } catch (rollbackError) {
+        log.error({
+          error: rollbackError,
+          message: "Failed to roll back the Space row for a team with no contents",
+          route: "actions/team-create",
+          teamId,
+        });
+      }
+
+      return { error: "Failed to create team", success: false };
     }
 
     return { data: teamId, success: true };

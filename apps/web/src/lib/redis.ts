@@ -4,6 +4,14 @@ import { log } from "@/lib/observability";
 
 let cachedRedis: Redis | null = null;
 
+// The Proxy below answers writes with a resolved `null` when there is no URL, which
+// is indistinguishable from a successful write. Callers that must not report a
+// phantom success ask this first.
+const isRedisConfigured = (): boolean => {
+  const url = process.env.REDIS_URL;
+  return url !== undefined && url !== "";
+};
+
 // Lazy init: env vars may be missing at build time, and we defer the TCP handshake on cold starts.
 const getRedis = (): Redis | null => {
   if (cachedRedis) {
@@ -33,8 +41,11 @@ const redis = new Proxy({} as Redis, {
     if (!instance) {
       // Graceful degradation when Redis isn't configured (REDIS_URL is optional so CI
       // and builds work without it). Gotcha: writes (set/setex/del) resolve as no-ops,
-      // so callers like mutateTeam report success while persisting nothing. Production
-      // must set REDIS_URL; this branch is for environments without real traffic.
+      // which no caller can tell apart from success. The ones that must not report a
+      // phantom success call isRedisConfigured() first, which applyTeamContents does
+      // and mutateTeam still does not, so every mutateTeam action reports success
+      // while persisting nothing. Production must set REDIS_URL; this branch is for
+      // environments without real traffic.
       if (
         typeof prop === "string" &&
         ["get", "set", "setex", "expire", "del", "scan", "publish"].includes(prop)
@@ -84,4 +95,11 @@ const readTeamJson = async (teamId: string): Promise<string | null> => {
   return data;
 };
 
-export { readTeamJson, redis, teamKey, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };
+export {
+  isRedisConfigured,
+  readTeamJson,
+  redis,
+  teamKey,
+  TEAM_INITIAL_TTL_SECONDS,
+  TEAM_ACTIVE_TTL_SECONDS,
+};
