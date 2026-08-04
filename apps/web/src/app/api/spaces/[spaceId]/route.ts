@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db";
+import { prisma, type Space } from "@repo/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -17,8 +17,6 @@ const updateSpaceSchema = z.object({
 type Params = {
   params: Promise<{ spaceId: string }>;
 };
-
-type Space = NonNullable<Awaited<ReturnType<typeof prisma.space.findUnique>>>;
 
 type OwnedSpaceResult = { ok: false; response: NextResponse } | { ok: true; space: Space };
 

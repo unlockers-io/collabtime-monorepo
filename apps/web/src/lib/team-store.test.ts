@@ -86,8 +86,31 @@ describe("readTeamRecord", () => {
     expect(await readTeamRecord(VALID_UUID)).toBeNull();
   });
 
-  it("returns null when the stored blob does not match the schema", async () => {
-    mockedRedisGet.mockResolvedValue(JSON.stringify({ ...createTestTeamRecord(), name: 42 }));
+  it("still reads a legacy blob the schema rejects", async () => {
+    const memberWithoutTitle = { ...createTestMember(), title: undefined };
+    const { createdAt: _, ...legacyTeam } = createTestTeamRecord({
+      members: [memberWithoutTitle as never],
+    });
+    mockedRedisGet.mockResolvedValue(JSON.stringify(legacyTeam));
+
+    const result = await readTeamRecord(VALID_UUID);
+
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe(legacyTeam.id);
+    expect(result?.name).toBe(legacyTeam.name);
+    expect(result?.members).toHaveLength(1);
+    expect(result?.members[0]).toMatchObject({ name: "Alice", order: 0 });
+  });
+
+  it("keeps unrecognised keys on a rescued blob so a write does not erase them", async () => {
+    const { name: _, ...legacyTeam } = createTestTeamRecord();
+    mockedRedisGet.mockResolvedValue(JSON.stringify({ ...legacyTeam, futureField: "keep me" }));
+
+    expect(await readTeamRecord(VALID_UUID)).toMatchObject({ futureField: "keep me", name: "" });
+  });
+
+  it("returns null when the blob holds no fields to read", async () => {
+    mockedRedisGet.mockResolvedValue("42");
 
     expect(await readTeamRecord(VALID_UUID)).toBeNull();
   });
@@ -115,6 +138,16 @@ describe("readTeamSummary", () => {
     mockedRedisGet.mockResolvedValue("not json");
 
     expect(await readTeamSummary(VALID_UUID)).toBeNull();
+  });
+
+  it("summarises a legacy blob the schema rejects instead of hiding the team", async () => {
+    const memberWithoutTitle = { ...createTestMember(), title: undefined };
+    const { createdAt: _, ...legacyTeam } = createTestTeamRecord({
+      members: [memberWithoutTitle as never],
+    });
+    mockedRedisGet.mockResolvedValue(JSON.stringify(legacyTeam));
+
+    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: legacyTeam.name });
   });
 });
 

@@ -43,7 +43,25 @@ const StoredTeamSchema = z.looseObject({
 
 type StoredTeam = z.infer<typeof StoredTeamSchema>;
 
-const readStoredTeam = async (teamId: string): Promise<StoredTeam | null> => {
+// A blob that fails validation is still read rather than dropped, so nothing the
+// schema requires can be assumed present by the time it reaches toTeamRecord.
+type MaybeStoredTeam = Partial<StoredTeam>;
+
+const asText = (value: unknown, fallback: string): string =>
+  typeof value === "string" && value !== "" ? value : fallback;
+
+const toTeamRecord = (teamId: string, stored: MaybeStoredTeam): TeamRecord => ({
+  ...stored,
+  createdAt: asText(stored.createdAt, ""),
+  groups: Array.isArray(stored.groups) ? stored.groups : [],
+  id: asText(stored.id, teamId),
+  members: (Array.isArray(stored.members) ? stored.members : []).map((m, i) =>
+    Object.assign(m, { order: m.order ?? i }),
+  ),
+  name: asText(stored.name, ""),
+});
+
+const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
@@ -56,37 +74,33 @@ const readStoredTeam = async (teamId: string): Promise<StoredTeam | null> => {
       return null;
     }
 
-    const parsed = StoredTeamSchema.safeParse(JSON.parse(data));
+    const raw: unknown = JSON.parse(data);
+    const parsed = StoredTeamSchema.safeParse(raw);
 
-    if (!parsed.success) {
-      log.error({
-        error: parsed.error,
-        message: "Stored team failed validation",
-        route: "lib/team-store",
-        teamId,
-      });
+    if (parsed.success) {
+      return toTeamRecord(teamId, parsed.data);
+    }
+
+    log.error({
+      error: parsed.error,
+      message: "Stored team failed validation, reading it untrusted",
+      route: "lib/team-store",
+      teamId,
+    });
+
+    // Redis holds the only copy of a team's contents, so a row written before a
+    // field existed still has to resolve: dropping it here would 404 the team
+    // page, fail every mutation on it, and hide it from the teams list. Only a
+    // blob with no fields to read at all is given up on.
+    if (typeof raw !== "object" || raw === null) {
       return null;
     }
 
-    return parsed.data;
+    return toTeamRecord(teamId, raw);
   } catch (error) {
-    log.error({ error, message: "Failed to get team", route: "lib/team-store" });
+    log.error({ error, message: "Failed to get team", route: "lib/team-store", teamId });
     return null;
   }
-};
-
-const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
-  const stored = await readStoredTeam(teamId);
-
-  if (stored === null) {
-    return null;
-  }
-
-  return {
-    ...stored,
-    groups: stored.groups ?? [],
-    members: (stored.members ?? []).map((m, i) => Object.assign(m, { order: m.order ?? i })),
-  };
 };
 
 type TeamSummary = {
@@ -95,13 +109,13 @@ type TeamSummary = {
 };
 
 const readTeamSummary = async (teamId: string): Promise<TeamSummary | null> => {
-  const stored = await readStoredTeam(teamId);
+  const team = await readTeamRecord(teamId);
 
-  if (stored === null) {
+  if (team === null) {
     return null;
   }
 
-  return { memberCount: stored.members?.length ?? 0, name: stored.name };
+  return { memberCount: team.members.length, name: team.name };
 };
 
 /**
