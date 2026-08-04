@@ -44,4 +44,7 @@ const SettingsPage = () => (
   </Suspense>
 );
 
+/** @public Next.js app-router reads the instant segment config via the module loader */
+export const instant = true;
+
 export default SettingsPage;
