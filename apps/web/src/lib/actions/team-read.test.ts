@@ -148,12 +148,13 @@ describe("getTeamName", () => {
 describe("getTeamMembershipRole", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getSession).mockResolvedValue(createMockSession() as never);
   });
 
   it("returns role from membership", async () => {
     vi.mocked(prisma.membership.findUnique).mockResolvedValue({ role: "ADMIN" } as never);
 
-    const result = await getTeamMembershipRole(VALID_UUID, "user-123");
+    const result = await getTeamMembershipRole(VALID_UUID);
 
     expect(result).toBe("ADMIN");
   });
@@ -161,8 +162,27 @@ describe("getTeamMembershipRole", () => {
   it("returns null when no membership exists", async () => {
     vi.mocked(prisma.membership.findUnique).mockResolvedValue(null);
 
-    const result = await getTeamMembershipRole(VALID_UUID, "user-123");
+    const result = await getTeamMembershipRole(VALID_UUID);
 
     expect(result).toBeNull();
+  });
+
+  it("looks the membership up by the session user, not a caller-supplied id", async () => {
+    vi.mocked(prisma.membership.findUnique).mockResolvedValue({ role: "ADMIN" } as never);
+
+    await getTeamMembershipRole(VALID_UUID);
+
+    expect(prisma.membership.findUnique).toHaveBeenCalledWith({
+      where: { userId_teamId: { teamId: VALID_UUID, userId: createMockSession().user.id } },
+    });
+  });
+
+  it("returns null for an anonymous caller without querying", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+
+    const result = await getTeamMembershipRole(VALID_UUID);
+
+    expect(result).toBeNull();
+    expect(prisma.membership.findUnique).not.toHaveBeenCalled();
   });
 });
