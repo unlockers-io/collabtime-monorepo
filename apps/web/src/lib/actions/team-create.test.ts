@@ -10,7 +10,7 @@ vi.mock("@repo/db", () => ({
   prisma: {
     $transaction: vi.fn(),
     membership: { create: vi.fn() },
-    space: { create: vi.fn() },
+    space: { create: vi.fn(), delete: vi.fn() },
   },
 }));
 vi.mock("../redis", () => ({
@@ -109,6 +109,46 @@ describe("createTeam", () => {
         route: "actions/team-create",
       }),
     );
+  });
+
+  it("rolls back the Space row when the team-contents write fails", async () => {
+    const session = createMockSession();
+    vi.mocked(requireAuth).mockResolvedValue(session as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(redis.set).mockRejectedValue(new Error("Redis down"));
+
+    await createTeam(TEST_TIMEZONE);
+
+    expect(prisma.space.delete).toHaveBeenCalledWith({ where: { teamId: "test-uuid-0" } });
+  });
+
+  it("reports the original failure when the rollback also fails", async () => {
+    const session = createMockSession();
+    vi.mocked(requireAuth).mockResolvedValue(session as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(redis.set).mockRejectedValue(new Error("Redis down"));
+    vi.mocked(prisma.space.delete).mockRejectedValue(new Error("Postgres down"));
+
+    const result = await createTeam(TEST_TIMEZONE);
+
+    expect(result).toEqual({ error: "Failed to create team", success: false });
+    expect(log.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Failed to roll back the Space row for a team with no contents",
+        route: "actions/team-create",
+      }),
+    );
+  });
+
+  it("keeps the Space row when the team is created", async () => {
+    const session = createMockSession();
+    vi.mocked(requireAuth).mockResolvedValue(session as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    vi.mocked(redis.set).mockResolvedValue("OK");
+
+    await createTeam(TEST_TIMEZONE);
+
+    expect(prisma.space.delete).not.toHaveBeenCalled();
   });
 
   it("returns the generated teamId on success", async () => {

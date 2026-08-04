@@ -271,6 +271,21 @@ describe("applyTeamContents", () => {
     expect(mockedRedisSet).not.toHaveBeenCalled();
   });
 
+  it("reports a failed read rather than passing it off as a team with no contents", async () => {
+    mockedRedisGet.mockRejectedValue(new Error("connection failed"));
+    const mutate = vi.fn((): { ok: true; team: null; value: undefined } => ({
+      ok: true,
+      team: null,
+      value: undefined,
+    }));
+
+    const result = await applyTeamContents(VALID_UUID, mutate);
+
+    expect(result).toEqual({ error: "Could not read the team", ok: false, reason: "read-failed" });
+    expect(mutate).not.toHaveBeenCalled();
+    expect(mockedRedisSet).not.toHaveBeenCalled();
+  });
+
   it("passes a null record through so the mutation can refuse", async () => {
     mockedRedisGet.mockResolvedValue(null);
 

@@ -184,6 +184,19 @@ describe("approveJoinRequest", () => {
     expect(result.success).toBe(false);
     expect(redisMock.set).not.toHaveBeenCalled();
   });
+
+  it("says the team was unreachable when the read failed, not that it is missing", async () => {
+    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    redisMock.get.mockRejectedValue(new Error("redis down"));
+
+    const result = await approveJoinRequest("jr-1");
+
+    expect(result).toEqual({
+      error: "The request was approved, but the team could not be reached. Try again in a moment.",
+      success: false,
+    });
+  });
 });
 
 describe("denyJoinRequest", () => {

@@ -144,9 +144,14 @@ const approveJoinRequest = async (
         requestId,
         route: "actions/join-requests",
       });
+      // "Add them from the team page" is only good advice when the store answered
+      // and the team simply has no room for the member. A read that failed says
+      // the store is unreachable, and the team page would fail the same way.
       return {
         error:
-          "The request was approved, but adding the member failed. Add them from the team page.",
+          applied.reason === "read-failed" || applied.reason === "unconfigured"
+            ? "The request was approved, but the team could not be reached. Try again in a moment."
+            : "The request was approved, but adding the member failed. Add them from the team page.",
         success: false,
       };
     }

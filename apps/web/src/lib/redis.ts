@@ -41,8 +41,11 @@ const redis = new Proxy({} as Redis, {
     if (!instance) {
       // Graceful degradation when Redis isn't configured (REDIS_URL is optional so CI
       // and builds work without it). Gotcha: writes (set/setex/del) resolve as no-ops,
-      // so callers like mutateTeam report success while persisting nothing. Production
-      // must set REDIS_URL; this branch is for environments without real traffic.
+      // which no caller can tell apart from success. The ones that must not report a
+      // phantom success call isRedisConfigured() first, which applyTeamContents does
+      // and mutateTeam still does not, so every mutateTeam action reports success
+      // while persisting nothing. Production must set REDIS_URL; this branch is for
+      // environments without real traffic.
       if (
         typeof prop === "string" &&
         ["get", "set", "setex", "expire", "del", "scan", "publish"].includes(prop)

@@ -59,6 +59,21 @@ const createTeam = async (timezone: string): Promise<ActionResult<string>> => {
         route: "actions/team-create",
         teamId,
       });
+
+      // The Space row is what makes a team listable and routable, so keeping it
+      // after the contents write failed publishes a team that resolves to
+      // nothing. Deleting it cascades the membership through the teamId relation.
+      try {
+        await prisma.space.delete({ where: { teamId } });
+      } catch (rollbackError) {
+        log.error({
+          error: rollbackError,
+          message: "Failed to roll back the Space row for a team with no contents",
+          route: "actions/team-create",
+          teamId,
+        });
+      }
+
       return { error: "Failed to create team", success: false };
     }
 

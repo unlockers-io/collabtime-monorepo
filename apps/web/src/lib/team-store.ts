@@ -67,24 +67,32 @@ const toTeamRecord = (teamId: string, stored: MaybeStoredTeam): TeamRecord => ({
   name: asText(stored.name, ""),
 });
 
-const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
-  try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return null;
-    }
+type TeamRecordRead = { ok: false } | { ok: true; team: TeamRecord | null };
 
+/**
+ * Keeps "this team has no contents record" apart from "the read itself failed",
+ * which readTeamRecord flattens into the same `null`. A caller about to write
+ * cannot treat those alike: the second one says nothing about the team and
+ * everything about the store.
+ */
+const loadTeamRecord = async (teamId: string): Promise<TeamRecordRead> => {
+  const uuidResult = UUIDSchema.safeParse(teamId);
+  if (!uuidResult.success) {
+    return { ok: true, team: null };
+  }
+
+  try {
     const data = await readTeamJson(teamId);
 
     if (data === null) {
-      return null;
+      return { ok: true, team: null };
     }
 
     const raw: unknown = JSON.parse(data);
     const parsed = StoredTeamSchema.safeParse(raw);
 
     if (parsed.success) {
-      return toTeamRecord(teamId, parsed.data);
+      return { ok: true, team: toTeamRecord(teamId, parsed.data) };
     }
 
     log.error({
@@ -96,17 +104,24 @@ const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
 
     // Redis holds the only copy of a team's contents, so a row written before a
     // field existed still has to resolve: dropping it here would 404 the team
-    // page, fail every mutation on it, and hide it from the teams list. Only a
-    // blob with no fields to read at all is given up on.
+    // page, fail every mutation on it, and hide it from the teams list.
     if (typeof raw !== "object" || raw === null) {
-      return null;
+      // Reported as a failed read rather than an absent one so a mutation cannot
+      // overwrite a blob that simply could not be interpreted.
+      return { ok: false };
     }
 
-    return toTeamRecord(teamId, raw);
+    return { ok: true, team: toTeamRecord(teamId, raw) };
   } catch (error) {
     log.error({ error, message: "Failed to get team", route: "lib/team-store", teamId });
-    return null;
+    return { ok: false };
   }
+};
+
+const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
+  const read = await loadTeamRecord(teamId);
+
+  return read.ok ? read.team : null;
 };
 
 type TeamSummary = {
@@ -164,7 +179,11 @@ type TeamContentsMutation<TValue> = (
 
 type TeamContentsResult<TValue> =
   | { ok: true; value: TValue }
-  | { error: string; ok: false; reason: "rejected" | "unconfigured" | "write-failed" };
+  | {
+      error: string;
+      ok: false;
+      reason: "read-failed" | "rejected" | "unconfigured" | "write-failed";
+    };
 
 /**
  * Read, mutate and write a team's contents as one step.
@@ -172,11 +191,13 @@ type TeamContentsResult<TValue> =
  * Redis is the only store for those contents, so a failed write is lost data and
  * never an ignorable cache miss. The result is discriminated on `ok` so a caller
  * cannot read a value it did not get, and `reason` separates a store that is not
- * configured (where writes resolve as no-ops) from one that rejected the write.
+ * configured (where writes resolve as no-ops) from one that could not be read
+ * and one that rejected the write.
  *
  * A mutation receives `null` when the team has no contents record, and returns
  * `team: null` to mean "nothing to persist", which skips the write and still
- * counts as a success.
+ * counts as a success. It is not called at all when the read failed, since a
+ * store that is down looks identical to a team with nothing in it.
  */
 const applyTeamContents = async <TValue>(
   teamId: string,
@@ -192,7 +213,13 @@ const applyTeamContents = async <TValue>(
     return { error: "Team storage is unavailable", ok: false, reason: "unconfigured" };
   }
 
-  const outcome = mutate(await readTeamRecord(teamId));
+  const read = await loadTeamRecord(teamId);
+
+  if (!read.ok) {
+    return { error: "Could not read the team", ok: false, reason: "read-failed" };
+  }
+
+  const outcome = mutate(read.team);
 
   if (!outcome.ok) {
     return { error: outcome.error, ok: false, reason: "rejected" };
