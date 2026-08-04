@@ -1,9 +1,15 @@
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { log } from "@/lib/observability";
-import type { TeamRecord } from "@/types";
+import {
+  DEFAULT_MEMBER_TIMEZONE,
+  DEFAULT_WORKING_HOURS_END,
+  DEFAULT_WORKING_HOURS_START,
+} from "@/lib/timezones";
+import type { TeamMember, TeamRecord } from "@/types";
 
-import { readTeamJson, redis, teamKey, TEAM_ACTIVE_TTL_SECONDS } from "./redis";
+import { isRedisConfigured, readTeamJson, redis, teamKey, TEAM_ACTIVE_TTL_SECONDS } from "./redis";
 import { writeTeamMirror } from "./team-mirror";
 import { UUIDSchema } from "./validation";
 
@@ -141,5 +147,70 @@ const writeTeamRecord = async (
   }
 };
 
-export { readTeamRecord, readTeamSummary, writeTeamRecord };
+const newTeamMember = (overrides?: Partial<TeamMember>): TeamMember => ({
+  id: uuidv4(),
+  name: "",
+  order: 0,
+  timezone: DEFAULT_MEMBER_TIMEZONE,
+  title: "",
+  workingHoursEnd: DEFAULT_WORKING_HOURS_END,
+  workingHoursStart: DEFAULT_WORKING_HOURS_START,
+  ...overrides,
+});
+
+type TeamContentsMutation<TValue> = (
+  team: TeamRecord | null,
+) => { error: string; ok: false } | { ok: true; team: TeamRecord | null; value: TValue };
+
+type TeamContentsResult<TValue> =
+  | { ok: true; value: TValue }
+  | { error: string; ok: false; reason: "rejected" | "unconfigured" | "write-failed" };
+
+/**
+ * Read, mutate and write a team's contents as one step.
+ *
+ * Redis is the only store for those contents, so a failed write is lost data and
+ * never an ignorable cache miss. The result is discriminated on `ok` so a caller
+ * cannot read a value it did not get, and `reason` separates a store that is not
+ * configured (where writes resolve as no-ops) from one that rejected the write.
+ *
+ * A mutation receives `null` when the team has no contents record, and returns
+ * `team: null` to mean "nothing to persist", which skips the write and still
+ * counts as a success.
+ */
+const applyTeamContents = async <TValue>(
+  teamId: string,
+  mutate: TeamContentsMutation<TValue>,
+  ttlSeconds: number = TEAM_ACTIVE_TTL_SECONDS,
+): Promise<TeamContentsResult<TValue>> => {
+  if (!isRedisConfigured()) {
+    log.error({
+      message: "Team contents write skipped: REDIS_URL is unset",
+      route: "lib/team-store",
+      teamId,
+    });
+    return { error: "Team storage is unavailable", ok: false, reason: "unconfigured" };
+  }
+
+  const outcome = mutate(await readTeamRecord(teamId));
+
+  if (!outcome.ok) {
+    return { error: outcome.error, ok: false, reason: "rejected" };
+  }
+
+  if (outcome.team === null) {
+    return { ok: true, value: outcome.value };
+  }
+
+  try {
+    await writeTeamRecord(teamId, outcome.team, ttlSeconds);
+  } catch (error) {
+    log.error({ error, message: "Failed to write team contents", route: "lib/team-store", teamId });
+    return { error: "Failed to save the team", ok: false, reason: "write-failed" };
+  }
+
+  return { ok: true, value: outcome.value };
+};
+
+export { applyTeamContents, newTeamMember, readTeamRecord, readTeamSummary, writeTeamRecord };
 export type { TeamSummary };

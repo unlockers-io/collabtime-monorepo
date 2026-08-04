@@ -14,6 +14,8 @@ vi.mock("@repo/db", () => ({
   },
 }));
 vi.mock("../redis", () => ({
+  isRedisConfigured: (): boolean => true,
+  readTeamJson: (): Promise<string | null> => Promise.resolve(null),
   redis: { set: vi.fn() },
   TEAM_ACTIVE_TTL_SECONDS: 100,
   TEAM_INITIAL_TTL_SECONDS: 100,
@@ -91,7 +93,7 @@ describe("createTeam", () => {
     });
   });
 
-  it("succeeds even if the team-contents write fails", async () => {
+  it("does not report success when the team-contents write fails", async () => {
     const session = createMockSession();
     vi.mocked(requireAuth).mockResolvedValue(session as never);
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
@@ -99,10 +101,11 @@ describe("createTeam", () => {
 
     const result = await createTeam(TEST_TIMEZONE);
 
-    expect(result).toEqual({ data: "test-uuid-0", success: true });
+    expect(result).toEqual({ error: "Failed to create team", success: false });
     expect(log.error).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Post-commit team-contents write failed (team created in Postgres)",
+        message: "Space and membership committed but the team contents were not stored",
+        reason: "write-failed",
         route: "actions/team-create",
       }),
     );

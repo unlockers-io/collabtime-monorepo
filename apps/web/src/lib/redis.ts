@@ -4,6 +4,14 @@ import { log } from "@/lib/observability";
 
 let cachedRedis: Redis | null = null;
 
+// The Proxy below answers writes with a resolved `null` when there is no URL, which
+// is indistinguishable from a successful write. Callers that must not report a
+// phantom success ask this first.
+const isRedisConfigured = (): boolean => {
+  const url = process.env.REDIS_URL;
+  return url !== undefined && url !== "";
+};
+
 // Lazy init: env vars may be missing at build time, and we defer the TCP handshake on cold starts.
 const getRedis = (): Redis | null => {
   if (cachedRedis) {
@@ -84,4 +92,11 @@ const readTeamJson = async (teamId: string): Promise<string | null> => {
   return data;
 };
 
-export { readTeamJson, redis, teamKey, TEAM_INITIAL_TTL_SECONDS, TEAM_ACTIVE_TTL_SECONDS };
+export {
+  isRedisConfigured,
+  readTeamJson,
+  redis,
+  teamKey,
+  TEAM_INITIAL_TTL_SECONDS,
+  TEAM_ACTIVE_TTL_SECONDS,
+};
