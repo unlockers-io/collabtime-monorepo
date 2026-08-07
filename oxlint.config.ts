@@ -99,6 +99,26 @@ export default defineConfig({
         "require-await": "off",
       },
     },
+    // Every action in `join-requests.ts` guards before it reads or writes
+    // (`requireAuth` in requestToJoin, `requireTeamAdmin` in the other three).
+    // The rule only recognises a session call in the action body itself, so a
+    // guard behind a `@/lib/team-auth` helper reads as no guard at all.
+    {
+      files: ["apps/web/src/lib/actions/join-requests.ts"],
+      rules: {
+        "react-doctor/server-auth-actions": "off",
+      },
+    },
+    // Collapsible archived-teams list. The rule is right that `height` animates
+    // layout, but `0 ↔ auto` is the only way to reveal content of unknown height
+    // and the alternatives (scaleY, fixed max-height) distort children or clip
+    // them. It runs once per user click on a list of at most a few rows.
+    {
+      files: ["apps/web/src/app/home-client/archived-teams-list.tsx"],
+      rules: {
+        "react-doctor/no-layout-property-animation": "off",
+      },
+    },
     // Operational scripts: `console.*` output is the whole point, and the
     // Redis SCAN loop is sequential by design (each page needs the previous
     // cursor).
