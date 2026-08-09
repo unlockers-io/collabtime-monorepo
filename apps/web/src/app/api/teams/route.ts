@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
+import { readTeamSummaries } from "@/lib/team-store";
 
 export const GET = withEvlog(async () => {
   try {
@@ -17,39 +18,40 @@ export const GET = withEvlog(async () => {
       where: { userId: session.user.id },
     });
 
-    const spaces = await prisma.space.findMany({
-      // Ids rather than Prisma's `_count`: that field trips no-underscore-dangle,
-      // and member rows are one per person, so the count is small either way.
-      select: {
-        id: true,
-        members: { select: { id: true } },
-        name: true,
-        ownerId: true,
-        teamId: true,
-      },
-      where: { teamId: { in: memberships.map((m) => m.teamId) } },
-    });
+    const teamIds = memberships.map((m) => m.teamId);
 
-    const spaceByTeamId = new Map(spaces.map((space) => [space.teamId, space]));
+    // Owned spaces are returned alongside teams so the client can render the delete affordance.
+    const [summaries, ownedSpaces] = await Promise.all([
+      readTeamSummaries(teamIds),
+      prisma.space.findMany({
+        select: { id: true, teamId: true },
+        where: {
+          ownerId: session.user.id,
+          teamId: { in: teamIds },
+        },
+      }),
+    ]);
 
-    // A membership whose Space row is gone is dropped: the team page it links to
-    // resolves through the same row and would 404.
+    const ownedSpaceByTeamId = new Map(ownedSpaces.map((space) => [space.teamId, space.id]));
+
+    // Dropped rather than rendered with a zero count: `Membership.teamId` is a
+    // foreign key to `Space.teamId`, so a summary is missing here only if neither
+    // store holds the team, and readTeamSummaries has already logged that gap.
     const teams = memberships.flatMap((membership) => {
-      const space = spaceByTeamId.get(membership.teamId);
+      const summary = summaries.get(membership.teamId);
 
-      if (space === undefined) {
+      if (summary === undefined) {
         return [];
       }
 
       return [
         {
           archivedAt: membership.archivedAt ? membership.archivedAt.toISOString() : null,
-          memberCount: space.members.length,
+          memberCount: summary.memberCount,
           role: membership.role,
-          // Only owners get an id: the client renders the delete affordance from it.
-          spaceId: space.ownerId === session.user.id ? space.id : null,
+          spaceId: ownedSpaceByTeamId.get(membership.teamId) ?? null,
           teamId: membership.teamId,
-          teamName: space.name,
+          teamName: summary.name,
         },
       ];
     });

@@ -28,11 +28,17 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
+import { HourSelectField } from "@/components/hour-select-field";
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { addMember } from "@/lib/actions/member-actions";
-import { COMMON_TIMEZONES, formatTimezoneLabel, getUserTimezone } from "@/lib/timezones";
-import { formatHour } from "@/lib/utils";
+import {
+  COMMON_TIMEZONES,
+  DEFAULT_WORKING_HOURS_END,
+  DEFAULT_WORKING_HOURS_START,
+  formatTimezoneLabel,
+  getUserTimezone,
+} from "@/lib/timezones";
 import type { TeamGroup } from "@/types";
 
 type AddMemberDialogProps = {
@@ -40,42 +46,6 @@ type AddMemberDialogProps = {
   isFirstMember: boolean;
   teamId: string;
 };
-
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-
-type HourSelectFieldProps = {
-  id: string;
-  label: string;
-  onBlur: () => void;
-  onChange: (hour: number) => void;
-  value: number;
-};
-
-const HourSelectField = ({ id, label, onBlur, onChange, value }: HourSelectFieldProps) => (
-  <Field>
-    <FieldLabel htmlFor={id}>{label}</FieldLabel>
-    <Select
-      onValueChange={(v) => {
-        if (v !== null) {
-          onChange(Number(v));
-          onBlur();
-        }
-      }}
-      value={String(value)}
-    >
-      <SelectTrigger id={id}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {HOURS.map((hour) => (
-          <SelectItem key={hour} value={String(hour)}>
-            {formatHour(hour)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </Field>
-);
 
 const TITLE_PLACEHOLDERS = [
   "Software Engineer",
@@ -129,8 +99,8 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
     // oxlint-disable-next-line no-unsafe-type-assertion -- the browser timezone can sit outside COMMON_TIMEZONES; zod rejects it on submit, while a fallback here would silently mis-assign a zone
     timezone: getUserTimezone() as FormValues["timezone"],
     title: "",
-    workingHoursEnd: 17,
-    workingHoursStart: 9,
+    workingHoursEnd: DEFAULT_WORKING_HOURS_END,
+    workingHoursStart: DEFAULT_WORKING_HOURS_START,
   };
 
   const form = useForm({

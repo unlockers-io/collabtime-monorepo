@@ -1,10 +1,9 @@
 "use server";
 
-import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
-import { requireAuth } from "@/lib/team-auth";
+import { requireAuth, requireTeamMember } from "@/lib/team-auth";
 import type { Team, TeamMember } from "@/types";
 
 import { TeamMemberInputSchema, TeamMemberUpdateSchema } from "../validation";
@@ -138,7 +137,8 @@ const importMembers = async (
   });
 };
 
-// Skips requireTeamAdmin: auth boundary is Postgres membership + ownership.
+// Any member may run this because it can only ever rewrite the caller's own
+// row, so plain membership plus the ownership check below is the boundary.
 const updateOwnMember = async (
   teamId: string,
   memberId: string,
@@ -155,6 +155,14 @@ const updateOwnMember = async (
   }
 
   return mutateTeam({
+    authorize: async (id) => {
+      try {
+        await requireTeamMember(id);
+      } catch {
+        return { error: "You are not a member of this team", ok: false };
+      }
+      return { ok: true, value: undefined };
+    },
     errorContext: "update own member",
     mutate: (team, parsed) => {
       const memberIndex = team.members.findIndex((m) => m.id === memberId);
@@ -173,16 +181,10 @@ const updateOwnMember = async (
       team.members[memberIndex] = { ...member, ...parsed, userId: session.user.id };
       return { ok: true, value: sanitizeTeam(team, session.user.id) };
     },
-    prelude: async () => {
+    prelude: () => {
       const idCheck = checkUuid(memberId, "member ID");
       if (!idCheck.ok) {
         return idCheck;
-      }
-      const membership = await prisma.membership.findUnique({
-        where: { userId_teamId: { teamId, userId: session.user.id } },
-      });
-      if (!membership) {
-        return { error: "You are not a member of this team", ok: false };
       }
       const result = TeamMemberUpdateSchema.safeParse(updates);
       if (!result.success) {
@@ -192,7 +194,6 @@ const updateOwnMember = async (
       const { groupId: _stripped, ...safe } = result.data;
       return { ok: true, value: safe };
     },
-    skipAdminCheck: true,
     teamId,
   });
 };

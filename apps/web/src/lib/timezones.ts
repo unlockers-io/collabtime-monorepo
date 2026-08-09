@@ -22,6 +22,12 @@ const COMMON_TIMEZONES = [
   "Pacific/Auckland",
 ] as const;
 
+// Shared by the server-side member factory and the add-member form, which cannot
+// import the factory: it lives next to the Redis client.
+const DEFAULT_MEMBER_TIMEZONE = "America/New_York";
+const DEFAULT_WORKING_HOURS_START = 9;
+const DEFAULT_WORKING_HOURS_END = 17;
+
 const getTimezoneOffset = (timezone: string): number => {
   const now = new Date();
   const utcDate = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
@@ -227,6 +233,9 @@ const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | 
 
 export {
   COMMON_TIMEZONES,
+  DEFAULT_MEMBER_TIMEZONE,
+  DEFAULT_WORKING_HOURS_END,
+  DEFAULT_WORKING_HOURS_START,
   formatTimezoneLabel,
   fuzzyMatchTimezone,
   getUserTimezone,

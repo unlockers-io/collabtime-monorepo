@@ -8,7 +8,7 @@ import { getEnv } from "@/lib/env";
 import { log } from "@/lib/observability";
 import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
 
-import { readTeamRecord, writeTeamRecord } from "../team-store";
+import { applyTeamContents, readTeamRecord } from "../team-store";
 import { UUIDSchema } from "../validation";
 
 import type { ActionResult } from "./types";
@@ -191,22 +191,30 @@ const acceptInvitation = async (
       }),
     ]);
 
-    try {
-      const team = await readTeamRecord(invitation.teamId);
-      if (team) {
-        const memberIndex = team.members.findIndex((m) => m.id === invitation.memberId);
-        const slotUserId = memberIndex === -1 ? undefined : team.members[memberIndex].userId;
-        if (memberIndex !== -1 && (slotUserId === undefined || slotUserId === "")) {
-          team.members[memberIndex].userId = session.user.id;
-          await writeTeamRecord(invitation.teamId, team);
-        }
+    const applied = await applyTeamContents(invitation.teamId, (team) => {
+      if (team === null) {
+        return { error: "Team not found", ok: false };
       }
-    } catch (cacheError) {
+
+      const memberIndex = team.members.findIndex((m) => m.id === invitation.memberId);
+      const slotUserId = memberIndex === -1 ? undefined : team.members[memberIndex].userId;
+      if (memberIndex === -1 || (slotUserId !== undefined && slotUserId !== "")) {
+        return { ok: true, team: null, value: undefined };
+      }
+
+      team.members[memberIndex].userId = session.user.id;
+
+      return { ok: true, team, value: undefined };
+    });
+
+    if (!applied.ok) {
       log.error({
-        error: cacheError,
-        message: "Failed to claim member slot",
+        invitationId,
+        message: "Membership committed but the member slot was not claimed",
+        reason: applied.reason,
         route: "actions/invitation",
       });
+      return { error: "You joined the team, but claiming your profile failed", success: false };
     }
 
     return { data: { teamId: invitation.teamId }, success: true };

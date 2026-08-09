@@ -7,31 +7,27 @@ import { cache } from "react";
 import { getSession } from "@/lib/auth-server";
 import { log } from "@/lib/observability";
 import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
-import { isTeamRole } from "@/types";
+import { getTeamRole } from "@/lib/team-auth";
 import type { Team, TeamRole } from "@/types";
 
-import { readTeamRecord } from "../team-store";
+import { readTeamRecord, readTeamSummary } from "../team-store";
 import { UUIDSchema } from "../validation";
 
 import { sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
-const getTeamMembershipRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
+// Takes no userId: as a server action this is a public POST endpoint, so the
+// identity has to come from the session rather than the caller.
+const getTeamMembershipRole = async (teamId: string): Promise<TeamRole | null> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
       return null;
     }
 
-    const membership = await prisma.membership.findUnique({
-      where: { userId_teamId: { teamId, userId } },
-    });
+    const result = await getTeamRole(teamId);
 
-    if (membership && isTeamRole(membership.role)) {
-      return membership.role;
-    }
-
-    return null;
+    return result?.role ?? null;
   } catch (error) {
     log.error({ error, message: "Failed to get membership role", route: "actions/team-read" });
     return null;
@@ -57,8 +53,7 @@ const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team 
     const userId = session?.user?.id;
 
     if (space.isPrivate) {
-      const memberRole =
-        userId !== undefined && userId !== "" ? await getTeamMembershipRole(teamId, userId) : null;
+      const memberRole = await getTeamMembershipRole(teamId);
       if (!memberRole) {
         // Guest cookie must match the page gate so guests can load team data.
         const cookieStore = await cookies();
@@ -110,17 +105,8 @@ const validateTeam = cache(async (teamId: string): Promise<boolean> => {
 
 const getTeamName = cache(async (teamId: string): Promise<string | null> => {
   try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return null;
-    }
-
-    const space = await prisma.space.findUnique({
-      select: { name: true },
-      where: { teamId },
-    });
-
-    const name = space?.name.trim() ?? "";
+    const summary = await readTeamSummary(teamId);
+    const name = summary?.name.trim() ?? "";
 
     return name.length > 0 ? name : null;
   } catch (error) {

@@ -74,8 +74,7 @@ const TeamPageClient = ({
   // Resolve admin status when server-side session detection fails.
   const { data: resolvedRole, error: resolvedRoleError } = useQuery({
     enabled: initialStatus === "none" && Boolean(userId),
-    queryFn: () =>
-      userId !== undefined && userId !== "" ? getTeamMembershipRole(teamId, userId) : null,
+    queryFn: () => getTeamMembershipRole(teamId),
     queryKey: ["membership-role", teamId, userId],
   });
 

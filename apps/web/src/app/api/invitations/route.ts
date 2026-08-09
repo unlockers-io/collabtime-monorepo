@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
+import { readTeamSummaries } from "@/lib/team-store";
 
 const displayName = (name: string | null, email: string): string => {
   if (name !== null && name !== "") {
@@ -33,24 +34,19 @@ export const GET = withEvlog(async () => {
       },
     });
 
-    const spaces = await prisma.space.findMany({
-      select: { name: true, teamId: true },
-      where: { teamId: { in: invitations.map((inv) => inv.teamId) } },
-    });
+    const summaries = await readTeamSummaries(invitations.map((inv) => inv.teamId));
 
-    const nameByTeamId = new Map(spaces.map((space) => [space.teamId, space.name]));
-
-    // An invitation outlives the space it points at, so a missing or blank name
-    // stays a rendered row rather than a dropped one.
+    // `Space.name` defaults to "" and a team is only named once someone renames
+    // it, so a blank name is ordinary rather than a sign of a missing row.
     const results = invitations.map((inv) => {
-      const name = nameByTeamId.get(inv.teamId);
+      const name = summaries.get(inv.teamId)?.name ?? "";
 
       return {
         id: inv.id,
         inviterName: displayName(inv.invitedBy.name, inv.invitedBy.email),
         memberId: inv.memberId,
         teamId: inv.teamId,
-        teamName: name === undefined || name === "" ? "Unknown Team" : name,
+        teamName: name === "" ? "Unknown Team" : name,
       };
     });
 

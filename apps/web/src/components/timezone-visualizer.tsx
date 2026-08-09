@@ -27,8 +27,12 @@ import {
   MemberTimelineRow,
 } from "./timezone-visualizer/subcomponents";
 import { TimeAxis } from "./timezone-visualizer/time-axis";
+import {
+  addSelection,
+  getTimezoneData,
+  removeSelection,
+} from "./timezone-visualizer/timezone-data";
 import type { Selection } from "./timezone-visualizer/types";
-import { useTimezoneData } from "./timezone-visualizer/use-timezone-data";
 
 type TimezoneVisualizerProps = {
   collapsedGroupIds?: Array<string>;
@@ -74,7 +78,6 @@ const TimezoneVisualizer = ({
   const nowPosition = !tick || !viewerTimezone ? null : getCurrentTimePosition(viewerTimezone);
 
   const {
-    addSelection,
     canShowOverlap,
     groupedSections,
     groupNameById,
@@ -82,11 +85,10 @@ const TimezoneVisualizer = ({
     memberRowById,
     overlapData,
     overlapStatus,
-    removeSelection,
     selectedMemberIds,
     totalPeopleSelected,
     validSelections,
-  } = useTimezoneData({ compareSelections, groups, members, viewerTimezone });
+  } = getTimezoneData({ compareSelections, groups, members, viewerTimezone });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!timelineRef.current || !sectionsContainerRef.current) {
@@ -244,11 +246,11 @@ const TimezoneVisualizer = ({
                   memberRowById={memberRowById}
                   members={members}
                   onAddSelection={(sel) => {
-                    addSelection(sel, setCompareSelections);
+                    setCompareSelections((prev) => addSelection(prev, sel));
                   }}
                   onClose={closeComparePanel}
                   onRemoveSelection={(sel) => {
-                    removeSelection(sel, setCompareSelections);
+                    setCompareSelections((prev) => removeSelection(prev, sel));
                   }}
                   overlapData={overlapData}
                   overlapStatus={overlapStatus}

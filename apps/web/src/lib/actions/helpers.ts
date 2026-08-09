@@ -33,21 +33,35 @@ const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
 type MutationOutcome<TResult> = { error: string; ok: false } | { ok: true; value: TResult };
 
 type MutateTeamArgs<TPrelude, TResult> = {
+  // Defaults to requireTeamAdmin; supply this only for actions whose boundary is
+  // something else, so the check stays inside mutateTeam either way.
+  authorize?: (teamId: string) => Promise<MutationOutcome<void>>;
   errorContext: string;
   mutate: (team: TeamRecord, prelude: TPrelude) => MutationOutcome<TResult>;
   prelude?: () => MutationOutcome<TPrelude> | Promise<MutationOutcome<TPrelude>>;
-  skipAdminCheck?: boolean;
   teamId: string;
 };
 
 const mutateTeam = async <TPrelude, TResult>(
   args: MutateTeamArgs<TPrelude, TResult>,
 ): Promise<ActionResult<TResult>> => {
-  const { errorContext, mutate, prelude, skipAdminCheck, teamId } = args;
+  const { authorize, errorContext, mutate, prelude, teamId } = args;
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
     if (!uuidResult.success) {
       return { error: "Invalid team ID", success: false };
+    }
+
+    // Ahead of the prelude: authorization keys off teamId alone, so a caller who
+    // is not allowed here should never reach payload validation and learn from its
+    // error message that the payload was the problem.
+    if (authorize) {
+      const authorizeOutcome = await authorize(teamId);
+      if (!authorizeOutcome.ok) {
+        return { error: authorizeOutcome.error, success: false };
+      }
+    } else {
+      await requireTeamAdmin(teamId);
     }
 
     const preludeOutcome = prelude
@@ -56,10 +70,6 @@ const mutateTeam = async <TPrelude, TResult>(
         ({ ok: true, value: undefined as TPrelude } as const);
     if (!preludeOutcome.ok) {
       return { error: preludeOutcome.error, success: false };
-    }
-
-    if (skipAdminCheck !== true) {
-      await requireTeamAdmin(teamId);
     }
 
     const team = await readTeamRecord(teamId);

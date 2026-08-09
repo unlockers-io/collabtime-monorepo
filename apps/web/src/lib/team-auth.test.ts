@@ -19,7 +19,7 @@ import { prisma } from "@repo/db";
 
 import { getSession } from "@/lib/auth-server";
 
-import { getTeamRole, requireAuth, requireTeamAdmin } from "./team-auth";
+import { getTeamRole, requireAuth, requireTeamAdmin, requireTeamMember } from "./team-auth";
 
 const mockedGetSession = vi.mocked(getSession);
 const mockedFindMembership = vi.mocked(prisma.membership.findUnique);
@@ -101,6 +101,34 @@ describe("requireTeamAdmin", () => {
     mockedFindMembership.mockResolvedValue({ role: "ADMIN" } as never);
 
     const result = await requireTeamAdmin("team-1");
+    expect(result).toBe("user-1");
+  });
+});
+
+describe("requireTeamMember", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("throws when user is not a member", async () => {
+    mockedGetSession.mockResolvedValue(null);
+
+    await expect(requireTeamMember("team-1")).rejects.toThrow("Not a member of this team");
+  });
+
+  it("returns userId when user is MEMBER", async () => {
+    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
+    mockedFindMembership.mockResolvedValue({ role: "MEMBER" } as never);
+
+    const result = await requireTeamMember("team-1");
+    expect(result).toBe("user-1");
+  });
+
+  it("returns userId when user is ADMIN", async () => {
+    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
+    mockedFindMembership.mockResolvedValue({ role: "ADMIN" } as never);
+
+    const result = await requireTeamMember("team-1");
     expect(result).toBe("user-1");
   });
 });

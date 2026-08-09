@@ -128,4 +128,7 @@ const TeamPage = async ({ params }: TeamPageProps) => {
   );
 };
 
+/** @public Next.js reads this segment config; the page awaits the team, session and cookies before it can render, so it blocks. */
+export const instant = false;
+
 export default TeamPage;
