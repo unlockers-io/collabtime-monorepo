@@ -36,7 +36,7 @@ packages/transactional/         # Email templates (Resend)
 packages/config-typescript/     # Base / Next / library tsconfigs
 packages/config-vitest/         # Shared Vitest configs (react.ts, node.ts)
 tests/                          # Playwright e2e specs
-docker-compose.yml              # Postgres :5433, Redis :6379, Upstash REST shim :8079
+docker-compose.yml              # Postgres :5433, Redis :6379
 playwright.config.ts
 turbo.json
 oxlint.config.ts                # plus .oxfmtrc.json
@@ -87,7 +87,7 @@ sudo portless proxy start --https
 
 Branch worktrees auto-prefix the subdomain: `https://fix-styles.collabtime.web.localhost`. Each gets its own auto-assigned backing port, so there are no collisions.
 
-Docker host ports: Postgres `5433`, Redis `6379`, Upstash REST shim `8079`. Only one project's stack runs at a time on these ports unless explicitly remapped.
+Docker host ports: Postgres `5433`, Redis `6379`. Only one project's stack runs at a time on these ports unless explicitly remapped.
 
 ## Environment variables
 

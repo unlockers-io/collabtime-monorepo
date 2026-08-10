@@ -66,7 +66,7 @@ The example values already point at the Docker stack below (`DATABASE_URL` on `:
 docker compose up -d
 ```
 
-Brings up Postgres on `:5433`, Redis on `:6379`, and the Upstash REST shim on `:8079`.
+Brings up Postgres on `:5433` and Redis on `:6379`.
 
 ### 4. Initialize the database
 
