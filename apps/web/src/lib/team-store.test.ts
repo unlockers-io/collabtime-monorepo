@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createTestMember, createTestTeamRecord, VALID_UUID } from "./actions/test-helpers";
+import {
+  createTestMember,
+  createTestTeamRecord,
+  VALID_UUID,
+  VALID_UUID_2,
+} from "./actions/test-helpers";
 
 const { isRedisConfiguredMock, redisMock } = vi.hoisted(() => ({
   isRedisConfiguredMock: vi.fn(() => true),
   redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
 }));
+
+vi.mock("@repo/db", () => ({ prisma: { space: { findMany: vi.fn() } } }));
 
 vi.mock("./redis", () => ({
   isRedisConfigured: isRedisConfiguredMock,
@@ -21,12 +28,15 @@ vi.mock("./redis", () => ({
 vi.mock("./team-mirror", () => ({ writeTeamMirror: vi.fn() }));
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
+import { prisma } from "@repo/db";
+
 import { redis } from "./redis";
 import { writeTeamMirror } from "./team-mirror";
 import {
   applyTeamContents,
   newTeamMember,
   readTeamRecord,
+  readTeamSummaries,
   readTeamSummary,
   writeTeamRecord,
 } from "./team-store";
@@ -34,12 +44,20 @@ import {
 const mockedRedisGet = vi.mocked(redis.get);
 const mockedRedisSet = vi.mocked(redis.set);
 const mockedWriteTeamMirror = vi.mocked(writeTeamMirror);
+const mockedSpaceFindMany = vi.mocked(prisma.space.findMany);
+
+type MirroredSpace = { members: Array<{ id: string }>; name: string; teamId: string };
+
+const mockMirroredSpaces = (spaces: Array<MirroredSpace>): void => {
+  mockedSpaceFindMany.mockResolvedValue(spaces as never);
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
   mockedRedisSet.mockResolvedValue("OK");
   isRedisConfiguredMock.mockReturnValue(true);
+  mockMirroredSpaces([]);
 });
 
 describe("readTeamRecord", () => {
@@ -127,11 +145,44 @@ describe("readTeamRecord", () => {
 });
 
 describe("readTeamSummary", () => {
-  it("returns the name and member count", async () => {
+  it("reads the name and member count from postgres without touching redis", async () => {
+    mockMirroredSpaces([{ members: [{ id: "m1" }], name: "Mirrored", teamId: VALID_UUID }]);
+
+    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: "Mirrored" });
+    expect(mockedRedisGet).not.toHaveBeenCalled();
+  });
+
+  it("returns null for an invalid UUID without querying", async () => {
+    expect(await readTeamSummary("not-a-uuid")).toBeNull();
+    expect(mockedSpaceFindMany).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the contents when postgres has no space row", async () => {
     const team = createTestTeamRecord({ members: [createTestMember()] });
     mockedRedisGet.mockResolvedValue(JSON.stringify(team));
 
     expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: team.name });
+  });
+
+  it("falls back when the space row exists but the mirror never filled it", async () => {
+    const team = createTestTeamRecord({ members: [createTestMember()] });
+    mockMirroredSpaces([{ members: [], name: "", teamId: VALID_UUID }]);
+    mockedRedisGet.mockResolvedValue(JSON.stringify(team));
+
+    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: team.name });
+  });
+
+  it("keeps an empty summary when the contents are empty too", async () => {
+    mockMirroredSpaces([{ members: [], name: "", teamId: VALID_UUID }]);
+    mockedRedisGet.mockResolvedValue(JSON.stringify(createTestTeamRecord({ name: "" })));
+
+    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 0, name: "" });
+  });
+
+  it("returns null when neither store holds the team", async () => {
+    mockedRedisGet.mockResolvedValue(null);
+
+    expect(await readTeamSummary(VALID_UUID)).toBeNull();
   });
 
   it("counts zero members for a team stored without a members array", async () => {
@@ -158,6 +209,45 @@ describe("readTeamSummary", () => {
     mockedRedisGet.mockResolvedValue(JSON.stringify(legacyTeam));
 
     expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: legacyTeam.name });
+  });
+});
+
+describe("readTeamSummaries", () => {
+  it("resolves every team from one query", async () => {
+    mockMirroredSpaces([
+      { members: [{ id: "m1" }], name: "First", teamId: VALID_UUID },
+      { members: [{ id: "m2" }, { id: "m3" }], name: "Second", teamId: VALID_UUID_2 },
+    ]);
+
+    const summaries = await readTeamSummaries([VALID_UUID, VALID_UUID_2]);
+
+    expect(mockedSpaceFindMany).toHaveBeenCalledTimes(1);
+    expect(summaries.get(VALID_UUID)).toEqual({ memberCount: 1, name: "First" });
+    expect(summaries.get(VALID_UUID_2)).toEqual({ memberCount: 2, name: "Second" });
+  });
+
+  it("omits a team no store holds instead of reporting it as empty", async () => {
+    mockMirroredSpaces([{ members: [{ id: "m1" }], name: "First", teamId: VALID_UUID }]);
+    mockedRedisGet.mockResolvedValue(null);
+
+    const summaries = await readTeamSummaries([VALID_UUID, VALID_UUID_2]);
+
+    expect(summaries.has(VALID_UUID_2)).toBe(false);
+  });
+
+  it("skips the query when no id is a valid UUID", async () => {
+    expect(await readTeamSummaries(["not-a-uuid"])).toEqual(new Map());
+    expect(mockedSpaceFindMany).not.toHaveBeenCalled();
+  });
+
+  it("asks for each distinct team once", async () => {
+    mockMirroredSpaces([{ members: [{ id: "m1" }], name: "First", teamId: VALID_UUID }]);
+
+    await readTeamSummaries([VALID_UUID, VALID_UUID]);
+
+    expect(mockedSpaceFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { teamId: { in: [VALID_UUID] } } }),
+    );
   });
 });
 

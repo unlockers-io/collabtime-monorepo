@@ -1,3 +1,4 @@
+import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
@@ -129,24 +130,114 @@ type TeamSummary = {
   name: string;
 };
 
-const readTeamSummary = async (teamId: string): Promise<TeamSummary | null> => {
-  const team = await readTeamRecord(teamId);
+/**
+ * Re-reads one team's contents when Postgres reports nothing for it, and returns
+ * whichever side actually holds the team.
+ *
+ * Postgres is allowed to lag: a Space row is only filled in by the mirror, which
+ * runs on a contents write, and `POST /api/spaces` creates a row without ever
+ * writing contents. The May migration also left team blobs with no Space row at
+ * all. Serving the Postgres side in those cases would show a live team as
+ * unnamed with zero members, which reads as data loss rather than a gap, so
+ * Redis (still the store of record for contents) wins and the gap is logged.
+ */
+const reconcileWithContents = async (
+  teamId: string,
+  mirrored: TeamSummary | null,
+): Promise<TeamSummary | null> => {
+  const read = await loadTeamRecord(teamId);
 
-  if (team === null) {
-    return null;
+  if (!read.ok) {
+    log.error({
+      message: "Could not check team contents against the Postgres summary",
+      route: "lib/team-store",
+      teamId,
+    });
+    return mirrored;
   }
 
-  return { memberCount: team.members.length, name: team.name };
+  if (read.team === null) {
+    return mirrored;
+  }
+
+  const fromContents = { memberCount: read.team.members.length, name: read.team.name };
+
+  if (fromContents.memberCount === 0 && fromContents.name === "") {
+    return mirrored;
+  }
+
+  log.error({
+    message: "Postgres team summary is absent or empty, served from team contents",
+    mirrored,
+    route: "lib/team-store",
+    teamId,
+  });
+
+  return fromContents;
 };
 
 /**
- * Dual-write phase of moving team contents into Postgres: Redis stays the store
- * every read goes through, and the Postgres rows are a shadow copy that the
- * backfill and verify scripts compare against.
+ * One query for every team the caller needs, keyed by teamId. A teamId with no
+ * resolvable summary is absent from the map rather than defaulted, so a caller
+ * cannot render a fabricated zero count.
+ */
+const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, TeamSummary>> => {
+  const wanted = [...new Set(teamIds)].filter((id) => UUIDSchema.safeParse(id).success);
+
+  if (wanted.length === 0) {
+    return new Map<string, TeamSummary>();
+  }
+
+  const spaces = await prisma.space.findMany({
+    // Member ids rather than Prisma's `_count`, which trips no-underscore-dangle
+    // in the shared lint config. Member rows are one per person, so both are cheap.
+    select: { members: { select: { id: true } }, name: true, teamId: true },
+    where: { teamId: { in: wanted } },
+  });
+
+  const summaries = new Map<string, TeamSummary>(
+    spaces.map((space) => [space.teamId, { memberCount: space.members.length, name: space.name }]),
+  );
+
+  // An empty Space row is indistinguishable from one the mirror never filled, so
+  // both go back to the contents store rather than being reported as an empty team.
+  const unresolved = wanted.filter((id) => {
+    const summary = summaries.get(id);
+    return summary === undefined || (summary.memberCount === 0 && summary.name === "");
+  });
+
+  const reconciled = await Promise.all(
+    unresolved.map(async (id) => {
+      const summary = await reconcileWithContents(id, summaries.get(id) ?? null);
+      return [id, summary] as const;
+    }),
+  );
+
+  for (const [id, summary] of reconciled) {
+    if (summary === null) {
+      summaries.delete(id);
+    } else {
+      summaries.set(id, summary);
+    }
+  }
+
+  return summaries;
+};
+
+const readTeamSummary = async (teamId: string): Promise<TeamSummary | null> => {
+  const summaries = await readTeamSummaries([teamId]);
+
+  return summaries.get(teamId) ?? null;
+};
+
+/**
+ * Redis holds the team's contents; the Postgres rows are a mirror of them that
+ * `readTeamSummaries` now serves name and member count from.
  *
- * A failed mirror must not fail the request. Until the read path cuts over, the
- * user's write is already durable in Redis, and re-running the backfill repairs
- * whatever the mirror missed. It logs at error level so the gap is visible.
+ * A failed mirror must not fail the request: the user's write is already durable
+ * in Redis, re-running the backfill repairs whatever the mirror missed, and
+ * summary reads fall back to the contents in the meantime. It logs at error
+ * level so the gap is visible.
  */
 const writeTeamRecord = async (
   teamId: string,
@@ -239,5 +330,12 @@ const applyTeamContents = async <TValue>(
   return { ok: true, value: outcome.value };
 };
 
-export { applyTeamContents, newTeamMember, readTeamRecord, readTeamSummary, writeTeamRecord };
+export {
+  applyTeamContents,
+  newTeamMember,
+  readTeamRecord,
+  readTeamSummaries,
+  readTeamSummary,
+  writeTeamRecord,
+};
 export type { TeamSummary };

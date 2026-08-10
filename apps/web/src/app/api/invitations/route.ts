@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
-import { readTeamSummary } from "@/lib/team-store";
+import { readTeamSummaries } from "@/lib/team-store";
 
 const displayName = (name: string | null, email: string): string => {
   if (name !== null && name !== "") {
@@ -34,23 +34,23 @@ export const GET = withEvlog(async () => {
       },
     });
 
-    const results = await Promise.allSettled(
-      invitations.map(async (inv) => {
-        const summary = await readTeamSummary(inv.teamId);
+    const summaries = await readTeamSummaries(invitations.map((inv) => inv.teamId));
 
-        return {
-          id: inv.id,
-          inviterName: displayName(inv.invitedBy.name, inv.invitedBy.email),
-          memberId: inv.memberId,
-          teamId: inv.teamId,
-          teamName: summary !== null && summary.name !== "" ? summary.name : "Unknown Team",
-        };
-      }),
-    );
+    // `Space.name` defaults to "" and a team is only named once someone renames
+    // it, so a blank name is ordinary rather than a sign of a missing row.
+    const results = invitations.map((inv) => {
+      const name = summaries.get(inv.teamId)?.name ?? "";
 
-    const validInvitations = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+      return {
+        id: inv.id,
+        inviterName: displayName(inv.invitedBy.name, inv.invitedBy.email),
+        memberId: inv.memberId,
+        teamId: inv.teamId,
+        teamName: name === "" ? "Unknown Team" : name,
+      };
+    });
 
-    return NextResponse.json({ invitations: validInvitations });
+    return NextResponse.json({ invitations: results });
   } catch (error) {
     log.error({ error, message: "Failed to fetch invitations", route: "/api/invitations" });
     return NextResponse.json({ error: "Failed to fetch invitations" }, { status: 500 });
