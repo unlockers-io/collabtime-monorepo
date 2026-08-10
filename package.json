@@ -25,7 +25,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "ioredis": "^5.11.1"
+    "ioredis": "^6.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

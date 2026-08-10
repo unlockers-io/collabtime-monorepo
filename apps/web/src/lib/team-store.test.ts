@@ -269,7 +269,7 @@ describe("writeTeamRecord", () => {
   it("honours a caller-supplied TTL", async () => {
     await writeTeamRecord(VALID_UUID, createTestTeamRecord(), 42);
 
-    expect(mockedRedisSet.mock.calls[0][3]).toBe(42);
+    expect(mockedRedisSet).toHaveBeenCalledWith(`team:${VALID_UUID}`, expect.any(String), "EX", 42);
   });
 
   it("resolves when the mirror fails so the redis write still counts", async () => {
