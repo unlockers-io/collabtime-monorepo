@@ -17,42 +17,36 @@ type AuthLifecycleContext = {
 };
 
 type AuthConfig = {
+  allowedHosts: Array<string>;
   extraPlugins?: Array<BetterAuthPlugin>;
   fromEmail?: string;
   onSessionCreated?: (userId: string, ctx: AuthLifecycleContext) => Promise<void>;
   onUserCreated?: (userId: string, ctx: AuthLifecycleContext) => Promise<void>;
   prisma: PrismaClient;
+  rateLimitEnabled?: boolean;
   resendApiKey?: string;
   resendReplyTo?: string;
   secondaryStorage?: SecondaryStorage;
   secret: string;
-};
-
-const parseEnvList = (value: string | undefined): Array<string> => {
-  if (value === undefined || value === "") {
-    return [];
-  }
-  const result: Array<string> = [];
-  for (const entry of value.split(",")) {
-    const trimmed = entry.trim();
-    if (trimmed.length > 0) {
-      result.push(trimmed);
-    }
-  }
-  return result;
+  trustedOrigins?: Array<string>;
+  useSecureCookies?: boolean;
 };
 
 const createAuth = (config: AuthConfig) => {
   const {
+    allowedHosts,
     extraPlugins = [],
     fromEmail = "Collab Time <noreply@email.collabtime.io>",
     onSessionCreated,
     onUserCreated,
     prisma,
+    rateLimitEnabled = false,
     resendApiKey,
     resendReplyTo,
     secondaryStorage,
     secret,
+    trustedOrigins = [],
+    useSecureCookies = false,
   } = config;
 
   const mailer: MailerConfig | null =
@@ -74,20 +68,7 @@ const createAuth = (config: AuthConfig) => {
         httpOnly: true,
         sameSite: "lax" as const,
       },
-      // Force the `Secure` cookie flag when WEB_APP_URL is HTTPS. The
-      // dynamic-baseURL `protocol: "auto"` setting documents this as
-      // automatic, but in practice under Next.js + a reverse proxy
-      // (portless in dev, Vercel in prod), Better Auth doesn't reliably
-      // see the HTTPS scheme via `x-forwarded-proto` or `request.url`,
-      // so cookies end up without `Secure`.
-      //
-      // WEB_APP_URL is the explicit signal we already use everywhere:
-      // set to `https://collabtime.web.localhost` in dev (.env.example)
-      // and the prod web origin in prod; unset in CI (which runs on
-      // plain http://127.0.0.1), so the gate naturally avoids the
-      // HTTPS-in-CI footgun that bare `true` or NODE_ENV gating would
-      // re-introduce.
-      useSecureCookies: process.env.WEB_APP_URL?.startsWith("https://") === true,
+      useSecureCookies,
     },
 
     basePath: "/api/auth",
@@ -96,14 +77,7 @@ const createAuth = (config: AuthConfig) => {
     // also auto-extends `trustedOrigins`. See:
     // https://better-auth.com/docs/reference/options#dynamic-base-url
     baseURL: {
-      allowedHosts: [
-        "**.localhost",
-        "localhost:*",
-        "127.0.0.1:*",
-        "collabtime.io",
-        "www.collabtime.io",
-        ...parseEnvList(process.env.AUTH_ALLOWED_HOSTS),
-      ],
+      allowedHosts,
       fallback: "http://localhost:3000",
       protocol: "auto",
     },
@@ -208,9 +182,7 @@ const createAuth = (config: AuthConfig) => {
     plugins: [...extraPlugins],
 
     rateLimit: {
-      enabled:
-        process.env.NODE_ENV === "production" &&
-        (process.env.CI === undefined || process.env.CI === ""),
+      enabled: rateLimitEnabled,
       max: 100,
       storage: secondaryStorage ? "secondary-storage" : "database",
       window: 60,
@@ -230,15 +202,7 @@ const createAuth = (config: AuthConfig) => {
       updateAge: 60 * 60 * 24,
     },
 
-    // `allowedHosts` already feeds `trustedOrigins`; the loopback set below
-    // covers exact-origin checks for plain `http://localhost:PORT` requests
-    // that wouldn't match a host pattern (Better Auth's exact-origin check
-    // is string-equal for trustedOrigins).
-    trustedOrigins: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      ...parseEnvList(process.env.TRUSTED_ORIGINS),
-    ],
+    trustedOrigins,
 
     user: {
       changeEmail: {
