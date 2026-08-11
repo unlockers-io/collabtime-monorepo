@@ -33,8 +33,6 @@ const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
 type MutationOutcome<TResult> = { error: string; ok: false } | { ok: true; value: TResult };
 
 type MutateTeamArgs<TPrelude, TResult> = {
-  // Defaults to requireTeamAdmin; supply this only for actions whose boundary is
-  // something else, so the check stays inside mutateTeam either way.
   authorize?: (teamId: string) => Promise<MutationOutcome<void>>;
   errorContext: string;
   mutate: (team: TeamRecord, prelude: TPrelude) => MutationOutcome<TResult>;
@@ -52,9 +50,6 @@ const mutateTeam = async <TPrelude, TResult>(
       return { error: "Invalid team ID", success: false };
     }
 
-    // Ahead of the prelude: authorization keys off teamId alone, so a caller who
-    // is not allowed here should never reach payload validation and learn from its
-    // error message that the payload was the problem.
     if (authorize) {
       const authorizeOutcome = await authorize(teamId);
       if (!authorizeOutcome.ok) {

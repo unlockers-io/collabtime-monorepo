@@ -5,9 +5,6 @@ type CollabTimeLogoProps = {
   width?: number;
 };
 
-// Inline text-based wordmark: collabtime has no hosted logo asset, and
-// many email clients block remote images by default. A styled wordmark
-// renders identically with no external dependency.
 const CollabTimeLogo = ({ height = 26 }: CollabTimeLogoProps) => {
   return (
     <Text

@@ -23,14 +23,8 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
     });
     expect([200, 201]).toContain(first.status());
 
-    // Pin AFTER the first signup so the welcome mail doesn't match the
-    // sign-up-attempt assertion below.
     const since = Date.now();
 
-    // Second sign-up with same email: Better Auth's enumeration-prevention
-    // returns the same shape as a fresh signup; `onExistingUserSignUp` fires
-    // server-side and dispatches a "someone tried to sign up" notification
-    // to the real account holder.
     const second = await request.post(`${webUrl}/api/auth/sign-up/email`, {
       data: { email, name: "Different Name", password: "SecondPassword2!" },
     });
@@ -40,9 +34,6 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
     expect(users).toHaveLength(1);
     expect(users[0]?.name).toBe("Original Name");
 
-    // Side-effect floor: the notification email actually went out via Resend.
-    // Without this assertion, a regression that disabled the hook would pass
-    // the test silently, exactly the bug class we're trying to catch.
     const mail = await waitForEmail({
       sinceMs: since,
       subject: /sign[\s-]?up|attempt|tried/i,

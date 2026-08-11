@@ -15,8 +15,6 @@ const RouteError = ({ error, reset }: RouteErrorProps) => {
 
   useEffect(() => {
     captureException(error);
-    // The boundary unmounts whatever held focus, dropping it on <body>. Focusing the heading
-    // both announces the failure and puts the keyboard caret inside the replacement content.
     headingRef.current?.focus();
   }, [error]);
 

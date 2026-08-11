@@ -20,7 +20,6 @@ test.describe("Password reset", () => {
     const originalPassword = "OriginalPassword1!";
     const newPassword = "BrandNewPassword2!";
 
-    // Welcome-email delivery is covered by sign-up-verification.spec.ts; bypass here.
     const signUp = await request.post(`${webUrl}/api/auth/sign-up/email`, {
       data: { email, name: "Reset Me", password: originalPassword },
     });
@@ -29,7 +28,6 @@ test.describe("Password reset", () => {
     await page.goto(verify.url);
     await page.context().clearCookies();
 
-    // Cutoff must be after the welcome email so we don't pick it up.
     const since = Date.now();
 
     const reset = await request.post(`${webUrl}/api/auth/request-password-reset`, {
@@ -54,9 +52,6 @@ test.describe("Password reset", () => {
     await page.waitForURL(/\/login/);
 
     await page.getByLabel("Email").fill(email);
-    // Exact match: Instant Navigations keeps the outgoing reset-password page in
-    // the DOM (hidden) during the soft transition, so a substring "Password"
-    // match also resolves its "New password"/"Confirm password" inputs.
     await page.getByLabel("Password", { exact: true }).fill(newPassword);
     await page.getByRole("button", { name: "Sign in" }).click();
 

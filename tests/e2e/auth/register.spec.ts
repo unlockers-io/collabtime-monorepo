@@ -2,13 +2,6 @@ import { test, expect } from "../fixtures/auth.fixture";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
-// Skip flag for the two tests that assert the pre-Resend signup flow.
-// With RESEND_API_KEY set, Better Auth runs in
-// requireEmailVerification + enumeration-prevention mode: signup
-// returns 200 without a session and lands on a verify-pending screen,
-// and duplicate signups return synthetic success. The auth-email/*
-// suite covers the Resend path end-to-end (delivery assertions
-// included), so these UI assertions are moot when Resend is wired up.
 const skipUnderResend = !!process.env.RESEND_API_KEY;
 
 test.describe("Register", () => {

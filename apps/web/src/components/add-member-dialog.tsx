@@ -89,7 +89,6 @@ type AddMemberFormProps = {
 
 const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMemberFormProps) => {
   const queryClient = useQueryClient();
-  // useState lazy init keeps the random title placeholder stable for this dialog instance.
   const [titlePlaceholder, _setTitlePlaceholder] = useState(getRandomPlaceholder);
 
   const defaultValues: FormValues = {
@@ -366,7 +365,6 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
 
 const AddMemberDialog = ({ groups, isFirstMember, teamId }: AddMemberDialogProps) => {
   const [open, setOpen] = useState(isFirstMember);
-  // Bumped after close animation so the next open gets a fresh form without mid-animation unmount flicker.
   const [instanceId, setInstanceId] = useState(0);
 
   return (

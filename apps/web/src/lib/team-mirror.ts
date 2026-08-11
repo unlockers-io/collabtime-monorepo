@@ -2,9 +2,6 @@ import { prisma } from "@repo/db";
 
 import type { TeamMember, TeamRecord } from "../types";
 
-// Imports stay relative and free of `@/` aliases so the backfill and verify
-// scripts under apps/web/scripts can load this through plain tsx.
-
 type MirrorRow = {
   groupId: string | null;
   id: string;
@@ -109,13 +106,6 @@ const readTeamMirror = async (teamId: string): Promise<TeamRecord | null> => {
   };
 };
 
-// Field order is spelled out rather than relying on JSON.stringify: the blob's key
-// order comes from whatever wrote it, the mirror's from readTeamMirror, and those
-// two differ for records that compare equal.
-//
-// The separator has to be a character no field can hold. Names and titles are free
-// text, so joining on a space lets two different records canonicalize to the same
-// string and real drift goes unreported.
 const FIELD_SEPARATOR = "\u0000";
 
 const canonicalGroups = (groups: TeamRecord["groups"]): string =>

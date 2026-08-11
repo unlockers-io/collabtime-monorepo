@@ -8,9 +8,8 @@ import { log, withEvlog } from "@/lib/observability";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
 const updateSpaceSchema = z.object({
-  isPrivate: z.boolean().optional(),
-  // accessPassword only applied when updatePassword is set.
   accessPassword: SpaceAccessPasswordSchema.optional().nullable(),
+  isPrivate: z.boolean().optional(),
   updatePassword: z.boolean().optional(),
 });
 
@@ -49,7 +48,6 @@ const spaceResponse = (space: Space): NextResponse =>
   NextResponse.json({
     space: {
       ...space,
-      // Expose hasPassword boolean, never the hash or a masked sentinel the client could echo back.
       accessPassword: undefined,
       hasPassword: Boolean(space.accessPassword),
     },
@@ -92,7 +90,6 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
       updateData.isPrivate = updates.isPrivate;
     }
 
-    // Only touch password when client opts in: masked "********" resubmit must not get hashed.
     if (updates.updatePassword === true) {
       if (updates.accessPassword === null) {
         updateData.accessPassword = null;

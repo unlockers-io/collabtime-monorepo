@@ -44,7 +44,6 @@ type EditMemberDialogProps = {
   teamId: string;
 };
 
-// Form does not receive `open`; that stays in the Dialog wrapper.
 type EditMemberFormProps = Omit<EditMemberDialogProps, "open"> & { mode: "admin" | "claim" };
 
 const formSchema = z.object({

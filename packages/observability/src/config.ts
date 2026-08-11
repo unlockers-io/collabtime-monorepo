@@ -7,7 +7,6 @@ const resolveEnv = (raw: string | undefined): NodeEnv =>
 
 const buildConfig = (service: string, nodeEnv = process.env.NODE_ENV) => {
   const environment = resolveEnv(nodeEnv);
-  // Only prod redacts and compacts; test mirrors development for debuggability.
   const isProd = environment === "production";
   const minLevel: LogLevel = isProd ? "info" : "debug";
   return {

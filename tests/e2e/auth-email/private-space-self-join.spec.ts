@@ -4,9 +4,6 @@ import { webUrl } from "../../../playwright.config";
 import { extractLink, waitForEmail } from "../helpers/resend";
 import { makeTestEmail } from "../helpers/test-email";
 
-// Skip without Resend: the cross-device verification step (the whole point of
-// this spec) only exists when requireEmailVerification is on, which is gated on
-// RESEND_API_KEY. Mirrors sign-up-redirect.spec.ts.
 test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -55,15 +52,12 @@ test.describe("Private space password self-join", () => {
     await signUpToJoin.click();
 
     await expect(page).toHaveURL(/\/signup/u);
-    // The space-access cookie from the gate rides with signUp so user.create.after joins the team.
     await page.getByLabel("Full Name").fill("Gate Joiner");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill("SecurePassword1!");
     await page.getByRole("button", { name: /create account/i }).click();
     await expect(page.getByText(/check your email/i)).toBeVisible({ timeout: 10_000 });
 
-    // Verification on a context that never held the space-access cookie proves
-    // membership was created at signup, not when the link is clicked.
     const mail = await waitForEmail({ sinceMs: since, subject: /verify/i, to: email });
     expect(mail.last_event).not.toBe("bounced");
     const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/);

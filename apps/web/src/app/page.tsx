@@ -12,8 +12,6 @@ const HomeContent = async () => {
   return session ? <HomeClient /> : <LandingPage />;
 };
 
-// Neutral shell: the route resolves to either the landing page or the dashboard,
-// so this must not commit to either layout.
 const HomeSkeleton = () => (
   <div aria-hidden className="flex flex-1 flex-col">
     <div className="flex items-center justify-between px-4 py-6 sm:px-6">

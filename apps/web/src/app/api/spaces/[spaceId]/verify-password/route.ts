@@ -23,7 +23,6 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
     const body = await request.json();
     const { password } = verifyPasswordSchema.parse(body);
 
-    // Brute-force brake before bcrypt; generic 429 body does not leak space existence.
     const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
     const clientIp = forwardedFor.split(",")[0]?.trim() || "unknown";
     const { allowed } = await checkRateLimit(`space-verify:${spaceId}:${clientIp}`, 10, 60);
@@ -45,7 +44,6 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Space not found" }, { status: 404 });
     }
 
-    // Always compare when a password exists; prevents timing leaks about privacy.
     const accessPassword = space.accessPassword;
     const hasPassword = Boolean(accessPassword);
     const isValid =
@@ -61,7 +59,6 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
     }
 
-    // Cookie is set by this request, so materialize membership directly; signup/login use auth hooks.
     const session = await getSession();
     if (session) {
       try {

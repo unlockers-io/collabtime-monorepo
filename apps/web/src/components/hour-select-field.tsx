@@ -41,7 +41,6 @@ const HourSelectField = ({
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Select
         onValueChange={(v) => {
-          // A null value would coerce to hour 0, so a cleared select stays put.
           if (v !== null) {
             onChange(Number(v));
             onBlur();

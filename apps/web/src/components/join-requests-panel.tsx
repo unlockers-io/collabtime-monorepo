@@ -56,9 +56,6 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
         toast.error(result.error ?? "Failed to approve request");
       }
 
-      // Also on failure: the Postgres side of an approval commits before the
-      // step that can fail, so the request is no longer pending either way and
-      // leaving it on screen invites a retry that reports something different.
       invalidateRequests();
       setPendingAction(null);
     });

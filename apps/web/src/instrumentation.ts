@@ -1,6 +1,5 @@
 import { defineNodeInstrumentation } from "@repo/observability/next/instrumentation";
 
-// Lazy init: keeps `node:async_hooks` out of the edge bundle.
 const evlog = defineNodeInstrumentation(() => import("./lib/observability"));
 
 const register = async () => {
@@ -14,7 +13,6 @@ const register = async () => {
       validateEnv();
       log.info("instrumentation", "Environment variables validated successfully");
     } catch (error) {
-      // Dev: warn only. Prod: crash so misconfigured deploys don't start.
       if (process.env.NODE_ENV === "production") {
         throw error;
       }

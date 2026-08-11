@@ -7,8 +7,6 @@ export const metadata = {
   title: "Page not found",
 };
 
-// Rendered above the segment layouts, so its <main> is the only element the root layout's
-// skip link can target.
 const NotFound = () => {
   return (
     <main

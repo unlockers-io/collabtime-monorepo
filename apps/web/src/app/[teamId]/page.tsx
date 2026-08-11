@@ -102,7 +102,6 @@ const TeamPage = async ({ params }: TeamPageProps) => {
         : null;
 
       if (!membership) {
-        // Password gate instead of redirect/404; verify-password route contains leakage.
         return (
           <PrivateSpaceGate isAuthenticated={Boolean(session)} spaceId={space.id} teamId={teamId} />
         );

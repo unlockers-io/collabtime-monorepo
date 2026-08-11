@@ -109,7 +109,6 @@ type OverlapStatusIconProps = {
   status: OverlapStatus;
 };
 
-// Hoisted to module scope: identity is stable across renders.
 const ICON_CONFIGS = {
   full: { bgClass: "bg-success/20", icon: Check, iconClass: "text-success" },
   mixed: { bgClass: "bg-success/20", icon: Check, iconClass: "text-success" },

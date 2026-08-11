@@ -20,7 +20,6 @@ export const GET = withEvlog(async () => {
 
     const teamIds = memberships.map((m) => m.teamId);
 
-    // Owned spaces are returned alongside teams so the client can render the delete affordance.
     const [summaries, ownedSpaces] = await Promise.all([
       readTeamSummaries(teamIds),
       prisma.space.findMany({
@@ -34,9 +33,6 @@ export const GET = withEvlog(async () => {
 
     const ownedSpaceByTeamId = new Map(ownedSpaces.map((space) => [space.teamId, space.id]));
 
-    // Dropped rather than rendered with a zero count: `Membership.teamId` is a
-    // foreign key to `Space.teamId`, so a summary is missing here only if neither
-    // store holds the team, and readTeamSummaries has already logged that gap.
     const teams = memberships.flatMap((membership) => {
       const summary = summaries.get(membership.teamId);
 

@@ -22,8 +22,6 @@ const COMMON_TIMEZONES = [
   "Pacific/Auckland",
 ] as const;
 
-// Shared by the server-side member factory and the add-member form, which cannot
-// import the factory: it lives next to the Redis client.
 const DEFAULT_MEMBER_TIMEZONE = "America/New_York";
 const DEFAULT_WORKING_HOURS_START = 9;
 const DEFAULT_WORKING_HOURS_END = 17;
@@ -210,7 +208,6 @@ const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | 
 
   let inputOffset: number;
   try {
-    // Intl.DateTimeFormat throws RangeError for invalid timeZone values
     Intl.DateTimeFormat("en", { timeZone: trimmed });
     inputOffset = getTimezoneOffset(trimmed);
   } catch {

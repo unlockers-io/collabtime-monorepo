@@ -7,7 +7,6 @@ const { expireMock, getMock, logErrorMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("ioredis", () => ({
-  // `new Redis(...)`, so the stub has to be constructible.
   Redis: class {
     expire = expireMock;
     get = getMock;

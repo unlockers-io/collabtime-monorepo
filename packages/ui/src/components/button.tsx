@@ -1,5 +1,3 @@
-// Design system variants (size, intent, etc.) order semantically, not alphabetically.
-// Sort overrides for this file live in oxlint.config.ts.
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 

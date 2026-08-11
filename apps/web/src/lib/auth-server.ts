@@ -8,7 +8,6 @@ import { log } from "./observability";
 import { redis } from "./redis";
 import { joinPrivateSpacesFromCookies } from "./space-join";
 
-// Lazy init: env vars may be unavailable at build time.
 let cachedAuth: Auth | null = null;
 
 const getAuthConfig = (): AuthConfig => {
@@ -19,9 +18,7 @@ const getAuthConfig = (): AuthConfig => {
     );
   }
   return {
-    // nextCookies() must be last: lets better-auth read cookies in RSC/Server Actions
     extraPlugins: [nextCookies()],
-    // Self-join private spaces from valid password cookies; user.create covers signup, session.create covers login.
     onSessionCreated: (userId, { cookieHeader }) =>
       joinPrivateSpacesFromCookies(userId, cookieHeader),
     onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
@@ -83,7 +80,6 @@ const auth = new Proxy({} as Auth, {
 });
 // oxlint-enable no-unsafe-type-assertion
 
-// React.cache() dedupes getSession within a single RSC request.
 const getSession = cache(async () => {
   const headersList = await headers();
 
@@ -94,7 +90,6 @@ const getSession = cache(async () => {
 
     return session;
   } catch (error) {
-    // Auth failures look identical to "logged out" without a log entry.
     log.error({
       error: error instanceof Error ? error.message : String(error),
       message: "getSession failed",

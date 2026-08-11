@@ -1,7 +1,3 @@
-// LOCAL-only: creates a known-password user. Both datastore URLs are gated to
-// localhost below, and this runs as the last step before the suite, so it is the
-// gate that keeps a misconfigured CI environment from writing into a real one.
-
 import { prisma } from "@repo/db";
 
 import { auth } from "@/lib/auth-server";
@@ -13,8 +9,6 @@ const SLUG = "e2e-test-user";
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
 
-// Reports the hostname and never the URL: these values carry credentials, and a
-// throw here lands in a CI log.
 const assertLocal = (name: string, value: string): void => {
   const host = URL.canParse(value) ? new URL(value).hostname : "";
 
@@ -32,11 +26,9 @@ const main = async () => {
   const ctx = await auth.$context;
   const hashed = await ctx.password.hash(PASSWORD);
 
-  // Existing rows keep their id (not SLUG), so use the returned `id` for the account FK below.
   const user = await prisma.user.upsert({
     create: {
       email: EMAIL,
-      // Better Auth blocks sign-in for unverified accounts when requireEmailVerification is on.
       emailVerified: true,
       id: SLUG,
       name: NAME,

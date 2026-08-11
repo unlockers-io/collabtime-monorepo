@@ -1,9 +1,7 @@
 import { test, expect } from "../fixtures/auth.fixture";
 
-// Use a separate session so signing out doesn't invalidate the shared test user's session
 test.use({ storageState: { cookies: [], origins: [] } });
 
-// Skip: admin UI doesn't render in CI production builds (Better Auth session detection)
 test.describe.skip("Logout", () => {
   test("signs out from the team page and redirects to home", async ({
     homePage,

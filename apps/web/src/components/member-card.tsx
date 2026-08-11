@@ -55,7 +55,6 @@ const MemberCard = ({
   const canClaim =
     hasCurrentUser && (member.userId === undefined || member.userId === "") && !hasClaimedProfile;
 
-  // Re-render every 30s and derive availability during render (no mirror-into-state effect).
   useHalfMinuteTick();
   const isAvailable = isCurrentlyWorking(
     member.timezone,

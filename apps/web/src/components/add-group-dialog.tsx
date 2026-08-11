@@ -74,7 +74,6 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
     <Dialog
       onOpenChange={handleOpenChange}
       onOpenChangeComplete={(nextOpen) => {
-        // Reset after close animation to avoid input flicker during fade-out.
         if (!nextOpen) {
           form.reset();
         }
