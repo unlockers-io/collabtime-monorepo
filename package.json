@@ -25,12 +25,12 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "ioredis": "^5.11.1"
+    "ioredis": "^6.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@repo/db": "workspace:*",
-    "better-auth": "^1.6.23",
+    "better-auth": "^1.6.26",
     "fallow": "^3.14.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
@@ -38,7 +38,7 @@
     "oxlint": "^1.77.0",
     "oxlint-config-awesomeness": "^3.3.0",
     "oxlint-tsgolint": "^7.0.2001",
-    "turbo": "^2.10.8"
+    "turbo": "^2.10.9"
   },
   "lint-staged": {
     "!(*.d).{ts,tsx,mts,cts,js,jsx,mjs,cjs}": [
