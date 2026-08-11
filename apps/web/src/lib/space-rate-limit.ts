@@ -2,7 +2,6 @@ import { redis } from "@/lib/redis";
 
 type RateLimitResult = { allowed: boolean; remaining: number };
 
-// Atomic fixed-window limiter; degrades OPEN when Redis is absent. INCR+EXPIRE in one Lua step avoids racy read-modify-write.
 const INCR_WITH_EXPIRE = `
   local count = redis.call("INCR", KEYS[1])
   if count == 1 then
@@ -18,7 +17,6 @@ const checkRateLimit = async (
 ): Promise<RateLimitResult> => {
   const redisKey = `ratelimit:${key}`;
 
-  // Degrade OPEN: probe `get` first: unset REDIS_URL makes the proxy return null for get but throw on eval.
   const probe = await redis.get(redisKey);
   if (probe === null && (process.env.REDIS_URL === undefined || process.env.REDIS_URL === "")) {
     return { allowed: true, remaining: max };

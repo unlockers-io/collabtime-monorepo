@@ -13,7 +13,6 @@ const SettingsContent = async () => {
   }
 
   return (
-    // Keyed by name so the client draft resets when the canonical name changes.
     <SettingsClient
       key={session.user.name ?? ""}
       user={{
@@ -25,7 +24,6 @@ const SettingsContent = async () => {
   );
 };
 
-// Suspense boundary above session-bound content for cacheComponents.
 const SettingsSkeleton = () => (
   <div aria-hidden className="mx-auto max-w-3xl px-4 py-8">
     <div className="flex flex-col gap-8">

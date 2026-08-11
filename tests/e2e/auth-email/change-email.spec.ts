@@ -27,20 +27,12 @@ test.describe("Change email (two-stage confirmation + verification)", () => {
     expect([200, 201]).toContain(signUp.status());
     const verify = await verification.forVerifyEmail(currentEmail);
     await page.goto(verify.url);
-    // autoSignInAfterVerification: true; the verify click signs in the page
-    // context and the "/" callback lands on the app root. Sign in via the API
-    // too: the change-email request below needs its own cookie header.
     await page.waitForURL("/");
     const signIn = await request.post(`${webUrl}/api/auth/sign-in/email`, {
       data: { email: currentEmail, password },
     });
     expect(signIn.status()).toBe(200);
 
-    // Parse Set-Cookie from the sign-in response and forward as Cookie on the
-    // change-email call. Playwright's APIRequestContext storage state doesn't
-    // include cookies set via API responses, so we have to thread the cookie
-    // through manually. Better Auth issues a single `__Secure-<prefix>.
-    // session_token` cookie marked HttpOnly/Secure/SameSite=Lax.
     const setCookie = signIn.headers()["set-cookie"] ?? "";
     const cookieHeader = setCookie
       .split(/,(?=\s*[\w-]+=)/u)

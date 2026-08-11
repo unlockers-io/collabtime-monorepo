@@ -137,8 +137,6 @@ const importMembers = async (
   });
 };
 
-// Any member may run this because it can only ever rewrite the caller's own
-// row, so plain membership plus the ownership check below is the boundary.
 const updateOwnMember = async (
   teamId: string,
   memberId: string,
@@ -170,7 +168,6 @@ const updateOwnMember = async (
         return { error: "Member not found", ok: false };
       }
       const member = team.members[memberIndex];
-      // Ownership: must match session user, or the slot must be unclaimed.
       if (
         member.userId !== undefined &&
         member.userId !== "" &&
@@ -190,7 +187,6 @@ const updateOwnMember = async (
       if (!result.success) {
         return { error: result.error.issues[0]?.message ?? "Invalid update data", ok: false };
       }
-      // Strip groupId: users can't self-assign to groups.
       const { groupId: _stripped, ...safe } = result.data;
       return { ok: true, value: safe };
     },

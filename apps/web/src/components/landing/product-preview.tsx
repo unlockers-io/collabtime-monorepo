@@ -8,9 +8,6 @@ import { DEMO_GROUPS, DEMO_MEMBERS } from "./demo-team";
 
 const SECTION_ROW_COUNTS = [2, 3];
 
-// Mirrors the real visualizer: time axis, then one group header per section with
-// h-8 rows below it, then the compare button and legend. Row heights and gaps
-// match so nothing shifts when the chunk lands.
 const PreviewSkeleton = () => (
   <div aria-hidden className="flex flex-col gap-6">
     <div className="flex gap-2 sm:gap-3">
@@ -41,9 +38,6 @@ const PreviewSkeleton = () => (
   </div>
 );
 
-// ssr: false because the visualizer already returns null until it can read the
-// viewer's timezone on the client. Rendering it on the server buys nothing and
-// risks a hydration mismatch.
 const TimezoneVisualizer = dynamic(
   async () => {
     const visualizerModule = await import("@/components/timezone-visualizer");
@@ -53,8 +47,6 @@ const TimezoneVisualizer = dynamic(
 );
 
 const ProductPreview = () => {
-  // The visualizer renders group headers as aria-expanded buttons regardless, so
-  // the demo owns the collapse state rather than shipping dead controls.
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<Array<string>>([]);
 
   const handleToggleGroupCollapse = (groupId: string) => {

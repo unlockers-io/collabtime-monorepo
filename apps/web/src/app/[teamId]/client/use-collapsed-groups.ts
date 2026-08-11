@@ -22,12 +22,10 @@ const useCollapsedGroups = (members: Array<TeamMember>) => {
       }
       return new Set(parsed.filter((id): id is string => typeof id === "string"));
     } catch {
-      // Silently reset: corrupt storage shouldn't break the UI
       return new Set();
     }
   });
 
-  // Computed outside the updater: updaters must be pure; StrictMode may invoke them twice.
   const toggleGroupCollapse = (groupId: string) => {
     const next = new Set(collapsedGroups);
     if (next.has(groupId)) {

@@ -74,7 +74,6 @@ const inviteMember = async (
       }
     }
 
-    // Upsert resets a previously declined invitation back to PENDING so it re-sends.
     const invitation = await prisma.invitation.upsert({
       create: {
         email: trimmedEmail,
@@ -95,7 +94,6 @@ const inviteMember = async (
       },
     });
 
-    // Best-effort: a failed send is logged but doesn't fail the invitation.
     let emailSent = false;
     const apiKey = getEnv("RESEND_API_KEY");
     const fromEmail = getEnv("RESEND_FROM_EMAIL");

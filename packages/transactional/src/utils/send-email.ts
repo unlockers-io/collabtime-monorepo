@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { createResendClient } from "../client";
 
-// Resend tag chars: ASCII letters, digits, underscore, dash, ≤256.
 const sanitizeTagSegment = (s: string): string =>
   s
     .replaceAll(/[^\-A-Za-z0-9_]+/gv, "-")
@@ -40,7 +39,6 @@ const emailConfigSchema = z.object({
   to: recipientSchema,
 });
 
-// z.input keeps `from` optional for callers; the schema default fills it in during parse.
 type EmailConfig = z.input<typeof emailConfigSchema>;
 
 type SendEmailOptions = EmailConfig & {

@@ -25,8 +25,6 @@ const mockedGetSession = vi.mocked(getSession);
 const mockedFindMembership = vi.mocked(prisma.membership.findUnique);
 
 describe("module surface", () => {
-  // "use server" would register these auth helpers as public POST endpoints
-  // (requireAuth returns the caller's full session); all importers are server modules.
   it("is not a server-action module", async () => {
     const source = await readFile(path.resolve(process.cwd(), "src/lib/team-auth.ts"), "utf8");
     expect(source).not.toContain('"use server"');

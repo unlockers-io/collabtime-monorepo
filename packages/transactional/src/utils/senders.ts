@@ -65,7 +65,6 @@ type TransactionalEmail =
 
 type EmailBuild = { subject: string; template: React.ReactElement; to: string };
 
-// Switch dispatch narrows each case to its payload, so no per-branch cast is needed.
 const buildEmail = (email: TransactionalEmail): EmailBuild => {
   switch (email.type) {
     case "change-email-confirmation": {
@@ -77,7 +76,6 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
           newEmail: email.newEmail,
           username: email.username,
         }),
-        // Consent to current email; sendVerificationEmail handles new-email verification.
         to: email.currentEmail,
       };
     }
@@ -132,7 +130,6 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
       };
     }
     default: {
-      // Compile-time exhaustiveness: a new email type not handled above fails this assignment.
       const unhandled: never = email;
       throw new Error(`Unhandled transactional email: ${String(unhandled)}`);
     }
@@ -149,7 +146,6 @@ const sendTransactionalEmail = (email: TransactionalEmail, config: MailerConfig)
     subject,
     tags: [
       { name: "type", value: email.type },
-      // Invitations are recipient-first: no user row exists yet, so tag the team instead.
       email.type === "invitation"
         ? { name: "teamId", value: email.teamId }
         : { name: "userId", value: email.userId },

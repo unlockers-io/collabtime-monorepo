@@ -16,8 +16,6 @@ import { UUIDSchema } from "../validation";
 import { sanitizeTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
-// Takes no userId: as a server action this is a public POST endpoint, so the
-// identity has to come from the session rather than the caller.
 const getTeamMembershipRole = async (teamId: string): Promise<TeamRole | null> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);
@@ -55,7 +53,6 @@ const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team 
     if (space.isPrivate) {
       const memberRole = await getTeamMembershipRole(teamId);
       if (!memberRole) {
-        // Guest cookie must match the page gate so guests can load team data.
         const cookieStore = await cookies();
         const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
         const hasGuestAccess =
@@ -83,7 +80,6 @@ const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team 
   }
 };
 
-// `cache()` dedupes generateMetadata + page render lookups per request.
 const validateTeam = cache(async (teamId: string): Promise<boolean> => {
   try {
     const uuidResult = UUIDSchema.safeParse(teamId);

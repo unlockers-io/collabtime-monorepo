@@ -8,7 +8,6 @@ import { QueryProvider } from "@/providers/query-provider";
 
 type ProvidersProps = { children: ReactNode };
 
-// `reducedMotion="user"` honors prefers-reduced-motion; LazyMotion shrinks the motion bundle.
 const Providers = ({ children }: ProvidersProps) => (
   <QueryProvider>
     <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange enableSystem>

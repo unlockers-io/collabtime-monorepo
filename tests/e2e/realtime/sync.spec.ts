@@ -2,7 +2,6 @@ import { expect, test } from "../fixtures/auth.fixture";
 
 const STORAGE_STATE = "tests/e2e/.auth/user.json";
 
-// Skip: admin UI doesn't render in CI production builds (Better Auth session detection)
 test.describe.skip("Realtime Sync", () => {
   let teamId: string;
 
@@ -102,7 +101,6 @@ test.describe.skip("Realtime Sync", () => {
     });
     await teamNameButton.first().click();
 
-    // Tab blurs the input, which is what commits the rename.
     const nameInput = pageA.locator('input[placeholder="Team name…"]');
     await nameInput.clear();
     await nameInput.pressSequentially("Synced Team Name", { delay: 10 });

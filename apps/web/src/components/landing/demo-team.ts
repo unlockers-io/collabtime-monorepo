@@ -8,9 +8,6 @@ const DEMO_GROUPS: Array<TeamGroup> = [
   { id: ENGINEERING_GROUP_ID, name: "Engineering", order: 1 },
 ];
 
-// Hours are chosen so four of the five share a real 16:00-19:00 UTC window while
-// Rowan only partially overlaps. That contrast is the point of the demo: a
-// genuinely distributed team rarely has a clean all-hands slot.
 const DEMO_MEMBERS: Array<TeamMember> = [
   {
     groupId: PRODUCT_GROUP_ID,

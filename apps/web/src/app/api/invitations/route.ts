@@ -36,8 +36,6 @@ export const GET = withEvlog(async () => {
 
     const summaries = await readTeamSummaries(invitations.map((inv) => inv.teamId));
 
-    // `Space.name` defaults to "" and a team is only named once someone renames
-    // it, so a blank name is ordinary rather than a sign of a missing row.
     const results = invitations.map((inv) => {
       const name = summaries.get(inv.teamId)?.name ?? "";
 

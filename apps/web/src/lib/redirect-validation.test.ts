@@ -30,17 +30,12 @@ describe("safeRedirectPath", () => {
   });
 
   it("rejects backslash tricks", () => {
-    // Browsers normalize "\" to "/" during URL parsing, so "/\evil.com"
-    // would navigate to evil.com if let through.
     expect(safeRedirectPath(String.raw`/\evil.com`)).toBe("/");
     expect(safeRedirectPath(String.raw`\/evil.com`)).toBe("/");
     expect(safeRedirectPath(String.raw`/path\..\evil`)).toBe("/");
   });
 
   it("rejects control-character smuggling", () => {
-    // The WHATWG URL parser strips tab/LF/CR before parsing, so "/\t/evil.com"
-    // reaches the parser as "//evil.com": protocol-relative. The prefix
-    // checks can't see it; the anchor-origin resolution is what catches it.
     expect(safeRedirectPath("/\t/evil.com")).toBe("/");
     expect(safeRedirectPath("/\n/evil.com")).toBe("/");
     expect(safeRedirectPath("/\r/evil.com")).toBe("/");
@@ -52,7 +47,6 @@ describe("safeRedirectPath", () => {
   });
 
   it("rejects scheme-prefixed values", () => {
-    // Built dynamically so lint's no-script-url doesn't flag a literal.
     expect(safeRedirectPath(["javascript", "alert(1)"].join(":"))).toBe("/");
     expect(safeRedirectPath("data:text/html,<script>1</script>")).toBe("/");
   });

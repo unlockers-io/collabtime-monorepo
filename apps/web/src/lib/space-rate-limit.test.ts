@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// In-memory Redis stand-in. `get` is allowlist-degradable (returns null when
-// Redis is "absent"); `eval` mimics the Lua INCR + first-hit-EXPIRE script so we
-// can assert windowing and atomicity without a real server.
 type Entry = { count: number; expiresAt: number | null };
 
 const store = new Map<string, Entry>();
@@ -45,8 +42,6 @@ import { checkRateLimit } from "./space-rate-limit";
 
 type Result = Awaited<ReturnType<typeof checkRateLimit>>;
 
-// Run `times` calls sequentially (via recursion, so no await-in-loop) and
-// collect the results in order, needed for the windowing/ordering assertions.
 const runSequential = async (
   times: number,
   run: () => Promise<Result>,

@@ -65,7 +65,6 @@ const SignupForm = ({ searchParams }: Props) => {
             toast.error(result.error.message ?? "Failed to create account");
             return;
           }
-          // No token: requireEmailVerification suppressed auto-sign-in or enumeration prevention.
           const sessionToken = result.data?.token;
           if (typeof sessionToken !== "string" || sessionToken === "") {
             setSentToEmail(value.email);

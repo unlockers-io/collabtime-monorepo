@@ -25,7 +25,6 @@ type Team = {
 };
 
 type TeamRecord = Team & {
-  // Stored server-side only; legacy teams may not have this set.
   adminPasswordHash?: string;
 };
 

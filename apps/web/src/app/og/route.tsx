@@ -4,7 +4,6 @@ import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
 
 const loadGoogleFont = async (font: string, weight: number, text: string) => {
   const url = `https://fonts.googleapis.com/css2?family=${font}:wght@${weight}&text=${encodeURIComponent(text)}`;
-  // 24h cache keeps OG generation off the cold-start critical path.
   const cssResponse = await fetch(url, { next: { revalidate: 86_400 } });
   const css = await cssResponse.text();
   const fontUrl = /src: url\((?<url>.+)\) format\('(?:opentype|truetype)'\)/v.exec(css)?.groups

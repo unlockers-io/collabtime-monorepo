@@ -8,8 +8,6 @@ type QueryProviderProps = {
 };
 
 const QueryProvider = ({ children }: QueryProviderProps) => {
-  // useState (not useMemo) so the QueryClient instance is stable across re-renders;
-  // setter is unused by design
   const [queryClient, _setQueryClient] = useState(
     () =>
       new QueryClient({

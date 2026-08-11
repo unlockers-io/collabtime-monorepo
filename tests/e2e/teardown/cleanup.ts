@@ -10,7 +10,6 @@ const cleanup = async () => {
   const redis = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
 
   try {
-    // Only delete team:* keys whose payload references the shared e2e test user.
     let cursor = "0";
     const keysToDelete: Array<string> = [];
 

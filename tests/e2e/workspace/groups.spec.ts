@@ -1,6 +1,5 @@
 import { test, expect } from "../fixtures/auth.fixture";
 
-// Skip: admin UI doesn't render in CI production builds (Better Auth session detection)
 test.describe.skip("Group Management", () => {
   test.beforeEach(async ({ homePage, page }) => {
     await homePage.goto();

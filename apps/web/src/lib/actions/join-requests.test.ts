@@ -17,8 +17,6 @@ const { redisMock } = vi.hoisted(() => ({
   redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
 }));
 
-// The real team-store runs against this stub so the durability tests exercise the
-// actual read/mutate/write path instead of a mocked one.
 vi.mock("../redis", () => ({
   isRedisConfigured: (): boolean => true,
   readTeamJson: async (teamId: string): Promise<string | null> => {
@@ -279,8 +277,6 @@ describe("getPendingJoinRequests", () => {
 });
 
 describe("module surface", () => {
-  // "use server" makes every export a public POST endpoint; the dead getMyTeamStatus
-  // (duplicate of page.tsx getTeamStatus) must stay deleted.
   it("does not expose getMyTeamStatus as a server action", () => {
     expect(Object.keys(joinRequests)).not.toContain("getMyTeamStatus");
   });

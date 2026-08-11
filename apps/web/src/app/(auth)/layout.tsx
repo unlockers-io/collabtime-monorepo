@@ -3,7 +3,6 @@ import { Suspense } from "react";
 
 import { getSession } from "@/lib/auth-server";
 
-// Auth gate as a Suspense sibling so the static shell stays prerenderable under cacheComponents.
 const AuthGate = async () => {
   const session = await getSession();
   if (session) {

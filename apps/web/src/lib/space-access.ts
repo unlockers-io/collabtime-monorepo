@@ -8,7 +8,6 @@ const TOKEN_VERSION = "v1";
 
 let warnedAboutFallback = false;
 
-// Falls back to BETTER_AUTH_SECRET with a one-time warning if no dedicated secret is set.
 const getSigningSecret = (): string => {
   const dedicated = process.env.SPACE_ACCESS_SECRET;
   if (dedicated !== undefined && dedicated !== "") {
@@ -35,11 +34,9 @@ const createSignature = (data: string, secret: string): string => {
 
 const verifySignature = (data: string, signature: string, secret: string): boolean => {
   const expectedSignature = createSignature(data, secret);
-  // Timing-safe comparison to prevent timing attacks
   try {
     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
   } catch {
-    // Buffers of different lengths throw
     return false;
   }
 };

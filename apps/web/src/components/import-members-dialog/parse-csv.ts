@@ -71,7 +71,6 @@ const parseCSV = (text: string): Array<ParsedRow> => {
     (firstLine.match(/\t/gv)?.length ?? 0) > (firstLine.match(/,/gv)?.length ?? 0) ? "\t" : ",";
 
   let startRow = 0;
-  // null = column not present (only valid when header row detected)
   let nameIdx: number | null = 0;
   let tzIdx: number | null = 1;
   let titleIdx: number | null = 2;
@@ -91,7 +90,6 @@ const parseCSV = (text: string): Array<ParsedRow> => {
         headerIndices.set(firstCells[i], i);
       }
     }
-    // Use null when a column isn't found; positional defaults would silently read the wrong column.
     nameIdx = findColIndex(headerIndices, "name");
     tzIdx = findColIndex(headerIndices, "timezone", "tz");
     titleIdx = findColIndex(headerIndices, "title", "role", "position");
@@ -120,7 +118,6 @@ const parseCSV = (text: string): Array<ParsedRow> => {
     const workEndRaw = (endIdx === null ? "17" : (cells[endIdx] ?? "17")).trim();
 
     const matchedTimezone = rawTimezone ? fuzzyMatchTimezone(rawTimezone) : null;
-    // `Number("")` is 0, which would pass the 0–23 range check; keep NaN for empty cells.
     const workStart = workStartRaw ? Math.trunc(Number(workStartRaw)) : Number.NaN;
     const workEnd = workEndRaw ? Math.trunc(Number(workEndRaw)) : Number.NaN;
 

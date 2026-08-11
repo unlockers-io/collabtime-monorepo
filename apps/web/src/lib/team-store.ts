@@ -20,7 +20,6 @@ const StoredGroupSchema = z.looseObject({
   order: z.number(),
 });
 
-// `order` is optional because legacy rows predate it; it is backfilled on read.
 const StoredMemberSchema = z.looseObject({
   groupId: z.string().optional(),
   id: z.string(),
@@ -50,8 +49,6 @@ const StoredTeamSchema = z.looseObject({
 
 type StoredTeam = z.infer<typeof StoredTeamSchema>;
 
-// A blob that fails validation is still read rather than dropped, so nothing the
-// schema requires can be assumed present by the time it reaches toTeamRecord.
 type MaybeStoredTeam = Partial<StoredTeam>;
 
 const asText = (value: unknown, fallback: string): string =>
@@ -103,12 +100,7 @@ const loadTeamRecord = async (teamId: string): Promise<TeamRecordRead> => {
       teamId,
     });
 
-    // Redis holds the only copy of a team's contents, so a row written before a
-    // field existed still has to resolve: dropping it here would 404 the team
-    // page, fail every mutation on it, and hide it from the teams list.
     if (typeof raw !== "object" || raw === null) {
-      // Reported as a failed read rather than an absent one so a mutation cannot
-      // overwrite a blob that simply could not be interpreted.
       return { ok: false };
     }
 
@@ -189,8 +181,6 @@ const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, Te
   }
 
   const spaces = await prisma.space.findMany({
-    // Member ids rather than Prisma's `_count`, which trips no-underscore-dangle
-    // in the shared lint config. Member rows are one per person, so both are cheap.
     select: { members: { select: { id: true } }, name: true, teamId: true },
     where: { teamId: { in: wanted } },
   });
@@ -199,8 +189,6 @@ const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, Te
     spaces.map((space) => [space.teamId, { memberCount: space.members.length, name: space.name }]),
   );
 
-  // An empty Space row is indistinguishable from one the mirror never filled, so
-  // both go back to the contents store rather than being reported as an empty team.
   const unresolved = wanted.filter((id) => {
     const summary = summaries.get(id);
     return summary === undefined || (summary.memberCount === 0 && summary.name === "");

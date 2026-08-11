@@ -1,9 +1,3 @@
-// One-shot repair for teams still alive under the old write-only TTL policy.
-// Reads now extend the key, but a team last written more than 60 days ago is
-// already counting down to deletion, and nothing in the request path can save
-// it before it is gone. Run this once against production after deploying the
-// read-path refresh; it is idempotent and safe to re-run.
-
 import { Redis } from "ioredis";
 
 const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2;
@@ -36,7 +30,6 @@ const main = async () => {
         if (key === undefined) {
           continue;
         }
-        // -1 is a key with no expiry, -2 a key that vanished mid-scan.
         if (ttl < 0 || ttl >= TEAM_ACTIVE_TTL_SECONDS) {
           continue;
         }

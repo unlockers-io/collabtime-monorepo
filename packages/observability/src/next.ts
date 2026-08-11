@@ -7,8 +7,6 @@ import { buildConfig } from "./config";
 
 const createObservability = (opts: { service: string }) => {
   const { redact, ...shared } = buildConfig(opts.service);
-  // `NextEvlogOptions` accepts the full config (incl. `redact`); `InstrumentationOptions`
-  // does not have a `redact` key, so only the shared subset is forwarded there.
   const next = createEvlog({ redact, service: opts.service, ...shared });
   const instrumentation = createInstrumentation({
     service: opts.service,

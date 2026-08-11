@@ -71,32 +71,27 @@ const TeamPageClient = ({
 
   const { data: teamData, error: teamError } = useTeamQuery({ teamId });
 
-  // Resolve admin status when server-side session detection fails.
   const { data: resolvedRole, error: resolvedRoleError } = useQuery({
     enabled: initialStatus === "none" && Boolean(userId),
     queryFn: () => getTeamMembershipRole(teamId),
     queryKey: ["membership-role", teamId, userId],
   });
 
-  // Fresh initialStatus from RSC refresh must outrank stale disabled-query cache.
   const teamStatus: TeamStatus =
     statusOverride ?? (initialStatus === "none" ? (resolvedRole ?? "none") : initialStatus);
 
   const isAdmin = teamStatus === "ADMIN";
   const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
 
-  // Kept for drag-end optimistic update + revert.
   const updateTeamCache = useUpdateTeamCache();
 
   useEffect(() => {
-    // Silent fallback returns null on failure; transport errors need reporting.
     if (resolvedRoleError) {
       captureException(resolvedRoleError);
     }
   }, [resolvedRoleError]);
 
   useEffect(() => {
-    // Stable toast id: team query polls every 20s so failures replace instead of stack.
     if (teamError) {
       toast.error(teamError.message, { id: "team-query-error" });
       return;

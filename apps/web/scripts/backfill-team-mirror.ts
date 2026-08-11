@@ -1,12 +1,3 @@
-// Backfill for the move of team contents out of the Redis blob and into
-// Postgres. Every write already mirrors itself, so this only has to catch up
-// the teams that have not been written since the mirror shipped. Run it after
-// deploying the dual-write, then run it again with --verify-only and require a
-// clean report before anything starts reading from Postgres.
-//
-// Idempotent: each team is rewritten from its blob, so re-running repairs
-// whatever drifted instead of compounding it.
-
 import { prisma } from "@repo/db";
 import { Redis } from "ioredis";
 
@@ -74,8 +65,6 @@ const main = async (): Promise<void> => {
           continue;
         }
 
-        // A blob with no Space row is a team whose Postgres side never landed.
-        // Creating one here would invent an owner, so it is reported instead.
         const space = await prisma.space.findUnique({ select: { id: true }, where: { teamId } });
         if (space === null) {
           problems.push(`${teamId}: no Space row`);

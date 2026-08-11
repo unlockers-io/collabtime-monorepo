@@ -10,8 +10,6 @@ type TickStore = {
 
 const getServerSnapshot = () => 0;
 
-// Updates immediately on visibilitychange so a backgrounded tab shows fresh
-// time the moment it regains focus, not after the next interval.
 const createTickStore = (intervalMs: number): TickStore => {
   let cachedTick = Date.now();
 

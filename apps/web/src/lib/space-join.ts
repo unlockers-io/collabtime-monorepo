@@ -33,17 +33,14 @@ const validSpaceIdsFromCookieHeader = (cookieHeader: string | null): Array<strin
   return spaceIds;
 };
 
-// Idempotent via Membership @@unique([userId, teamId]).
 const joinPrivateSpace = (userId: string, teamId: string) => {
   return prisma.membership.upsert({
     create: { role: "MEMBER", teamId, userId },
-    // Re-activate an archived membership; never demote an existing role.
     update: { archivedAt: null },
     where: { userId_teamId: { teamId, userId } },
   });
 };
 
-// Best-effort inside Better Auth's user/session create flow; never throws.
 const joinPrivateSpacesFromCookies = async (
   userId: string,
   cookieHeader: string | null,
