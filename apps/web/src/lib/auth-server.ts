@@ -8,6 +8,31 @@ import { log } from "./observability";
 import { redis } from "./redis";
 import { joinPrivateSpacesFromCookies } from "./space-join";
 
+const parseEnvList = (value: string | undefined): Array<string> => {
+  if (value === undefined || value === "") {
+    return [];
+  }
+  const result: Array<string> = [];
+  for (const entry of value.split(",")) {
+    const trimmed = entry.trim();
+    if (trimmed.length > 0) {
+      result.push(trimmed);
+    }
+  }
+  return result;
+};
+
+const LOCALHOST_ALLOWED_HOSTS = [
+  "**.localhost",
+  "localhost:*",
+  "127.0.0.1:*",
+  "collabtime.io",
+  "www.collabtime.io",
+];
+
+// Plain http://localhost:PORT origins won't match allowedHosts patterns.
+const LOOPBACK_TRUSTED_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"];
+
 let cachedAuth: Auth | null = null;
 
 const getAuthConfig = (): AuthConfig => {
@@ -18,12 +43,18 @@ const getAuthConfig = (): AuthConfig => {
     );
   }
   return {
+    allowedHosts: [...LOCALHOST_ALLOWED_HOSTS, ...parseEnvList(process.env.AUTH_ALLOWED_HOSTS)],
     extraPlugins: [nextCookies()],
     onSessionCreated: (userId, { cookieHeader }) =>
       joinPrivateSpacesFromCookies(userId, cookieHeader),
     onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
     prisma,
+    rateLimitEnabled:
+      process.env.NODE_ENV === "production" &&
+      (process.env.CI === undefined || process.env.CI === ""),
     secret,
+    trustedOrigins: [...LOOPBACK_TRUSTED_ORIGINS, ...parseEnvList(process.env.TRUSTED_ORIGINS)],
+    useSecureCookies: process.env.WEB_APP_URL?.startsWith("https://") === true,
     ...(process.env.RESEND_API_KEY !== undefined && process.env.RESEND_API_KEY !== ""
       ? {
           resendApiKey: process.env.RESEND_API_KEY,
