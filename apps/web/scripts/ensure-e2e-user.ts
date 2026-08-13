@@ -1,6 +1,6 @@
 import { prisma } from "@repo/db";
 
-import { auth } from "@/lib/auth-server";
+import { getAuth } from "@/lib/auth-server";
 
 const EMAIL = "e2e-test@collabtime.localhost";
 const NAME = "E2E Test User";
@@ -23,7 +23,7 @@ const main = async () => {
   assertLocal("DATABASE_URL", process.env.DATABASE_URL ?? "");
   assertLocal("REDIS_URL", process.env.REDIS_URL ?? "");
 
-  const ctx = await auth.$context;
+  const ctx = await getAuth().$context;
   const hashed = await ctx.password.hash(PASSWORD);
 
   const user = await prisma.user.upsert({

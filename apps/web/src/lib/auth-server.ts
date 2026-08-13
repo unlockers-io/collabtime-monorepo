@@ -1,3 +1,4 @@
+import { envAuthConfig } from "@repo/auth/env-config";
 import { createAuth, type Auth, type AuthConfig } from "@repo/auth/server";
 import { prisma } from "@repo/db";
 import { nextCookies } from "better-auth/next-js";
@@ -7,31 +8,6 @@ import { cache } from "react";
 import { log } from "./observability";
 import { redis } from "./redis";
 import { joinPrivateSpacesFromCookies } from "./space-join";
-
-const parseEnvList = (value: string | undefined): Array<string> => {
-  if (value === undefined || value === "") {
-    return [];
-  }
-  const result: Array<string> = [];
-  for (const entry of value.split(",")) {
-    const trimmed = entry.trim();
-    if (trimmed.length > 0) {
-      result.push(trimmed);
-    }
-  }
-  return result;
-};
-
-const LOCALHOST_ALLOWED_HOSTS = [
-  "**.localhost",
-  "localhost:*",
-  "127.0.0.1:*",
-  "collabtime.io",
-  "www.collabtime.io",
-];
-
-// Plain http://localhost:PORT origins won't match allowedHosts patterns.
-const LOOPBACK_TRUSTED_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"];
 
 let cachedAuth: Auth | null = null;
 
@@ -43,18 +19,13 @@ const getAuthConfig = (): AuthConfig => {
     );
   }
   return {
-    allowedHosts: [...LOCALHOST_ALLOWED_HOSTS, ...parseEnvList(process.env.AUTH_ALLOWED_HOSTS)],
+    ...envAuthConfig({ additionalAllowedHosts: ["collabtime.io", "www.collabtime.io"] }),
     extraPlugins: [nextCookies()],
     onSessionCreated: (userId, { cookieHeader }) =>
       joinPrivateSpacesFromCookies(userId, cookieHeader),
     onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
     prisma,
-    rateLimitEnabled:
-      process.env.NODE_ENV === "production" &&
-      (process.env.CI === undefined || process.env.CI === ""),
     secret,
-    trustedOrigins: [...LOOPBACK_TRUSTED_ORIGINS, ...parseEnvList(process.env.TRUSTED_ORIGINS)],
-    useSecureCookies: process.env.WEB_APP_URL?.startsWith("https://") === true,
     ...(process.env.RESEND_API_KEY !== undefined && process.env.RESEND_API_KEY !== ""
       ? {
           resendApiKey: process.env.RESEND_API_KEY,
@@ -98,24 +69,11 @@ const getAuth = (): Auth => {
   return cachedAuth;
 };
 
-// oxlint-disable no-unsafe-type-assertion -- the Proxy impersonates Auth by design; its target is an empty stand-in and property access is forwarded dynamically.
-const auth = new Proxy({} as Auth, {
-  get(_, prop): unknown {
-    const instance = getAuth();
-    const value = instance[prop as keyof Auth];
-    if (typeof value === "function") {
-      return (value as (...args: Array<unknown>) => unknown).bind(instance);
-    }
-    return value;
-  },
-});
-// oxlint-enable no-unsafe-type-assertion
-
 const getSession = cache(async () => {
   const headersList = await headers();
 
   try {
-    const session = await auth.api.getSession({
+    const session = await getAuth().api.getSession({
       headers: headersList,
     });
 
@@ -129,4 +87,4 @@ const getSession = cache(async () => {
   }
 });
 
-export { auth, getAuth, getSession };
+export { getAuth, getSession };

@@ -1,7 +1,8 @@
-import type { createAuthClient } from "better-auth/react";
+import { createAuthClient } from "better-auth/react";
 
-export { createAuthClient as createBetterAuthClient } from "better-auth/react";
+const createBetterAuthClient = createAuthClient;
 
-type AuthClient = ReturnType<typeof createAuthClient>;
+type AuthClient = ReturnType<typeof createBetterAuthClient>;
 
+export { createBetterAuthClient };
 export type { AuthClient };
