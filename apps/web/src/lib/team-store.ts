@@ -1,4 +1,3 @@
-import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
@@ -11,7 +10,11 @@ import {
 import type { TeamMember, TeamRecord } from "@/types";
 
 import { isRedisConfigured, readTeamJson, redis, teamKey, TEAM_ACTIVE_TTL_SECONDS } from "./redis";
-import { writeTeamMirror } from "./team-mirror";
+import {
+  readTeamSummariesFromPostgres,
+  type TeamSummary,
+  writeTeamMirror,
+} from "./team-postgres-repository";
 import { UUIDSchema } from "./validation";
 
 const StoredGroupSchema = z.looseObject({
@@ -117,11 +120,6 @@ const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
   return read.ok ? read.team : null;
 };
 
-type TeamSummary = {
-  memberCount: number;
-  name: string;
-};
-
 /**
  * Re-reads one team's contents when Postgres reports nothing for it, and returns
  * whichever side actually holds the team.
@@ -180,14 +178,7 @@ const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, Te
     return new Map<string, TeamSummary>();
   }
 
-  const spaces = await prisma.space.findMany({
-    select: { members: { select: { id: true } }, name: true, teamId: true },
-    where: { teamId: { in: wanted } },
-  });
-
-  const summaries = new Map<string, TeamSummary>(
-    spaces.map((space) => [space.teamId, { memberCount: space.members.length, name: space.name }]),
-  );
+  const summaries = await readTeamSummariesFromPostgres(wanted);
 
   const unresolved = wanted.filter((id) => {
     const summary = summaries.get(id);
@@ -326,4 +317,3 @@ export {
   readTeamSummary,
   writeTeamRecord,
 };
-export type { TeamSummary };
