@@ -57,7 +57,7 @@ const Features = () => (
         {FEATURES.map(({ description, icon: Icon, title }) => (
           <div className="flex flex-col gap-1" key={title}>
             <dt className="flex items-start gap-3 text-base font-medium text-foreground sm:text-lg">
-              <Icon aria-hidden className="size-6 h-lh shrink-0 text-muted-foreground" />
+              <Icon aria-hidden className="size-6 h-lh shrink-0 text-primary" />
               {title}
             </dt>
             <dd className="pl-9 text-base text-pretty text-muted-foreground sm:text-sm">

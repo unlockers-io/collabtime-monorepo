@@ -8,7 +8,7 @@ import { HowItWorks } from "./how-it-works";
 import { OpenSource } from "./open-source";
 
 const LandingPage = () => (
-  <div className="flex flex-1 flex-col">
+  <div className="timezone-landing flex flex-1 flex-col">
     <Nav isAuthenticated={false} />
 
     <main className="flex flex-1 flex-col" id="main">
