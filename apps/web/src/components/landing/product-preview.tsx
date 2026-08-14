@@ -56,8 +56,8 @@ const ProductPreview = () => {
   };
 
   return (
-    <div className="rounded-(--frame-radius) bg-primary/15 p-(--frame-padding) outline-1 -outline-offset-1 outline-primary/35 [--frame-padding:--spacing(2)] [--frame-radius:var(--radius-xl)]">
-      <div className="flex flex-col gap-4 rounded-[calc(var(--frame-radius)-var(--frame-padding))] bg-background p-4 sm:p-6">
+    <div className="rounded-xl bg-primary/15 p-2 outline-1 -outline-offset-1 outline-primary/35">
+      <div className="flex flex-col gap-4 rounded-lg bg-background p-4 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-foreground">Sample team</p>
           <p className="text-sm text-muted-foreground">
