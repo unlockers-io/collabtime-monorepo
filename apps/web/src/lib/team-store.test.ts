@@ -12,8 +12,6 @@ const { isRedisConfiguredMock, redisMock } = vi.hoisted(() => ({
   redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
 }));
 
-vi.mock("@repo/db", () => ({ prisma: { space: { findMany: vi.fn() } } }));
-
 vi.mock("./redis", () => ({
   isRedisConfigured: isRedisConfiguredMock,
   readTeamJson: async (teamId: string): Promise<string | null> => {
@@ -25,13 +23,14 @@ vi.mock("./redis", () => ({
   teamKey: (teamId: string): string => `team:${teamId}`,
 }));
 
-vi.mock("./team-mirror", () => ({ writeTeamMirror: vi.fn() }));
+vi.mock("./team-postgres-repository", () => ({
+  readTeamSummariesFromPostgres: vi.fn(),
+  writeTeamMirror: vi.fn(),
+}));
 vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
 
-import { prisma } from "@repo/db";
-
 import { redis } from "./redis";
-import { writeTeamMirror } from "./team-mirror";
+import { readTeamSummariesFromPostgres, writeTeamMirror } from "./team-postgres-repository";
 import {
   applyTeamContents,
   newTeamMember,
@@ -44,12 +43,19 @@ import {
 const mockedRedisGet = vi.mocked(redis.get);
 const mockedRedisSet = vi.mocked(redis.set);
 const mockedWriteTeamMirror = vi.mocked(writeTeamMirror);
-const mockedSpaceFindMany = vi.mocked(prisma.space.findMany);
+const mockedReadTeamSummariesFromPostgres = vi.mocked(readTeamSummariesFromPostgres);
 
 type MirroredSpace = { members: Array<{ id: string }>; name: string; teamId: string };
 
 const mockMirroredSpaces = (spaces: Array<MirroredSpace>): void => {
-  mockedSpaceFindMany.mockResolvedValue(spaces as never);
+  mockedReadTeamSummariesFromPostgres.mockResolvedValue(
+    new Map(
+      spaces.map((space) => [
+        space.teamId,
+        { memberCount: space.members.length, name: space.name },
+      ]),
+    ),
+  );
 };
 
 beforeEach(() => {
@@ -154,7 +160,7 @@ describe("readTeamSummary", () => {
 
   it("returns null for an invalid UUID without querying", async () => {
     expect(await readTeamSummary("not-a-uuid")).toBeNull();
-    expect(mockedSpaceFindMany).not.toHaveBeenCalled();
+    expect(mockedReadTeamSummariesFromPostgres).not.toHaveBeenCalled();
   });
 
   it("falls back to the contents when postgres has no space row", async () => {
@@ -221,7 +227,7 @@ describe("readTeamSummaries", () => {
 
     const summaries = await readTeamSummaries([VALID_UUID, VALID_UUID_2]);
 
-    expect(mockedSpaceFindMany).toHaveBeenCalledTimes(1);
+    expect(mockedReadTeamSummariesFromPostgres).toHaveBeenCalledTimes(1);
     expect(summaries.get(VALID_UUID)).toEqual({ memberCount: 1, name: "First" });
     expect(summaries.get(VALID_UUID_2)).toEqual({ memberCount: 2, name: "Second" });
   });
@@ -237,7 +243,7 @@ describe("readTeamSummaries", () => {
 
   it("skips the query when no id is a valid UUID", async () => {
     expect(await readTeamSummaries(["not-a-uuid"])).toEqual(new Map());
-    expect(mockedSpaceFindMany).not.toHaveBeenCalled();
+    expect(mockedReadTeamSummariesFromPostgres).not.toHaveBeenCalled();
   });
 
   it("asks for each distinct team once", async () => {
@@ -245,9 +251,7 @@ describe("readTeamSummaries", () => {
 
     await readTeamSummaries([VALID_UUID, VALID_UUID]);
 
-    expect(mockedSpaceFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { teamId: { in: [VALID_UUID] } } }),
-    );
+    expect(mockedReadTeamSummariesFromPostgres).toHaveBeenCalledWith([VALID_UUID]);
   });
 });
 

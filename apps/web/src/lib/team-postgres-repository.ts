@@ -15,6 +15,11 @@ type MirrorRow = {
   workingHoursStart: number;
 };
 
+type TeamSummary = {
+  memberCount: number;
+  name: string;
+};
+
 const toMemberRow = (teamId: string, member: TeamMember): MirrorRow => ({
   groupId: member.groupId ?? null,
   id: member.id,
@@ -77,6 +82,19 @@ const writeTeamMirror = async (teamId: string, team: TeamRecord): Promise<void> 
       });
     }
   });
+};
+
+const readTeamSummariesFromPostgres = async (
+  teamIds: Array<string>,
+): Promise<Map<string, TeamSummary>> => {
+  const spaces = await prisma.space.findMany({
+    select: { members: { select: { id: true } }, name: true, teamId: true },
+    where: { teamId: { in: teamIds } },
+  });
+
+  return new Map(
+    spaces.map((space) => [space.teamId, { memberCount: space.members.length, name: space.name }]),
+  );
 };
 
 const readTeamMirror = async (teamId: string): Promise<TeamRecord | null> => {
@@ -160,4 +178,5 @@ const diffTeamMirror = (expected: TeamRecord, actual: TeamRecord | null): Array<
   return problems;
 };
 
-export { diffTeamMirror, readTeamMirror, writeTeamMirror };
+export { diffTeamMirror, readTeamMirror, readTeamSummariesFromPostgres, writeTeamMirror };
+export type { TeamSummary };

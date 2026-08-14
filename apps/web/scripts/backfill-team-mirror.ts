@@ -1,7 +1,11 @@
 import { prisma } from "@repo/db";
 import { Redis } from "ioredis";
 
-import { diffTeamMirror, readTeamMirror, writeTeamMirror } from "../src/lib/team-mirror";
+import {
+  diffTeamMirror,
+  readTeamMirror,
+  writeTeamMirror,
+} from "../src/lib/team-postgres-repository";
 import type { TeamRecord } from "../src/types";
 
 const SCAN_COUNT = 200;

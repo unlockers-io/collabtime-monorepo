@@ -22,7 +22,7 @@ vi.mock("../redis", () => ({
   teamKey: (teamId: string): string => `team:${teamId}`,
 }));
 
-vi.mock("../team-mirror", () => ({ writeTeamMirror: vi.fn() }));
+vi.mock("../team-postgres-repository", () => ({ writeTeamMirror: vi.fn() }));
 
 vi.mock("../validation", async (importOriginal) => {
   const actual = await importOriginal<typeof ValidationModule>();

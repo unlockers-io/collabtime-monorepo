@@ -21,7 +21,7 @@ vi.mock("../redis", () => ({
   TEAM_INITIAL_TTL_SECONDS: 100,
   teamKey: (teamId: string): string => `team:${teamId}`,
 }));
-vi.mock("../team-mirror", () => ({ writeTeamMirror: vi.fn() }));
+vi.mock("../team-postgres-repository", () => ({ writeTeamMirror: vi.fn() }));
 
 let uuidCounter = 0;
 vi.mock("uuid", () => ({ v4: vi.fn(() => `test-uuid-${uuidCounter++}`) }));

@@ -3,12 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestGroup, createTestMember, createTestTeamRecord } from "./actions/test-helpers";
 
 vi.mock("@repo/db", () => ({
-  prisma: { space: { findUnique: vi.fn() } },
+  prisma: { space: { findMany: vi.fn(), findUnique: vi.fn() } },
 }));
 
 import { prisma } from "@repo/db";
 
-import { diffTeamMirror, readTeamMirror } from "./team-mirror";
+import {
+  diffTeamMirror,
+  readTeamMirror,
+  readTeamSummariesFromPostgres,
+} from "./team-postgres-repository";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -113,5 +117,27 @@ describe("readTeamMirror", () => {
     expect(record?.members[0]).not.toHaveProperty("userId");
     expect(record?.createdAt).toBe("2026-01-15T00:00:00.000Z");
     expect(record?.id).toBe("team-1");
+  });
+});
+
+describe("readTeamSummariesFromPostgres", () => {
+  it("maps one batch query into summaries keyed by team id", async () => {
+    vi.mocked(prisma.space.findMany).mockResolvedValue([
+      { members: [{ id: "m-1" }], name: "Design", teamId: "team-1" },
+      { members: [], name: "Research", teamId: "team-2" },
+    ] as never);
+
+    const summaries = await readTeamSummariesFromPostgres(["team-1", "team-2"]);
+
+    expect(prisma.space.findMany).toHaveBeenCalledWith({
+      select: { members: { select: { id: true } }, name: true, teamId: true },
+      where: { teamId: { in: ["team-1", "team-2"] } },
+    });
+    expect(summaries).toEqual(
+      new Map([
+        ["team-1", { memberCount: 1, name: "Design" }],
+        ["team-2", { memberCount: 0, name: "Research" }],
+      ]),
+    );
   });
 });
