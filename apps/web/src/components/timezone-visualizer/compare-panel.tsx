@@ -25,8 +25,8 @@ import {
   getEdgeAlignment,
   serializeSelection,
 } from "./helpers";
+import { OverlapStatusIcon } from "./member-timeline-row";
 import { OverlapBar } from "./overlap-bar";
-import { OverlapStatusIcon } from "./subcomponents";
 import type { HourOverlap, MemberRow, OverlapData, OverlapStatus, Selection } from "./types";
 
 type OverlapSummaryProps = {

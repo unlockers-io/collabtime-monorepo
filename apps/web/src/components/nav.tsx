@@ -12,7 +12,7 @@ import { useSignOut } from "@/hooks/use-sign-out";
 import { CurrentTimeDisplay } from "./current-time-display";
 import { ModeToggle } from "./mode-toggle";
 import { CopyLinkButton } from "./nav/copy-link-button";
-import { NavLogo } from "./nav/logo";
+import { Logo } from "./nav/logo";
 import { MobileMenu } from "./nav/mobile-menu";
 import type { MobileMenuRole } from "./nav/mobile-menu";
 import { TeamTitle } from "./nav/team-title";
@@ -60,7 +60,7 @@ const Nav = (props: NavProps) => {
   if (variant === "centered") {
     return (
       <header className="flex items-center justify-center px-4 py-8 sm:px-6">
-        <NavLogo />
+        <Logo />
       </header>
     );
   }
@@ -93,7 +93,7 @@ const Nav = (props: NavProps) => {
       <header className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <NavLogo showTitle={false} />
+            <Logo showTitle={false} />
             <TeamTitle
               isAdmin={isAdmin}
               isEditing={isEditingName}
@@ -164,7 +164,7 @@ const Nav = (props: NavProps) => {
 
   return (
     <header className="flex items-center justify-between px-4 py-6 sm:px-6">
-      <NavLogo />
+      <Logo />
       <div className="flex items-center gap-2">
         <ModeToggle />
         {isAuthenticated ? (
