@@ -45,17 +45,23 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
     }
 
     const accessPassword = space.accessPassword;
-    const hasPassword = Boolean(accessPassword);
-    const isValid =
-      accessPassword !== null && accessPassword !== ""
-        ? await verifyPassword(password, accessPassword)
-        : false;
 
-    if (!space.isPrivate || !hasPassword) {
+    // A public space needs no grant, so say so before paying for a hash compare.
+    if (!space.isPrivate) {
       return NextResponse.json({ success: true, teamId: space.teamId });
     }
 
-    if (!isValid) {
+    // Private with no credential used to answer 200 without ever setting the
+    // access cookie, so the gate re-rendered and the guest looped forever. There
+    // is no password that can open this space; say that instead of implying one.
+    if (accessPassword === null || accessPassword === "") {
+      return NextResponse.json(
+        { error: "This space is private and has no access password. Ask the owner for access." },
+        { status: 403 },
+      );
+    }
+
+    if (!(await verifyPassword(password, accessPassword))) {
       return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
     }
 
@@ -72,7 +78,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       }
     }
 
-    const accessToken = createSpaceAccessToken(spaceId);
+    const accessToken = createSpaceAccessToken(spaceId, accessPassword);
 
     const response = NextResponse.json({
       success: true,

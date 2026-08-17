@@ -150,7 +150,11 @@ Spaces link to teams via a unique `teamId` and support private access through `i
 - `format.yml`: `pnpm run format:check`
 - `fallow.yml`: `pnpm fallow:dead`
 - `e2e.yml`: Playwright
-- All workflows use `permissions: { contents: read }`
+- `typecheck.yml`: `pnpm typecheck`
+- `secret-scan.yml`: gitleaks
+- `react-doctor.yml`: React Doctor scan
+- Workflows use `permissions: { contents: read }`, except `react-doctor.yml`, which also needs `issues`, `pull-requests` and `statuses` write to post its comment and commit status
+- Required workflows pin `actions/checkout@v6`; `react-doctor.yml` pins `actions/checkout@v5`
 
 ## References
 

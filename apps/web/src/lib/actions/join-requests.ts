@@ -27,7 +27,10 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
       return { error: "Invalid team ID", success: false };
     }
 
-    const [teamResult, membershipResult, requestResult] = await Promise.allSettled([
+    // Promise.all, not allSettled: a rejected lookup must not read as "no such
+    // row", which would skip the guards below and file a request for someone who
+    // is already a member. The catch turns a real failure into a real error.
+    const [team, existingMembership, existingRequest] = await Promise.all([
       readTeamRecord(teamId),
       prisma.membership.findUnique({
         where: {
@@ -47,18 +50,14 @@ const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: 
       }),
     ]);
 
-    const team = teamResult.status === "fulfilled" ? teamResult.value : null;
     if (!team) {
       return { error: "Team not found", success: false };
     }
 
-    const existingMembership =
-      membershipResult.status === "fulfilled" ? membershipResult.value : null;
     if (existingMembership) {
       return { error: "You are already a member of this team", success: false };
     }
 
-    const existingRequest = requestResult.status === "fulfilled" ? requestResult.value : null;
     if (existingRequest && existingRequest.status === "PENDING") {
       return { error: "You already have a pending request for this team", success: false };
     }
@@ -106,16 +105,27 @@ const approveJoinRequest = async (
 
     await requireTeamAdmin(joinRequest.teamId);
 
+    // upsert, not create: the same person can already hold a membership from a
+    // private-space password entry or an accepted invitation while their request
+    // is still PENDING. A create raised P2002, rolled the transaction back, and
+    // left the request PENDING forever with Deny as the admin's only exit.
     await prisma.$transaction([
       prisma.joinRequest.update({
         data: { status: "APPROVED" },
         where: { id: requestId },
       }),
-      prisma.membership.create({
-        data: {
+      prisma.membership.upsert({
+        create: {
           role: "MEMBER",
           teamId: joinRequest.teamId,
           userId: joinRequest.userId,
+        },
+        update: { archivedAt: null },
+        where: {
+          userId_teamId: {
+            teamId: joinRequest.teamId,
+            userId: joinRequest.userId,
+          },
         },
       }),
     ]);
@@ -203,32 +213,43 @@ const getPendingJoinRequests = async (
 
     await requireTeamAdmin(teamId);
 
-    const requests = await prisma.joinRequest.findMany({
-      include: {
-        user: {
-          select: {
-            email: true,
-            id: true,
-            name: true,
+    // Membership and JoinRequest are separate tables keyed the same way, so a
+    // PENDING request can coexist with a membership granted by an invitation or
+    // a private-space password. Showing those to an admin invites an approval
+    // that has nothing left to do.
+    const [requests, memberships] = await Promise.all([
+      prisma.joinRequest.findMany({
+        include: {
+          user: {
+            select: {
+              email: true,
+              id: true,
+              name: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-      where: {
-        status: "PENDING",
-        teamId,
-      },
-    });
+        orderBy: {
+          createdAt: "asc",
+        },
+        where: {
+          status: "PENDING",
+          teamId,
+        },
+      }),
+      prisma.membership.findMany({ select: { userId: true }, where: { teamId } }),
+    ]);
 
-    const data = requests.map((r) => ({
-      createdAt: r.createdAt,
-      id: r.id,
-      userEmail: r.user.email,
-      userId: r.userId,
-      userName: displayName(r.user.name, r.user.email),
-    }));
+    const memberUserIds = new Set(memberships.map((m) => m.userId));
+
+    const data = requests
+      .filter((r) => !memberUserIds.has(r.userId))
+      .map((r) => ({
+        createdAt: r.createdAt,
+        id: r.id,
+        userEmail: r.user.email,
+        userId: r.userId,
+        userName: displayName(r.user.name, r.user.email),
+      }));
 
     return { data, success: true };
   } catch (error) {

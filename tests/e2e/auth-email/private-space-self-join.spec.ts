@@ -33,7 +33,7 @@ test.describe("Private space password self-join", () => {
     expect(space).toBeTruthy();
 
     const patch = await owner.request.patch(`${webUrl}/api/spaces/${space?.id}`, {
-      data: { accessPassword: SPACE_PASSWORD, isPrivate: true, updatePassword: true },
+      data: { password: SPACE_PASSWORD, visibility: "private" },
     });
     expect(patch.ok()).toBeTruthy();
     await owner.close();

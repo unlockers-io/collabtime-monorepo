@@ -7,11 +7,19 @@ import { hashPassword } from "@/lib/crypto";
 import { log, withEvlog } from "@/lib/observability";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
-const updateSpaceSchema = z.object({
-  accessPassword: SpaceAccessPasswordSchema.optional().nullable(),
-  isPrivate: z.boolean().optional(),
-  updatePassword: z.boolean().optional(),
-});
+/**
+ * The access mode, not the two columns behind it. Three independent optional
+ * fields accepted 18 request shapes for three intents and let through
+ * `isPrivate: true` with no password: a space showing a gate that no password
+ * can open. A private space now always carries a credential.
+ */
+const updateSpaceSchema = z.discriminatedUnion("visibility", [
+  z.object({ visibility: z.literal("public") }),
+  z.object({
+    password: SpaceAccessPasswordSchema.optional(),
+    visibility: z.literal("private"),
+  }),
+]);
 
 type Params = {
   params: Promise<{ spaceId: string }>;
@@ -81,21 +89,21 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
     const body = await request.json();
     const updates = updateSpaceSchema.parse(body);
 
-    const updateData: {
-      accessPassword?: string | null;
-      isPrivate?: boolean;
-    } = {};
+    // Going public clears the hash rather than parking it, so a public space
+    // never carries a live credential for a gate that is not shown.
+    let updateData: { accessPassword: string | null; isPrivate: boolean };
 
-    if (updates.isPrivate !== undefined) {
-      updateData.isPrivate = updates.isPrivate;
-    }
-
-    if (updates.updatePassword === true) {
-      if (updates.accessPassword === null) {
-        updateData.accessPassword = null;
-      } else if (updates.accessPassword !== undefined && updates.accessPassword !== "") {
-        updateData.accessPassword = await hashPassword(updates.accessPassword);
-      }
+    if (updates.visibility === "public") {
+      updateData = { accessPassword: null, isPrivate: false };
+    } else if (updates.password !== undefined) {
+      updateData = { accessPassword: await hashPassword(updates.password), isPrivate: true };
+    } else if (owned.space.accessPassword === null) {
+      return NextResponse.json(
+        { error: "A password is required to make this space private" },
+        { status: 400 },
+      );
+    } else {
+      updateData = { accessPassword: owned.space.accessPassword, isPrivate: true };
     }
 
     const updatedSpace = await prisma.space.update({

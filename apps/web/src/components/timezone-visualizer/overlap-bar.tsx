@@ -10,8 +10,15 @@ import {
   getOverlapColorClass,
   getOverlapLabel,
   getRoundedCornerClass,
+  hasAnyOverlap,
 } from "./helpers";
-import type { MemberRow, OverlapData } from "./types";
+import type { HourOverlap, MemberRow, OverlapData } from "./types";
+
+const NO_OVERLAP: HourOverlap = {
+  availableCount: 0,
+  coverage: "none",
+  isEveryTeamRepresented: false,
+};
 
 type OverlapBarProps = {
   groupNameById: Map<string, string>;
@@ -28,23 +35,14 @@ const OverlapBar = ({
   selectedMemberIds,
   totalPeopleSelected,
 }: OverlapBarProps) => {
-  const { crossTeamOverlapHours, overlapCounts, overlapHours, partialOverlapHours } = overlapData;
-
   return (
     <div className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1">
       {Array.from({ length: HOURS_IN_DAY }, (_, hour) => {
-        const isFullOverlap = overlapHours[hour];
-        const isCrossTeamOverlap = crossTeamOverlapHours[hour];
-        const isPartialOverlap = partialOverlapHours[hour];
-        const hasAnyOverlap = isFullOverlap || isPartialOverlap || isCrossTeamOverlap;
+        const hourOverlap = overlapData.hours[hour] ?? NO_OVERLAP;
+        const isFullOverlap = hourOverlap.coverage === "full";
+        const colorClass = getOverlapColorClass(hourOverlap);
 
-        const colorClass = getOverlapColorClass(
-          isFullOverlap,
-          isCrossTeamOverlap,
-          isPartialOverlap,
-        );
-
-        if (!hasAnyOverlap) {
+        if (!hasAnyOverlap(hourOverlap)) {
           return (
             <Tooltip key={hour}>
               <TooltipTrigger
@@ -59,12 +57,7 @@ const OverlapBar = ({
           );
         }
 
-        const overlapLabel = getOverlapLabel(
-          isFullOverlap,
-          isCrossTeamOverlap,
-          totalPeopleSelected,
-          overlapCounts[hour] ?? 0,
-        );
+        const overlapLabel = getOverlapLabel(hourOverlap, totalPeopleSelected);
 
         const allAvailable: Array<TeamMember> = [];
         const allUnavailable: Array<TeamMember> = [];

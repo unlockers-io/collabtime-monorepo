@@ -19,16 +19,6 @@ import { TeamTitle } from "./nav/team-title";
 import { UserMenu } from "./nav/user-menu";
 import { WorkspaceMenu } from "./nav/workspace-menu";
 
-const getMobileMenuRole = (isAdmin: boolean, isAuthenticated: boolean): MobileMenuRole => {
-  if (isAdmin) {
-    return "admin";
-  }
-  if (isAuthenticated) {
-    return "member";
-  }
-  return "guest";
-};
-
 type NavProps = { isAuthenticated: boolean } & (
   | { variant?: "default" | "centered" }
   | {
@@ -96,6 +86,9 @@ const Nav = (props: NavProps) => {
       onDeleteWorkspace?.();
     };
 
+    const signedInRole: MobileMenuRole = isAuthenticated ? "member" : "guest";
+    const navRole: MobileMenuRole = isAdmin ? "admin" : signedInRole;
+
     return (
       <header className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
@@ -128,7 +121,7 @@ const Nav = (props: NavProps) => {
             />
             <ModeToggle />
             {canDeleteWorkspace && <WorkspaceMenu onDeleteWorkspace={handleDeleteWorkspace} />}
-            <UserMenu isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
+            <UserMenu navRole={navRole} />
           </div>
 
           <div className="flex items-center gap-2 sm:hidden">
@@ -163,7 +156,7 @@ const Nav = (props: NavProps) => {
           onSignOut={() => {
             void handleSignOut();
           }}
-          role={getMobileMenuRole(isAdmin, isAuthenticated)}
+          role={navRole}
         />
       </header>
     );
@@ -175,7 +168,7 @@ const Nav = (props: NavProps) => {
       <div className="flex items-center gap-2">
         <ModeToggle />
         {isAuthenticated ? (
-          <UserMenu isAuthenticated={isAuthenticated} />
+          <UserMenu navRole="account" />
         ) : (
           <Link
             aria-label="Sign in"

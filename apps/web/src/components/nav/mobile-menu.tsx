@@ -8,7 +8,9 @@ import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
 import { cn } from "@/lib/utils";
 
-type MobileMenuRole = "admin" | "guest" | "member";
+import type { NavRole } from "./user-menu";
+
+type MobileMenuRole = Exclude<NavRole, "account">;
 
 type MobileMenuProps = {
   canDeleteWorkspace: boolean;

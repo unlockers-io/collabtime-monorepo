@@ -4,7 +4,9 @@ import { log } from "@/lib/observability";
 
 const SPACE_ACCESS_COOKIE_PREFIX = "space-access-";
 const TOKEN_EXPIRY_DAYS = 7;
-const TOKEN_VERSION = "v1";
+// v2 binds the grant to the credential it was issued against. v1 tokens carried
+// no credential field and are rejected, so guests re-enter the password once.
+const TOKEN_VERSION = "v2";
 
 let warnedAboutFallback = false;
 
@@ -42,16 +44,25 @@ const verifySignature = (data: string, signature: string, secret: string): boole
 };
 
 type TokenPayload = {
+  credential: string;
   expiresAt: number;
   spaceId: string;
   version: string;
 };
 
-const createSpaceAccessToken = (spaceId: string): string => {
+/**
+ * A fingerprint of the stored hash, not the hash itself: the payload is only
+ * base64url, so it is readable by anyone holding the cookie.
+ */
+const credentialFingerprint = (accessPasswordHash: string, secret: string): string =>
+  createSignature(`credential:${accessPasswordHash}`, secret).slice(0, 32);
+
+const createSpaceAccessToken = (spaceId: string, accessPasswordHash: string): string => {
   const secret = getSigningSecret();
   const expiresAt = Date.now() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
   const payload: TokenPayload = {
+    credential: credentialFingerprint(accessPasswordHash, secret),
     expiresAt,
     spaceId,
     version: TOKEN_VERSION,
@@ -65,9 +76,23 @@ const createSpaceAccessToken = (spaceId: string): string => {
 
 type VerificationResult = { payload: TokenPayload; valid: true } | { reason: string; valid: false };
 
-const verifySpaceAccessToken = (token: string, expectedSpaceId: string): VerificationResult => {
+/**
+ * Takes the space's current password hash, so a grant is a claim about the
+ * credential as it stands now rather than 7 days ago. Rotating or clearing the
+ * password therefore revokes outstanding cookies with no revocation list.
+ * `null` means no credential exists, so no grant against it can be valid.
+ */
+const verifySpaceAccessToken = (
+  token: string,
+  expectedSpaceId: string,
+  accessPasswordHash: string | null,
+): VerificationResult => {
   try {
     const secret = getSigningSecret();
+
+    if (accessPasswordHash === null || accessPasswordHash === "") {
+      return { reason: "No space credential", valid: false };
+    }
     const parts = token.split(".");
 
     if (parts.length !== 2) {
@@ -98,6 +123,10 @@ const verifySpaceAccessToken = (token: string, expectedSpaceId: string): Verific
 
     if (Date.now() > payload.expiresAt) {
       return { reason: "Token expired", valid: false };
+    }
+
+    if (payload.credential !== credentialFingerprint(accessPasswordHash, secret)) {
+      return { reason: "Credential changed", valid: false };
     }
 
     return { payload, valid: true };

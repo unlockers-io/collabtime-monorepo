@@ -2,7 +2,7 @@ import { log } from "@/lib/observability";
 import { requireTeamAdmin } from "@/lib/team-auth";
 import type { Team, TeamRecord } from "@/types";
 
-import { readTeamRecord, writeTeamRecord } from "../team-store";
+import { applyTeamContents } from "../team-store";
 import { UUIDSchema } from "../validation";
 
 import type { ActionResult } from "./types";
@@ -67,19 +67,29 @@ const mutateTeam = async <TPrelude, TResult>(
       return { error: preludeOutcome.error, success: false };
     }
 
-    const team = await readTeamRecord(teamId);
-    if (!team) {
-      return { error: "Team not found", success: false };
+    /**
+     * Delegated rather than re-run through readTeamRecord + writeTeamRecord:
+     * readTeamRecord flattens "could not read the store" into the same `null` as
+     * "this team has no contents", which reported a Redis outage to the user as
+     * "Team not found". applyTeamContents keeps those apart via `reason`.
+     */
+    const applied = await applyTeamContents(teamId, (team) => {
+      if (team === null) {
+        return { error: "Team not found", ok: false };
+      }
+
+      const outcome = mutate(team, preludeOutcome.value);
+      return outcome.ok ? { ok: true, team, value: outcome.value } : outcome;
+    });
+
+    if (!applied.ok) {
+      return {
+        error: applied.reason === "write-failed" ? `Failed to ${errorContext}` : applied.error,
+        success: false,
+      };
     }
 
-    const outcome = mutate(team, preludeOutcome.value);
-    if (!outcome.ok) {
-      return { error: outcome.error, success: false };
-    }
-
-    await writeTeamRecord(teamId, team);
-
-    return { data: outcome.value, success: true };
+    return { data: applied.value, success: true };
   } catch (error) {
     log.error({ error, message: `Failed to ${errorContext}`, route: "actions/helpers" });
     return { error: `Failed to ${errorContext}`, success: false };
