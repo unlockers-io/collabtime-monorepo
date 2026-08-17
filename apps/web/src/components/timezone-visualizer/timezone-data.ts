@@ -4,7 +4,45 @@ import { convertHourToTimezone, getDayOffset } from "@/lib/timezones";
 import type { TeamGroup, TeamMember } from "@/types";
 
 import { EMPTY_HOURS, EMPTY_OVERLAP_DATA, HOURS_IN_DAY, serializeSelection } from "./helpers";
-import type { GroupedSection, MemberRow, OverlapData, OverlapStatus, Selection } from "./types";
+import type {
+  GroupedSection,
+  HourOverlap,
+  MemberRow,
+  OverlapData,
+  OverlapStatus,
+  Selection,
+} from "./types";
+
+type GroupIndex = {
+  byGroupId: Map<string, Array<TeamMember>>;
+  ungrouped: Array<TeamMember>;
+};
+
+/**
+ * One definition of "in this group", where six call sites each re-decided
+ * whether an empty-string groupId counts as ungrouped. Iterates `members` so a
+ * group's rows keep the team's own order. A member naming a deleted group lands
+ * in neither bucket and so appears in no section, as before.
+ */
+const indexMembersByGroup = (members: Array<TeamMember>): GroupIndex => {
+  const byGroupId = new Map<string, Array<TeamMember>>();
+  const ungrouped: Array<TeamMember> = [];
+
+  for (const member of members) {
+    if (member.groupId === undefined || member.groupId === "") {
+      ungrouped.push(member);
+      continue;
+    }
+    const bucket = byGroupId.get(member.groupId);
+    if (bucket) {
+      bucket.push(member);
+    } else {
+      byGroupId.set(member.groupId, [member]);
+    }
+  }
+
+  return { byGroupId, ungrouped };
+};
 
 type TimezoneDataArgs = {
   compareSelections: Array<Selection>;
@@ -58,7 +96,7 @@ const toMemberRow = (member: TeamMember, viewerTimezone: string): MemberRow => {
 
 const toGroupedSections = (
   groups: Array<TeamGroup>,
-  members: Array<TeamMember>,
+  groupIndex: GroupIndex,
   memberRows: Array<MemberRow>,
 ): Array<GroupedSection> => {
   if (groups.length === 0) {
@@ -68,43 +106,32 @@ const toGroupedSections = (
   const rowByMemberId = new Map(memberRows.map((row) => [row.member.id, row]));
   const sections: Array<GroupedSection> = [];
 
+  const toRows = (groupMembers: Array<TeamMember>): Array<MemberRow> =>
+    groupMembers.flatMap((m) => {
+      const row = rowByMemberId.get(m.id);
+      return row === undefined ? [] : [row];
+    });
+
   const sortedGroups = [...groups].toSorted((a, b) => a.order - b.order);
 
   for (const group of sortedGroups) {
-    const groupMembers = members.filter((m) => m.groupId === group.id);
-    if (groupMembers.length === 0) {
+    const groupMembers = groupIndex.byGroupId.get(group.id);
+    if (groupMembers === undefined) {
       continue;
     }
 
-    const rows: Array<MemberRow> = [];
-    for (const m of groupMembers) {
-      const row = rowByMemberId.get(m.id);
-      if (row !== undefined) {
-        rows.push(row);
-      }
-    }
-
-    sections.push({ group, rows });
+    sections.push({ group, rows: toRows(groupMembers) });
   }
 
-  const ungroupedMembers = members.filter((m) => m.groupId === undefined || m.groupId === "");
-  if (ungroupedMembers.length > 0) {
-    const rows: Array<MemberRow> = [];
-    for (const m of ungroupedMembers) {
-      const row = rowByMemberId.get(m.id);
-      if (row !== undefined) {
-        rows.push(row);
-      }
-    }
-
-    sections.push({ group: null, rows });
+  if (groupIndex.ungrouped.length > 0) {
+    sections.push({ group: null, rows: toRows(groupIndex.ungrouped) });
   }
 
   return sections;
 };
 
 const toOverlapData = (
-  members: Array<TeamMember>,
+  groupIndex: GroupIndex,
   memberRowById: Map<string, MemberRow>,
   selectedMemberIds: Set<string>,
   validSelections: Array<Selection>,
@@ -114,28 +141,19 @@ const toOverlapData = (
 
   for (const sel of validSelections) {
     const selectionHours = Array.from({ length: HOURS_IN_DAY }, () => false);
+    const selectionMembers =
+      sel.type === "member" ? [sel.id] : (groupIndex.byGroupId.get(sel.id) ?? []).map((m) => m.id);
 
-    if (sel.type === "member") {
-      const row = memberRowById.get(sel.id);
-      if (row) {
-        row.hours.forEach((isWorking, hour) => {
-          if (isWorking) {
-            selectionHours[hour] = true;
-          }
-        });
+    for (const memberId of selectionMembers) {
+      const row = memberRowById.get(memberId);
+      if (!row) {
+        continue;
       }
-    } else {
-      const groupMembers = members.filter((m) => m.groupId === sel.id);
-      for (const member of groupMembers) {
-        const row = memberRowById.get(member.id);
-        if (row) {
-          row.hours.forEach((isWorking, hour) => {
-            if (isWorking) {
-              selectionHours[hour] = true;
-            }
-          });
+      row.hours.forEach((isWorking, hour) => {
+        if (isWorking) {
+          selectionHours[hour] = true;
         }
-      }
+      });
     }
 
     selectionCoverage.push(selectionHours);
@@ -153,31 +171,30 @@ const toOverlapData = (
   }
 
   const totalPeople = allMemberHours.length;
-  const counts = Array.from(
-    { length: HOURS_IN_DAY },
-    (_, hour) => allMemberHours.filter((hours) => hours[hour]).length,
-  );
 
-  const full = counts.map((count) => count === totalPeople);
-  const partial = counts.map((count, hour) => count >= 2 && !full[hour]);
-  const crossTeam = counts.map((_, hour) => {
-    if (selectionCoverage.length < 2) {
-      return false;
+  const hours = Array.from<unknown, HourOverlap>({ length: HOURS_IN_DAY }, (_, hour) => {
+    const availableCount = allMemberHours.filter((memberHours) => memberHours[hour]).length;
+    let coverage: HourOverlap["coverage"] = "none";
+    if (availableCount === totalPeople) {
+      coverage = "full";
+    } else if (availableCount >= 2) {
+      coverage = "partial";
     }
-    return selectionCoverage.every((hours) => hours[hour]);
+
+    return {
+      availableCount,
+      coverage,
+      isEveryTeamRepresented:
+        selectionCoverage.length >= 2 && selectionCoverage.every((covered) => covered[hour]),
+    };
   });
 
-  return {
-    crossTeamOverlapHours: crossTeam,
-    overlapCounts: counts,
-    overlapHours: full,
-    partialOverlapHours: partial,
-  };
+  return { hours };
 };
 
-const toOverlapStatus = ({ overlapHours, partialOverlapHours }: OverlapData): OverlapStatus => {
-  const hasFullOverlap = overlapHours.some(Boolean);
-  const hasPartialOverlap = partialOverlapHours.some(Boolean);
+const toOverlapStatus = ({ hours }: OverlapData): OverlapStatus => {
+  const hasFullOverlap = hours.some((hour) => hour.coverage === "full");
+  const hasPartialOverlap = hours.some((hour) => hour.coverage === "partial");
 
   if (!hasFullOverlap && !hasPartialOverlap) {
     return "none";
@@ -204,6 +221,8 @@ const getTimezoneData = ({
 
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
 
+  const groupIndex = indexMembersByGroup(members);
+
   const validSelections = compareSelections.filter((sel) => {
     if (sel.type === "member") {
       return members.some((m) => m.id === sel.id);
@@ -219,10 +238,8 @@ const getTimezoneData = ({
       continue;
     }
 
-    for (const member of members) {
-      if (member.groupId === sel.id) {
-        selectedMemberIds.add(member.id);
-      }
+    for (const member of groupIndex.byGroupId.get(sel.id) ?? []) {
+      selectedMemberIds.add(member.id);
     }
   }
 
@@ -230,35 +247,15 @@ const getTimezoneData = ({
   const canShowOverlap = totalPeopleSelected >= 2;
 
   const overlapData = canShowOverlap
-    ? toOverlapData(members, memberRowById, selectedMemberIds, validSelections)
+    ? toOverlapData(groupIndex, memberRowById, selectedMemberIds, validSelections)
     : EMPTY_OVERLAP_DATA;
-
-  const memberById = new Map(members.map((m) => [m.id, m]));
-
-  const isMemberInCompare = (memberId: string, isComparing: boolean): boolean => {
-    if (!isComparing || validSelections.length === 0) {
-      return false;
-    }
-
-    const member = memberById.get(memberId);
-    for (const sel of validSelections) {
-      if (sel.type === "member" && sel.id === memberId) {
-        return true;
-      }
-      if (sel.type === "group" && member?.groupId === sel.id) {
-        return true;
-      }
-    }
-    return false;
-  };
 
   return {
     canShowOverlap,
-    groupedSections: toGroupedSections(groups, members, memberRows),
+    groupedSections: toGroupedSections(groups, groupIndex, memberRows),
     groupNameById,
-    isMemberInCompare,
     memberRowById,
-    memberRows,
+    membersByGroupId: groupIndex.byGroupId,
     overlapData,
     overlapStatus: toOverlapStatus(overlapData),
     selectedMemberIds,

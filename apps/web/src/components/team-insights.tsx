@@ -30,12 +30,8 @@ type TeamInsightsProps = {
   members: Array<TeamMember>;
 };
 
-type MemberStatus = {
-  hoursUntilEnd: number | null;
-  hoursUntilStart: number | null;
-  isWorking: boolean;
-  member: TeamMember;
-};
+type WorkingMember = { hoursUntilEnd: number; member: TeamMember };
+type OffDutyMember = { hoursUntilStart: number; member: TeamMember };
 
 type StatusTone = "info" | "success" | "warning";
 
@@ -125,69 +121,45 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
   const viewerTimezone = useClientValue(() => getUserTimezone(), "");
   useHalfMinuteTick();
 
-  const hourFormatter = viewerTimezone
-    ? new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        hour12: false,
-        timeZone: viewerTimezone,
-      })
-    : null;
+  if (members.length === 0 || !viewerTimezone) {
+    return null;
+  }
 
-  const memberStatuses = (): Array<MemberStatus> => {
-    if (!viewerTimezone || !hourFormatter) {
-      return [];
+  const hourFormatter = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    hour12: false,
+    timeZone: viewerTimezone,
+  });
+
+  const now = new Date();
+  const hourPart = hourFormatter.formatToParts(now).find((p) => p.type === "hour");
+  const currentHourInViewer = hourPart ? Math.trunc(Number(hourPart.value)) : 0;
+  const hoursUntil = (hourInViewer: number) =>
+    (hourInViewer - currentHourInViewer + HOURS_IN_DAY) % HOURS_IN_DAY;
+
+  const working: Array<WorkingMember> = [];
+  const offDuty: Array<OffDutyMember> = [];
+
+  for (const member of members) {
+    const boundaryInViewer = (hour: number) =>
+      hoursUntil(convertHourToTimezone(hour, member.timezone, viewerTimezone));
+
+    if (isCurrentlyWorking(member.timezone, member.workingHoursStart, member.workingHoursEnd)) {
+      working.push({ hoursUntilEnd: boundaryInViewer(member.workingHoursEnd), member });
+    } else {
+      offDuty.push({ hoursUntilStart: boundaryInViewer(member.workingHoursStart), member });
     }
+  }
 
-    const now = new Date();
-    const hourPart = hourFormatter.formatToParts(now).find((p) => p.type === "hour");
-    const currentHourInViewer = hourPart ? Math.trunc(Number(hourPart.value)) : 0;
+  const onlineMembers = working;
 
-    return members.map((member) => {
-      const working = isCurrentlyWorking(
-        member.timezone,
-        member.workingHoursStart,
-        member.workingHoursEnd,
-      );
+  const comingSoonMembers = offDuty
+    .filter((s) => s.hoursUntilStart <= SOON_THRESHOLD_HOURS)
+    .toSorted((a, b) => a.hoursUntilStart - b.hoursUntilStart);
 
-      const startInViewer = convertHourToTimezone(
-        member.workingHoursStart,
-        member.timezone,
-        viewerTimezone,
-      );
-      const endInViewer = convertHourToTimezone(
-        member.workingHoursEnd,
-        member.timezone,
-        viewerTimezone,
-      );
-
-      const hoursUntil = (hourInViewer: number) =>
-        (hourInViewer - currentHourInViewer + HOURS_IN_DAY) % HOURS_IN_DAY;
-
-      return {
-        hoursUntilEnd: working ? hoursUntil(endInViewer) : null,
-        hoursUntilStart: working ? null : hoursUntil(startInViewer),
-        isWorking: working,
-        member,
-      };
-    });
-  };
-
-  const computedMemberStatuses = memberStatuses();
-
-  const onlineMembers = computedMemberStatuses.filter((s) => s.isWorking);
-
-  const comingSoonMembers = computedMemberStatuses
-    .filter(
-      (s) =>
-        !s.isWorking && s.hoursUntilStart !== null && s.hoursUntilStart <= SOON_THRESHOLD_HOURS,
-    )
-    .toSorted((a, b) => (a.hoursUntilStart ?? 0) - (b.hoursUntilStart ?? 0));
-
-  const leavingSoonMembers = computedMemberStatuses
-    .filter(
-      (s) => s.isWorking && s.hoursUntilEnd !== null && s.hoursUntilEnd <= SOON_THRESHOLD_HOURS,
-    )
-    .toSorted((a, b) => (a.hoursUntilEnd ?? 0) - (b.hoursUntilEnd ?? 0));
+  const leavingSoonMembers = working
+    .filter((s) => s.hoursUntilEnd <= SOON_THRESHOLD_HOURS)
+    .toSorted((a, b) => a.hoursUntilEnd - b.hoursUntilEnd);
 
   const getGroupName = (groupId?: string) => {
     if (groupId === undefined || groupId === "") {
@@ -195,10 +167,6 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
     }
     return groups.find((g) => g.id === groupId)?.name ?? null;
   };
-
-  if (members.length === 0 || !viewerTimezone) {
-    return null;
-  }
 
   return (
     <SectionCard>

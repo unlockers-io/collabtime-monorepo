@@ -43,8 +43,13 @@ type TeamStatusResult = {
   status: TeamStatus;
 };
 
+/**
+ * Promise.all, not allSettled: folding a rejected membership query into `null`
+ * reported a real member as "none", which the client then papered over by
+ * re-running the same query.
+ */
 const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatusResult> => {
-  const [membershipResult, joinRequestResult] = await Promise.allSettled([
+  const [membership, joinRequest] = await Promise.all([
     prisma.membership.findUnique({
       where: { userId_teamId: { teamId, userId } },
     }),
@@ -53,13 +58,9 @@ const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus
     }),
   ]);
 
-  const membership = membershipResult.status === "fulfilled" ? membershipResult.value : null;
-
   if (membership && isTeamRole(membership.role)) {
     return { isArchived: membership.archivedAt !== null, status: membership.role };
   }
-
-  const joinRequest = joinRequestResult.status === "fulfilled" ? joinRequestResult.value : null;
 
   if (joinRequest?.status === "PENDING") {
     return { isArchived: false, status: "PENDING" };
@@ -91,7 +92,7 @@ const TeamPage = async ({ params }: TeamPageProps) => {
     const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
     const hasGuestAccess =
       accessToken !== undefined && accessToken !== ""
-        ? verifySpaceAccessToken(accessToken, space.id).valid
+        ? verifySpaceAccessToken(accessToken, space.id, space.accessPassword).valid
         : false;
 
     if (!hasGuestAccess) {

@@ -27,24 +27,22 @@ import {
 } from "./helpers";
 import { OverlapBar } from "./overlap-bar";
 import { OverlapStatusIcon } from "./subcomponents";
-import type { MemberRow, OverlapData, OverlapStatus, Selection } from "./types";
+import type { HourOverlap, MemberRow, OverlapData, OverlapStatus, Selection } from "./types";
 
 type OverlapSummaryProps = {
-  overlapHours: ReadonlyArray<boolean>;
-  partialOverlapHours: ReadonlyArray<boolean>;
+  hours: ReadonlyArray<HourOverlap>;
 };
 
-const OverlapSummary = ({ overlapHours, partialOverlapHours }: OverlapSummaryProps) => {
-  const anyOverlap = overlapHours.map((full, i) => full || partialOverlapHours[i]);
-  const start = anyOverlap.findIndex(Boolean);
-  const end = anyOverlap.lastIndexOf(true);
+const OverlapSummary = ({ hours }: OverlapSummaryProps) => {
+  const start = hours.findIndex((hour) => hour.coverage !== "none");
+  const end = hours.findLastIndex((hour) => hour.coverage !== "none");
 
   if (start === -1 || end === -1) {
     return null;
   }
 
-  const fullHoursCount = overlapHours.filter(Boolean).length;
-  const partialHoursCount = partialOverlapHours.filter(Boolean).length;
+  const fullHoursCount = hours.filter((hour) => hour.coverage === "full").length;
+  const partialHoursCount = hours.filter((hour) => hour.coverage === "partial").length;
   const endExclusive = end + 1;
 
   return (
@@ -64,6 +62,7 @@ type ComparePanelProps = {
   groups: Array<TeamGroup>;
   memberRowById: Map<string, MemberRow>;
   members: Array<TeamMember>;
+  membersByGroupId: Map<string, Array<TeamMember>>;
   onAddSelection: (sel: Selection) => void;
   onClose: () => void;
   onRemoveSelection: (sel: Selection) => void;
@@ -80,6 +79,7 @@ const ComparePanel = ({
   groups,
   memberRowById,
   members,
+  membersByGroupId,
   onAddSelection,
   onClose,
   onRemoveSelection,
@@ -89,8 +89,6 @@ const ComparePanel = ({
   totalPeopleSelected,
   validSelections,
 }: ComparePanelProps) => {
-  const { overlapHours, partialOverlapHours } = overlapData;
-
   const getSelectionName = (sel: Selection): string => {
     if (sel.type === "member") {
       return members.find((m) => m.id === sel.id)?.name ?? "Unknown";
@@ -198,13 +196,13 @@ const ComparePanel = ({
                 );
               })}
             </SelectGroup>
-            {groups.some((g) => members.some((m) => m.groupId === g.id)) && (
+            {groups.some((g) => membersByGroupId.has(g.id)) && (
               <>
                 <SelectSeparator />
                 <SelectGroup>
                   <SelectLabel>Groups</SelectLabel>
                   {groups.reduce<Array<ReactElement>>((acc, group) => {
-                    if (!members.some((m) => m.groupId === group.id)) {
+                    if (!membersByGroupId.has(group.id)) {
                       return acc;
                     }
                     const sel: Selection = {
@@ -236,7 +234,7 @@ const ComparePanel = ({
       {canShowOverlap && (
         <div className="flex flex-col gap-3 border-t border-border pt-3">
           <p className="text-right font-display text-xs text-muted-foreground tabular-nums">
-            <OverlapSummary overlapHours={overlapHours} partialOverlapHours={partialOverlapHours} />
+            <OverlapSummary hours={overlapData.hours} />
           </p>
 
           <div className="flex items-stretch gap-2 sm:gap-3">

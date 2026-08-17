@@ -25,7 +25,7 @@ import {
 } from "@/components/section-card";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
-import { useTeamQuery, useUpdateTeamCache } from "@/hooks/use-team-query";
+import { useTeamMutation, useTeamQuery } from "@/hooks/use-team-query";
 import { requestToJoin } from "@/lib/actions/join-requests";
 import { getTeamMembershipRole } from "@/lib/actions/team-read";
 import type { TeamStatus } from "@/types";
@@ -77,13 +77,20 @@ const TeamPageClient = ({
     queryKey: ["membership-role", teamId, userId],
   });
 
-  const teamStatus: TeamStatus =
-    statusOverride ?? (initialStatus === "none" ? (resolvedRole ?? "none") : initialStatus);
+  /**
+   * Precedence: a just-completed join here, then the server, then a re-check
+   * that only runs when the server saw nothing. That re-check no longer has a
+   * known job, since getTeamStatus stopped reporting a real member as "none" on
+   * query failure. Delete it once someone confirms what else it covered.
+   */
+  const serverStatus: TeamStatus =
+    initialStatus === "none" ? (resolvedRole ?? "none") : initialStatus;
+  const teamStatus: TeamStatus = statusOverride ?? serverStatus;
 
   const isAdmin = teamStatus === "ADMIN";
   const isMember = teamStatus === "ADMIN" || teamStatus === "MEMBER";
 
-  const updateTeamCache = useUpdateTeamCache();
+  const teamMutation = useTeamMutation(teamId);
 
   useEffect(() => {
     if (resolvedRoleError) {
@@ -148,7 +155,7 @@ const TeamPageClient = ({
     orderedGroups,
     orderedMembers,
     teamId,
-    updateTeamCache,
+    teamMutation,
   });
 
   const handleDragTypeChange = (dragType: "group" | "member" | null) => {
@@ -303,9 +310,7 @@ const TeamPageClient = ({
           groups={groups}
           hasClaimedProfile={hasClaimedProfile}
           members={members}
-          onDragEnd={(event, dragType) => {
-            void handleDragEnd(event, dragType);
-          }}
+          onDragEnd={handleDragEnd}
           onDragTypeChange={handleDragTypeChange}
           teamId={teamId}
         >

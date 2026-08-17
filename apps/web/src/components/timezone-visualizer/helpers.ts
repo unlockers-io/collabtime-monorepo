@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 import type { TeamGroup } from "@/types";
 
-import type { OverlapData, Selection } from "./types";
+import type { HourOverlap, OverlapData, Selection } from "./types";
 
 const HOURS_IN_DAY = 24;
 const TIME_AXIS_HOURS = [0, 6, 12, 18, 24];
@@ -10,14 +10,16 @@ const EMPTY_GROUPS: Array<TeamGroup> = [];
 const EMPTY_COLLAPSED_IDS: Array<string> = [];
 const HOVER_HIDE_DELAY_MS = 800;
 const EMPTY_HOURS = Array.from<boolean>({ length: HOURS_IN_DAY }).fill(false);
-const EMPTY_COUNTS = Array.from<number>({ length: HOURS_IN_DAY }).fill(0);
 
-const EMPTY_OVERLAP_DATA: OverlapData = {
-  crossTeamOverlapHours: EMPTY_HOURS,
-  overlapCounts: EMPTY_COUNTS,
-  overlapHours: EMPTY_HOURS,
-  partialOverlapHours: EMPTY_HOURS,
-};
+// Frozen because this single instance is returned by reference from both
+// early-exit paths in getTimezoneData.
+const EMPTY_OVERLAP_DATA: OverlapData = Object.freeze({
+  hours: Object.freeze(
+    Array.from<unknown, HourOverlap>({ length: HOURS_IN_DAY }, () =>
+      Object.freeze({ availableCount: 0, coverage: "none", isEveryTeamRepresented: false }),
+    ),
+  ),
+});
 
 const getEdgeAlignment = (
   isFirst: boolean,
@@ -32,36 +34,30 @@ const getEdgeAlignment = (
   return "center";
 };
 
-const getOverlapColorClass = (
-  isFullOverlap: boolean,
-  isCrossTeamOverlap: boolean,
-  isPartialOverlap: boolean,
-): string => {
-  if (isFullOverlap) {
+const hasAnyOverlap = (hour: HourOverlap): boolean =>
+  hour.coverage !== "none" || hour.isEveryTeamRepresented;
+
+const getOverlapColorClass = (hour: HourOverlap): string => {
+  if (hour.coverage === "full") {
     return "bg-success";
   }
-  if (isCrossTeamOverlap) {
+  if (hour.isEveryTeamRepresented) {
     return "bg-info";
   }
-  if (isPartialOverlap) {
+  if (hour.coverage === "partial") {
     return "bg-warning";
   }
   return "bg-muted";
 };
 
-const getOverlapLabel = (
-  isFullOverlap: boolean,
-  isCrossTeamOverlap: boolean,
-  totalPeopleSelected: number,
-  hourCount: number,
-): string => {
-  if (isFullOverlap) {
+const getOverlapLabel = (hour: HourOverlap, totalPeopleSelected: number): string => {
+  if (hour.coverage === "full") {
     return `All ${totalPeopleSelected} available`;
   }
-  if (isCrossTeamOverlap) {
+  if (hour.isEveryTeamRepresented) {
     return "Each team represented";
   }
-  return `${hourCount} of ${totalPeopleSelected} available`;
+  return `${hour.availableCount} of ${totalPeopleSelected} available`;
 };
 
 const getCurrentTimePosition = (timezone: string): number => {
@@ -125,6 +121,7 @@ export {
   getOverlapColorClass,
   getOverlapLabel,
   getRoundedCornerClass,
+  hasAnyOverlap,
   serializeSelection,
   useClientValue,
 };

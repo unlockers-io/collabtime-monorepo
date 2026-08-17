@@ -21,6 +21,13 @@ import { GroupCard } from "@/components/group-card";
 import { MemberCard } from "@/components/member-card";
 import type { TeamGroup, TeamMember } from "@/types";
 
+/**
+ * Holds the resolved entity, not an id plus a separate kind. The pair let
+ * "id set, kind unknown" be expressed, which every read then had to guard
+ * against, and it forced a second lookup on each render of a drag.
+ */
+type ActiveDrag = { group: TeamGroup; kind: "group" } | { kind: "member"; member: TeamMember };
+
 type DndWrapperProps = {
   children: React.ReactNode;
   groups: Array<TeamGroup>;
@@ -40,8 +47,7 @@ const DndWrapper = ({
   onDragTypeChange,
   teamId,
 }: DndWrapperProps) => {
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
+  const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const droppedOnGroupRef = useRef(false);
 
   const sensors = useSensors(
@@ -51,25 +57,28 @@ const DndWrapper = ({
 
   const handleDragStart = (event: DragStartEvent) => {
     const id = String(event.active.id);
-    if (members.some((m) => m.id === id)) {
-      setActiveDragType("member");
-      setActiveDragId(id);
+
+    const member = members.find((m) => m.id === id);
+    if (member) {
+      setActiveDrag({ kind: "member", member });
       onDragTypeChange?.("member");
-    } else if (groups.some((g) => g.id === id)) {
-      setActiveDragType("group");
-      setActiveDragId(id);
+      return;
+    }
+
+    const group = groups.find((g) => g.id === id);
+    if (group) {
+      setActiveDrag({ group, kind: "group" });
       onDragTypeChange?.("group");
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const currentDragType = activeDragType;
+    const currentDragType = activeDrag?.kind ?? null;
     droppedOnGroupRef.current =
       currentDragType === "member" &&
       event.over !== null &&
       groups.some((g) => g.id === event.over?.id);
-    setActiveDragId(null);
-    setActiveDragType(null);
+    setActiveDrag(null);
     onDragTypeChange?.(null);
     onDragEnd(event, currentDragType);
   };
@@ -92,16 +101,6 @@ const DndWrapper = ({
     },
   };
 
-  const activeMember =
-    activeDragId !== null && activeDragId !== "" && activeDragType === "member"
-      ? members.find((m) => m.id === activeDragId)
-      : null;
-
-  const activeGroup =
-    activeDragId !== null && activeDragId !== "" && activeDragType === "group"
-      ? groups.find((g) => g.id === activeDragId)
-      : null;
-
   return (
     <DndContext
       accessibility={{
@@ -118,20 +117,20 @@ const DndWrapper = ({
     >
       {children}
       <DragOverlay dropAnimation={dropAnimation}>
-        {activeMember && (
+        {activeDrag?.kind === "member" && (
           <MemberCard
             canEdit={false}
             groups={groups}
             hasClaimedProfile={hasClaimedProfile}
-            member={activeMember}
+            member={activeDrag.member}
             teamId={teamId}
           />
         )}
-        {activeGroup && (
+        {activeDrag?.kind === "group" && (
           <GroupCard
             canEdit={false}
-            group={activeGroup}
-            memberCount={members.filter((m) => m.groupId === activeGroup.id).length}
+            group={activeDrag.group}
+            memberCount={members.filter((m) => m.groupId === activeDrag.group.id).length}
             teamId={teamId}
           />
         )}

@@ -14,33 +14,42 @@ import Link from "next/link";
 import { useSignOut } from "@/hooks/use-sign-out";
 import { cn } from "@/lib/utils";
 
+/**
+ * Shared by the desktop and mobile menus so the two cannot disagree. Replaces an
+ * (isAdmin?, isAuthenticated) pair whose 6 combinations included a signed-out
+ * admin. "account" is the no-team-context case.
+ */
+type NavRole = "account" | "admin" | "guest" | "member";
+
+const ROLE_LABELS = {
+  account: { description: null, title: "Account" },
+  admin: { description: "Full access", title: "Admin" },
+  guest: { description: "View only", title: "Member" },
+  member: { description: "View only", title: "Member" },
+} satisfies Record<NavRole, { description: string | null; title: string }>;
+
+// Named navRole, not role: a literal `role="account"` on a component reads as an
+// ARIA role to jsx-a11y.
 type UserMenuProps = {
-  isAdmin?: boolean;
-  isAuthenticated: boolean;
+  navRole: NavRole;
 };
 
-const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
+const UserMenu = ({ navRole }: UserMenuProps) => {
   const { handleSignOut, isSigningOut } = useSignOut();
-  const hasTeamRole = typeof isAdmin === "boolean";
-  let menuTitle = "Account";
-
-  if (hasTeamRole) {
-    menuTitle = isAdmin ? "Admin" : "Member";
-  }
+  const { description, title } = ROLE_LABELS[navRole];
+  const isAuthenticated = navRole !== "guest";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={<Button aria-label="Account menu" size="icon" variant="outline" />}
       >
-        {isAdmin === true ? <Shield className="size-4" /> : <User className="size-4" />}
+        {navRole === "admin" ? <Shield className="size-4" /> : <User className="size-4" />}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 bg-popover">
         <div className="px-2 py-1.5 text-sm">
-          <p className="font-medium text-popover-foreground">{menuTitle}</p>
-          {hasTeamRole && (
-            <p className="text-xs text-muted-foreground">{isAdmin ? "Full access" : "View only"}</p>
-          )}
+          <p className="font-medium text-popover-foreground">{title}</p>
+          {description !== null && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
         {!isAuthenticated && (
           <>
@@ -88,3 +97,4 @@ const UserMenu = ({ isAdmin, isAuthenticated }: UserMenuProps) => {
 };
 
 export { UserMenu };
+export type { NavRole };

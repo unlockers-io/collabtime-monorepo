@@ -4,6 +4,12 @@ type TeamGroup = {
   order: number;
 };
 
+/**
+ * `timezone` is a bare string, not the COMMON_TIMEZONES union the write path
+ * enforces: demo-team.ts renders real members outside that list, so it is a
+ * picker menu rather than a domain constraint. lib/team-store.ts coerces
+ * Intl-invalid stored values at the read boundary instead.
+ */
 type TeamMember = {
   groupId?: string;
   id: string;

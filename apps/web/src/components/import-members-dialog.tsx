@@ -28,16 +28,26 @@ type ImportMembersDialogProps = {
   teamId: string;
 };
 
+/**
+ * The step carries its own rows, so "importing with nothing parsed" cannot be
+ * expressed. A nullable row list plus an isImporting flag let Back stay live
+ * during a submit, and the in-flight response then closed the dialog on a user
+ * who had already gone back to paste something new.
+ */
+type ImportState =
+  | { step: "upload" }
+  | { rows: Array<ParsedRow>; step: "preview" }
+  | { rows: Array<ParsedRow>; step: "importing" };
+
 const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
-  const [rows, setRows] = useState<Array<ParsedRow> | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
+  const [state, setState] = useState<ImportState>({ step: "upload" });
 
   const handleReset = () => {
     setCsvText("");
-    setRows(null);
+    setState({ step: "upload" });
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -49,20 +59,17 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
 
   const handleFileRead = (text: string) => {
     setCsvText(text);
-    setRows(parseCSV(text));
+    setState({ rows: parseCSV(text), step: "preview" });
   };
 
   const handlePreview = () => {
     if (!csvText.trim()) {
       return;
     }
-    setRows(parseCSV(csvText));
+    setState({ rows: parseCSV(csvText), step: "preview" });
   };
 
-  const handleImport = async () => {
-    if (!rows) {
-      return;
-    }
+  const handleImport = async (rows: Array<ParsedRow>) => {
     const valid = rows.flatMap((r) =>
       r.errors.length === 0 && r.matchedTimezone !== null
         ? [
@@ -80,9 +87,8 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
       return;
     }
 
-    setIsImporting(true);
+    setState({ rows, step: "importing" });
     const result = await importMembers(teamId, valid);
-    setIsImporting(false);
 
     if (result.success) {
       void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
@@ -90,11 +96,14 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
         `${result.data.imported} member${result.data.imported === 1 ? "" : "s"} imported`,
       );
       handleOpenChange(false);
-    } else {
-      toast.error(result.error);
+      return;
     }
+
+    toast.error(result.error);
+    setState({ rows, step: "preview" });
   };
 
+  const rows = state.step === "upload" ? null : state.rows;
   const validCount = rows?.filter((r) => r.errors.length === 0).length ?? 0;
   const invalidCount = (rows?.length ?? 0) - validCount;
 
@@ -132,7 +141,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
             )}
 
             <DialogFooter>
-              {rows === null ? (
+              {state.step === "upload" && (
                 <>
                   <Button
                     onClick={() => {
@@ -146,27 +155,29 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                     Preview →
                   </Button>
                 </>
-              ) : (
+              )}
+              {state.step === "preview" && (
                 <>
                   <Button onClick={handleReset} variant="outline">
                     ← Back
                   </Button>
                   <Button
-                    disabled={isImporting || validCount === 0}
+                    disabled={validCount === 0}
                     onClick={() => {
-                      void handleImport();
+                      void handleImport(state.rows);
                     }}
                   >
-                    {isImporting ? (
-                      <span className="flex items-center gap-2">
-                        <Spinner />
-                        Importing…
-                      </span>
-                    ) : (
-                      `Import ${validCount} member${validCount === 1 ? "" : "s"}`
-                    )}
+                    {`Import ${validCount} member${validCount === 1 ? "" : "s"}`}
                   </Button>
                 </>
+              )}
+              {state.step === "importing" && (
+                <Button disabled>
+                  <span className="flex items-center gap-2">
+                    <Spinner />
+                    Importing…
+                  </span>
+                </Button>
               )}
             </DialogFooter>
           </>

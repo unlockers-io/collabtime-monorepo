@@ -6,10 +6,12 @@ on:
   push:
     branches: [main]
 
+# The only workflow needing write scopes: the action posts a PR summary comment
+# and a "React Doctor" commit status. Dropping either silently removes its output.
 permissions:
   contents: read
-  pull-requests: write
   issues: write
+  pull-requests: write
   statuses: write
 
 concurrency:
