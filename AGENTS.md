@@ -154,7 +154,7 @@ Spaces link to teams via a unique `teamId` and support private access through `i
 - `secret-scan.yml`: gitleaks
 - `react-doctor.yml`: React Doctor scan
 - Workflows use `permissions: { contents: read }`, except `react-doctor.yml`, which also needs `issues`, `pull-requests` and `statuses` write to post its comment and commit status
-- All pin `actions/checkout@v6`
+- Required workflows pin `actions/checkout@v6`; `react-doctor.yml` pins `actions/checkout@v5`
 
 ## References
 
