@@ -5,7 +5,7 @@ type NavLogoProps = {
   showTitle?: boolean;
 };
 
-const NavLogo = ({ showTitle = true }: NavLogoProps) => (
+const Logo = ({ showTitle = true }: NavLogoProps) => (
   <Link
     aria-label="Collab Time, homepage"
     className="flex items-center gap-3 text-foreground transition-opacity hover:opacity-80"
@@ -20,4 +20,4 @@ const NavLogo = ({ showTitle = true }: NavLogoProps) => (
   </Link>
 );
 
-export { NavLogo };
+export { Logo };

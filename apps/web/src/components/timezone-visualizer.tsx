@@ -25,7 +25,7 @@ import {
   FindMeetingTimeButton,
   GroupHeader,
   MemberTimelineRow,
-} from "./timezone-visualizer/subcomponents";
+} from "./timezone-visualizer/member-timeline-row";
 import { TimeAxis } from "./timezone-visualizer/time-axis";
 import {
   addSelection,
