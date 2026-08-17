@@ -25,16 +25,19 @@ const evalMock = vi.fn(
     Promise.resolve(evalScript(key, Number(windowSeconds))),
 );
 
+const getMock = vi.fn((key: string): Promise<unknown> => {
+  if (!redisPresent) {
+    return Promise.resolve(null);
+  }
+  const entry = store.get(key);
+  return Promise.resolve(entry ? String(entry.count) : null);
+});
+
 vi.mock("@/lib/redis", () => ({
+  isRedisConfigured: (): boolean => redisPresent,
   redis: {
     eval: (...args: [string, number, string, string]) => evalMock(...args),
-    get: (key: string): Promise<unknown> => {
-      if (!redisPresent) {
-        return Promise.resolve(null);
-      }
-      const entry = store.get(key);
-      return Promise.resolve(entry ? String(entry.count) : null);
-    },
+    get: (key: string) => getMock(key),
   },
 }));
 
@@ -59,6 +62,7 @@ describe("checkRateLimit", () => {
     store.clear();
     redisPresent = true;
     evalMock.mockClear();
+    getMock.mockClear();
     vi.stubEnv("REDIS_URL", "redis://localhost:6379");
   });
 
@@ -115,5 +119,12 @@ describe("checkRateLimit", () => {
 
     expect(results.every((r) => r.allowed)).toBe(true);
     expect(evalMock).not.toHaveBeenCalled();
+  });
+
+  it("issues one Redis op per check, not a probe followed by the script", async () => {
+    await checkRateLimit("key-f", 5, 60);
+
+    expect(evalMock).toHaveBeenCalledTimes(1);
+    expect(getMock).not.toHaveBeenCalled();
   });
 });

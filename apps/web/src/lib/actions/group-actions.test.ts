@@ -17,6 +17,7 @@ const { redisMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("../redis", () => ({
+  isRedisConfigured: (): boolean => true,
   readTeamJson: async (teamId: string): Promise<string | null> => {
     const data: unknown = await redisMock.get(`team:${teamId}`);
     return typeof data === "string" && data !== "" ? data : null;

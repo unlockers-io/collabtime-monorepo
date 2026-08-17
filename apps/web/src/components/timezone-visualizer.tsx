@@ -81,8 +81,8 @@ const TimezoneVisualizer = ({
     canShowOverlap,
     groupedSections,
     groupNameById,
-    isMemberInCompare,
     memberRowById,
+    membersByGroupId,
     overlapData,
     overlapStatus,
     selectedMemberIds,
@@ -146,7 +146,7 @@ const TimezoneVisualizer = ({
     return null;
   }
 
-  const hasCrossTeamOverlap = overlapData.crossTeamOverlapHours.some(Boolean);
+  const hasCrossTeamOverlap = overlapData.hours.some((hour) => hour.isEveryTeamRepresented);
 
   return (
     <TooltipProvider delay={120}>
@@ -195,7 +195,7 @@ const TimezoneVisualizer = ({
                         {visibleRows.map(({ dayOffset, member }) => (
                           <MemberAvatar
                             dayOffset={dayOffset}
-                            isSelected={isMemberInCompare(member.id, isComparing)}
+                            isSelected={isComparing && selectedMemberIds.has(member.id)}
                             key={member.id}
                             member={member}
                             totalMembers={members.length}
@@ -245,6 +245,7 @@ const TimezoneVisualizer = ({
                   groups={groups}
                   memberRowById={memberRowById}
                   members={members}
+                  membersByGroupId={membersByGroupId}
                   onAddSelection={(sel) => {
                     setCompareSelections((prev) => addSelection(prev, sel));
                   }}

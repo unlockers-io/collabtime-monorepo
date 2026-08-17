@@ -1,4 +1,4 @@
-import { redis } from "@/lib/redis";
+import { isRedisConfigured, redis } from "@/lib/redis";
 
 type RateLimitResult = { allowed: boolean; remaining: number };
 
@@ -17,8 +17,9 @@ const checkRateLimit = async (
 ): Promise<RateLimitResult> => {
   const redisKey = `ratelimit:${key}`;
 
-  const probe = await redis.get(redisKey);
-  if (probe === null && (process.env.REDIS_URL === undefined || process.env.REDIS_URL === "")) {
+  // `eval` is absent from the unconfigured-Redis stub allowlist in lib/redis.ts,
+  // so it must not be reached when there is no client to run it.
+  if (!isRedisConfigured()) {
     return { allowed: true, remaining: max };
   }
 

@@ -10,7 +10,7 @@ vi.mock("@repo/db", () => ({
   prisma: {
     $transaction: vi.fn(),
     joinRequest: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn(), upsert: vi.fn() },
-    membership: { create: vi.fn(), findUnique: vi.fn() },
+    membership: { findMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn() },
   },
 }));
 const { redisMock } = vi.hoisted(() => ({
@@ -146,6 +146,20 @@ describe("approveJoinRequest", () => {
     }
   });
 
+  it("upserts the membership so an existing member can still be approved", async () => {
+    vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
+    storedTeam();
+
+    await approveJoinRequest("jr-1");
+
+    expect(prisma.membership.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId_teamId: { teamId: VALID_UUID, userId: "user-456" } },
+      }),
+    );
+  });
+
   it("persists the claimed member slot after approval", async () => {
     vi.mocked(prisma.joinRequest.findUnique).mockResolvedValue(pendingRequest as never);
     vi.mocked(prisma.$transaction).mockResolvedValue(undefined);
@@ -258,6 +272,7 @@ describe("getPendingJoinRequests", () => {
         userId: "user-456",
       },
     ] as never);
+    vi.mocked(prisma.membership.findMany).mockResolvedValue([] as never);
 
     const result = await getPendingJoinRequests(VALID_UUID);
 
@@ -273,6 +288,22 @@ describe("getPendingJoinRequests", () => {
       ],
       success: true,
     });
+  });
+
+  it("hides requests from people who are already members", async () => {
+    vi.mocked(prisma.joinRequest.findMany).mockResolvedValue([
+      {
+        createdAt: new Date("2026-01-15"),
+        id: "jr-1",
+        user: { email: "bob@example.com", id: "user-456", name: "Bob" },
+        userId: "user-456",
+      },
+    ] as never);
+    vi.mocked(prisma.membership.findMany).mockResolvedValue([{ userId: "user-456" }] as never);
+
+    const result = await getPendingJoinRequests(VALID_UUID);
+
+    expect(result).toEqual({ data: [], success: true });
   });
 });
 

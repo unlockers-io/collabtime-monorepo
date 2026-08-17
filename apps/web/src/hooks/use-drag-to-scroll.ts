@@ -14,10 +14,19 @@ const useDragToScroll = (ref: RefObject<HTMLElement | null>) => {
     let scrollTopStart = 0;
 
     const onPointerDown = (e: PointerEvent) => {
+      if (!e.isPrimary || e.button !== 0) {
+        return;
+      }
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        // The element went away mid-gesture; without capture there is no
+        // lostpointercapture to end the drag, so never start one.
+        return;
+      }
       isDown = true;
       startY = e.clientY;
       scrollTopStart = el.scrollTop;
-      el.setPointerCapture(e.pointerId);
       setIsDragging(true);
     };
 
@@ -29,23 +38,25 @@ const useDragToScroll = (ref: RefObject<HTMLElement | null>) => {
       el.scrollTop = scrollTopStart - dy;
     };
 
-    const onPointerUp = (e: PointerEvent) => {
-      if (!isDown) {
-        return;
-      }
+    /**
+     * The only terminator: the spec fires lostpointercapture after implicit
+     * release following both pointerup and pointercancel, so a browser taking
+     * the gesture over for native scrolling still ends the drag. pointerup
+     * alone left `isDown` true forever on touch.
+     */
+    const onLostPointerCapture = () => {
       isDown = false;
-      el.releasePointerCapture(e.pointerId);
       setIsDragging(false);
     };
 
     el.addEventListener("pointerdown", onPointerDown);
     el.addEventListener("pointermove", onPointerMove);
-    el.addEventListener("pointerup", onPointerUp);
+    el.addEventListener("lostpointercapture", onLostPointerCapture);
 
     return () => {
       el.removeEventListener("pointerdown", onPointerDown);
       el.removeEventListener("pointermove", onPointerMove);
-      el.removeEventListener("pointerup", onPointerUp);
+      el.removeEventListener("lostpointercapture", onLostPointerCapture);
     };
   }, [ref]);
 

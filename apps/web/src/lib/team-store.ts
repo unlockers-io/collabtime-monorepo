@@ -6,6 +6,7 @@ import {
   DEFAULT_MEMBER_TIMEZONE,
   DEFAULT_WORKING_HOURS_END,
   DEFAULT_WORKING_HOURS_START,
+  isCommonTimezone,
 } from "@/lib/timezones";
 import type { TeamMember, TeamRecord } from "@/types";
 
@@ -57,13 +58,51 @@ type MaybeStoredTeam = Partial<StoredTeam>;
 const asText = (value: unknown, fallback: string): string =>
   typeof value === "string" && value !== "" ? value : fallback;
 
+/**
+ * A stored zone Intl does not recognise throws inside toLocaleString and takes
+ * the visualizer render down with it. Coercing here keeps every consumer of
+ * TeamMember total. Zones outside COMMON_TIMEZONES that Intl still accepts pass
+ * through, since that list is a picker menu rather than a constraint.
+ */
+const asTimezone = (value: unknown, teamId: string): string => {
+  if (typeof value !== "string" || value === "") {
+    log.error({
+      message: "Stored member timezone is missing, using the default",
+      route: "lib/team-store",
+      teamId,
+    });
+    return DEFAULT_MEMBER_TIMEZONE;
+  }
+
+  if (isCommonTimezone(value)) {
+    return value;
+  }
+
+  try {
+    // Throws RangeError for a zone Intl does not know, which is the whole check.
+    const probe = new Intl.DateTimeFormat("en", { timeZone: value });
+    return probe.resolvedOptions().timeZone === "" ? DEFAULT_MEMBER_TIMEZONE : value;
+  } catch {
+    // Intl rejects it, so every downstream toLocaleString call would throw.
+  }
+
+  log.error({
+    message: "Stored member timezone is not a supported zone, using the default",
+    route: "lib/team-store",
+    teamId,
+    timezone: value,
+  });
+
+  return DEFAULT_MEMBER_TIMEZONE;
+};
+
 const toTeamRecord = (teamId: string, stored: MaybeStoredTeam): TeamRecord => ({
   ...stored,
   createdAt: asText(stored.createdAt, ""),
   groups: Array.isArray(stored.groups) ? stored.groups : [],
   id: asText(stored.id, teamId),
   members: (Array.isArray(stored.members) ? stored.members : []).map((m, i) =>
-    Object.assign(m, { order: m.order ?? i }),
+    Object.assign(m, { order: m.order ?? i, timezone: asTimezone(m.timezone, teamId) }),
   ),
   name: asText(stored.name, ""),
 });
@@ -120,21 +159,16 @@ const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
   return read.ok ? read.team : null;
 };
 
+const isEmptySummary = (summary: TeamSummary): boolean =>
+  summary.memberCount === 0 && summary.name === "";
+
 /**
- * Re-reads one team's contents when Postgres reports nothing for it, and returns
- * whichever side actually holds the team.
- *
- * Postgres is allowed to lag: a Space row is only filled in by the mirror, which
- * runs on a contents write, and `POST /api/spaces` creates a row without ever
- * writing contents. The May migration also left team blobs with no Space row at
- * all. Serving the Postgres side in those cases would show a live team as
- * unnamed with zero members, which reads as data loss rather than a gap, so
- * Redis (still the store of record for contents) wins and the gap is logged.
+ * `null` means the contents have nothing to say, so the caller keeps whatever
+ * Postgres gave it. Postgres may lag: the mirror only runs on a contents write,
+ * and the May migration left team blobs with no Space row. Serving that side
+ * would show a live team as unnamed with zero members, so Redis wins.
  */
-const reconcileWithContents = async (
-  teamId: string,
-  mirrored: TeamSummary | null,
-): Promise<TeamSummary | null> => {
+const summaryFromContents = async (teamId: string): Promise<TeamSummary | null> => {
   const read = await loadTeamRecord(teamId);
 
   if (!read.ok) {
@@ -143,27 +177,16 @@ const reconcileWithContents = async (
       route: "lib/team-store",
       teamId,
     });
-    return mirrored;
+    return null;
   }
 
   if (read.team === null) {
-    return mirrored;
+    return null;
   }
 
   const fromContents = { memberCount: read.team.members.length, name: read.team.name };
 
-  if (fromContents.memberCount === 0 && fromContents.name === "") {
-    return mirrored;
-  }
-
-  log.error({
-    message: "Postgres team summary is absent or empty, served from team contents",
-    mirrored,
-    route: "lib/team-store",
-    teamId,
-  });
-
-  return fromContents;
+  return isEmptySummary(fromContents) ? null : fromContents;
 };
 
 /**
@@ -182,22 +205,25 @@ const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, Te
 
   const unresolved = wanted.filter((id) => {
     const summary = summaries.get(id);
-    return summary === undefined || (summary.memberCount === 0 && summary.name === "");
+    return summary === undefined || isEmptySummary(summary);
   });
 
   const reconciled = await Promise.all(
-    unresolved.map(async (id) => {
-      const summary = await reconcileWithContents(id, summaries.get(id) ?? null);
-      return [id, summary] as const;
-    }),
+    unresolved.map(async (id) => [id, await summaryFromContents(id)] as const),
   );
 
   for (const [id, summary] of reconciled) {
     if (summary === null) {
-      summaries.delete(id);
-    } else {
-      summaries.set(id, summary);
+      continue;
     }
+
+    log.error({
+      message: "Postgres team summary is absent or empty, served from team contents",
+      mirrored: summaries.get(id) ?? null,
+      route: "lib/team-store",
+      teamId: id,
+    });
+    summaries.set(id, summary);
   }
 
   return summaries;

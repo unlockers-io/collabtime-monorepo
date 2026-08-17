@@ -57,7 +57,7 @@ const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team 
         const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
         const hasGuestAccess =
           accessToken !== undefined && accessToken !== ""
-            ? verifySpaceAccessToken(accessToken, space.id).valid
+            ? verifySpaceAccessToken(accessToken, space.id, space.accessPassword).valid
             : false;
         if (!hasGuestAccess) {
           return { error: "This team is private", success: false };

@@ -3,12 +3,20 @@ import { prisma } from "@repo/db";
 import { log } from "@/lib/observability";
 import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
 
-const validSpaceIdsFromCookieHeader = (cookieHeader: string | null): Array<string> => {
+// Verification now needs each space's current password hash, so candidates are
+// read from the header first and the query is what proves them. Capped because
+// an unauthenticated caller controls how many space-access-* cookies they send,
+// and the cap is applied before the query rather than after.
+const MAX_CANDIDATE_SPACES = 20;
+
+type SpaceAccessCandidate = { spaceId: string; token: string };
+
+const spaceAccessCandidates = (cookieHeader: string | null): Array<SpaceAccessCandidate> => {
   if (cookieHeader === null || cookieHeader === "") {
     return [];
   }
 
-  const spaceIds: Array<string> = [];
+  const candidates: Array<SpaceAccessCandidate> = [];
   for (const part of cookieHeader.split(";")) {
     const separatorIndex = part.indexOf("=");
     if (separatorIndex === -1) {
@@ -26,11 +34,12 @@ const validSpaceIdsFromCookieHeader = (cookieHeader: string | null): Array<strin
     } catch {
       // Malformed percent-encoding; verify the raw value as-is.
     }
-    if (verifySpaceAccessToken(token, spaceId).valid) {
-      spaceIds.push(spaceId);
+    candidates.push({ spaceId, token });
+    if (candidates.length >= MAX_CANDIDATE_SPACES) {
+      break;
     }
   }
-  return spaceIds;
+  return candidates;
 };
 
 const joinPrivateSpace = (userId: string, teamId: string) => {
@@ -46,21 +55,33 @@ const joinPrivateSpacesFromCookies = async (
   cookieHeader: string | null,
 ): Promise<void> => {
   try {
-    const spaceIds = validSpaceIdsFromCookieHeader(cookieHeader);
-    if (spaceIds.length === 0) {
+    const candidates = spaceAccessCandidates(cookieHeader);
+    if (candidates.length === 0) {
       return;
     }
 
     const spaces = await prisma.space.findMany({
-      select: { teamId: true },
-      where: { id: { in: spaceIds }, isPrivate: true },
+      select: { accessPassword: true, id: true, teamId: true },
+      where: { id: { in: candidates.map((c) => c.spaceId) }, isPrivate: true },
     });
     if (spaces.length === 0) {
       return;
     }
 
+    const tokenBySpaceId = new Map(candidates.map((c) => [c.spaceId, c.token]));
+
+    const granted = spaces.filter((space) => {
+      const token = tokenBySpaceId.get(space.id);
+      return (
+        token !== undefined && verifySpaceAccessToken(token, space.id, space.accessPassword).valid
+      );
+    });
+    if (granted.length === 0) {
+      return;
+    }
+
     const results = await Promise.allSettled(
-      spaces.map((space) => joinPrivateSpace(userId, space.teamId)),
+      granted.map((space) => joinPrivateSpace(userId, space.teamId)),
     );
 
     for (const result of results) {

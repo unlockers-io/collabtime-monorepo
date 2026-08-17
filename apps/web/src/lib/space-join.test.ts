@@ -28,6 +28,8 @@ const validFor = (...validTokens: Array<string>) => {
   );
 };
 
+const space = (id: string, teamId: string) => ({ accessPassword: "hash", id, teamId });
+
 describe("joinPrivateSpacesFromCookies", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -51,14 +53,14 @@ describe("joinPrivateSpacesFromCookies", () => {
 
   it("skips cookies whose token fails verification", async () => {
     validFor(); // nothing valid
+    vi.mocked(prisma.space.findMany).mockResolvedValue([space("space1", "team-1")] as never);
 
     await joinPrivateSpacesFromCookies("user-1", "space-access-space1=forged");
 
-    expect(prisma.space.findMany).not.toHaveBeenCalled();
     expect(prisma.membership.upsert).not.toHaveBeenCalled();
   });
 
-  it("queries only valid spaceIds and only private spaces", async () => {
+  it("queries candidate spaceIds and only private spaces", async () => {
     validFor("good");
 
     await joinPrivateSpacesFromCookies(
@@ -67,14 +69,38 @@ describe("joinPrivateSpacesFromCookies", () => {
     );
 
     expect(prisma.space.findMany).toHaveBeenCalledWith({
-      select: { teamId: true },
-      where: { id: { in: ["space1"] }, isPrivate: true },
+      select: { accessPassword: true, id: true, teamId: true },
+      where: { id: { in: ["space1", "space2"] }, isPrivate: true },
     });
+  });
+
+  it("verifies each token against that space's own current password hash", async () => {
+    validFor("good");
+    vi.mocked(prisma.space.findMany).mockResolvedValue([
+      { accessPassword: "hash-1", id: "space1", teamId: "team-1" },
+    ] as never);
+
+    await joinPrivateSpacesFromCookies("user-1", "space-access-space1=good");
+
+    expect(verifySpaceAccessToken).toHaveBeenCalledWith("good", "space1", "hash-1");
+  });
+
+  it("caps the candidate list so a forged cookie flood cannot widen the query", async () => {
+    validFor();
+    const header = Array.from({ length: 100 }, (_, i) => `space-access-s${i}=x`).join("; ");
+
+    await joinPrivateSpacesFromCookies("user-1", header);
+
+    expect(prisma.space.findMany).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(prisma.space.findMany).mock.calls[0]?.[0] as {
+      where: { id: { in: Array<string> } };
+    };
+    expect(call.where.id.in).toHaveLength(20);
   });
 
   it("upserts a MEMBER membership and re-activates archived ones", async () => {
     validFor("good");
-    vi.mocked(prisma.space.findMany).mockResolvedValue([{ teamId: "team-1" }] as never);
+    vi.mocked(prisma.space.findMany).mockResolvedValue([space("space1", "team-1")] as never);
 
     await joinPrivateSpacesFromCookies("user-1", "space-access-space1=good");
 
@@ -87,7 +113,7 @@ describe("joinPrivateSpacesFromCookies", () => {
 
   it("does not throw when the upsert rejects (best-effort)", async () => {
     validFor("good");
-    vi.mocked(prisma.space.findMany).mockResolvedValue([{ teamId: "team-1" }] as never);
+    vi.mocked(prisma.space.findMany).mockResolvedValue([space("space1", "team-1")] as never);
     vi.mocked(prisma.membership.upsert).mockRejectedValue(new Error("db down"));
 
     await expect(
