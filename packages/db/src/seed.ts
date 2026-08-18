@@ -29,15 +29,16 @@ try {
   await prisma.account.upsert({
     create: {
       accountId: user.id,
+      issuer: "local:credential",
       password: hashedPassword,
       providerId: "credential",
       userId: user.id,
     },
     update: { password: hashedPassword },
     where: {
-      providerId_accountId: {
+      issuer_accountId: {
         accountId: user.id,
-        providerId: "credential",
+        issuer: "local:credential",
       },
     },
   });

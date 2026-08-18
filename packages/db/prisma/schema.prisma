@@ -21,7 +21,7 @@ model User {
   spaces          Space[]
   memberships     Membership[]
   joinRequests    JoinRequest[]
-  invitationsSent Invitation[] @relation("invitationsSent")
+  invitationsSent Invitation[]  @relation("invitationsSent")
 
   @@index([email])
 }
@@ -44,6 +44,7 @@ model Session {
 model Account {
   id                    String    @id @default(cuid())
   accountId             String
+  issuer                String    @default("local:credential")
   providerId            String
   userId                String
   accessToken           String?   @db.Text
@@ -57,7 +58,7 @@ model Account {
   updatedAt             DateTime  @updatedAt
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([providerId, accountId])
+  @@unique([issuer, accountId])
   @@index([userId])
 }
 
@@ -72,7 +73,6 @@ model Verification {
   @@unique([identifier, value])
   @@index([identifier])
 }
-
 
 enum MemberRole {
   ADMIN

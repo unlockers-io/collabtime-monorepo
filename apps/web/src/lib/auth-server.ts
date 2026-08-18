@@ -11,6 +11,14 @@ import { joinPrivateSpacesFromCookies } from "./space-join";
 
 let cachedAuth: Auth | null = null;
 
+const INCREMENT_WITH_INITIAL_TTL_SCRIPT = `
+local value = redis.call("INCR", KEYS[1])
+if value == 1 and tonumber(ARGV[1]) > 0 then
+  redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+return value
+`;
+
 const getAuthConfig = (): AuthConfig => {
   const secret = process.env.BETTER_AUTH_SECRET;
   if (secret === undefined || secret.length < 32) {
@@ -50,6 +58,14 @@ const getAuthConfig = (): AuthConfig => {
           return JSON.stringify(value);
         }
         return String(value);
+      },
+      getAndDelete: (key: string) => redis.getdel(key),
+      increment: async (key: string, ttl: number) => {
+        const value = await redis.eval(INCREMENT_WITH_INITIAL_TTL_SCRIPT, 1, key, ttl);
+        if (typeof value !== "number") {
+          throw new TypeError("Redis increment returned a non-numeric value");
+        }
+        return value;
       },
       set: async (key: string, value: string, ttl?: number) => {
         await (ttl !== undefined && ttl !== 0

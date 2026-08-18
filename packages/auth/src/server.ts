@@ -9,6 +9,8 @@ import type { BetterAuthPlugin } from "better-auth/types";
 type SecondaryStorage = {
   delete: (key: string) => Promise<void>;
   get: (key: string) => Promise<string | null>;
+  getAndDelete: (key: string) => Promise<string | null>;
+  increment: (key: string, ttl: number) => Promise<number>;
   set: (key: string, value: string, ttl?: number) => Promise<void>;
 };
 
