@@ -7,6 +7,7 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { acceptInvitation, declineInvitation } from "@/lib/actions/invitation-actions";
+import { queryKeys } from "@/lib/query-keys";
 import type { PendingInvitation } from "@/types";
 
 const InvitationSchema = z.object({
@@ -32,7 +33,7 @@ const useInvitations = () => {
       const data = InvitationsResponseSchema.parse(await response.json());
       return data.invitations;
     },
-    queryKey: ["my-invitations"],
+    queryKey: queryKeys.invitations,
   });
 
   const handleAcceptInvitation = async (invitation: PendingInvitation) => {
@@ -45,8 +46,8 @@ const useInvitations = () => {
         toast.error(result.error);
       }
       await Promise.allSettled([
-        queryClient.invalidateQueries({ queryKey: ["my-invitations"] }),
-        queryClient.invalidateQueries({ queryKey: ["my-teams"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.invitations }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.myTeams }),
       ]);
     } catch (error) {
       captureException(error);
@@ -65,7 +66,7 @@ const useInvitations = () => {
       const result = await declineInvitation(invitation.id);
       if (result.success) {
         toast.success("Invitation declined");
-        await queryClient.invalidateQueries({ queryKey: ["my-invitations"] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.invitations });
       } else {
         toast.error(result.error);
       }

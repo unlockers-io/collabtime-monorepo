@@ -1,11 +1,15 @@
 import { prisma } from "@repo/db";
+import { dehydrate } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { getTeamName, validateTeam } from "@/lib/actions/team-read";
+import { getPublicTeam, getTeamName, validateTeam } from "@/lib/actions/team-read";
 import { getSession } from "@/lib/auth-server";
+import { createQueryClient } from "@/lib/query-client";
+import { queryKeys } from "@/lib/query-keys";
 import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
+import { QueryProvider } from "@/providers/query-provider";
 import { isTeamRole } from "@/types";
 import type { TeamStatus } from "@/types";
 
@@ -117,16 +121,24 @@ const TeamPage = async ({ params }: TeamPageProps) => {
     : GUEST_STATUS;
 
   const isSpaceOwner = Boolean(session && space && space.ownerId === session.user.id);
+  const queryClient = createQueryClient();
+  const teamResult = await getPublicTeam(teamId);
+
+  if (teamResult.success) {
+    queryClient.setQueryData(queryKeys.teams.detail(teamId), { team: teamResult.data.team });
+  }
 
   return (
-    <TeamPageClient
-      isArchived={isArchived}
-      isAuthenticated={Boolean(session)}
-      spaceId={isSpaceOwner ? (space?.id ?? null) : null}
-      teamId={teamId}
-      teamStatus={teamStatus}
-      userId={session?.user?.id}
-    />
+    <QueryProvider dehydratedState={dehydrate(queryClient)}>
+      <TeamPageClient
+        isArchived={isArchived}
+        isAuthenticated={Boolean(session)}
+        spaceId={isSpaceOwner ? (space?.id ?? null) : null}
+        teamId={teamId}
+        teamStatus={teamStatus}
+        userId={session?.user?.id}
+      />
+    </QueryProvider>
   );
 };
 

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getPublicTeam } from "@/lib/actions/team-read";
 import type { ActionResult } from "@/lib/actions/types";
+import { queryKeys } from "@/lib/query-keys";
 import type { Team } from "@/types";
 
 type UseTeamQueryOptions = {
@@ -15,8 +16,8 @@ type TeamQueryData = {
 };
 
 const teamQueryKeys = {
-  all: ["teams"] as const,
-  team: (teamId: string) => [...teamQueryKeys.all, teamId] as const,
+  all: queryKeys.teams.all,
+  team: queryKeys.teams.detail,
 };
 
 const useTeamQuery = ({ teamId }: UseTeamQueryOptions) => {

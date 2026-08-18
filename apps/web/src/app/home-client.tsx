@@ -11,6 +11,7 @@ import { useState } from "react";
 import { DeleteWorkspaceDialog } from "@/components/delete-workspace-dialog";
 import { Nav } from "@/components/nav";
 import { createTeam } from "@/lib/actions/team-create";
+import { queryKeys } from "@/lib/query-keys";
 import { getUserTimezone } from "@/lib/timezones";
 
 import { ArchivedTeamsList } from "./home-client/archived-teams-list";
@@ -31,7 +32,7 @@ const HomeClient = () => {
   const { handleToggleArchive, isLoadingTeams, myTeams, processingArchive } = useMyTeams();
 
   const handleWorkspaceDeleted = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["my-teams"] });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.myTeams });
   };
 
   const handleCreateTeam = async () => {
