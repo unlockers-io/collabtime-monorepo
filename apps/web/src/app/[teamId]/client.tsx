@@ -4,7 +4,6 @@ import { toast } from "@repo/ui/components/sonner";
 import { captureException } from "@sentry/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, FolderKanban, Users } from "lucide-react";
-import { AnimatePresence, m } from "motion/react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -165,13 +164,7 @@ const TeamPageClient = ({
   const isLoaded = Boolean(teamData?.team);
 
   const mainContent = (
-    <m.div
-      animate={{ opacity: 1 }}
-      className="min-h-dvh w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12"
-      initial={{ opacity: 0 }}
-      key="content"
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-    >
+    <div className="min-h-dvh w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
       <main className="mx-auto flex w-full max-w-450 flex-col gap-6" id="main">
         <Nav
           canDeleteWorkspace={spaceId !== null}
@@ -290,36 +283,28 @@ const TeamPageClient = ({
           teamName={displayName}
         />
       )}
-    </m.div>
+    </div>
   );
 
-  const skeleton = (
-    <m.div exit={{ opacity: 0 }} key="skeleton" transition={{ duration: 0.2 }}>
-      <Loading />
-    </m.div>
-  );
+  if (!isLoaded) {
+    return <Loading />;
+  }
 
   if (!isAdmin) {
-    return <AnimatePresence mode="wait">{isLoaded ? mainContent : skeleton}</AnimatePresence>;
+    return mainContent;
   }
 
   return (
-    <AnimatePresence mode="wait">
-      {isLoaded ? (
-        <DndWrapper
-          groups={groups}
-          hasClaimedProfile={hasClaimedProfile}
-          members={members}
-          onDragEnd={handleDragEnd}
-          onDragTypeChange={handleDragTypeChange}
-          teamId={teamId}
-        >
-          {mainContent}
-        </DndWrapper>
-      ) : (
-        skeleton
-      )}
-    </AnimatePresence>
+    <DndWrapper
+      groups={groups}
+      hasClaimedProfile={hasClaimedProfile}
+      members={members}
+      onDragEnd={handleDragEnd}
+      onDragTypeChange={handleDragTypeChange}
+      teamId={teamId}
+    >
+      {mainContent}
+    </DndWrapper>
   );
 };
 
