@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as joinRequests from "./join-requests";
-import { createJoinRequestActions } from "./join-requests";
+import { createJoinRequestActions } from "./join-requests-core";
 import { createMockSession, VALID_UUID } from "./test-helpers";
 
 type JoinRequestDeps = Parameters<typeof createJoinRequestActions>[0];

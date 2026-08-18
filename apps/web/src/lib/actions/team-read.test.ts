@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createTeamReadActions } from "./team-read";
+import { createTeamReadActions } from "./team-read-core";
 import { createMockSession, createTestTeamRecord, VALID_UUID } from "./test-helpers";
 
 type TeamReadDeps = Parameters<typeof createTeamReadActions>[0];

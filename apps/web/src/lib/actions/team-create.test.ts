@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createTeamAction } from "./team-create";
+import { createTeamAction } from "./team-create-core";
 import { createMockSession, createTestMember } from "./test-helpers";
 
 type TeamCreateDeps = Parameters<typeof createTeamAction>[0];

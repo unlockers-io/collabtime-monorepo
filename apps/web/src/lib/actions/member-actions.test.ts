@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createMemberActions } from "./member-actions";
+import { createMemberActions } from "./member-actions-core";
 import {
   createMockSession,
   createTestMember,

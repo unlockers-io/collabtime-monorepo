@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { createGroupActions } from "./group-actions";
+import { createGroupActions } from "./group-actions-core";
 import {
   createTestGroup,
   createTestMember,
