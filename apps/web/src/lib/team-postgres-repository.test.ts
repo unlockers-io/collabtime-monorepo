@@ -1,18 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTestGroup, createTestMember, createTestTeamRecord } from "./actions/test-helpers";
+import { createTeamPostgresReader, diffTeamMirror } from "./team-postgres-repository";
 
-vi.mock("@repo/db", () => ({
-  prisma: { space: { findMany: vi.fn(), findUnique: vi.fn() } },
-}));
-
-import { prisma } from "@repo/db";
-
-import {
-  diffTeamMirror,
-  readTeamMirror,
-  readTeamSummariesFromPostgres,
-} from "./team-postgres-repository";
+const findTeamMirror = vi.fn<Parameters<typeof createTeamPostgresReader>[0]["findTeamMirror"]>();
+const findTeamSummaries =
+  vi.fn<Parameters<typeof createTeamPostgresReader>[0]["findTeamSummaries"]>();
+const { readTeamMirror, readTeamSummariesFromPostgres } = createTeamPostgresReader({
+  findTeamMirror,
+  findTeamSummaries,
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -83,13 +80,13 @@ describe("diffTeamMirror", () => {
 
 describe("readTeamMirror", () => {
   it("returns null when the space row is gone", async () => {
-    vi.mocked(prisma.space.findUnique).mockResolvedValue(null);
+    findTeamMirror.mockResolvedValue(null);
 
     expect(await readTeamMirror("team-1")).toBeNull();
   });
 
   it("omits groupId and userId rather than carrying nulls into the record", async () => {
-    vi.mocked(prisma.space.findUnique).mockResolvedValue({
+    findTeamMirror.mockResolvedValue({
       adminPasswordHash: null,
       createdAt: new Date("2026-01-15T00:00:00.000Z"),
       groups: [{ id: "g-1", name: "Design", order: 0 }],
@@ -108,7 +105,7 @@ describe("readTeamMirror", () => {
       ],
       name: "Acme",
       teamId: "team-1",
-    } as never);
+    });
 
     const record = await readTeamMirror("team-1");
 
@@ -122,17 +119,14 @@ describe("readTeamMirror", () => {
 
 describe("readTeamSummariesFromPostgres", () => {
   it("maps one batch query into summaries keyed by team id", async () => {
-    vi.mocked(prisma.space.findMany).mockResolvedValue([
+    findTeamSummaries.mockResolvedValue([
       { members: [{ id: "m-1" }], name: "Design", teamId: "team-1" },
       { members: [], name: "Research", teamId: "team-2" },
-    ] as never);
+    ]);
 
     const summaries = await readTeamSummariesFromPostgres(["team-1", "team-2"]);
 
-    expect(prisma.space.findMany).toHaveBeenCalledWith({
-      select: { members: { select: { id: true } }, name: true, teamId: true },
-      where: { teamId: { in: ["team-1", "team-2"] } },
-    });
+    expect(findTeamSummaries).toHaveBeenCalledWith(["team-1", "team-2"]);
     expect(summaries).toEqual(
       new Map([
         ["team-1", { memberCount: 1, name: "Design" }],

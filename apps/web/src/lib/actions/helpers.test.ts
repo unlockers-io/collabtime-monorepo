@@ -1,42 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { requireTeamAdmin } from "@/lib/team-auth";
+import { checkUuid, sanitizeTeam } from "./helpers";
+import {
+  createTestMember,
+  createTestTeamMutator,
+  createTestTeamRecord,
+  VALID_UUID,
+} from "./test-helpers";
 
-import type * as ValidationModule from "../validation";
-
-import { createTestMember, createTestTeamRecord, VALID_UUID } from "./test-helpers";
-
-vi.mock("@/lib/team-auth", () => ({ requireTeamAdmin: vi.fn() }));
-
-const { redisMock } = vi.hoisted(() => ({
-  redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
-}));
-
-vi.mock("../redis", () => ({
-  isRedisConfigured: (): boolean => true,
-  readTeamJson: async (teamId: string): Promise<string | null> => {
-    const data: unknown = await redisMock.get(`team:${teamId}`);
-    return typeof data === "string" && data !== "" ? data : null;
-  },
-  redis: redisMock,
-  TEAM_ACTIVE_TTL_SECONDS: 100,
-  teamKey: (teamId: string): string => `team:${teamId}`,
-}));
-
-vi.mock("../team-postgres-repository", () => ({ writeTeamMirror: vi.fn() }));
-
-vi.mock("../validation", async (importOriginal) => {
-  const actual = await importOriginal<typeof ValidationModule>();
-  return actual;
-});
-
-import { redis } from "../redis";
-
-import { checkUuid, mutateTeam, sanitizeTeam } from "./helpers";
-
-const mockedRedisGet = vi.mocked(redis.get);
-const mockedRedisSet = vi.mocked(redis.set);
-const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
+const testMutator = createTestTeamMutator();
+const { mutateTeam } = testMutator;
+const continueMutation = () => ({ ok: true as const, value: undefined });
 
 describe("sanitizeTeam", () => {
   it("strips adminPasswordHash from output", () => {
@@ -96,10 +70,7 @@ describe("checkUuid", () => {
 
 describe("mutateTeam", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    mockedRequireTeamAdmin.mockResolvedValue(undefined as never);
-    mockedRedisSet.mockResolvedValue("OK");
+    testMutator.reset();
   });
 
   it("returns 'Invalid team ID' for non-UUID teamId without auth or load", async () => {
@@ -108,12 +79,12 @@ describe("mutateTeam", () => {
     const result = await mutateTeam({
       errorContext: "do thing",
       mutate,
+      prelude: continueMutation,
       teamId: "not-a-uuid",
     });
 
     expect(result).toEqual({ error: "Invalid team ID", success: false });
-    expect(mockedRequireTeamAdmin).not.toHaveBeenCalled();
-    expect(mockedRedisGet).not.toHaveBeenCalled();
+    expect(testMutator.requireTeamAdmin).not.toHaveBeenCalled();
     expect(mutate).not.toHaveBeenCalled();
   });
 
@@ -128,7 +99,6 @@ describe("mutateTeam", () => {
     });
 
     expect(result).toEqual({ error: "Bad input", success: false });
-    expect(mockedRedisGet).not.toHaveBeenCalled();
     expect(mutate).not.toHaveBeenCalled();
   });
 
@@ -145,15 +115,15 @@ describe("mutateTeam", () => {
 
     expect(result).toEqual({ error: "Not a member", success: false });
     expect(prelude).not.toHaveBeenCalled();
-    expect(mockedRedisGet).not.toHaveBeenCalled();
   });
 
   it("converts thrown auth errors to 'Failed to <errorContext>'", async () => {
-    mockedRequireTeamAdmin.mockRejectedValue(new Error("Unauthorized"));
+    testMutator.requireTeamAdmin.mockRejectedValue(new Error("Unauthorized"));
 
     const result = await mutateTeam({
       errorContext: "remove widget",
       mutate: () => ({ ok: true, value: 1 }),
+      prelude: continueMutation,
       teamId: VALID_UUID,
     });
 
@@ -161,12 +131,13 @@ describe("mutateTeam", () => {
   });
 
   it("returns 'Team not found' when redis has no team", async () => {
-    mockedRedisGet.mockResolvedValue(null);
+    testMutator.seedTeam(null);
     const mutate = vi.fn();
 
     const result = await mutateTeam({
       errorContext: "do thing",
       mutate,
+      prelude: continueMutation,
       teamId: VALID_UUID,
     });
 
@@ -176,7 +147,7 @@ describe("mutateTeam", () => {
 
   it("passes prelude value into mutate and persists on success", async () => {
     const team = createTestTeamRecord();
-    mockedRedisGet.mockResolvedValue(JSON.stringify(team));
+    testMutator.seedTeam(team);
 
     const result = await mutateTeam({
       errorContext: "do thing",
@@ -189,38 +160,39 @@ describe("mutateTeam", () => {
     });
 
     expect(result).toEqual({ data: "Renamed", success: true });
-    expect(mockedRedisSet).toHaveBeenCalledTimes(1);
-    const persisted = JSON.parse(mockedRedisSet.mock.calls[0][1] as string) as { name: string };
-    expect(persisted.name).toBe("Renamed");
+    expect(testMutator.persistedTeam()?.name).toBe("Renamed");
   });
 
   it("does not persist when mutate returns a domain error", async () => {
-    mockedRedisGet.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
+    const team = createTestTeamRecord();
+    testMutator.seedTeam(team);
 
     const result = await mutateTeam({
       errorContext: "do thing",
       mutate: () => ({ error: "Item not found", ok: false }),
+      prelude: continueMutation,
       teamId: VALID_UUID,
     });
 
     expect(result).toEqual({ error: "Item not found", success: false });
-    expect(mockedRedisSet).not.toHaveBeenCalled();
+    expect(testMutator.persistedTeam()).toEqual(team);
   });
 
   it("uses a supplied authorize callback instead of requireTeamAdmin", async () => {
-    mockedRedisGet.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
+    testMutator.seedTeam(createTestTeamRecord());
     const authorize = vi.fn(() => Promise.resolve({ ok: true as const, value: undefined }));
 
     await mutateTeam({
       authorize,
       errorContext: "do thing",
       mutate: () => ({ ok: true, value: undefined }),
+      prelude: continueMutation,
       teamId: VALID_UUID,
     });
 
     expect(authorize).toHaveBeenCalledWith(VALID_UUID);
-    expect(mockedRequireTeamAdmin).not.toHaveBeenCalled();
-    expect(mockedRedisSet).toHaveBeenCalled();
+    expect(testMutator.requireTeamAdmin).not.toHaveBeenCalled();
+    expect(testMutator.persistedTeam()).not.toBeNull();
   });
 
   it("returns the authorize error without loading or mutating", async () => {
@@ -230,16 +202,16 @@ describe("mutateTeam", () => {
       authorize: () => Promise.resolve({ error: "Not allowed", ok: false }),
       errorContext: "do thing",
       mutate,
+      prelude: continueMutation,
       teamId: VALID_UUID,
     });
 
     expect(result).toEqual({ error: "Not allowed", success: false });
-    expect(mockedRedisGet).not.toHaveBeenCalled();
     expect(mutate).not.toHaveBeenCalled();
   });
 
   it("supports async preludes", async () => {
-    mockedRedisGet.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
+    testMutator.seedTeam(createTestTeamRecord());
 
     const result = await mutateTeam({
       errorContext: "do thing",

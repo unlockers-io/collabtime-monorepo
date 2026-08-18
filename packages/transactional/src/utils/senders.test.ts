@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const sendEmailMock = vi.fn();
-vi.mock("./send-email", () => ({
-  sendEmail: sendEmailMock,
-}));
+import type { sendEmail } from "./send-email";
+import { createTransactionalEmailSender } from "./senders";
 
-const { sendTransactionalEmail } = await import("./senders");
+const sendEmailMock = vi.fn<typeof sendEmail>();
+const sendTransactionalEmail = createTransactionalEmailSender(sendEmailMock);
 
 describe("sendTransactionalEmail", () => {
   beforeEach(() => {

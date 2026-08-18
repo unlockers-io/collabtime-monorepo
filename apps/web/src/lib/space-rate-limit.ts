@@ -2,6 +2,11 @@ import { isRedisConfigured, redis } from "@/lib/redis";
 
 type RateLimitResult = { allowed: boolean; remaining: number };
 
+type RateLimitDeps = {
+  increment: (key: string, windowSeconds: number) => Promise<number>;
+  isRedisConfigured: () => boolean;
+};
+
 const INCR_WITH_EXPIRE = `
   local count = redis.call("INCR", KEYS[1])
   if count == 1 then
@@ -10,25 +15,28 @@ const INCR_WITH_EXPIRE = `
   return count
 `;
 
-const checkRateLimit = async (
-  key: string,
-  max: number,
-  windowSeconds: number,
-): Promise<RateLimitResult> => {
-  const redisKey = `ratelimit:${key}`;
+const createRateLimiter = (deps: RateLimitDeps) => {
+  return async (key: string, max: number, windowSeconds: number): Promise<RateLimitResult> => {
+    const redisKey = `ratelimit:${key}`;
 
-  // `eval` is absent from the unconfigured-Redis stub allowlist in lib/redis.ts,
-  // so it must not be reached when there is no client to run it.
-  if (!isRedisConfigured()) {
-    return { allowed: true, remaining: max };
-  }
+    // `eval` is absent from the unconfigured-Redis stub allowlist in lib/redis.ts.
+    if (!deps.isRedisConfigured()) {
+      return { allowed: true, remaining: max };
+    }
 
-  const count = Number(await redis.eval(INCR_WITH_EXPIRE, 1, redisKey, String(windowSeconds)));
+    const count = await deps.increment(redisKey, windowSeconds);
 
-  if (count > max) {
-    return { allowed: false, remaining: 0 };
-  }
-  return { allowed: true, remaining: max - count };
+    if (count > max) {
+      return { allowed: false, remaining: 0 };
+    }
+    return { allowed: true, remaining: max - count };
+  };
 };
 
-export { checkRateLimit };
+const checkRateLimit = createRateLimiter({
+  increment: async (key, windowSeconds) =>
+    Number(await redis.eval(INCR_WITH_EXPIRE, 1, key, String(windowSeconds))),
+  isRedisConfigured,
+});
+
+export { checkRateLimit, createRateLimiter };

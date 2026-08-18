@@ -36,65 +36,77 @@ type MutateTeamArgs<TPrelude, TResult> = {
   authorize?: (teamId: string) => Promise<MutationOutcome<void>>;
   errorContext: string;
   mutate: (team: TeamRecord, prelude: TPrelude) => MutationOutcome<TResult>;
-  prelude?: () => MutationOutcome<TPrelude> | Promise<MutationOutcome<TPrelude>>;
+  prelude: () => MutationOutcome<TPrelude> | Promise<MutationOutcome<TPrelude>>;
   teamId: string;
 };
 
-const mutateTeam = async <TPrelude, TResult>(
-  args: MutateTeamArgs<TPrelude, TResult>,
-): Promise<ActionResult<TResult>> => {
-  const { authorize, errorContext, mutate, prelude, teamId } = args;
-  try {
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return { error: "Invalid team ID", success: false };
-    }
-
-    if (authorize) {
-      const authorizeOutcome = await authorize(teamId);
-      if (!authorizeOutcome.ok) {
-        return { error: authorizeOutcome.error, success: false };
-      }
-    } else {
-      await requireTeamAdmin(teamId);
-    }
-
-    const preludeOutcome = prelude
-      ? await prelude()
-      : // oxlint-disable-next-line no-unsafe-type-assertion -- callers omit `prelude` only when TPrelude is undefined, so there is no runtime value to fabricate
-        ({ ok: true, value: undefined as TPrelude } as const);
-    if (!preludeOutcome.ok) {
-      return { error: preludeOutcome.error, success: false };
-    }
-
-    /**
-     * Delegated rather than re-run through readTeamRecord + writeTeamRecord:
-     * readTeamRecord flattens "could not read the store" into the same `null` as
-     * "this team has no contents", which reported a Redis outage to the user as
-     * "Team not found". applyTeamContents keeps those apart via `reason`.
-     */
-    const applied = await applyTeamContents(teamId, (team) => {
-      if (team === null) {
-        return { error: "Team not found", ok: false };
-      }
-
-      const outcome = mutate(team, preludeOutcome.value);
-      return outcome.ok ? { ok: true, team, value: outcome.value } : outcome;
-    });
-
-    if (!applied.ok) {
-      return {
-        error: applied.reason === "write-failed" ? `Failed to ${errorContext}` : applied.error,
-        success: false,
-      };
-    }
-
-    return { data: applied.value, success: true };
-  } catch (error) {
-    log.error({ error, message: `Failed to ${errorContext}`, route: "actions/helpers" });
-    return { error: `Failed to ${errorContext}`, success: false };
-  }
+type TeamMutatorDeps = {
+  applyTeamContents: typeof applyTeamContents;
+  reportError: (event: Record<string, unknown>) => void;
+  requireTeamAdmin: typeof requireTeamAdmin;
 };
+
+type MutateTeam = <TPrelude, TResult>(
+  args: MutateTeamArgs<TPrelude, TResult>,
+) => Promise<ActionResult<TResult>>;
+
+const createTeamMutator = (deps: TeamMutatorDeps): MutateTeam =>
+  async function mutateTeam<TPrelude, TResult>(args: MutateTeamArgs<TPrelude, TResult>) {
+    const { authorize, errorContext, mutate, prelude, teamId } = args;
+    try {
+      const uuidResult = UUIDSchema.safeParse(teamId);
+      if (!uuidResult.success) {
+        return { error: "Invalid team ID", success: false };
+      }
+
+      if (authorize) {
+        const authorizeOutcome = await authorize(teamId);
+        if (!authorizeOutcome.ok) {
+          return { error: authorizeOutcome.error, success: false };
+        }
+      } else {
+        await deps.requireTeamAdmin(teamId);
+      }
+
+      const preludeOutcome = await prelude();
+      if (!preludeOutcome.ok) {
+        return { error: preludeOutcome.error, success: false };
+      }
+
+      /**
+       * Delegated rather than re-run through readTeamRecord + writeTeamRecord:
+       * readTeamRecord flattens "could not read the store" into the same `null` as
+       * "this team has no contents", which reported a Redis outage to the user as
+       * "Team not found". applyTeamContents keeps those apart via `reason`.
+       */
+      const applied = await deps.applyTeamContents(teamId, (team) => {
+        if (team === null) {
+          return { error: "Team not found", ok: false };
+        }
+
+        const outcome = mutate(team, preludeOutcome.value);
+        return outcome.ok ? { ok: true, team, value: outcome.value } : outcome;
+      });
+
+      if (!applied.ok) {
+        return {
+          error: applied.reason === "write-failed" ? `Failed to ${errorContext}` : applied.error,
+          success: false,
+        };
+      }
+
+      return { data: applied.value, success: true };
+    } catch (error) {
+      deps.reportError({ error, message: `Failed to ${errorContext}`, route: "actions/helpers" });
+      return { error: `Failed to ${errorContext}`, success: false };
+    }
+  };
+
+const mutateTeam = createTeamMutator({
+  applyTeamContents,
+  reportError: log.error,
+  requireTeamAdmin,
+});
 
 const checkUuid = (value: string, label: string): MutationOutcome<void> => {
   const result = UUIDSchema.safeParse(value);
@@ -104,4 +116,5 @@ const checkUuid = (value: string, label: string): MutationOutcome<void> => {
   return { ok: true, value: undefined };
 };
 
-export { checkUuid, mutateTeam, sanitizeTeam };
+export { checkUuid, createTeamMutator, mutateTeam, sanitizeTeam };
+export type { MutateTeam, TeamMutatorDeps };

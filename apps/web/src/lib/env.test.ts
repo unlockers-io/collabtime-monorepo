@@ -75,6 +75,7 @@ describe("validateEnv", () => {
 describe("getEnv", () => {
   beforeEach(() => {
     vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/test");
+    vi.stubEnv("BETTER_AUTH_SECRET", "a-secret-that-is-at-least-32-characters-long");
   });
 
   afterEach(() => {

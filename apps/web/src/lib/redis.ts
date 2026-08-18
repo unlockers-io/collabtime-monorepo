@@ -30,7 +30,8 @@ const getRedis = (): Redis | null => {
   return cachedRedis;
 };
 
-// oxlint-disable no-unsafe-type-assertion -- the Proxy impersonates Redis by design; its target is an empty stand-in and property access is forwarded dynamically.
+// SAFETY: The proxy forwards every configured call to an ioredis instance.
+// oxlint-disable-next-line no-unsafe-type-assertion
 const redis = new Proxy({} as Redis, {
   get(_, prop) {
     const instance = getRedis();
@@ -43,20 +44,29 @@ const redis = new Proxy({} as Redis, {
       }
       return undefined;
     }
+    // SAFETY: Proxy property keys are the same keys used to access the Redis instance.
+    // oxlint-disable-next-line no-unsafe-type-assertion
     const value = instance[prop as keyof Redis];
     if (typeof value === "function") {
-      return (value as (...args: Array<unknown>) => unknown).bind(instance);
+      // SAFETY: ioredis methods require their owning Redis instance as this.
+      // oxlint-disable-next-line no-unsafe-type-assertion
+      return (value as (...args: Array<never>) => void).bind(instance);
     }
     return value;
   },
 });
-// oxlint-enable no-unsafe-type-assertion
 
 const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60;
 
 const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2;
 
 const teamKey = (teamId: string): string => `team:${teamId}`;
+
+type TeamJsonReaderDeps = {
+  expire: (key: string, seconds: number) => Promise<void>;
+  get: (key: string) => Promise<string | null>;
+  reportError: (event: Record<string, unknown>) => void;
+};
 
 /**
  * Redis is the only store for a team's contents, so an expiring key is a
@@ -67,24 +77,35 @@ const teamKey = (teamId: string): string => `team:${teamId}`;
  * A failed refresh must not fail the read: the caller already has the data,
  * and the next read gets another chance to extend.
  */
-const readTeamJson = async (teamId: string): Promise<string | null> => {
-  const key = teamKey(teamId);
-  const data = await redis.get(key);
+const createTeamJsonReader = (deps: TeamJsonReaderDeps) => {
+  return async (teamId: string): Promise<string | null> => {
+    const key = teamKey(teamId);
+    const data = await deps.get(key);
 
-  if (data === null || data === "") {
-    return null;
-  }
+    if (data === null || data === "") {
+      return null;
+    }
 
-  try {
-    await redis.expire(key, TEAM_ACTIVE_TTL_SECONDS);
-  } catch (error) {
-    log.error({ error, message: "Failed to refresh team TTL", route: "lib/redis" });
-  }
+    try {
+      await deps.expire(key, TEAM_ACTIVE_TTL_SECONDS);
+    } catch (error) {
+      deps.reportError({ error, message: "Failed to refresh team TTL", route: "lib/redis" });
+    }
 
-  return data;
+    return data;
+  };
 };
 
+const readTeamJson = createTeamJsonReader({
+  expire: async (key, seconds) => {
+    await redis.expire(key, seconds);
+  },
+  get: (key) => redis.get(key),
+  reportError: log.error,
+});
+
 export {
+  createTeamJsonReader,
   isRedisConfigured,
   readTeamJson,
   redis,

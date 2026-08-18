@@ -11,7 +11,6 @@ import {
 import { LogIn, LogOut, Settings, Shield, User } from "lucide-react";
 import Link from "next/link";
 
-import { useSignOut } from "@/hooks/use-sign-out";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,11 +30,12 @@ const ROLE_LABELS = {
 // Named navRole, not role: a literal `role="account"` on a component reads as an
 // ARIA role to jsx-a11y.
 type UserMenuProps = {
+  isSigningOut: boolean;
   navRole: NavRole;
+  onSignOut: () => void;
 };
 
-const UserMenu = ({ navRole }: UserMenuProps) => {
-  const { handleSignOut, isSigningOut } = useSignOut();
+const UserMenu = ({ isSigningOut, navRole, onSignOut }: UserMenuProps) => {
   const { description, title } = ROLE_LABELS[navRole];
   const isAuthenticated = navRole !== "guest";
 
@@ -82,9 +82,7 @@ const UserMenu = ({ navRole }: UserMenuProps) => {
             <DropdownMenuItem
               className="flex cursor-pointer items-center gap-2"
               disabled={isSigningOut}
-              onClick={() => {
-                void handleSignOut();
-              }}
+              onClick={onSignOut}
             >
               <LogOut className="size-4" />
               {isSigningOut ? "Signing out..." : "Sign out"}

@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 
+import { z } from "zod";
+
 import { log } from "@/lib/observability";
 
 const SPACE_ACCESS_COOKIE_PREFIX = "space-access-";
@@ -43,12 +45,14 @@ const verifySignature = (data: string, signature: string, secret: string): boole
   }
 };
 
-type TokenPayload = {
-  credential: string;
-  expiresAt: number;
-  spaceId: string;
-  version: string;
-};
+const tokenPayloadSchema = z.object({
+  credential: z.string(),
+  expiresAt: z.number(),
+  spaceId: z.string(),
+  version: z.literal(TOKEN_VERSION),
+});
+
+type TokenPayload = z.infer<typeof tokenPayloadSchema>;
 
 /**
  * A fingerprint of the stored hash, not the hash itself: the payload is only
@@ -110,8 +114,7 @@ const verifySpaceAccessToken = (
     }
 
     const payloadJson = Buffer.from(payloadStr, "base64url").toString("utf8");
-    // oxlint-disable-next-line no-unsafe-type-assertion -- the HMAC signature was verified above, so the payload can only have been minted by issueSpaceAccessToken with a TokenPayload
-    const payload = JSON.parse(payloadJson) as TokenPayload;
+    const payload = tokenPayloadSchema.parse(JSON.parse(payloadJson));
 
     if (payload.version !== TOKEN_VERSION) {
       return { reason: "Token version mismatch", valid: false };

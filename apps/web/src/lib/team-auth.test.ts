@@ -3,26 +3,17 @@ import path from "node:path";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/auth-server", () => ({
-  getSession: vi.fn(),
-}));
+import type { getSession } from "@/lib/auth-server";
 
-vi.mock("@repo/db", () => ({
-  prisma: {
-    membership: {
-      findUnique: vi.fn(),
-    },
-  },
-}));
+import { createMockSession } from "./actions/test-helpers";
+import { createTeamAuth } from "./team-auth";
 
-import { prisma } from "@repo/db";
-
-import { getSession } from "@/lib/auth-server";
-
-import { getTeamRole, requireAuth, requireTeamAdmin, requireTeamMember } from "./team-auth";
-
-const mockedGetSession = vi.mocked(getSession);
-const mockedFindMembership = vi.mocked(prisma.membership.findUnique);
+const mockedGetSession = vi.fn<typeof getSession>();
+const mockedFindMembership = vi.fn<Parameters<typeof createTeamAuth>[0]["findMembership"]>();
+const { getTeamRole, requireAuth, requireTeamAdmin, requireTeamMember } = createTeamAuth({
+  findMembership: mockedFindMembership,
+  getSession: mockedGetSession,
+});
 
 describe("module surface", () => {
   it("is not a server-action module", async () => {
@@ -44,7 +35,7 @@ describe("getTeamRole", () => {
   });
 
   it("returns null when no membership found", async () => {
-    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
     mockedFindMembership.mockResolvedValue(null);
 
     const result = await getTeamRole("team-1");
@@ -52,24 +43,24 @@ describe("getTeamRole", () => {
   });
 
   it("returns null when role is not a valid TeamRole", async () => {
-    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
-    mockedFindMembership.mockResolvedValue({ role: "INVALID_ROLE" } as never);
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockResolvedValue({ role: "INVALID_ROLE" });
 
     const result = await getTeamRole("team-1");
     expect(result).toBeNull();
   });
 
   it("returns userId and role for valid ADMIN member", async () => {
-    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
-    mockedFindMembership.mockResolvedValue({ role: "ADMIN" } as never);
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockResolvedValue({ role: "ADMIN" });
 
     const result = await getTeamRole("team-1");
     expect(result).toEqual({ role: "ADMIN", userId: "user-1" });
   });
 
   it("returns userId and role for valid MEMBER", async () => {
-    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
-    mockedFindMembership.mockResolvedValue({ role: "MEMBER" } as never);
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockResolvedValue({ role: "MEMBER" });
 
     const result = await getTeamRole("team-1");
     expect(result).toEqual({ role: "MEMBER", userId: "user-1" });
@@ -88,15 +79,15 @@ describe("requireTeamAdmin", () => {
   });
 
   it("throws when user is MEMBER not ADMIN", async () => {
-    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
-    mockedFindMembership.mockResolvedValue({ role: "MEMBER" } as never);
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockResolvedValue({ role: "MEMBER" });
 
     await expect(requireTeamAdmin("team-1")).rejects.toThrow("Admin access required");
   });
 
   it("returns userId when user is ADMIN", async () => {
-    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
-    mockedFindMembership.mockResolvedValue({ role: "ADMIN" } as never);
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockResolvedValue({ role: "ADMIN" });
 
     const result = await requireTeamAdmin("team-1");
     expect(result).toBe("user-1");
@@ -115,16 +106,16 @@ describe("requireTeamMember", () => {
   });
 
   it("returns userId when user is MEMBER", async () => {
-    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
-    mockedFindMembership.mockResolvedValue({ role: "MEMBER" } as never);
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockResolvedValue({ role: "MEMBER" });
 
     const result = await requireTeamMember("team-1");
     expect(result).toBe("user-1");
   });
 
   it("returns userId when user is ADMIN", async () => {
-    mockedGetSession.mockResolvedValue({ user: { id: "user-1" } } as never);
-    mockedFindMembership.mockResolvedValue({ role: "ADMIN" } as never);
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockResolvedValue({ role: "ADMIN" });
 
     const result = await requireTeamMember("team-1");
     expect(result).toBe("user-1");
@@ -143,8 +134,8 @@ describe("requireAuth", () => {
   });
 
   it("returns session when authenticated", async () => {
-    const session = { user: { email: "test@test.com", id: "user-1" } };
-    mockedGetSession.mockResolvedValue(session as never);
+    const session = createMockSession({ email: "test@test.com", userId: "user-1" });
+    mockedGetSession.mockResolvedValue(session);
 
     const result = await requireAuth();
     expect(result).toEqual(session);

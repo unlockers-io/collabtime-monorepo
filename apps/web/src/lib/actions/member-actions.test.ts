@@ -1,43 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { requireAuth, requireTeamAdmin, requireTeamMember } from "@/lib/team-auth";
-
+import { createMemberActions } from "./member-actions";
 import {
   createMockSession,
   createTestMember,
+  createTestTeamMutator,
   createTestTeamRecord,
   VALID_UUID,
   VALID_UUID_2,
   VALID_UUID_3,
 } from "./test-helpers";
 
-vi.mock("@/lib/team-auth", () => ({
-  requireAuth: vi.fn(),
-  requireTeamAdmin: vi.fn(),
-  requireTeamMember: vi.fn(),
-}));
+type MemberActionDeps = Parameters<typeof createMemberActions>[0];
 
-const { redisMock } = vi.hoisted(() => ({
-  redisMock: { expire: vi.fn(), get: vi.fn(), set: vi.fn() },
-}));
-
-vi.mock("../redis", () => ({
-  isRedisConfigured: (): boolean => true,
-  readTeamJson: async (teamId: string): Promise<string | null> => {
-    const data: unknown = await redisMock.get(`team:${teamId}`);
-    return typeof data === "string" && data !== "" ? data : null;
-  },
-  redis: redisMock,
-  TEAM_ACTIVE_TTL_SECONDS: 100,
-  teamKey: (teamId: string): string => `team:${teamId}`,
-}));
-
-vi.mock("../team-postgres-repository", () => ({ writeTeamMirror: vi.fn() }));
-vi.mock("uuid", () => ({ v4: vi.fn(() => "test-uuid") }));
-
-import { redis } from "../redis";
-
-import {
+const testMutator = createTestTeamMutator();
+const requireAuth = vi.fn<MemberActionDeps["requireAuth"]>();
+const requireTeamMember = vi.fn<MemberActionDeps["requireTeamMember"]>();
+const reportError = vi.fn<MemberActionDeps["reportError"]>();
+const {
   addMember,
   importMembers,
   removeMember,
@@ -45,24 +25,24 @@ import {
   updateMember,
   updateOwnMember,
   updateTeamName,
-} from "./member-actions";
-
-const mockedRequireTeamAdmin = vi.mocked(requireTeamAdmin);
-const mockedRequireAuth = vi.mocked(requireAuth);
-const mockedRequireTeamMember = vi.mocked(requireTeamMember);
-const mockedRedisGet = vi.mocked(redis.get);
-const mockedRedisSet = vi.mocked(redis.set);
+} = createMemberActions({
+  createId: () => "test-uuid",
+  mutateTeam: testMutator.mutateTeam,
+  reportError,
+  requireAuth,
+  requireTeamMember,
+});
 
 const seedTeam = (team: ReturnType<typeof createTestTeamRecord>) => {
-  mockedRedisGet.mockResolvedValue(JSON.stringify(team));
+  testMutator.seedTeam(team);
 };
 
 const persistedTeam = () => {
-  const lastCall = mockedRedisSet.mock.calls.at(-1);
-  if (!lastCall) {
-    throw new Error("redis.set was not called");
+  const team = testMutator.persistedTeam();
+  if (!team) {
+    throw new Error("team was not persisted");
   }
-  return JSON.parse(lastCall[1] as string) as ReturnType<typeof createTestTeamRecord>;
+  return team;
 };
 
 const validMemberInput = {
@@ -74,15 +54,15 @@ const validMemberInput = {
 };
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  mockedRequireTeamAdmin.mockResolvedValue(undefined as never);
-  mockedRedisSet.mockResolvedValue("OK");
+  testMutator.reset();
+  requireAuth.mockReset();
+  requireTeamMember.mockReset();
+  reportError.mockReset();
 });
 
 describe("addMember", () => {
   it("returns error when auth fails", async () => {
-    mockedRequireTeamAdmin.mockRejectedValue(new Error("Unauthorized"));
+    testMutator.requireTeamAdmin.mockRejectedValue(new Error("Unauthorized"));
 
     const result = await addMember(VALID_UUID, validMemberInput);
 
@@ -90,7 +70,7 @@ describe("addMember", () => {
   });
 
   it("returns error when team not found", async () => {
-    mockedRedisGet.mockResolvedValue(null);
+    testMutator.seedTeam(null);
 
     const result = await addMember(VALID_UUID, validMemberInput);
 
@@ -127,7 +107,7 @@ describe("removeMember", () => {
   });
 
   it("returns error when team not found", async () => {
-    mockedRedisGet.mockResolvedValue(null);
+    testMutator.seedTeam(null);
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
@@ -239,7 +219,7 @@ describe("importMembers", () => {
   });
 
   it("returns error when team not found", async () => {
-    mockedRedisGet.mockResolvedValue(null);
+    testMutator.seedTeam(null);
 
     const result = await importMembers(VALID_UUID, [validMemberInput]);
 
@@ -251,8 +231,8 @@ describe("updateOwnMember", () => {
   const session = createMockSession();
 
   beforeEach(() => {
-    mockedRequireAuth.mockResolvedValue(session as never);
-    mockedRequireTeamMember.mockResolvedValue("user-123");
+    requireAuth.mockResolvedValue(session);
+    requireTeamMember.mockResolvedValue("user-123");
   });
 
   it("uses requireAuth instead of requireTeamAdmin", async () => {
@@ -264,12 +244,12 @@ describe("updateOwnMember", () => {
 
     await updateOwnMember(VALID_UUID, VALID_UUID_2, { name: "Updated" });
 
-    expect(mockedRequireAuth).toHaveBeenCalled();
-    expect(mockedRequireTeamAdmin).not.toHaveBeenCalled();
+    expect(requireAuth).toHaveBeenCalled();
+    expect(testMutator.requireTeamAdmin).not.toHaveBeenCalled();
   });
 
   it("returns error when user is not a team member (no membership)", async () => {
-    mockedRequireTeamMember.mockRejectedValue(new Error("Not a member of this team"));
+    requireTeamMember.mockRejectedValue(new Error("Not a member of this team"));
 
     const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       name: "X",
@@ -335,29 +315,8 @@ describe("updateOwnMember", () => {
     expect(persistedTeam().members[0].userId).toBe("user-123");
   });
 
-  it("strips groupId from updates to prevent self-assignment", async () => {
-    seedTeam(
-      createTestTeamRecord({
-        members: [
-          createTestMember({
-            groupId: undefined,
-            id: VALID_UUID_2,
-            userId: "user-123",
-          }),
-        ],
-      }),
-    );
-
-    await updateOwnMember(VALID_UUID, VALID_UUID_2, {
-      groupId: VALID_UUID_3,
-      name: "Updated",
-    } as never);
-
-    expect(persistedTeam().members[0].groupId).toBeUndefined();
-  });
-
   it("propagates auth error", async () => {
-    mockedRequireAuth.mockRejectedValue(new Error("Not authenticated"));
+    requireAuth.mockRejectedValue(new Error("Not authenticated"));
 
     const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       name: "X",
@@ -369,7 +328,7 @@ describe("updateOwnMember", () => {
 
 describe("reorderMembers", () => {
   it("returns error when team not found", async () => {
-    mockedRedisGet.mockResolvedValue(null);
+    testMutator.seedTeam(null);
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2]);
 

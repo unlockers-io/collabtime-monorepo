@@ -1,5 +1,6 @@
 import { prisma } from "@repo/db";
 import { Redis } from "ioredis";
+import { z } from "zod";
 
 import {
   diffTeamMirror,
@@ -10,18 +11,39 @@ import type { TeamRecord } from "../src/types";
 
 const SCAN_COUNT = 200;
 
+const legacyMemberSchema = z.looseObject({
+  groupId: z.string().optional(),
+  id: z.string(),
+  name: z.string(),
+  order: z.number().optional(),
+  timezone: z.string(),
+  title: z.string(),
+  userId: z.string().optional(),
+  workingHoursEnd: z.number(),
+  workingHoursStart: z.number(),
+});
+
+const legacyGroupSchema = z.looseObject({
+  id: z.string(),
+  name: z.string(),
+  order: z.number(),
+});
+
+const legacyTeamSchema = z.looseObject({
+  adminPasswordHash: z.string().optional(),
+  createdAt: z.string().optional(),
+  groups: z.array(legacyGroupSchema).optional(),
+  id: z.string(),
+  members: z.array(legacyMemberSchema).optional(),
+  name: z.string(),
+});
+
 const parseTeam = (raw: string): TeamRecord | null => {
-  const parsed: unknown = JSON.parse(raw);
-
-  if (typeof parsed !== "object" || parsed === null) {
+  const result = legacyTeamSchema.safeParse(JSON.parse(raw));
+  if (!result.success) {
     return null;
   }
-
-  const candidate = parsed as Partial<TeamRecord>;
-
-  if (typeof candidate.id !== "string" || typeof candidate.name !== "string") {
-    return null;
-  }
+  const candidate = result.data;
 
   return {
     ...candidate,

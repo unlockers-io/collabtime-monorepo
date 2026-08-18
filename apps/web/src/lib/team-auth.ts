@@ -9,68 +9,79 @@ type TeamAuthResult = {
   userId: string;
 };
 
-const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
-  const session = await getSession();
+type TeamAuthDeps = {
+  findMembership: (teamId: string, userId: string) => Promise<{ role: string } | null>;
+  getSession: typeof getSession;
+};
 
-  if (!session) {
-    return null;
-  }
+const createTeamAuth = (deps: TeamAuthDeps) => {
+  const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
+    const session = await deps.getSession();
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      userId_teamId: {
-        teamId,
-        userId: session.user.id,
-      },
-    },
-  });
+    if (!session) {
+      return null;
+    }
 
-  if (!membership) {
-    return null;
-  }
+    const membership = await deps.findMembership(teamId, session.user.id);
 
-  if (!isTeamRole(membership.role)) {
-    return null;
-  }
+    if (!membership) {
+      return null;
+    }
 
-  return {
-    role: membership.role,
-    userId: session.user.id,
+    if (!isTeamRole(membership.role)) {
+      return null;
+    }
+
+    return {
+      role: membership.role,
+      userId: session.user.id,
+    };
   };
+
+  const requireTeamAdmin = async (teamId: string): Promise<string> => {
+    const result = await getTeamRole(teamId);
+
+    if (!result) {
+      throw new Error("Not a member of this team");
+    }
+
+    if (result.role !== "ADMIN") {
+      throw new Error("Admin access required");
+    }
+
+    return result.userId;
+  };
+
+  const requireTeamMember = async (teamId: string): Promise<string> => {
+    const result = await getTeamRole(teamId);
+
+    if (!result) {
+      throw new Error("Not a member of this team");
+    }
+
+    return result.userId;
+  };
+
+  const requireAuth = async () => {
+    const session = await deps.getSession();
+
+    if (!session) {
+      throw new Error("Authentication required");
+    }
+
+    return session;
+  };
+
+  return { getTeamRole, requireAuth, requireTeamAdmin, requireTeamMember };
 };
 
-const requireTeamAdmin = async (teamId: string): Promise<string> => {
-  const result = await getTeamRole(teamId);
+const { getTeamRole, requireAuth, requireTeamAdmin, requireTeamMember } = createTeamAuth({
+  findMembership: (teamId, userId) =>
+    prisma.membership.findUnique({
+      select: { role: true },
+      where: { userId_teamId: { teamId, userId } },
+    }),
+  getSession,
+});
 
-  if (!result) {
-    throw new Error("Not a member of this team");
-  }
-
-  if (result.role !== "ADMIN") {
-    throw new Error("Admin access required");
-  }
-
-  return result.userId;
-};
-
-const requireTeamMember = async (teamId: string): Promise<string> => {
-  const result = await getTeamRole(teamId);
-
-  if (!result) {
-    throw new Error("Not a member of this team");
-  }
-
-  return result.userId;
-};
-
-const requireAuth = async () => {
-  const session = await getSession();
-
-  if (!session) {
-    throw new Error("Authentication required");
-  }
-
-  return session;
-};
-
-export { getTeamRole, requireTeamAdmin, requireTeamMember, requireAuth };
+export { createTeamAuth, getTeamRole, requireAuth, requireTeamAdmin, requireTeamMember };

@@ -25,6 +25,9 @@ const COMMON_TIMEZONES = [
 const DEFAULT_MEMBER_TIMEZONE = "America/New_York";
 const DEFAULT_WORKING_HOURS_START = 9;
 const DEFAULT_WORKING_HOURS_END = 17;
+const COMMON_TIMEZONE_SET: ReadonlySet<string> = new Set(COMMON_TIMEZONES);
+
+type CommonTimezone = (typeof COMMON_TIMEZONES)[number];
 
 const getTimezoneOffset = (timezone: string): number => {
   const now = new Date();
@@ -63,8 +66,12 @@ const formatTimezoneLabel = (timezone: string, includeCurrentTime = false): stri
   return base;
 };
 
-const getUserTimezone = (): string => {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+const getUserTimezone = (): CommonTimezone => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return (
+    COMMON_TIMEZONES.find((commonTimezone) => commonTimezone === timezone) ??
+    DEFAULT_MEMBER_TIMEZONE
+  );
 };
 
 const convertHourToTimezone = (hour: number, fromTimezone: string, toTimezone: string): number => {
@@ -193,10 +200,9 @@ const formatTimezoneAbbreviation = (timezone: string): string => {
   return parts.at(-1) ?? timezone.split("/").pop() ?? timezone;
 };
 
-const isCommonTimezone = (value: string): value is (typeof COMMON_TIMEZONES)[number] =>
-  (COMMON_TIMEZONES as ReadonlyArray<string>).includes(value);
+const isCommonTimezone = (value: string): value is CommonTimezone => COMMON_TIMEZONE_SET.has(value);
 
-const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | null => {
+const fuzzyMatchTimezone = (input: string): CommonTimezone | null => {
   const trimmed = input.trim();
   if (!trimmed) {
     return null;
@@ -214,7 +220,7 @@ const fuzzyMatchTimezone = (input: string): (typeof COMMON_TIMEZONES)[number] | 
     return null;
   }
 
-  let best: (typeof COMMON_TIMEZONES)[number] | null = null;
+  let best: CommonTimezone | null = null;
   let bestDiff = Infinity;
 
   for (const tz of COMMON_TIMEZONES) {

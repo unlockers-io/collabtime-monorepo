@@ -11,6 +11,21 @@ const MAX_CANDIDATE_SPACES = 20;
 
 type SpaceAccessCandidate = { spaceId: string; token: string };
 
+type PrivateSpace = { accessPassword: string | null; id: string; teamId: string };
+
+type MembershipUpsert = {
+  create: { role: "MEMBER"; teamId: string; userId: string };
+  update: { archivedAt: null };
+  where: { userId_teamId: { teamId: string; userId: string } };
+};
+
+type SpaceJoinDeps = {
+  findPrivateSpaces: (spaceIds: Array<string>) => Promise<Array<PrivateSpace>>;
+  reportError: (event: Record<string, unknown>) => void;
+  upsertMembership: (input: MembershipUpsert) => Promise<void>;
+  verifyAccessToken: (token: string, spaceId: string, accessPassword: string | null) => boolean;
+};
+
 const spaceAccessCandidates = (cookieHeader: string | null): Array<SpaceAccessCandidate> => {
   if (cookieHeader === null || cookieHeader === "") {
     return [];
@@ -42,60 +57,75 @@ const spaceAccessCandidates = (cookieHeader: string | null): Array<SpaceAccessCa
   return candidates;
 };
 
-const joinPrivateSpace = (userId: string, teamId: string) => {
-  return prisma.membership.upsert({
-    create: { role: "MEMBER", teamId, userId },
-    update: { archivedAt: null },
-    where: { userId_teamId: { teamId, userId } },
-  });
-};
-
-const joinPrivateSpacesFromCookies = async (
-  userId: string,
-  cookieHeader: string | null,
-): Promise<void> => {
-  try {
-    const candidates = spaceAccessCandidates(cookieHeader);
-    if (candidates.length === 0) {
-      return;
-    }
-
-    const spaces = await prisma.space.findMany({
-      select: { accessPassword: true, id: true, teamId: true },
-      where: { id: { in: candidates.map((c) => c.spaceId) }, isPrivate: true },
+const createSpaceJoiner = (deps: SpaceJoinDeps) => {
+  const joinPrivateSpace = (userId: string, teamId: string) => {
+    return deps.upsertMembership({
+      create: { role: "MEMBER", teamId, userId },
+      update: { archivedAt: null },
+      where: { userId_teamId: { teamId, userId } },
     });
-    if (spaces.length === 0) {
-      return;
-    }
+  };
 
-    const tokenBySpaceId = new Map(candidates.map((c) => [c.spaceId, c.token]));
-
-    const granted = spaces.filter((space) => {
-      const token = tokenBySpaceId.get(space.id);
-      return (
-        token !== undefined && verifySpaceAccessToken(token, space.id, space.accessPassword).valid
-      );
-    });
-    if (granted.length === 0) {
-      return;
-    }
-
-    const results = await Promise.allSettled(
-      granted.map((space) => joinPrivateSpace(userId, space.teamId)),
-    );
-
-    for (const result of results) {
-      if (result.status === "rejected") {
-        log.error({
-          error: result.reason,
-          message: "Failed to materialize private-space membership",
-          route: "space-join",
-        });
+  const joinPrivateSpacesFromCookies = async (
+    userId: string,
+    cookieHeader: string | null,
+  ): Promise<void> => {
+    try {
+      const candidates = spaceAccessCandidates(cookieHeader);
+      if (candidates.length === 0) {
+        return;
       }
+
+      const spaces = await deps.findPrivateSpaces(candidates.map((candidate) => candidate.spaceId));
+      if (spaces.length === 0) {
+        return;
+      }
+
+      const tokenBySpaceId = new Map(
+        candidates.map((candidate) => [candidate.spaceId, candidate.token]),
+      );
+
+      const granted = spaces.filter((space) => {
+        const token = tokenBySpaceId.get(space.id);
+        return token !== undefined && deps.verifyAccessToken(token, space.id, space.accessPassword);
+      });
+      if (granted.length === 0) {
+        return;
+      }
+
+      const results = await Promise.allSettled(
+        granted.map((space) => joinPrivateSpace(userId, space.teamId)),
+      );
+
+      for (const result of results) {
+        if (result.status === "rejected") {
+          deps.reportError({
+            error: result.reason,
+            message: "Failed to materialize private-space membership",
+            route: "space-join",
+          });
+        }
+      }
+    } catch (error) {
+      deps.reportError({ error, message: "Private-space self-join failed", route: "space-join" });
     }
-  } catch (error) {
-    log.error({ error, message: "Private-space self-join failed", route: "space-join" });
-  }
+  };
+
+  return { joinPrivateSpace, joinPrivateSpacesFromCookies };
 };
 
-export { joinPrivateSpace, joinPrivateSpacesFromCookies };
+const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
+  findPrivateSpaces: (spaceIds) =>
+    prisma.space.findMany({
+      select: { accessPassword: true, id: true, teamId: true },
+      where: { id: { in: spaceIds }, isPrivate: true },
+    }),
+  reportError: log.error,
+  upsertMembership: async (input) => {
+    await prisma.membership.upsert(input);
+  },
+  verifyAccessToken: (token, spaceId, accessPassword) =>
+    verifySpaceAccessToken(token, spaceId, accessPassword).valid,
+});
+
+export { createSpaceJoiner, joinPrivateSpace, joinPrivateSpacesFromCookies };
