@@ -7,6 +7,7 @@ import {
   PointerSensor,
   closestCenter,
   defaultAnnouncements,
+  defaultDropAnimationSideEffects,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -83,6 +84,10 @@ const DndWrapper = ({
     onDragEnd(event, currentDragType);
   };
 
+  const hideActiveNode = defaultDropAnimationSideEffects({
+    styles: { active: { opacity: "0" } },
+  });
+
   const dropAnimation: DropAnimation = {
     duration: 200,
     easing: "cubic-bezier(0.16, 1, 0.3, 1)",
@@ -98,6 +103,13 @@ const DndWrapper = ({
         { transform: CSS.Transform.toString(transform.initial) },
         { transform: CSS.Transform.toString(transform.final) },
       ];
+    },
+    sideEffects: (parameters) => {
+      if (droppedOnGroupRef.current) {
+        return;
+      }
+
+      return hideActiveNode(parameters);
     },
   };
 
