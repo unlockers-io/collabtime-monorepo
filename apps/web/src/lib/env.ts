@@ -42,8 +42,7 @@ const validateEnv = (): Env => {
 };
 
 const getEnv = <K extends keyof Env>(key: K): Env[K] => {
-  // oxlint-disable-next-line no-unsafe-type-assertion -- validateEnv() has vetted process.env at boot; narrowing the raw string to Env[K] per key would require re-parsing the schema
-  return process.env[key] as Env[K];
+  return validateEnv()[key];
 };
 
 export { validateEnv, getEnv };

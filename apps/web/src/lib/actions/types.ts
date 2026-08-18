@@ -8,4 +8,13 @@ type ActionResult<T> =
       success: false;
     };
 
-export type { ActionResult };
+type ActionErrorEvent = {
+  error?: unknown;
+  message: string;
+  reason?: string;
+  requestId?: string;
+  route: string;
+  teamId?: string;
+};
+
+export type { ActionErrorEvent, ActionResult };

@@ -43,6 +43,8 @@ type TeamStatusResult = {
   status: TeamStatus;
 };
 
+const GUEST_STATUS: TeamStatusResult = { isArchived: false, status: "none" };
+
 /**
  * Promise.all, not allSettled: folding a rejected membership query into `null`
  * reported a real member as "none", which the client then papered over by
@@ -112,7 +114,7 @@ const TeamPage = async ({ params }: TeamPageProps) => {
 
   const { isArchived, status: teamStatus } = session
     ? await getTeamStatus(session.user.id, teamId)
-    : { isArchived: false, status: "none" as TeamStatus };
+    : GUEST_STATUS;
 
   const isSpaceOwner = Boolean(session && space && space.ownerId === session.user.id);
 

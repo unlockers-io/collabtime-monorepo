@@ -136,24 +136,27 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
   }
 };
 
-const sendTransactionalEmail = (email: TransactionalEmail, config: MailerConfig) => {
-  const { subject, template, to } = buildEmail(email);
-  const from = config.from !== undefined && config.from !== "" ? config.from : DEFAULT_FROM;
-  return sendEmail({
-    apiKey: config.apiKey,
-    defaultReplyTo: config.defaultReplyTo,
-    from,
-    subject,
-    tags: [
-      { name: "type", value: email.type },
-      email.type === "invitation"
-        ? { name: "teamId", value: email.teamId }
-        : { name: "userId", value: email.userId },
-    ],
-    template,
-    to,
-  });
-};
+const createTransactionalEmailSender =
+  (deliver: typeof sendEmail) => (email: TransactionalEmail, config: MailerConfig) => {
+    const { subject, template, to } = buildEmail(email);
+    const from = config.from !== undefined && config.from !== "" ? config.from : DEFAULT_FROM;
+    return deliver({
+      apiKey: config.apiKey,
+      defaultReplyTo: config.defaultReplyTo,
+      from,
+      subject,
+      tags: [
+        { name: "type", value: email.type },
+        email.type === "invitation"
+          ? { name: "teamId", value: email.teamId }
+          : { name: "userId", value: email.userId },
+      ],
+      template,
+      to,
+    });
+  };
+
+const sendTransactionalEmail = createTransactionalEmailSender(sendEmail);
 
 export type { MailerConfig, TransactionalEmail };
-export { sendTransactionalEmail };
+export { createTransactionalEmailSender, sendTransactionalEmail };

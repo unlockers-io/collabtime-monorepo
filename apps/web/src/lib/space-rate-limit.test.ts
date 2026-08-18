@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createRateLimiter } from "./space-rate-limit";
+
 type Entry = { count: number; expiresAt: number | null };
 
 const store = new Map<string, Entry>();
@@ -20,28 +22,13 @@ const evalScript = (key: string, windowSeconds: number): number => {
   return entry.count;
 };
 
-const evalMock = vi.fn(
-  (_script: string, _numKeys: number, key: string, windowSeconds: string): Promise<number> =>
-    Promise.resolve(evalScript(key, Number(windowSeconds))),
+const incrementMock = vi.fn((key: string, windowSeconds: number): Promise<number> =>
+  Promise.resolve(evalScript(key, windowSeconds)),
 );
-
-const getMock = vi.fn((key: string): Promise<unknown> => {
-  if (!redisPresent) {
-    return Promise.resolve(null);
-  }
-  const entry = store.get(key);
-  return Promise.resolve(entry ? String(entry.count) : null);
+const checkRateLimit = createRateLimiter({
+  increment: incrementMock,
+  isRedisConfigured: () => redisPresent,
 });
-
-vi.mock("@/lib/redis", () => ({
-  isRedisConfigured: (): boolean => redisPresent,
-  redis: {
-    eval: (...args: [string, number, string, string]) => evalMock(...args),
-    get: (key: string) => getMock(key),
-  },
-}));
-
-import { checkRateLimit } from "./space-rate-limit";
 
 type Result = Awaited<ReturnType<typeof checkRateLimit>>;
 
@@ -61,13 +48,10 @@ describe("checkRateLimit", () => {
   beforeEach(() => {
     store.clear();
     redisPresent = true;
-    evalMock.mockClear();
-    getMock.mockClear();
-    vi.stubEnv("REDIS_URL", "redis://localhost:6379");
+    incrementMock.mockClear();
   });
 
   afterEach(() => {
-    vi.unstubAllEnvs();
     vi.useRealTimers();
   });
 
@@ -105,26 +89,24 @@ describe("checkRateLimit", () => {
     const firstWindow = await runSequential(max + 1, () => checkRateLimit("key-d", max, 60));
     expect(firstWindow[max]?.allowed).toBe(false);
 
-    vi.advanceTimersByTime(61 * 1000); // past the 60s window
+    vi.advanceTimersByTime(61 * 1000);
 
     const afterReset = await checkRateLimit("key-d", max, 60);
     expect(afterReset.allowed).toBe(true);
   });
 
   it("degrades OPEN when Redis is unconfigured", async () => {
-    vi.stubEnv("REDIS_URL", "");
     redisPresent = false;
 
     const results = await runSequential(20, () => checkRateLimit("key-e", 5, 60));
 
     expect(results.every((r) => r.allowed)).toBe(true);
-    expect(evalMock).not.toHaveBeenCalled();
+    expect(incrementMock).not.toHaveBeenCalled();
   });
 
   it("issues one Redis op per check, not a probe followed by the script", async () => {
     await checkRateLimit("key-f", 5, 60);
 
-    expect(evalMock).toHaveBeenCalledTimes(1);
-    expect(getMock).not.toHaveBeenCalled();
+    expect(incrementMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -20,6 +20,26 @@ type TeamSummary = {
   name: string;
 };
 
+type TeamMirrorRow = {
+  adminPasswordHash: string | null;
+  createdAt: Date;
+  groups: Array<{ id: string; name: string; order: number }>;
+  members: Array<Omit<MirrorRow, "teamId">>;
+  name: string;
+  teamId: string;
+};
+
+type TeamSummaryRow = {
+  members: Array<{ id: string }>;
+  name: string;
+  teamId: string;
+};
+
+type TeamPostgresReadDeps = {
+  findTeamMirror: (teamId: string) => Promise<TeamMirrorRow | null>;
+  findTeamSummaries: (teamIds: Array<string>) => Promise<Array<TeamSummaryRow>>;
+};
+
 const toMemberRow = (teamId: string, member: TeamMember): MirrorRow => ({
   groupId: member.groupId ?? null,
   id: member.id,
@@ -33,7 +53,7 @@ const toMemberRow = (teamId: string, member: TeamMember): MirrorRow => ({
   workingHoursStart: member.workingHoursStart,
 });
 
-const toMember = (row: MirrorRow): TeamMember => ({
+const toMember = (row: Omit<MirrorRow, "teamId">): TeamMember => ({
   ...(row.groupId === null ? {} : { groupId: row.groupId }),
   id: row.id,
   name: row.name,
@@ -84,45 +104,59 @@ const writeTeamMirror = async (teamId: string, team: TeamRecord): Promise<void> 
   });
 };
 
-const readTeamSummariesFromPostgres = async (
-  teamIds: Array<string>,
-): Promise<Map<string, TeamSummary>> => {
-  const spaces = await prisma.space.findMany({
-    select: { members: { select: { id: true } }, name: true, teamId: true },
-    where: { teamId: { in: teamIds } },
-  });
+const createTeamPostgresReader = (deps: TeamPostgresReadDeps) => {
+  const readTeamSummariesFromPostgres = async (
+    teamIds: Array<string>,
+  ): Promise<Map<string, TeamSummary>> => {
+    const spaces = await deps.findTeamSummaries(teamIds);
 
-  return new Map(
-    spaces.map((space) => [space.teamId, { memberCount: space.members.length, name: space.name }]),
-  );
-};
-
-const readTeamMirror = async (teamId: string): Promise<TeamRecord | null> => {
-  const space = await prisma.space.findUnique({
-    include: {
-      groups: { orderBy: { order: "asc" } },
-      members: { orderBy: { order: "asc" } },
-    },
-    where: { teamId },
-  });
-
-  if (!space) {
-    return null;
-  }
-
-  return {
-    ...(space.adminPasswordHash === null ? {} : { adminPasswordHash: space.adminPasswordHash }),
-    createdAt: space.createdAt.toISOString(),
-    groups: space.groups.map((group) => ({
-      id: group.id,
-      name: group.name,
-      order: group.order,
-    })),
-    id: space.teamId,
-    members: space.members.map(toMember),
-    name: space.name,
+    return new Map(
+      spaces.map((space) => [
+        space.teamId,
+        { memberCount: space.members.length, name: space.name },
+      ]),
+    );
   };
+
+  const readTeamMirror = async (teamId: string): Promise<TeamRecord | null> => {
+    const space = await deps.findTeamMirror(teamId);
+
+    if (!space) {
+      return null;
+    }
+
+    return {
+      ...(space.adminPasswordHash === null ? {} : { adminPasswordHash: space.adminPasswordHash }),
+      createdAt: space.createdAt.toISOString(),
+      groups: space.groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        order: group.order,
+      })),
+      id: space.teamId,
+      members: space.members.map(toMember),
+      name: space.name,
+    };
+  };
+
+  return { readTeamMirror, readTeamSummariesFromPostgres };
 };
+
+const { readTeamMirror, readTeamSummariesFromPostgres } = createTeamPostgresReader({
+  findTeamMirror: (teamId) =>
+    prisma.space.findUnique({
+      include: {
+        groups: { orderBy: { order: "asc" } },
+        members: { orderBy: { order: "asc" } },
+      },
+      where: { teamId },
+    }),
+  findTeamSummaries: (teamIds) =>
+    prisma.space.findMany({
+      select: { members: { select: { id: true } }, name: true, teamId: true },
+      where: { teamId: { in: teamIds } },
+    }),
+});
 
 const FIELD_SEPARATOR = "\u0000";
 
@@ -178,5 +212,11 @@ const diffTeamMirror = (expected: TeamRecord, actual: TeamRecord | null): Array<
   return problems;
 };
 
-export { diffTeamMirror, readTeamMirror, readTeamSummariesFromPostgres, writeTeamMirror };
+export {
+  createTeamPostgresReader,
+  diffTeamMirror,
+  readTeamMirror,
+  readTeamSummariesFromPostgres,
+  writeTeamMirror,
+};
 export type { TeamSummary };

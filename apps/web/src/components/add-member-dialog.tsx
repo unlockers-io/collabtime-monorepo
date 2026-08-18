@@ -38,6 +38,7 @@ import {
   DEFAULT_WORKING_HOURS_START,
   formatTimezoneLabel,
   getUserTimezone,
+  isCommonTimezone,
 } from "@/lib/timezones";
 import type { TeamGroup } from "@/types";
 
@@ -72,13 +73,13 @@ const formSchema = z.object({
   email: z.email("Invalid email address").or(z.literal("")),
   groupId: z.string(),
   name: z.string().min(1, "Name is required"),
-  timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
+  timezone: z.string().refine(isCommonTimezone, { message: "Invalid timezone" }),
   title: z.string(),
   workingHoursEnd: z.number().min(0).max(23),
   workingHoursStart: z.number().min(0).max(23),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.input<typeof formSchema>;
 
 type AddMemberFormProps = {
   groups: Array<TeamGroup>;
@@ -91,16 +92,15 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
   const queryClient = useQueryClient();
   const [titlePlaceholder, _setTitlePlaceholder] = useState(getRandomPlaceholder);
 
-  const defaultValues: FormValues = {
+  const [defaultValues] = useState<FormValues>(() => ({
     email: "",
     groupId: "",
     name: "",
-    // oxlint-disable-next-line no-unsafe-type-assertion -- the browser timezone can sit outside COMMON_TIMEZONES; zod rejects it on submit, while a fallback here would silently mis-assign a zone
-    timezone: getUserTimezone() as FormValues["timezone"],
+    timezone: getUserTimezone(),
     title: "",
     workingHoursEnd: DEFAULT_WORKING_HOURS_END,
     workingHoursStart: DEFAULT_WORKING_HOURS_START,
-  };
+  }));
 
   const form = useForm({
     defaultValues,
@@ -249,7 +249,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                 <FieldLabel htmlFor="member-timezone">Timezone</FieldLabel>
                 <Select
                   onValueChange={(value) => {
-                    if (value === null) {
+                    if (value === null || !isCommonTimezone(value)) {
                       return;
                     }
                     field.handleChange(value);

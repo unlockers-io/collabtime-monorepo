@@ -32,7 +32,13 @@ import { HourSelectField } from "@/components/hour-select-field";
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
-import { COMMON_TIMEZONES, formatTimezoneLabel, isCommonTimezone } from "@/lib/timezones";
+import {
+  COMMON_TIMEZONES,
+  DEFAULT_MEMBER_TIMEZONE,
+  formatTimezoneLabel,
+  fuzzyMatchTimezone,
+  isCommonTimezone,
+} from "@/lib/timezones";
 import type { TeamGroup, TeamMember } from "@/types";
 
 type EditMemberDialogProps = {
@@ -49,13 +55,13 @@ type EditMemberFormProps = Omit<EditMemberDialogProps, "open"> & { mode: "admin"
 const formSchema = z.object({
   groupId: z.string(),
   name: z.string().min(1, "Name is required"),
-  timezone: z.enum(COMMON_TIMEZONES, { message: "Invalid timezone" }),
+  timezone: z.string().refine(isCommonTimezone, { message: "Invalid timezone" }),
   title: z.string(),
   workingHoursEnd: z.number().min(0).max(23),
   workingHoursStart: z.number().min(0).max(23),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.input<typeof formSchema>;
 
 type SaveButtonLabelProps = {
   isClaim: boolean;
@@ -107,8 +113,7 @@ const EditMemberForm = ({ groups, member, mode, onOpenChange, teamId }: EditMemb
   const defaultValues: FormValues = {
     groupId: member.groupId ?? "",
     name: member.name,
-    // oxlint-disable-next-line no-unsafe-type-assertion -- stored member timezones predate the COMMON_TIMEZONES enum; zod rejects unlisted zones on submit, while a fallback here would silently rewrite them
-    timezone: member.timezone as FormValues["timezone"],
+    timezone: fuzzyMatchTimezone(member.timezone) ?? DEFAULT_MEMBER_TIMEZONE,
     title: member.title ?? "",
     workingHoursEnd: member.workingHoursEnd,
     workingHoursStart: member.workingHoursStart,

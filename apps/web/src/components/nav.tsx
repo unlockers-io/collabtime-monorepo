@@ -36,11 +36,15 @@ type NavProps = { isAuthenticated: boolean } & (
     }
 );
 
-const Nav = (props: NavProps) => {
+type NavViewProps = NavProps & {
+  signOut: ReturnType<typeof useSignOut>;
+};
+
+const NavView = (props: NavViewProps) => {
   const { isAuthenticated } = props;
   const [hasCopied, setHasCopied] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { handleSignOut, isSigningOut } = useSignOut();
+  const { handleSignOut, isSigningOut } = props.signOut;
 
   const variant = props.variant ?? "default";
 
@@ -121,7 +125,13 @@ const Nav = (props: NavProps) => {
             />
             <ModeToggle />
             {canDeleteWorkspace && <WorkspaceMenu onDeleteWorkspace={handleDeleteWorkspace} />}
-            <UserMenu navRole={navRole} />
+            <UserMenu
+              isSigningOut={isSigningOut}
+              navRole={navRole}
+              onSignOut={() => {
+                void handleSignOut();
+              }}
+            />
           </div>
 
           <div className="flex items-center gap-2 sm:hidden">
@@ -168,7 +178,13 @@ const Nav = (props: NavProps) => {
       <div className="flex items-center gap-2">
         <ModeToggle />
         {isAuthenticated ? (
-          <UserMenu navRole="account" />
+          <UserMenu
+            isSigningOut={isSigningOut}
+            navRole="account"
+            onSignOut={() => {
+              void handleSignOut();
+            }}
+          />
         ) : (
           <Link
             aria-label="Sign in"
@@ -183,4 +199,9 @@ const Nav = (props: NavProps) => {
   );
 };
 
-export { Nav };
+const Nav = (props: NavProps) => {
+  const signOut = useSignOut();
+  return <NavView {...props} signOut={signOut} />;
+};
+
+export { Nav, NavView };

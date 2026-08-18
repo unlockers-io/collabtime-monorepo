@@ -1,37 +1,14 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Nav } from "./nav";
+import { NavView } from "./nav";
 
-const { pushMock, refreshMock, signOutMock, toastErrorMock, toastSuccessMock } = vi.hoisted(() => ({
-  pushMock: vi.fn(),
-  refreshMock: vi.fn(),
-  signOutMock: vi.fn(),
-  toastErrorMock: vi.fn(),
-  toastSuccessMock: vi.fn(),
-}));
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    push: pushMock,
-    refresh: refreshMock,
-  }),
-}));
-
-vi.mock("@repo/ui/components/sonner", () => ({
-  toast: {
-    error: toastErrorMock,
-    success: toastSuccessMock,
-  },
-}));
-
-vi.mock("@/lib/auth-client", () => ({
-  signOut: signOutMock,
-}));
+const handleSignOut = vi.fn<() => Promise<void>>();
+const signOut = { handleSignOut, isSigningOut: false };
 
 const renderTeamNav = () =>
   render(
-    <Nav
+    <NavView
       isAdmin
       isAuthenticated
       isEditingName={false}
@@ -39,6 +16,7 @@ const renderTeamNav = () =>
       onEditName={vi.fn<() => void>()}
       onNameChange={vi.fn<(name: string) => void>()}
       onSaveName={vi.fn<() => void>()}
+      signOut={signOut}
       teamName="Product"
       variant="team"
     />,
@@ -46,20 +24,12 @@ const renderTeamNav = () =>
 
 describe("Nav", () => {
   beforeEach(() => {
-    pushMock.mockClear();
-    refreshMock.mockClear();
-    signOutMock.mockReset();
-    toastErrorMock.mockClear();
-    toastSuccessMock.mockClear();
-
-    signOutMock.mockImplementation((options?: { fetchOptions?: { onSuccess?: () => void } }) => {
-      options?.fetchOptions?.onSuccess?.();
-      return Promise.resolve({});
-    });
+    handleSignOut.mockReset();
+    handleSignOut.mockResolvedValue();
   });
 
   it("renders an account menu with settings and sign out in the authenticated default nav", async () => {
-    render(<Nav isAuthenticated />);
+    render(<NavView isAuthenticated signOut={signOut} />);
 
     fireEvent.click(screen.getByLabelText("Account menu"));
 
@@ -69,7 +39,7 @@ describe("Nav", () => {
   });
 
   it("renders the sign-in action in the unauthenticated default nav", () => {
-    const { container } = render(<Nav isAuthenticated={false} />);
+    const { container } = render(<NavView isAuthenticated={false} signOut={signOut} />);
 
     expect(container.querySelector('a[href="/login"]')).toBeTruthy();
     expect(screen.queryByLabelText("Account menu")).toBeNull();
@@ -84,16 +54,13 @@ describe("Nav", () => {
   });
 
   it("signs out from the account menu", async () => {
-    render(<Nav isAuthenticated />);
+    render(<NavView isAuthenticated signOut={signOut} />);
 
     fireEvent.click(screen.getByLabelText("Account menu"));
     fireEvent.click(await screen.findByText("Sign out"));
 
     await waitFor(() => {
-      expect(signOutMock).toHaveBeenCalledTimes(1);
+      expect(handleSignOut).toHaveBeenCalledTimes(1);
     });
-    expect(toastSuccessMock).toHaveBeenCalledWith("Signed out successfully");
-    expect(pushMock).toHaveBeenCalledWith("/");
-    expect(refreshMock).toHaveBeenCalled();
   });
 });

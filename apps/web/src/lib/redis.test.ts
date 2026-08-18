@@ -1,25 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { expireMock, getMock, logErrorMock } = vi.hoisted(() => ({
-  expireMock: vi.fn(),
-  getMock: vi.fn(),
-  logErrorMock: vi.fn(),
-}));
-
-vi.mock("ioredis", () => ({
-  Redis: class {
-    expire = expireMock;
-    get = getMock;
-  },
-}));
-
-vi.mock("@/lib/observability", () => ({ log: { error: logErrorMock } }));
-
-process.env.REDIS_URL = "redis://localhost:6379";
-
-import { readTeamJson, TEAM_ACTIVE_TTL_SECONDS } from "./redis";
+import { createTeamJsonReader, TEAM_ACTIVE_TTL_SECONDS } from "./redis";
 
 const TEAM_ID = "11111111-1111-4111-8111-111111111111";
+const expireMock = vi.fn<(key: string, seconds: number) => Promise<void>>();
+const getMock = vi.fn<(key: string) => Promise<string | null>>();
+const logErrorMock = vi.fn<(event: Record<string, unknown>) => void>();
+const readTeamJson = createTeamJsonReader({
+  expire: expireMock,
+  get: getMock,
+  reportError: logErrorMock,
+});
 
 describe("readTeamJson", () => {
   beforeEach(() => {

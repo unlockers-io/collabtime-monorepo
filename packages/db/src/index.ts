@@ -3,7 +3,8 @@ import { Pool } from "pg";
 
 import { PrismaClient } from "./generated/client";
 
-// oxlint-disable-next-line no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- canonical Prisma singleton: globalThis carries no typed slot for the cached client
+// SAFETY: Prisma owns this process-wide slot, and every assignment stores PrismaClient.
+// oxlint-disable-next-line no-unsafe-type-assertion, anti-slop/no-chained-type-assertions
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };

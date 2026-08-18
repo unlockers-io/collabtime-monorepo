@@ -4,6 +4,11 @@ import { z } from "zod";
 
 import { createResendClient } from "../client";
 
+type ResendClient = ReturnType<typeof createResendClient>;
+type SendEmailPayload = Parameters<ResendClient["emails"]["send"]>[0];
+type SendEmailResponse = Awaited<ReturnType<ResendClient["emails"]["send"]>>;
+type SendEmailTransport = (apiKey: string, payload: SendEmailPayload) => Promise<SendEmailResponse>;
+
 const sanitizeTagSegment = (s: string): string =>
   s
     .replaceAll(/[^\-A-Za-z0-9_]+/gv, "-")
@@ -59,52 +64,53 @@ type PreparedEmailPayload = {
   to: EmailConfig["to"];
 };
 
-const sendEmail = async ({ apiKey, defaultReplyTo, template, ...config }: SendEmailOptions) => {
-  if (!apiKey) {
-    throw new Error("API key is required for sending emails");
-  }
+const resendTransport: SendEmailTransport = (apiKey, payload) =>
+  createResendClient(apiKey).emails.send(payload);
 
-  try {
-    const validatedConfig = emailConfigSchema.parse(config);
-    const resend = createResendClient(apiKey);
-
-    const html = await render(template);
-    const text = await render(template, { plainText: true });
-
-    const result = await resend.emails.send({
-      bcc: validatedConfig.bcc,
-      cc: validatedConfig.cc,
-      from: validatedConfig.from,
-      html,
-      replyTo:
-        validatedConfig.replyTo !== undefined && validatedConfig.replyTo !== ""
-          ? validatedConfig.replyTo
-          : defaultReplyTo,
-      subject: validatedConfig.subject,
-      tags: validatedConfig.tags,
-      text,
-      to: validatedConfig.to,
-    });
-
-    if (result.error) {
-      throw new Error(
-        `Resend failed to queue email: ${result.error.name ?? "unknown_error"} - ${result.error.message ?? "No message"}`,
-      );
+const createSendEmail =
+  (send: SendEmailTransport) =>
+  async ({ apiKey, defaultReplyTo, template, ...config }: SendEmailOptions) => {
+    if (!apiKey) {
+      throw new Error("API key is required for sending emails");
     }
 
-    return {
-      data: result.data,
-      error: null,
-      success: true,
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : "Failed to send email",
-      success: false,
-    };
-  }
-};
+    try {
+      const validatedConfig = emailConfigSchema.parse(config);
+      const html = await render(template);
+      const text = await render(template, { plainText: true });
+
+      const result = await send(apiKey, {
+        bcc: validatedConfig.bcc,
+        cc: validatedConfig.cc,
+        from: validatedConfig.from,
+        html,
+        replyTo:
+          validatedConfig.replyTo !== undefined && validatedConfig.replyTo !== ""
+            ? validatedConfig.replyTo
+            : defaultReplyTo,
+        subject: validatedConfig.subject,
+        tags: validatedConfig.tags,
+        text,
+        to: validatedConfig.to,
+      });
+
+      if (result.error) {
+        throw new Error(
+          `Resend failed to queue email: ${result.error.name ?? "unknown_error"} - ${result.error.message ?? "No message"}`,
+        );
+      }
+
+      return { data: result.data, error: null, success: true };
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : "Failed to send email",
+        success: false,
+      };
+    }
+  };
+
+const sendEmail = createSendEmail(resendTransport);
 
 const sendBatchEmails = async (
   emails: Array<SendEmailOptions>,
@@ -201,4 +207,5 @@ const previewEmail = async (template: ReactElement) => {
   };
 };
 
-export { sendEmail, sendBatchEmails, previewEmail };
+export { createSendEmail, sendEmail, sendBatchEmails, previewEmail };
+export type { SendEmailTransport };

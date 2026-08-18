@@ -55,6 +55,28 @@ type StoredTeam = z.infer<typeof StoredTeamSchema>;
 
 type MaybeStoredTeam = Partial<StoredTeam>;
 
+type TeamStoreDeps = {
+  createId: () => string;
+  isRedisConfigured: () => boolean;
+  readTeamJson: typeof readTeamJson;
+  readTeamSummariesFromPostgres: typeof readTeamSummariesFromPostgres;
+  reportError: (event: Record<string, unknown>) => void;
+  set: (key: string, value: string, mode: "EX", ttlSeconds: number) => Promise<void>;
+  writeTeamMirror: typeof writeTeamMirror;
+};
+
+const defaultTeamStoreDeps: TeamStoreDeps = {
+  createId: uuidv4,
+  isRedisConfigured,
+  readTeamJson,
+  readTeamSummariesFromPostgres,
+  reportError: log.error,
+  set: async (key, value, mode, ttlSeconds) => {
+    await redis.set(key, value, mode, ttlSeconds);
+  },
+  writeTeamMirror,
+};
+
 const asText = (value: unknown, fallback: string): string =>
   typeof value === "string" && value !== "" ? value : fallback;
 
@@ -64,9 +86,9 @@ const asText = (value: unknown, fallback: string): string =>
  * TeamMember total. Zones outside COMMON_TIMEZONES that Intl still accepts pass
  * through, since that list is a picker menu rather than a constraint.
  */
-const asTimezone = (value: unknown, teamId: string): string => {
+const asTimezone = (value: unknown, teamId: string, deps: TeamStoreDeps): string => {
   if (typeof value !== "string" || value === "") {
-    log.error({
+    deps.reportError({
       message: "Stored member timezone is missing, using the default",
       route: "lib/team-store",
       teamId,
@@ -86,7 +108,7 @@ const asTimezone = (value: unknown, teamId: string): string => {
     // Intl rejects it, so every downstream toLocaleString call would throw.
   }
 
-  log.error({
+  deps.reportError({
     message: "Stored member timezone is not a supported zone, using the default",
     route: "lib/team-store",
     teamId,
@@ -96,13 +118,17 @@ const asTimezone = (value: unknown, teamId: string): string => {
   return DEFAULT_MEMBER_TIMEZONE;
 };
 
-const toTeamRecord = (teamId: string, stored: MaybeStoredTeam): TeamRecord => ({
+const toTeamRecord = (
+  teamId: string,
+  stored: MaybeStoredTeam,
+  deps: TeamStoreDeps,
+): TeamRecord => ({
   ...stored,
   createdAt: asText(stored.createdAt, ""),
   groups: Array.isArray(stored.groups) ? stored.groups : [],
   id: asText(stored.id, teamId),
   members: (Array.isArray(stored.members) ? stored.members : []).map((m, i) =>
-    Object.assign(m, { order: m.order ?? i, timezone: asTimezone(m.timezone, teamId) }),
+    Object.assign(m, { order: m.order ?? i, timezone: asTimezone(m.timezone, teamId, deps) }),
   ),
   name: asText(stored.name, ""),
 });
@@ -115,14 +141,14 @@ type TeamRecordRead = { ok: false } | { ok: true; team: TeamRecord | null };
  * cannot treat those alike: the second one says nothing about the team and
  * everything about the store.
  */
-const loadTeamRecord = async (teamId: string): Promise<TeamRecordRead> => {
+const loadTeamRecord = async (teamId: string, deps: TeamStoreDeps): Promise<TeamRecordRead> => {
   const uuidResult = UUIDSchema.safeParse(teamId);
   if (!uuidResult.success) {
     return { ok: true, team: null };
   }
 
   try {
-    const data = await readTeamJson(teamId);
+    const data = await deps.readTeamJson(teamId);
 
     if (data === null) {
       return { ok: true, team: null };
@@ -132,10 +158,10 @@ const loadTeamRecord = async (teamId: string): Promise<TeamRecordRead> => {
     const parsed = StoredTeamSchema.safeParse(raw);
 
     if (parsed.success) {
-      return { ok: true, team: toTeamRecord(teamId, parsed.data) };
+      return { ok: true, team: toTeamRecord(teamId, parsed.data, deps) };
     }
 
-    log.error({
+    deps.reportError({
       error: parsed.error,
       message: "Stored team failed validation, reading it untrusted",
       route: "lib/team-store",
@@ -146,15 +172,18 @@ const loadTeamRecord = async (teamId: string): Promise<TeamRecordRead> => {
       return { ok: false };
     }
 
-    return { ok: true, team: toTeamRecord(teamId, raw) };
+    return { ok: true, team: toTeamRecord(teamId, raw, deps) };
   } catch (error) {
-    log.error({ error, message: "Failed to get team", route: "lib/team-store", teamId });
+    deps.reportError({ error, message: "Failed to get team", route: "lib/team-store", teamId });
     return { ok: false };
   }
 };
 
-const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
-  const read = await loadTeamRecord(teamId);
+const readTeamRecord = async (
+  teamId: string,
+  deps: TeamStoreDeps = defaultTeamStoreDeps,
+): Promise<TeamRecord | null> => {
+  const read = await loadTeamRecord(teamId, deps);
 
   return read.ok ? read.team : null;
 };
@@ -168,11 +197,14 @@ const isEmptySummary = (summary: TeamSummary): boolean =>
  * and the May migration left team blobs with no Space row. Serving that side
  * would show a live team as unnamed with zero members, so Redis wins.
  */
-const summaryFromContents = async (teamId: string): Promise<TeamSummary | null> => {
-  const read = await loadTeamRecord(teamId);
+const summaryFromContents = async (
+  teamId: string,
+  deps: TeamStoreDeps,
+): Promise<TeamSummary | null> => {
+  const read = await loadTeamRecord(teamId, deps);
 
   if (!read.ok) {
-    log.error({
+    deps.reportError({
       message: "Could not check team contents against the Postgres summary",
       route: "lib/team-store",
       teamId,
@@ -194,14 +226,17 @@ const summaryFromContents = async (teamId: string): Promise<TeamSummary | null> 
  * resolvable summary is absent from the map rather than defaulted, so a caller
  * cannot render a fabricated zero count.
  */
-const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, TeamSummary>> => {
+const readTeamSummaries = async (
+  teamIds: Array<string>,
+  deps: TeamStoreDeps = defaultTeamStoreDeps,
+): Promise<Map<string, TeamSummary>> => {
   const wanted = [...new Set(teamIds)].filter((id) => UUIDSchema.safeParse(id).success);
 
   if (wanted.length === 0) {
     return new Map<string, TeamSummary>();
   }
 
-  const summaries = await readTeamSummariesFromPostgres(wanted);
+  const summaries = await deps.readTeamSummariesFromPostgres(wanted);
 
   const unresolved = wanted.filter((id) => {
     const summary = summaries.get(id);
@@ -209,7 +244,7 @@ const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, Te
   });
 
   const reconciled = await Promise.all(
-    unresolved.map(async (id) => [id, await summaryFromContents(id)] as const),
+    unresolved.map(async (id) => [id, await summaryFromContents(id, deps)] as const),
   );
 
   for (const [id, summary] of reconciled) {
@@ -217,7 +252,7 @@ const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, Te
       continue;
     }
 
-    log.error({
+    deps.reportError({
       message: "Postgres team summary is absent or empty, served from team contents",
       mirrored: summaries.get(id) ?? null,
       route: "lib/team-store",
@@ -229,8 +264,11 @@ const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, Te
   return summaries;
 };
 
-const readTeamSummary = async (teamId: string): Promise<TeamSummary | null> => {
-  const summaries = await readTeamSummaries([teamId]);
+const readTeamSummary = async (
+  teamId: string,
+  deps: TeamStoreDeps = defaultTeamStoreDeps,
+): Promise<TeamSummary | null> => {
+  const summaries = await readTeamSummaries([teamId], deps);
 
   return summaries.get(teamId) ?? null;
 };
@@ -248,18 +286,26 @@ const writeTeamRecord = async (
   teamId: string,
   team: TeamRecord,
   ttlSeconds: number = TEAM_ACTIVE_TTL_SECONDS,
+  deps: TeamStoreDeps = defaultTeamStoreDeps,
 ): Promise<void> => {
-  await redis.set(teamKey(teamId), JSON.stringify(team), "EX", ttlSeconds);
+  await deps.set(teamKey(teamId), JSON.stringify(team), "EX", ttlSeconds);
 
   try {
-    await writeTeamMirror(teamId, team);
+    await deps.writeTeamMirror(teamId, team);
   } catch (error) {
-    log.error({ error, message: "Failed to mirror team to Postgres", route: "lib/team-store" });
+    deps.reportError({
+      error,
+      message: "Failed to mirror team to Postgres",
+      route: "lib/team-store",
+    });
   }
 };
 
-const newTeamMember = (overrides?: Partial<TeamMember>): TeamMember => ({
-  id: uuidv4(),
+const newTeamMember = (
+  overrides?: Partial<TeamMember>,
+  deps: TeamStoreDeps = defaultTeamStoreDeps,
+): TeamMember => ({
+  id: deps.createId(),
   name: "",
   order: 0,
   timezone: DEFAULT_MEMBER_TIMEZONE,
@@ -299,9 +345,10 @@ const applyTeamContents = async <TValue>(
   teamId: string,
   mutate: TeamContentsMutation<TValue>,
   ttlSeconds: number = TEAM_ACTIVE_TTL_SECONDS,
+  deps: TeamStoreDeps = defaultTeamStoreDeps,
 ): Promise<TeamContentsResult<TValue>> => {
-  if (!isRedisConfigured()) {
-    log.error({
+  if (!deps.isRedisConfigured()) {
+    deps.reportError({
       message: "Team contents write skipped: REDIS_URL is unset",
       route: "lib/team-store",
       teamId,
@@ -309,7 +356,7 @@ const applyTeamContents = async <TValue>(
     return { error: "Team storage is unavailable", ok: false, reason: "unconfigured" };
   }
 
-  const read = await loadTeamRecord(teamId);
+  const read = await loadTeamRecord(teamId, deps);
 
   if (!read.ok) {
     return { error: "Could not read the team", ok: false, reason: "read-failed" };
@@ -326,14 +373,21 @@ const applyTeamContents = async <TValue>(
   }
 
   try {
-    await writeTeamRecord(teamId, outcome.team, ttlSeconds);
+    await writeTeamRecord(teamId, outcome.team, ttlSeconds, deps);
   } catch (error) {
-    log.error({ error, message: "Failed to write team contents", route: "lib/team-store", teamId });
+    deps.reportError({
+      error,
+      message: "Failed to write team contents",
+      route: "lib/team-store",
+      teamId,
+    });
     return { error: "Failed to save the team", ok: false, reason: "write-failed" };
   }
 
   return { ok: true, value: outcome.value };
 };
+
+export type { TeamStoreDeps };
 
 export {
   applyTeamContents,
