@@ -39,6 +39,7 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
     <ScrollArea className="max-h-80 rounded-lg border border-border">
       <TooltipProvider delay={200}>
         <table className="w-full text-sm">
+          <caption className="sr-only">Imported team members preview</caption>
           <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
             <tr className="border-b border-border">
               <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">#</th>

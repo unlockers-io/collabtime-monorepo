@@ -61,22 +61,14 @@ const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60;
 const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2;
 
 const teamKey = (teamId: string): string => `team:${teamId}`;
+type ErrorEvent = Parameters<typeof log.error>[0];
 
 type TeamJsonReaderDeps = {
   expire: (key: string, seconds: number) => Promise<void>;
   get: (key: string) => Promise<string | null>;
-  reportError: (event: Record<string, unknown>) => void;
+  reportError: (event: ErrorEvent) => void;
 };
 
-/**
- * Redis is the only store for a team's contents, so an expiring key is a
- * deleted team, not a cold cache. Only writes used to extend the TTL, which
- * meant a team that people read every day but never renamed vanished silently
- * on the 60th day. Every read re-extends the key instead.
- *
- * A failed refresh must not fail the read: the caller already has the data,
- * and the next read gets another chance to extend.
- */
 const createTeamJsonReader = (deps: TeamJsonReaderDeps) => {
   return async (teamId: string): Promise<string | null> => {
     const key = teamKey(teamId);

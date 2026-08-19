@@ -18,6 +18,6 @@ export default withSentryConfig(nextConfig, {
   sourcemaps: {
     deleteSourcemapsAfterUpload: true,
   },
-  ...(process.env.GITHUB_ACTIONS ? {} : { tunnelRoute: "/monitoring" }),
+  tunnelRoute: process.env.GITHUB_ACTIONS ? undefined : "/monitoring",
   widenClientFileUpload: true,
 });

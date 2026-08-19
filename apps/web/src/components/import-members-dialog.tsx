@@ -28,12 +28,6 @@ type ImportMembersDialogProps = {
   teamId: string;
 };
 
-/**
- * The step carries its own rows, so "importing with nothing parsed" cannot be
- * expressed. A nullable row list plus an isImporting flag let Back stay live
- * during a submit, and the in-flight response then closed the dialog on a user
- * who had already gone back to paste something new.
- */
 type ImportState =
   | { step: "upload" }
   | { rows: Array<ParsedRow>; step: "preview" }

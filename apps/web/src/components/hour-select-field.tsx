@@ -1,6 +1,7 @@
 "use client";
 
 import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
+import type { FieldErrorValue } from "@repo/ui/components/field";
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 type HourSelectFieldProps = {
   errorId?: string;
-  errors?: Array<unknown>;
+  errors?: Array<FieldErrorValue>;
   id: string;
   isInvalid?: boolean;
   label: string;

@@ -364,12 +364,13 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
 };
 
 const AddMemberDialog = ({ groups, isFirstMember, teamId }: AddMemberDialogProps) => {
-  const [open, setOpen] = useState(isFirstMember);
+  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
   const [instanceId, setInstanceId] = useState(0);
+  const open = openOverride ?? isFirstMember;
 
   return (
     <Dialog
-      onOpenChange={setOpen}
+      onOpenChange={setOpenOverride}
       onOpenChangeComplete={(nextOpen) => {
         if (!nextOpen) {
           setInstanceId((n) => n + 1);
@@ -386,7 +387,7 @@ const AddMemberDialog = ({ groups, isFirstMember, teamId }: AddMemberDialogProps
           groups={groups}
           isFirstMember={isFirstMember}
           key={instanceId}
-          onOpenChange={setOpen}
+          onOpenChange={setOpenOverride}
           teamId={teamId}
         />
       </DialogContent>

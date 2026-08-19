@@ -23,8 +23,9 @@ type SettingsClientProps = {
 
 const SettingsClient = ({ user }: SettingsClientProps) => {
   const { refresh } = useRouter();
-  const [name, setName] = useState(user.name);
+  const [editedName, setEditedName] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const name = editedName ?? user.name;
 
   const handleSaveName = async () => {
     const trimmedName = name.trim();
@@ -83,7 +84,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
                     autoComplete="name"
                     id="name"
                     onChange={(e) => {
-                      setName(e.target.value);
+                      setEditedName(e.target.value);
                     }}
                     placeholder="Your name"
                     value={name}

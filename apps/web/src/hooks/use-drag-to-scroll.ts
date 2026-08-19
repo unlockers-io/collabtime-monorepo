@@ -38,12 +38,6 @@ const useDragToScroll = (ref: RefObject<HTMLElement | null>) => {
       el.scrollTop = scrollTopStart - dy;
     };
 
-    /**
-     * The only terminator: the spec fires lostpointercapture after implicit
-     * release following both pointerup and pointercancel, so a browser taking
-     * the gesture over for native scrolling still ends the drag. pointerup
-     * alone left `isDown` true forever on touch.
-     */
     const onLostPointerCapture = () => {
       isDown = false;
       setIsDragging(false);

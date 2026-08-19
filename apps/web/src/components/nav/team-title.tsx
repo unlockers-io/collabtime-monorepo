@@ -24,6 +24,9 @@ const TeamTitle = ({
   teamName,
 }: TeamTitleProps) => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) {
+      return;
+    }
     if (e.key === "Enter") {
       onSave();
     } else if (e.key === "Escape") {

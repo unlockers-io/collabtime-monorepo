@@ -152,10 +152,6 @@ const NavView = (props: NavViewProps) => {
         </div>
 
         <MobileMenu
-          canDeleteWorkspace={canDeleteWorkspace}
-          hasCopied={hasCopied}
-          isOpen={mobileMenuOpen}
-          isSigningOut={isSigningOut}
           onClose={() => {
             setMobileMenuOpen(false);
           }}
@@ -166,7 +162,9 @@ const NavView = (props: NavViewProps) => {
           onSignOut={() => {
             void handleSignOut();
           }}
+          permissions={{ canDeleteWorkspace }}
           role={navRole}
+          state={{ hasCopied, isOpen: mobileMenuOpen, isSigningOut }}
         />
       </header>
     );

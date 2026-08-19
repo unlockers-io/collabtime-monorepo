@@ -99,6 +99,8 @@ const inviteMember = async (
     const webAppUrl = getEnv("WEB_APP_URL") ?? "";
 
     if (apiKey !== undefined && apiKey !== "") {
+      const emailOptions =
+        fromEmail !== undefined && fromEmail !== "" ? { apiKey, from: fromEmail } : { apiKey };
       const result = await sendTransactionalEmail(
         {
           inviterName: session.user.name || session.user.email.split("@")[0] || "Someone",
@@ -108,7 +110,7 @@ const inviteMember = async (
           teamUrl: webAppUrl,
           type: "invitation",
         },
-        { apiKey, ...(fromEmail !== undefined && fromEmail !== "" ? { from: fromEmail } : {}) },
+        emailOptions,
       );
       emailSent = result.success;
       if (!result.success) {

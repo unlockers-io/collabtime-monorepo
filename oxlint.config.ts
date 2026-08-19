@@ -3,10 +3,6 @@ import awesomeness from "oxlint-config-awesomeness";
 
 export default defineConfig({
   extends: [awesomeness],
-  options: {
-    typeAware: true,
-    typeCheck: true,
-  },
   overrides: [
     {
       files: [
@@ -87,7 +83,6 @@ export default defineConfig({
     {
       files: ["tests/e2e/teardown/**/*.ts", "apps/web/scripts/**/*.ts"],
       rules: {
-        "no-await-in-loop": "off",
         "no-console": "off",
       },
     },
@@ -101,12 +96,6 @@ export default defineConfig({
       files: ["tests/**", "playwright.config.ts"],
       rules: {
         "require-unicode-regexp": "off",
-      },
-    },
-    {
-      files: ["playwright.config.ts", "**/next.config.ts"],
-      rules: {
-        "node/no-sync": "off",
       },
     },
   ],

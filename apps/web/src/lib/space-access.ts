@@ -80,12 +80,6 @@ const createSpaceAccessToken = (spaceId: string, accessPasswordHash: string): st
 
 type VerificationResult = { payload: TokenPayload; valid: true } | { reason: string; valid: false };
 
-/**
- * Takes the space's current password hash, so a grant is a claim about the
- * credential as it stands now rather than 7 days ago. Rotating or clearing the
- * password therefore revokes outstanding cookies with no revocation list.
- * `null` means no credential exists, so no grant against it can be valid.
- */
 const verifySpaceAccessToken = (
   token: string,
   expectedSpaceId: string,

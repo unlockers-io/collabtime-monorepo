@@ -1,3 +1,4 @@
+import type { StandardSchemaV1Issue } from "@tanstack/form-core";
 import * as React from "react";
 
 import { cn } from "../lib/utils";
@@ -91,18 +92,23 @@ const FieldDescription = ({
 };
 
 type FieldErrorProps = React.HTMLAttributes<HTMLParagraphElement> & {
-  errors?: Array<unknown>;
+  errors?: Array<FieldErrorValue>;
   ref?: React.Ref<HTMLParagraphElement>;
 };
 
-const errorToMessage = (e: unknown): string => {
+type FieldErrorValue = StandardSchemaV1Issue | string | undefined;
+
+const errorToMessage = (e: FieldErrorValue): string => {
+  if (e === undefined) {
+    return "";
+  }
   if (typeof e === "string") {
     return e;
   }
-  if (typeof e === "object" && e !== null && "message" in e && typeof e.message === "string") {
+  if (typeof e.message === "string") {
     return e.message;
   }
-  return String(e);
+  return "";
 };
 
 const FieldError = ({ children, className, errors, ref, ...props }: FieldErrorProps) => {
@@ -187,3 +193,4 @@ export {
   FieldSet,
   FieldTitle,
 };
+export type { FieldErrorValue };

@@ -31,6 +31,7 @@ const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
 };
 
 type MutationOutcome<TResult> = { error: string; ok: false } | { ok: true; value: TResult };
+type ErrorEvent = Parameters<typeof log.error>[0];
 
 type MutateTeamArgs<TPrelude, TResult> = {
   authorize?: (teamId: string) => Promise<MutationOutcome<void>>;
@@ -42,7 +43,7 @@ type MutateTeamArgs<TPrelude, TResult> = {
 
 type TeamMutatorDeps = {
   applyTeamContents: typeof applyTeamContents;
-  reportError: (event: Record<string, unknown>) => void;
+  reportError: (event: ErrorEvent) => void;
   requireTeamAdmin: typeof requireTeamAdmin;
 };
 
@@ -73,12 +74,6 @@ const createTeamMutator = (deps: TeamMutatorDeps): MutateTeam =>
         return { error: preludeOutcome.error, success: false };
       }
 
-      /**
-       * Delegated rather than re-run through readTeamRecord + writeTeamRecord:
-       * readTeamRecord flattens "could not read the store" into the same `null` as
-       * "this team has no contents", which reported a Redis outage to the user as
-       * "Team not found". applyTeamContents keeps those apart via `reason`.
-       */
       const applied = await deps.applyTeamContents(teamId, (team) => {
         if (team === null) {
           return { error: "Team not found", ok: false };

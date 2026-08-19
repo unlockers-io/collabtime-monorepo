@@ -28,10 +28,10 @@ const SettingsSkeleton = () => (
   <div aria-hidden className="mx-auto max-w-3xl px-4 py-8">
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
-        <div className="h-8 w-32 animate-pulse rounded-md bg-muted" />
-        <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
+        <div className="h-8 w-32 rounded-md bg-muted motion-safe:animate-pulse" />
+        <div className="h-4 w-64 rounded-md bg-muted motion-safe:animate-pulse" />
       </div>
-      <div className="h-67 animate-pulse rounded-xl bg-muted" />
+      <div className="h-67 rounded-xl bg-muted motion-safe:animate-pulse" />
     </div>
   </div>
 );

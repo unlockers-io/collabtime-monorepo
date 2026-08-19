@@ -76,12 +76,6 @@ const TeamPageClient = ({
     queryKey: ["membership-role", teamId, userId],
   });
 
-  /**
-   * Precedence: a just-completed join here, then the server, then a re-check
-   * that only runs when the server saw nothing. That re-check no longer has a
-   * known job, since getTeamStatus stopped reporting a real member as "none" on
-   * query failure. Delete it once someone confirms what else it covered.
-   */
   const serverStatus: TeamStatus =
     initialStatus === "none" ? (resolvedRole ?? "none") : initialStatus;
   const teamStatus: TeamStatus = statusOverride ?? serverStatus;
