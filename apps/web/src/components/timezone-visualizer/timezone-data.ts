@@ -18,12 +18,6 @@ type GroupIndex = {
   ungrouped: Array<TeamMember>;
 };
 
-/**
- * One definition of "in this group", where six call sites each re-decided
- * whether an empty-string groupId counts as ungrouped. Iterates `members` so a
- * group's rows keep the team's own order. A member naming a deleted group lands
- * in neither bucket and so appears in no section, as before.
- */
 const indexMembersByGroup = (members: Array<TeamMember>): GroupIndex => {
   const byGroupId = new Map<string, Array<TeamMember>>();
   const ungrouped: Array<TeamMember> = [];

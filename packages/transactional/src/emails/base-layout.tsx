@@ -4,8 +4,6 @@ import { Body, Container, Head, Html, Link, Preview, Section, Tailwind, Text } f
 import { CollabTimeLogo } from "../components/collabtime-logo";
 import { tailwindConfig } from "../styles/theme";
 
-const COPYRIGHT_YEAR = new Date().getFullYear();
-
 type BaseLayoutProps = {
   children: React.ReactNode;
   footerText?: string;
@@ -19,6 +17,7 @@ const BaseLayout = ({
   preview,
   unsubscribeUrl,
 }: BaseLayoutProps) => {
+  const copyrightYear = new Date().getFullYear();
   return (
     <Html>
       <Tailwind config={tailwindConfig}>
@@ -65,7 +64,7 @@ const BaseLayout = ({
               </Text>
 
               <Text className="m-0 text-xs text-muted-foreground">
-                © {COPYRIGHT_YEAR} Collab Time. All rights reserved.
+                © {copyrightYear} Collab Time. All rights reserved.
               </Text>
             </Section>
           </Container>

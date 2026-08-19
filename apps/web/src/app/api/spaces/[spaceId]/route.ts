@@ -7,12 +7,6 @@ import { hashPassword } from "@/lib/crypto";
 import { log, withEvlog } from "@/lib/observability";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
-/**
- * The access mode, not the two columns behind it. Three independent optional
- * fields accepted 18 request shapes for three intents and let through
- * `isPrivate: true` with no password: a space showing a gate that no password
- * can open. A private space now always carries a credential.
- */
 const updateSpaceSchema = z.discriminatedUnion("visibility", [
   z.object({ visibility: z.literal("public") }),
   z.object({
@@ -89,22 +83,24 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
     const body = await request.json();
     const updates = updateSpaceSchema.parse(body);
 
-    // Going public clears the hash rather than parking it, so a public space
-    // never carries a live credential for a gate that is not shown.
-    let updateData: { accessPassword: string | null; isPrivate: boolean };
-
-    if (updates.visibility === "public") {
-      updateData = { accessPassword: null, isPrivate: false };
-    } else if (updates.password !== undefined) {
-      updateData = { accessPassword: await hashPassword(updates.password), isPrivate: true };
-    } else if (owned.space.accessPassword === null) {
+    if (
+      updates.visibility === "private" &&
+      updates.password === undefined &&
+      owned.space.accessPassword === null
+    ) {
       return NextResponse.json(
         { error: "A password is required to make this space private" },
         { status: 400 },
       );
-    } else {
-      updateData = { accessPassword: owned.space.accessPassword, isPrivate: true };
     }
+
+    let accessPassword = owned.space.accessPassword;
+    if (updates.visibility === "public") {
+      accessPassword = null;
+    } else if (updates.password !== undefined) {
+      accessPassword = await hashPassword(updates.password);
+    }
+    const updateData = { accessPassword, isPrivate: updates.visibility === "private" };
 
     const updatedSpace = await prisma.space.update({
       data: updateData,

@@ -13,27 +13,23 @@ import type { NavRole } from "./user-menu";
 type MobileMenuRole = Exclude<NavRole, "account">;
 
 type MobileMenuProps = {
-  canDeleteWorkspace: boolean;
-  hasCopied: boolean;
-  isOpen: boolean;
-  isSigningOut: boolean;
   onClose: () => void;
   onCopy: () => void;
   onDeleteWorkspace: () => void;
   onSignOut: () => void;
+  permissions: { canDeleteWorkspace: boolean };
   role: MobileMenuRole;
+  state: { hasCopied: boolean; isOpen: boolean; isSigningOut: boolean };
 };
 
 const MobileMenu = ({
-  canDeleteWorkspace,
-  hasCopied,
-  isOpen,
-  isSigningOut,
   onClose,
   onCopy,
   onDeleteWorkspace,
   onSignOut,
+  permissions: { canDeleteWorkspace },
   role,
+  state: { hasCopied, isOpen, isSigningOut },
 }: MobileMenuProps) => {
   const prefersReducedMotion = useReducedMotion();
 

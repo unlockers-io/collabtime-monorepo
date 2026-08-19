@@ -64,6 +64,9 @@ const GroupCard = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) {
+      return;
+    }
     if (e.key === "Enter") {
       handleSave();
     } else if (e.key === "Escape") {
@@ -134,7 +137,7 @@ const GroupCard = ({
         {canEdit && (
           <Button
             aria-label={`Remove group ${group.name}`}
-            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100"
+            className="shrink-0 text-muted-foreground opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
             disabled={isPending}
             onClick={handleRemove}
             size="icon-sm"

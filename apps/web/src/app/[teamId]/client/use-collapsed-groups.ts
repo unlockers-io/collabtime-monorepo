@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { z } from "zod";
 
 import type { TeamMember } from "@/types";
 
-const COLLAPSED_GROUPS_KEY = "collabtime-collapsed-groups";
+const COLLAPSED_GROUPS_KEY = "collabtime-collapsed-groups:v1";
+const collapsedGroupsSchema = z.array(z.string());
 
 const useCollapsedGroups = (members: Array<TeamMember>) => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
@@ -16,11 +18,11 @@ const useCollapsedGroups = (members: Array<TeamMember>) => {
       return new Set();
     }
     try {
-      const parsed: unknown = JSON.parse(stored);
-      if (!Array.isArray(parsed)) {
+      const parsed = collapsedGroupsSchema.safeParse(JSON.parse(stored));
+      if (!parsed.success) {
         return new Set();
       }
-      return new Set(parsed.filter((id): id is string => typeof id === "string"));
+      return new Set(parsed.data);
     } catch {
       return new Set();
     }

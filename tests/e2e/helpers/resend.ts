@@ -37,9 +37,6 @@ const requireApiKey = (): string => {
   return key;
 };
 
-// Resend caps the team at 5 req/s and returns 429 with a `retry-after`
-// header (seconds) when the suite bursts past that. Parallel auth-email
-// specs reliably trip it: every test polls `GET /emails` at 1Hz, so 4
 // workers × spec startup hits the ceiling. Mirrors vercel/fetch-retry's
 // defaults (factor 6, 5 retries, max retry-after 20s) so behavior matches
 // the most-deployed reference for this pattern. See
@@ -69,12 +66,10 @@ const resendFetch = async (path: string): Promise<Response> => {
   let attempt = 0;
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    // eslint-disable-next-line no-await-in-loop
     const response = await fetch(url, { headers });
 
     if (!isRetryableStatus(response.status) || attempt >= RETRY_MAX_ATTEMPTS) {
       if (!response.ok) {
-        // eslint-disable-next-line no-await-in-loop
         const body = await response.text().catch(() => "<unreadable>");
         throw new Error(`Resend ${path} → ${response.status}: ${body}`);
       }
@@ -88,7 +83,6 @@ const resendFetch = async (path: string): Promise<Response> => {
         Math.floor(Math.random() * RETRY_JITTER_MS)
       : computeBackoffMs(attempt);
 
-    // eslint-disable-next-line no-await-in-loop
     await sleep(delayMs);
     attempt += 1;
   }
@@ -126,7 +120,6 @@ const waitForEmail = async (
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
-    // eslint-disable-next-line no-await-in-loop
     const recent = await listEmails(100);
 
     const candidate = recent.find((mail) => {
@@ -144,11 +137,9 @@ const waitForEmail = async (
     });
 
     if (candidate) {
-      // eslint-disable-next-line no-await-in-loop
       return getEmail(candidate.id);
     }
 
-    // eslint-disable-next-line no-await-in-loop
     await sleep(pollMs);
   }
 

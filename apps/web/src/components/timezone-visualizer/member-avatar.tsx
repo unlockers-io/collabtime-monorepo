@@ -23,7 +23,7 @@ const MemberAvatar = ({ dayOffset, isSelected, member, totalMembers }: MemberAva
     >
       <div className="relative">
         <div
-          className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground sm:h-7 sm:w-7 sm:text-xs"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
           title={member.name}
         >
           {member.name.charAt(0).toUpperCase()}
@@ -32,7 +32,7 @@ const MemberAvatar = ({ dayOffset, isSelected, member, totalMembers }: MemberAva
           <div className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background bg-foreground sm:h-3 sm:w-3" />
         )}
         {dayOffset !== 0 && (
-          <div className="absolute -right-1 -bottom-0.5 flex size-3.5 items-center justify-center rounded-full bg-warning text-[8px] font-bold text-warning-foreground sm:h-4 sm:w-4 sm:text-[9px]">
+          <div className="absolute -right-1 -bottom-0.5 flex size-5 items-center justify-center rounded-full bg-warning text-xs font-bold text-warning-foreground">
             {dayOffset > 0 ? `+${dayOffset}` : dayOffset}
           </div>
         )}

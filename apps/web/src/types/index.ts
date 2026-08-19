@@ -1,15 +1,11 @@
+import { z } from "zod";
+
 type TeamGroup = {
   id: string;
   name: string;
   order: number;
 };
 
-/**
- * `timezone` is a bare string, not the COMMON_TIMEZONES union the write path
- * enforces: demo-team.ts renders real members outside that list, so it is a
- * picker menu rather than a domain constraint. lib/team-store.ts coerces
- * Intl-invalid stored values at the read boundary instead.
- */
 type TeamMember = {
   groupId?: string;
   id: string;
@@ -34,15 +30,15 @@ type TeamRecord = Team & {
   adminPasswordHash?: string;
 };
 
-type TeamRole = "ADMIN" | "MEMBER";
+const teamRoleSchema = z.enum(["ADMIN", "MEMBER"]);
+const jsonValueSchema = z.json();
+type TeamRole = z.infer<typeof teamRoleSchema>;
+type TeamRoleInput = z.infer<typeof jsonValueSchema> | undefined;
 
 type TeamStatus = "ADMIN" | "MEMBER" | "PENDING" | "none";
 
-const TEAM_ROLES = new Set<string>(["ADMIN", "MEMBER"]);
-
-const isTeamRole = (value: unknown): value is TeamRole => {
-  return typeof value === "string" && TEAM_ROLES.has(value);
-};
+const isTeamRole = (value: TeamRoleInput): value is TeamRole =>
+  teamRoleSchema.safeParse(value).success;
 
 type PendingInvitation = {
   id: string;

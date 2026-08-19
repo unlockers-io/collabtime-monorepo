@@ -92,13 +92,15 @@ const RootLayout = ({
         className={`${geistMono.variable} ${inter.variable} flex min-h-dvh flex-col bg-background font-sans text-foreground selection:bg-accent selection:text-accent-foreground`}
       >
         <a
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-md focus:ring-2 focus:ring-ring focus:outline-none"
+          className="sr-only px-4 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:text-foreground focus:shadow-md focus:ring-2 focus:ring-ring focus:outline-none"
           href="#main"
         >
           Skip to content
         </a>
         <Providers>
-          <div className="isolate flex flex-1 flex-col">{children}</div>
+          <div className="isolate flex flex-1 flex-col" id="main">
+            {children}
+          </div>
           <footer className="border-t border-border px-4 py-6 text-sm text-muted-foreground sm:px-6 lg:px-8 xl:px-12">
             <div className="mx-auto flex w-full max-w-450 items-center justify-between gap-3">
               <span>

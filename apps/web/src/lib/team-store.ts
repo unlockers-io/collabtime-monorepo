@@ -36,12 +36,6 @@ const StoredMemberSchema = z.looseObject({
   workingHoursStart: z.number(),
 });
 
-/**
- * Loose rather than strict so a read can feed straight back into
- * writeTeamRecord: an unrecognised key on the blob is someone else's data, and
- * stripping it here would erase it on the next mutation. `groups` and `members`
- * are optional because rows written before those fields existed still resolve.
- */
 const StoredTeamSchema = z.looseObject({
   adminPasswordHash: z.string().optional(),
   createdAt: z.string(),
@@ -51,16 +45,33 @@ const StoredTeamSchema = z.looseObject({
   name: z.string(),
 });
 
-type StoredTeam = z.infer<typeof StoredTeamSchema>;
+const RescuedMemberSchema = StoredMemberSchema.partial().extend({
+  id: z.string().default(""),
+  name: z.string().default(""),
+  timezone: z.string().default(DEFAULT_MEMBER_TIMEZONE),
+  title: z.string().default(""),
+  workingHoursEnd: z.number().default(DEFAULT_WORKING_HOURS_END),
+  workingHoursStart: z.number().default(DEFAULT_WORKING_HOURS_START),
+});
 
-type MaybeStoredTeam = Partial<StoredTeam>;
+const RescuedTeamSchema = z.looseObject({
+  adminPasswordHash: z.string().optional(),
+  createdAt: z.string().optional(),
+  groups: z.array(StoredGroupSchema).default([]),
+  id: z.string().optional(),
+  members: z.array(RescuedMemberSchema).default([]),
+  name: z.string().optional(),
+});
+
+type MaybeStoredTeam = z.infer<typeof RescuedTeamSchema> | z.infer<typeof StoredTeamSchema>;
+type ErrorEvent = Parameters<typeof log.error>[0];
 
 type TeamStoreDeps = {
   createId: () => string;
   isRedisConfigured: () => boolean;
   readTeamJson: typeof readTeamJson;
   readTeamSummariesFromPostgres: typeof readTeamSummariesFromPostgres;
-  reportError: (event: Record<string, unknown>) => void;
+  reportError: (event: ErrorEvent) => void;
   set: (key: string, value: string, mode: "EX", ttlSeconds: number) => Promise<void>;
   writeTeamMirror: typeof writeTeamMirror;
 };
@@ -77,16 +88,10 @@ const defaultTeamStoreDeps: TeamStoreDeps = {
   writeTeamMirror,
 };
 
-const asText = (value: unknown, fallback: string): string =>
+const asText = (value: string | undefined, fallback: string): string =>
   typeof value === "string" && value !== "" ? value : fallback;
 
-/**
- * A stored zone Intl does not recognise throws inside toLocaleString and takes
- * the visualizer render down with it. Coercing here keeps every consumer of
- * TeamMember total. Zones outside COMMON_TIMEZONES that Intl still accepts pass
- * through, since that list is a picker menu rather than a constraint.
- */
-const asTimezone = (value: unknown, teamId: string, deps: TeamStoreDeps): string => {
+const asTimezone = (value: string | undefined, teamId: string, deps: TeamStoreDeps): string => {
   if (typeof value !== "string" || value === "") {
     deps.reportError({
       message: "Stored member timezone is missing, using the default",
@@ -135,12 +140,6 @@ const toTeamRecord = (
 
 type TeamRecordRead = { ok: false } | { ok: true; team: TeamRecord | null };
 
-/**
- * Keeps "this team has no contents record" apart from "the read itself failed",
- * which readTeamRecord flattens into the same `null`. A caller about to write
- * cannot treat those alike: the second one says nothing about the team and
- * everything about the store.
- */
 const loadTeamRecord = async (teamId: string, deps: TeamStoreDeps): Promise<TeamRecordRead> => {
   const uuidResult = UUIDSchema.safeParse(teamId);
   if (!uuidResult.success) {
@@ -168,11 +167,10 @@ const loadTeamRecord = async (teamId: string, deps: TeamStoreDeps): Promise<Team
       teamId,
     });
 
-    if (typeof raw !== "object" || raw === null) {
-      return { ok: false };
-    }
-
-    return { ok: true, team: toTeamRecord(teamId, raw, deps) };
+    const rescued = RescuedTeamSchema.safeParse(raw);
+    return rescued.success
+      ? { ok: true, team: toTeamRecord(teamId, rescued.data, deps) }
+      : { ok: false };
   } catch (error) {
     deps.reportError({ error, message: "Failed to get team", route: "lib/team-store", teamId });
     return { ok: false };
@@ -191,12 +189,6 @@ const readTeamRecord = async (
 const isEmptySummary = (summary: TeamSummary): boolean =>
   summary.memberCount === 0 && summary.name === "";
 
-/**
- * `null` means the contents have nothing to say, so the caller keeps whatever
- * Postgres gave it. Postgres may lag: the mirror only runs on a contents write,
- * and the May migration left team blobs with no Space row. Serving that side
- * would show a live team as unnamed with zero members, so Redis wins.
- */
 const summaryFromContents = async (
   teamId: string,
   deps: TeamStoreDeps,
@@ -273,15 +265,6 @@ const readTeamSummary = async (
   return summaries.get(teamId) ?? null;
 };
 
-/**
- * Redis holds the team's contents; the Postgres rows are a mirror of them that
- * `readTeamSummaries` now serves name and member count from.
- *
- * A failed mirror must not fail the request: the user's write is already durable
- * in Redis, re-running the backfill repairs whatever the mirror missed, and
- * summary reads fall back to the contents in the meantime. It logs at error
- * level so the gap is visible.
- */
 const writeTeamRecord = async (
   teamId: string,
   team: TeamRecord,
@@ -327,20 +310,6 @@ type TeamContentsResult<TValue> =
       reason: "read-failed" | "rejected" | "unconfigured" | "write-failed";
     };
 
-/**
- * Read, mutate and write a team's contents as one step.
- *
- * Redis is the only store for those contents, so a failed write is lost data and
- * never an ignorable cache miss. The result is discriminated on `ok` so a caller
- * cannot read a value it did not get, and `reason` separates a store that is not
- * configured (where writes resolve as no-ops) from one that could not be read
- * and one that rejected the write.
- *
- * A mutation receives `null` when the team has no contents record, and returns
- * `team: null` to mean "nothing to persist", which skips the write and still
- * counts as a success. It is not called at all when the read failed, since a
- * store that is down looks identical to a team with nothing in it.
- */
 const applyTeamContents = async <TValue>(
   teamId: string,
   mutate: TeamContentsMutation<TValue>,

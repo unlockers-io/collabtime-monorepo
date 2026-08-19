@@ -274,7 +274,7 @@ const ComparePanel = ({
                     }}
                   >
                     <div className="h-1.5 w-px bg-border" />
-                    <span className="font-display text-[0.625rem] whitespace-nowrap text-muted-foreground tabular-nums sm:text-xs">
+                    <span className="font-display text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                       {formatHour(hour % HOURS_IN_DAY)}
                     </span>
                   </div>

@@ -66,18 +66,18 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
             Accepts .csv files and tab-separated spreadsheet pastes
           </p>
         </div>
-        <input
-          accept=".csv,text/csv,text/plain"
-          aria-label="CSV file"
-          className="sr-only"
-          onChange={(e) => {
-            void handleFileUpload(e);
-          }}
-          ref={fileInputRef}
-          tabIndex={-1}
-          type="file"
-        />
       </button>
+      <input
+        accept=".csv,text/csv,text/plain"
+        aria-label="CSV file"
+        className="sr-only"
+        onChange={(e) => {
+          void handleFileUpload(e);
+        }}
+        ref={fileInputRef}
+        tabIndex={-1}
+        type="file"
+      />
 
       <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />

@@ -53,25 +53,25 @@ const toMemberRow = (teamId: string, member: TeamMember): MirrorRow => ({
   workingHoursStart: member.workingHoursStart,
 });
 
-const toMember = (row: Omit<MirrorRow, "teamId">): TeamMember => ({
-  ...(row.groupId === null ? {} : { groupId: row.groupId }),
-  id: row.id,
-  name: row.name,
-  order: row.order,
-  timezone: row.timezone,
-  title: row.title,
-  ...(row.userId === null ? {} : { userId: row.userId }),
-  workingHoursEnd: row.workingHoursEnd,
-  workingHoursStart: row.workingHoursStart,
-});
+const toMember = (row: Omit<MirrorRow, "teamId">): TeamMember => {
+  const member: TeamMember = {
+    id: row.id,
+    name: row.name,
+    order: row.order,
+    timezone: row.timezone,
+    title: row.title,
+    workingHoursEnd: row.workingHoursEnd,
+    workingHoursStart: row.workingHoursStart,
+  };
+  if (row.groupId !== null) {
+    member.groupId = row.groupId;
+  }
+  if (row.userId !== null) {
+    member.userId = row.userId;
+  }
+  return member;
+};
 
-/**
- * Replaces rather than diffs: the JSON blob is the whole record, so a full
- * rewrite is the only shape that cannot drift from it. Member and group ids come
- * from the blob, so identity survives the delete/recreate.
- *
- * Groups insert before members because a member's groupId is a real foreign key.
- */
 const writeTeamMirror = async (teamId: string, team: TeamRecord): Promise<void> => {
   await prisma.$transaction(async (tx) => {
     await tx.space.update({
@@ -125,8 +125,7 @@ const createTeamPostgresReader = (deps: TeamPostgresReadDeps) => {
       return null;
     }
 
-    return {
-      ...(space.adminPasswordHash === null ? {} : { adminPasswordHash: space.adminPasswordHash }),
+    const team: TeamRecord = {
       createdAt: space.createdAt.toISOString(),
       groups: space.groups.map((group) => ({
         id: group.id,
@@ -137,6 +136,10 @@ const createTeamPostgresReader = (deps: TeamPostgresReadDeps) => {
       members: space.members.map(toMember),
       name: space.name,
     };
+    if (space.adminPasswordHash !== null) {
+      team.adminPasswordHash = space.adminPasswordHash;
+    }
+    return team;
   };
 
   return { readTeamMirror, readTeamSummariesFromPostgres };

@@ -45,13 +45,6 @@ type TeamMutationVariables = {
   submit: () => Promise<ActionResult<unknown>>;
 };
 
-/**
- * The `cancelQueries` is load bearing: the team query polls every 20s, so a
- * plain setQueryData raced it and a poll in flight when the edit landed would
- * resolve afterwards and overwrite it. Snapshot-and-restore replaces per-call
- * inverse updaters, two of which had no rollback at all. Server actions report
- * failure in their return value, so mutationFn throws to reach onError.
- */
 const useTeamMutation = (teamId: string) => {
   const queryClient = useQueryClient();
   const queryKey = teamQueryKeys.team(teamId);

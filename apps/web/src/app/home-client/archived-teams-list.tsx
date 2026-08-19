@@ -34,10 +34,10 @@ const ArchivedTeamsList = ({
     <AnimatePresence>
       {teams.length > 0 && (
         <m.div
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, transform: "translateY(0)" }}
           className="flex w-full flex-col gap-3"
-          exit={{ opacity: 0, y: -10 }}
-          initial={{ opacity: 0, y: 20 }}
+          exit={{ opacity: 0, transform: "translateY(-10px)" }}
+          initial={{ opacity: 0, transform: "translateY(20px)" }}
           transition={{
             delay: 0.4,
             duration: 0.6,
@@ -79,10 +79,10 @@ const ArchivedTeamsList = ({
                     const isArchivePending = processingArchive.has(team.teamId);
                     return (
                       <m.div
-                        animate={{ opacity: 1, scale: 1 }}
+                        animate={{ opacity: 1, transform: "scale(1)" }}
                         className="group flex items-center justify-between rounded-xl border border-border bg-card/60 p-3 transition-colors hover:border-input"
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        exit={{ opacity: 0, transform: "scale(0.95)" }}
+                        initial={{ opacity: 0, transform: "scale(0.95)" }}
                         key={team.teamId}
                         layout
                         transition={{ duration: 0.2 }}

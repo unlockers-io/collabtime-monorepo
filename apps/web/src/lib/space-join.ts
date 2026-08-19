@@ -18,10 +18,11 @@ type MembershipUpsert = {
   update: { archivedAt: null };
   where: { userId_teamId: { teamId: string; userId: string } };
 };
+type ErrorEvent = Parameters<typeof log.error>[0];
 
 type SpaceJoinDeps = {
   findPrivateSpaces: (spaceIds: Array<string>) => Promise<Array<PrivateSpace>>;
-  reportError: (event: Record<string, unknown>) => void;
+  reportError: (event: ErrorEvent) => void;
   upsertMembership: (input: MembershipUpsert) => Promise<void>;
   verifyAccessToken: (token: string, spaceId: string, accessPassword: string | null) => boolean;
 };

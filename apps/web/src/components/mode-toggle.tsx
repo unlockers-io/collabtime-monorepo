@@ -16,8 +16,8 @@ const ModeToggle = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button size="icon" variant="outline" />}>
-        <Sun className="size-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-        <Moon className="absolute size-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+        <Sun className="size-[1.2rem] scale-100 rotate-0 opacity-100 transition-[transform,opacity] dark:scale-90 dark:-rotate-90 dark:opacity-0" />
+        <Moon className="absolute size-[1.2rem] scale-90 rotate-90 opacity-0 transition-[transform,opacity] dark:scale-100 dark:rotate-0 dark:opacity-100" />
         <span className="sr-only">Toggle theme</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
