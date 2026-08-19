@@ -22,7 +22,7 @@ jobs:
       # Drives the auth-email/ specs. When absent (forks, contributors without
       # access), those specs `test.skip()` themselves; the rest of the suite
       # still runs.
-      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY_TEST }}
       # Verified Resend domain, required so the auth-email/* specs can
       # deliver to `delivered+<label>@resend.dev`. The code fallback
       # `onboarding@resend.dev` boots without errors but Resend silently
