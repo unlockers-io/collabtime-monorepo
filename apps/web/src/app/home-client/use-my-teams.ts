@@ -6,6 +6,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
 
+import { queryKeys } from "@/lib/query-keys";
+
 import type { MyTeam } from "./types";
 
 const errorBodySchema = z.object({ error: z.string() });
@@ -34,7 +36,7 @@ const useMyTeams = () => {
       const data = TeamsResponseSchema.parse(await response.json());
       return data.teams;
     },
-    queryKey: ["my-teams"],
+    queryKey: queryKeys.myTeams,
   });
 
   const handleToggleArchive = async (team: MyTeam, archive: boolean) => {
@@ -48,7 +50,7 @@ const useMyTeams = () => {
 
       if (response.ok) {
         toast.success(archive ? "Workspace archived" : "Workspace restored");
-        await queryClient.invalidateQueries({ queryKey: ["my-teams"] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.myTeams });
       } else {
         const body: unknown = await response.json().catch(() => null);
         const parsed = errorBodySchema.safeParse(body);

@@ -1,3 +1,5 @@
+import { instant } from "@next/playwright";
+
 import { test, expect } from "../fixtures/auth.fixture";
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -48,8 +50,22 @@ test.describe("Login", () => {
 
   test("navigates to signup page", async ({ loginPage, page }) => {
     await loginPage.goto();
-    await loginPage.getSignUpLink().click();
+    await instant(page, async () => {
+      await loginPage.getSignUpLink().click();
+      await page.waitForURL("/signup");
+      await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
+    });
+  });
 
-    await expect(page).toHaveURL("/signup");
+  test("shows the login shell on initial load", async ({ baseURL, loginPage, page }) => {
+    await instant(
+      page,
+      async () => {
+        await loginPage.goto();
+        await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+        await expect(page.getByLabel("Email")).toBeVisible();
+      },
+      { baseURL },
+    );
   });
 });

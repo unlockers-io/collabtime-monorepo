@@ -1,15 +1,51 @@
 import { Skeleton } from "@repo/ui/components/skeleton";
+import { dehydrate } from "@tanstack/react-query";
 import { Suspense } from "react";
 
 import { LandingPage } from "@/components/landing";
 import { getSession } from "@/lib/auth-server";
+import { getMyTeams, getPendingInvitations } from "@/lib/home-data";
+import { log } from "@/lib/observability";
+import { createQueryClient } from "@/lib/query-client";
+import { queryKeys } from "@/lib/query-keys";
+import { QueryProvider } from "@/providers/query-provider";
 
 import { HomeClient } from "./home-client";
 
 const HomeContent = async () => {
   const session = await getSession();
 
-  return session ? <HomeClient /> : <LandingPage />;
+  if (!session) {
+    return <LandingPage />;
+  }
+
+  const queryClient = createQueryClient();
+  const [teamsResult, invitationsResult] = await Promise.allSettled([
+    getMyTeams(session.user.id),
+    getPendingInvitations(session.user.email),
+  ]);
+
+  if (teamsResult.status === "fulfilled") {
+    queryClient.setQueryData(queryKeys.myTeams, teamsResult.value);
+  } else {
+    log.error({ error: teamsResult.reason, message: "Failed to preload teams", route: "/" });
+  }
+
+  if (invitationsResult.status === "fulfilled") {
+    queryClient.setQueryData(queryKeys.invitations, invitationsResult.value);
+  } else {
+    log.error({
+      error: invitationsResult.reason,
+      message: "Failed to preload invitations",
+      route: "/",
+    });
+  }
+
+  return (
+    <QueryProvider dehydratedState={dehydrate(queryClient)}>
+      <HomeClient />
+    </QueryProvider>
+  );
 };
 
 const HomeSkeleton = () => (
