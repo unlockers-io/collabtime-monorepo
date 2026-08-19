@@ -8,6 +8,20 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   reactCompiler: true,
   transpilePackages: ["@repo/observability", "@repo/ui"],
+  turbopack: {
+    rules: {
+      "*.{ts,tsx}": {
+        condition: {
+          all: [
+            { not: "foreign" },
+            // oxlint-disable-next-line eslint/require-unicode-regexp -- Turbopack rejects RegExp flags.
+            { content: /[Zz]od/ },
+          ],
+        },
+        loaders: ["zod-compiler/turbopack"],
+      },
+    },
+  },
 };
 
 export default withSentryConfig(nextConfig, {
