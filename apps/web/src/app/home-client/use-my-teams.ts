@@ -68,12 +68,11 @@ const useMyTeams = () => {
         if (response.ok) {
           toast.success(archive ? "Workspace archived" : "Workspace restored");
           await queryClient.invalidateQueries({ queryKey: queryKeys.myTeams });
-          return;
+        } else {
+          const body: unknown = await response.json().catch(() => null);
+          const parsed = errorBodySchema.safeParse(body);
+          toast.error(parsed.success ? parsed.data.error : "Failed to update workspace");
         }
-
-        const body: unknown = await response.json().catch(() => null);
-        const parsed = errorBodySchema.safeParse(body);
-        toast.error(parsed.success ? parsed.data.error : "Failed to update workspace");
       } catch (error) {
         captureException(error);
         toast.error("Failed to update workspace");

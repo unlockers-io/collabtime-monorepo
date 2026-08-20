@@ -23,9 +23,8 @@ const readCachedTeamName = async (teamId: string): Promise<string | null> => {
 };
 
 /**
- * The workspace name is public metadata that does not vary by viewer, so `teamId`
- * alone is a safe cache key. Nothing session-, cookie- or membership-dependent may
- * be read from inside `readCachedTeamName`: it would leak across viewers.
+ * `teamId` is the whole cache key, so `readCachedTeamName` must never read anything
+ * session-, cookie- or membership-dependent: that would leak across viewers.
  * Every writer of the name must call `updateTag(teamNameTag(teamId))`.
  */
 const getTeamName = async (teamId: string): Promise<string | null> => {
