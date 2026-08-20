@@ -31,6 +31,8 @@ class HomePage {
 
   getMyTeamsHeading = () => this.myTeamsHeading;
 
+  getTeamLink = (teamId: string) => this.page.locator(`a[href="/${teamId}"]`);
+
   getTeamCards = () =>
     this.page.getByRole("article").filter({
       has: this.page.getByRole("link"),
