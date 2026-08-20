@@ -3,7 +3,6 @@ import { dehydrate } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 import { getPublicTeam } from "@/lib/actions/team-read";
 import { getSession } from "@/lib/auth-server";
@@ -16,7 +15,6 @@ import { isTeamRole } from "@/types";
 import type { TeamStatus } from "@/types";
 
 import { TeamPageClient } from "./client";
-import Loading from "./loading";
 import { PrivateSpaceGate } from "./private-space-gate";
 
 type TeamPageProps = {
@@ -66,7 +64,7 @@ const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus
   return { isArchived: false, status: "none" };
 };
 
-const TeamPageContent = async ({ params }: TeamPageProps) => {
+const TeamPage = async ({ params }: TeamPageProps) => {
   const { teamId } = await params;
 
   const [sessionResult, spaceResult] = await Promise.allSettled([
@@ -129,12 +127,6 @@ const TeamPageContent = async ({ params }: TeamPageProps) => {
     </QueryProvider>
   );
 };
-
-const TeamPage = ({ params }: TeamPageProps) => (
-  <Suspense fallback={<Loading />}>
-    <TeamPageContent params={params} />
-  </Suspense>
-);
 
 /** @public Next.js app-router reads the instant segment config via the module loader */
 export const instant = true;
