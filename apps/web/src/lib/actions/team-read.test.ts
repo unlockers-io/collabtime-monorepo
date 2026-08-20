@@ -10,16 +10,14 @@ const getAccessToken = vi.fn<TeamReadDeps["getAccessToken"]>();
 const getSession = vi.fn<TeamReadDeps["getSession"]>();
 const getTeamRole = vi.fn<TeamReadDeps["getTeamRole"]>();
 const readTeamRecord = vi.fn<TeamReadDeps["readTeamRecord"]>();
-const readTeamSummary = vi.fn<TeamReadDeps["readTeamSummary"]>();
 const reportError = vi.fn<TeamReadDeps["reportError"]>();
 const verifyAccessToken = vi.fn<TeamReadDeps["verifyAccessToken"]>();
-const { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam } = createTeamReadActions({
+const { getPublicTeam, getTeamMembershipRole } = createTeamReadActions({
   findSpace,
   getAccessToken,
   getSession,
   getTeamRole,
   readTeamRecord,
-  readTeamSummary,
   reportError,
   verifyAccessToken,
 });
@@ -91,58 +89,6 @@ describe("getPublicTeam", () => {
     await getPublicTeam(VALID_UUID);
 
     expect(getTeamRole).not.toHaveBeenCalled();
-  });
-});
-
-describe("validateTeam", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns true when space exists", async () => {
-    findSpace.mockResolvedValue({ accessPassword: null, id: "space-1", isPrivate: false });
-
-    const result = await validateTeam(VALID_UUID);
-
-    expect(result).toBe(true);
-  });
-
-  it("returns false when space does not exist", async () => {
-    findSpace.mockResolvedValue(null);
-
-    const result = await validateTeam(VALID_UUID);
-
-    expect(result).toBe(false);
-  });
-});
-
-describe("getTeamName", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns the trimmed summary name", async () => {
-    readTeamSummary.mockResolvedValue({ memberCount: 0, name: "  My Team  " });
-
-    const result = await getTeamName(VALID_UUID);
-
-    expect(result).toBe("My Team");
-  });
-
-  it("returns null for empty name", async () => {
-    readTeamSummary.mockResolvedValue({ memberCount: 0, name: "   " });
-
-    const result = await getTeamName(VALID_UUID);
-
-    expect(result).toBeNull();
-  });
-
-  it("returns null when the team has no stored record", async () => {
-    readTeamSummary.mockResolvedValue(null);
-
-    const result = await getTeamName(VALID_UUID);
-
-    expect(result).toBeNull();
   });
 });
 

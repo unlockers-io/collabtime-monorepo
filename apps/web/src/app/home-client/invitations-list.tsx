@@ -9,17 +9,12 @@ import type { PendingInvitation } from "@/types";
 
 type InvitationsListProps = {
   invitations: Array<PendingInvitation>;
+  isPending: boolean;
   onAccept: (invitation: PendingInvitation) => void;
   onDecline: (invitation: PendingInvitation) => void;
-  processingInvitations: Set<string>;
 };
 
-const InvitationsList = ({
-  invitations,
-  onAccept,
-  onDecline,
-  processingInvitations,
-}: InvitationsListProps) => (
+const InvitationsList = ({ invitations, isPending, onAccept, onDecline }: InvitationsListProps) => (
   <AnimatePresence>
     {invitations.length > 0 && (
       <m.div
@@ -41,7 +36,6 @@ const InvitationsList = ({
         <div className="flex flex-col gap-2">
           <AnimatePresence mode="popLayout">
             {invitations.map((invitation) => {
-              const isProcessing = processingInvitations.has(invitation.id);
               return (
                 <m.div
                   animate={{ opacity: 1, transform: "scale(1)" }}
@@ -68,24 +62,24 @@ const InvitationsList = ({
                   <div className="flex items-center gap-1">
                     <Button
                       aria-label={`Decline invitation to ${invitation.teamName}`}
-                      disabled={isProcessing}
+                      disabled={isPending}
                       onClick={() => {
                         onDecline(invitation);
                       }}
                       size="sm"
                       variant="ghost"
                     >
-                      {isProcessing ? <Spinner className="size-4" /> : <X className="size-4" />}
+                      {isPending ? <Spinner className="size-4" /> : <X className="size-4" />}
                     </Button>
                     <Button
                       aria-label={`Accept invitation to ${invitation.teamName}`}
-                      disabled={isProcessing}
+                      disabled={isPending}
                       onClick={() => {
                         onAccept(invitation);
                       }}
                       size="sm"
                     >
-                      {isProcessing ? (
+                      {isPending ? (
                         <Spinner className="size-4" />
                       ) : (
                         <>

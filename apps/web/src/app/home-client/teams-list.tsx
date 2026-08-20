@@ -14,13 +14,13 @@ import Link from "next/link";
 import type { MyTeam, WorkspaceToDelete } from "./types";
 
 type TeamsListProps = {
+  isArchivePending: boolean;
   onArchive: (team: MyTeam) => void;
   onRequestDelete: (workspace: WorkspaceToDelete) => void;
-  processingArchive: Set<string>;
   teams: Array<MyTeam>;
 };
 
-const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: TeamsListProps) => (
+const TeamsList = ({ isArchivePending, onArchive, onRequestDelete, teams }: TeamsListProps) => (
   <AnimatePresence>
     {teams.length > 0 && (
       <m.div
@@ -41,7 +41,6 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
         <div className="flex flex-col gap-2">
           <AnimatePresence mode="popLayout">
             {teams.map((team) => {
-              const isArchivePending = processingArchive.has(team.teamId);
               return (
                 <m.div
                   animate={{ opacity: 1, transform: "scale(1)" }}
@@ -52,7 +51,11 @@ const TeamsList = ({ onArchive, onRequestDelete, processingArchive, teams }: Tea
                   layout
                   transition={{ duration: 0.2 }}
                 >
-                  <Link className="flex flex-1 items-center gap-3" href={`/${team.teamId}`}>
+                  <Link
+                    className="flex flex-1 items-center gap-3"
+                    href={`/${team.teamId}`}
+                    prefetch
+                  >
                     <div className="flex size-9 items-center justify-center rounded-lg bg-secondary">
                       <Users className="size-4 text-muted-foreground" />
                     </div>
