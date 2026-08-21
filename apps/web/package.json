@@ -7,6 +7,7 @@
     "dev": "portless run --name collabtime.web next dev --turbopack",
     "dev:ci": "next dev",
     "build": "next build",
+    "vercel-build": "pnpm --filter @repo/db db:deploy && pnpm --filter @repo/db db:generate && next build",
     "start": "next start",
     "lint": "oxlint src",
     "typecheck": "tsc --noEmit",
