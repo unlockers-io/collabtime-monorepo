@@ -10,19 +10,19 @@ import { createQueryClient } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
 import { QueryProvider } from "@/providers/query-provider";
 
-import { HomeClient } from "./home-client";
+import { HomeShell } from "./home-client";
+import { HomeLists } from "./home-client/lists";
 
-const HomeContent = async () => {
-  const session = await getSession();
+type HomeDataProps = {
+  email: string;
+  userId: string;
+};
 
-  if (!session) {
-    return <LandingPage />;
-  }
-
+const HomeData = async ({ email, userId }: HomeDataProps) => {
   const queryClient = createQueryClient();
   const [teamsResult, invitationsResult] = await Promise.allSettled([
-    getMyTeams(session.user.id),
-    getPendingInvitations(session.user.email),
+    getMyTeams(userId),
+    getPendingInvitations(email),
   ]);
 
   if (teamsResult.status === "fulfilled") {
@@ -43,8 +43,32 @@ const HomeContent = async () => {
 
   return (
     <QueryProvider dehydratedState={dehydrate(queryClient)}>
-      <HomeClient />
+      <HomeLists />
     </QueryProvider>
+  );
+};
+
+const HomeDataSkeleton = () => (
+  <div aria-hidden className="flex w-full flex-col gap-3">
+    <Skeleton className="h-4 w-24" />
+    <Skeleton className="h-15 w-full rounded-xl" />
+    <Skeleton className="h-15 w-full rounded-xl" />
+  </div>
+);
+
+const HomeContent = async () => {
+  const session = await getSession();
+
+  if (!session) {
+    return <LandingPage />;
+  }
+
+  return (
+    <HomeShell>
+      <Suspense fallback={<HomeDataSkeleton />}>
+        <HomeData email={session.user.email} userId={session.user.id} />
+      </Suspense>
+    </HomeShell>
   );
 };
 

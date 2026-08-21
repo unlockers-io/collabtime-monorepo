@@ -3,7 +3,7 @@ import { SPACE_ACCESS_COOKIE_PREFIX } from "@/lib/space-access";
 import type { getTeamRole } from "@/lib/team-auth";
 import type { Team, TeamRole } from "@/types";
 
-import type { readTeamRecord, readTeamSummary } from "../team-store";
+import type { readTeamRecord } from "../team-store";
 import { UUIDSchema } from "../validation";
 
 import { sanitizeTeam } from "./helpers";
@@ -17,7 +17,6 @@ type TeamReadDeps = {
   getSession: typeof getSession;
   getTeamRole: typeof getTeamRole;
   readTeamRecord: typeof readTeamRecord;
-  readTeamSummary: typeof readTeamSummary;
   reportError: (event: ActionErrorEvent) => void;
   verifyAccessToken: (token: string, spaceId: string, accessPassword: string | null) => boolean;
 };
@@ -87,33 +86,7 @@ const createTeamReadActions = (deps: TeamReadDeps) => {
     }
   };
 
-  const validateTeam = async (teamId: string): Promise<boolean> => {
-    try {
-      const uuidResult = UUIDSchema.safeParse(teamId);
-      if (!uuidResult.success) {
-        return false;
-      }
-
-      const space = await deps.findSpace(teamId);
-      return space !== null;
-    } catch (error) {
-      deps.reportError({ error, message: "Failed to validate team", route: "actions/team-read" });
-      return false;
-    }
-  };
-
-  const getTeamName = async (teamId: string): Promise<string | null> => {
-    try {
-      const summary = await deps.readTeamSummary(teamId);
-      const name = summary?.name.trim() ?? "";
-      return name.length > 0 ? name : null;
-    } catch (error) {
-      deps.reportError({ error, message: "Failed to get team name", route: "actions/team-read" });
-      return null;
-    }
-  };
-
-  return { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam };
+  return { getPublicTeam, getTeamMembershipRole };
 };
 
 export { createTeamReadActions };

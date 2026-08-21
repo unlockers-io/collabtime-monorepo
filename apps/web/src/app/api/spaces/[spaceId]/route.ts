@@ -1,10 +1,12 @@
 import { prisma, type Space } from "@repo/db";
+import { updateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { hashPassword } from "@/lib/crypto";
 import { log, withEvlog } from "@/lib/observability";
+import { teamNameTag } from "@/lib/team-meta";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
 const updateSpaceSchema = z.discriminatedUnion("visibility", [
@@ -132,6 +134,8 @@ export const DELETE = withEvlog(async (_request: Request, { params }: Params) =>
     await prisma.space.delete({
       where: { id: spaceId },
     });
+
+    updateTag(teamNameTag(owned.space.teamId));
 
     return NextResponse.json({ success: true });
   } catch (error) {

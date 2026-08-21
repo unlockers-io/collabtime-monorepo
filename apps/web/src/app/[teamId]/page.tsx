@@ -4,11 +4,12 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { getPublicTeam, getTeamName, validateTeam } from "@/lib/actions/team-read";
+import { getPublicTeam } from "@/lib/actions/team-read";
 import { getSession } from "@/lib/auth-server";
 import { createQueryClient } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
 import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
+import { getTeamName } from "@/lib/team-meta";
 import { QueryProvider } from "@/providers/query-provider";
 import { isTeamRole } from "@/types";
 import type { TeamStatus } from "@/types";
@@ -22,22 +23,10 @@ type TeamPageProps = {
 
 export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metadata> => {
   const { teamId } = await params;
-
-  const [existsResult, teamNameResult] = await Promise.allSettled([
-    validateTeam(teamId),
-    getTeamName(teamId),
-  ]);
-
-  const exists = existsResult.status === "fulfilled" ? existsResult.value : false;
-
-  if (!exists) {
-    notFound();
-  }
-
-  const teamName = teamNameResult.status === "fulfilled" ? teamNameResult.value : null;
+  const teamName = await getTeamName(teamId);
 
   return {
-    description: `Working hours and overlap view for ${teamName}.`,
+    description: `Working hours and overlap view for ${teamName ?? "your team"}.`,
     title: teamName ?? "Team Workspace",
   };
 };
@@ -78,22 +67,19 @@ const getTeamStatus = async (userId: string, teamId: string): Promise<TeamStatus
 const TeamPage = async ({ params }: TeamPageProps) => {
   const { teamId } = await params;
 
-  const [existsResult, sessionResult, spaceResult] = await Promise.allSettled([
-    validateTeam(teamId),
+  const [sessionResult, spaceResult] = await Promise.allSettled([
     getSession(),
     prisma.space.findUnique({ where: { teamId } }),
   ]);
 
-  const exists = existsResult.status === "fulfilled" ? existsResult.value : false;
-
-  if (!exists) {
-    notFound();
-  }
-
   const session = sessionResult.status === "fulfilled" ? sessionResult.value : null;
   const space = spaceResult.status === "fulfilled" ? spaceResult.value : null;
 
-  if (space?.isPrivate === true) {
+  if (!space) {
+    notFound();
+  }
+
+  if (space.isPrivate) {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`)?.value;
     const hasGuestAccess =
@@ -120,7 +106,7 @@ const TeamPage = async ({ params }: TeamPageProps) => {
     ? await getTeamStatus(session.user.id, teamId)
     : GUEST_STATUS;
 
-  const isSpaceOwner = Boolean(session && space && space.ownerId === session.user.id);
+  const isSpaceOwner = Boolean(session && space.ownerId === session.user.id);
   const queryClient = createQueryClient();
   const teamResult = await getPublicTeam(teamId);
 
@@ -133,7 +119,7 @@ const TeamPage = async ({ params }: TeamPageProps) => {
       <TeamPageClient
         isArchived={isArchived}
         isAuthenticated={Boolean(session)}
-        spaceId={isSpaceOwner ? (space?.id ?? null) : null}
+        spaceId={isSpaceOwner ? space.id : null}
         teamId={teamId}
         teamStatus={teamStatus}
         userId={session?.user?.id}
@@ -142,7 +128,7 @@ const TeamPage = async ({ params }: TeamPageProps) => {
   );
 };
 
-/** @public Next.js reads this segment config; the page awaits the team, session and cookies before it can render, so it blocks. */
-export const instant = false;
+/** @public Next.js app-router reads the instant segment config via the module loader */
+export const instant = true;
 
 export default TeamPage;

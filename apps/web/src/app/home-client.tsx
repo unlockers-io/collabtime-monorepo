@@ -3,37 +3,21 @@
 import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { captureException } from "@sentry/nextjs";
-import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { DeleteWorkspaceDialog } from "@/components/delete-workspace-dialog";
 import { Nav } from "@/components/nav";
 import { createTeam } from "@/lib/actions/team-create";
-import { queryKeys } from "@/lib/query-keys";
 import { getUserTimezone } from "@/lib/timezones";
 
-import { ArchivedTeamsList } from "./home-client/archived-teams-list";
-import { InvitationsList } from "./home-client/invitations-list";
-import { TeamsList } from "./home-client/teams-list";
-import type { WorkspaceToDelete } from "./home-client/types";
-import { useInvitations } from "./home-client/use-invitations";
-import { useMyTeams } from "./home-client/use-my-teams";
+type HomeShellProps = {
+  children: React.ReactNode;
+};
 
-const HomeClient = () => {
+const HomeShell = ({ children }: HomeShellProps) => {
   const { push } = useRouter();
-  const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
-  const [workspaceToDelete, setWorkspaceToDelete] = useState<WorkspaceToDelete | null>(null);
-
-  const { handleAcceptInvitation, handleDeclineInvitation, invitations, processingInvitations } =
-    useInvitations();
-  const { handleToggleArchive, isLoadingTeams, myTeams, processingArchive } = useMyTeams();
-
-  const handleWorkspaceDeleted = async () => {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.myTeams });
-  };
 
   const handleCreateTeam = async () => {
     setIsCreating(true);
@@ -50,9 +34,6 @@ const HomeClient = () => {
     }
     setIsCreating(false);
   };
-
-  const activeTeams = myTeams.filter((team) => team.archivedAt === null);
-  const archivedTeams = myTeams.filter((team) => team.archivedAt !== null);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -97,55 +78,10 @@ const HomeClient = () => {
           </button>
         </div>
 
-        <InvitationsList
-          invitations={invitations}
-          onAccept={(invitation) => {
-            void handleAcceptInvitation(invitation);
-          }}
-          onDecline={(invitation) => {
-            void handleDeclineInvitation(invitation);
-          }}
-          processingInvitations={processingInvitations}
-        />
-
-        {!isLoadingTeams && (
-          <TeamsList
-            onArchive={(team) => {
-              void handleToggleArchive(team, true);
-            }}
-            onRequestDelete={setWorkspaceToDelete}
-            processingArchive={processingArchive}
-            teams={activeTeams}
-          />
-        )}
-
-        {!isLoadingTeams && (
-          <ArchivedTeamsList
-            onRequestDelete={setWorkspaceToDelete}
-            onUnarchive={(team) => {
-              void handleToggleArchive(team, false);
-            }}
-            processingArchive={processingArchive}
-            teams={archivedTeams}
-          />
-        )}
+        {children}
       </main>
-
-      {workspaceToDelete && (
-        <DeleteWorkspaceDialog
-          onDeleted={handleWorkspaceDeleted}
-          onOpenChange={(open) => {
-            if (!open) {
-              setWorkspaceToDelete(null);
-            }
-          }}
-          open={workspaceToDelete !== null}
-          spaceId={workspaceToDelete.spaceId}
-          teamName={workspaceToDelete.teamName}
-        />
-      )}
     </div>
   );
 };
 
-export { HomeClient };
+export { HomeShell };

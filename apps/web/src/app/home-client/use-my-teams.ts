@@ -3,7 +3,7 @@
 import { toast } from "@repo/ui/components/sonner";
 import { captureException } from "@sentry/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useOptimistic, useTransition } from "react";
 import { z } from "zod";
 
 import { queryKeys } from "@/lib/query-keys";
@@ -23,9 +23,19 @@ const TeamSchema = z.object({
 
 const TeamsResponseSchema = z.object({ teams: z.array(TeamSchema) });
 
+type ArchiveUpdate = {
+  archivedAt: string | null;
+  teamId: string;
+};
+
+const applyArchive = (teams: Array<MyTeam>, update: ArchiveUpdate): Array<MyTeam> =>
+  teams.map((team) =>
+    team.teamId === update.teamId ? { ...team, archivedAt: update.archivedAt } : team,
+  );
+
 const useMyTeams = () => {
   const queryClient = useQueryClient();
-  const [processingArchive, setProcessingArchive] = useState<Set<string>>(new Set());
+  const [isArchivePending, startArchiveTransition] = useTransition();
 
   const { data: myTeams = [], isLoading: isLoadingTeams } = useQuery({
     queryFn: async () => {
@@ -39,39 +49,42 @@ const useMyTeams = () => {
     queryKey: queryKeys.myTeams,
   });
 
-  const handleToggleArchive = async (team: MyTeam, archive: boolean) => {
-    setProcessingArchive((prev) => new Set(prev).add(team.teamId));
-    try {
-      const response = await fetch(`/api/teams/${team.teamId}/membership`, {
-        body: JSON.stringify({ archived: archive }),
-        headers: { "Content-Type": "application/json" },
-        method: "PATCH",
+  const [optimisticTeams, applyOptimisticArchive] = useOptimistic(myTeams, applyArchive);
+
+  const handleToggleArchive = (team: MyTeam, archive: boolean) => {
+    startArchiveTransition(async () => {
+      applyOptimisticArchive({
+        archivedAt: archive ? new Date().toISOString() : null,
+        teamId: team.teamId,
       });
 
-      if (response.ok) {
-        toast.success(archive ? "Workspace archived" : "Workspace restored");
-        await queryClient.invalidateQueries({ queryKey: queryKeys.myTeams });
-      } else {
-        const body: unknown = await response.json().catch(() => null);
-        const parsed = errorBodySchema.safeParse(body);
-        toast.error(parsed.success ? parsed.data.error : "Failed to update workspace");
+      try {
+        const response = await fetch(`/api/teams/${team.teamId}/membership`, {
+          body: JSON.stringify({ archived: archive }),
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
+        });
+
+        if (response.ok) {
+          toast.success(archive ? "Workspace archived" : "Workspace restored");
+          await queryClient.invalidateQueries({ queryKey: queryKeys.myTeams });
+        } else {
+          const body: unknown = await response.json().catch(() => null);
+          const parsed = errorBodySchema.safeParse(body);
+          toast.error(parsed.success ? parsed.data.error : "Failed to update workspace");
+        }
+      } catch (error) {
+        captureException(error);
+        toast.error("Failed to update workspace");
       }
-    } catch (error) {
-      captureException(error);
-      toast.error("Failed to update workspace");
-    }
-    setProcessingArchive((prev) => {
-      const next = new Set(prev);
-      next.delete(team.teamId);
-      return next;
     });
   };
 
   return {
     handleToggleArchive,
+    isArchivePending,
     isLoadingTeams,
-    myTeams,
-    processingArchive,
+    myTeams: optimisticTeams,
   };
 };
 

@@ -2,14 +2,13 @@
 
 import { prisma } from "@repo/db";
 import { cookies } from "next/headers";
-import { cache } from "react";
 
 import { getSession } from "@/lib/auth-server";
 import { log } from "@/lib/observability";
 import { verifySpaceAccessToken } from "@/lib/space-access";
 import { getTeamRole } from "@/lib/team-auth";
 
-import { readTeamRecord, readTeamSummary } from "../team-store";
+import { readTeamRecord } from "../team-store";
 
 import { createTeamReadActions } from "./team-read-core";
 
@@ -26,7 +25,6 @@ const teamReadActions = createTeamReadActions({
   getSession,
   getTeamRole,
   readTeamRecord,
-  readTeamSummary,
   reportError: log.error,
   verifyAccessToken: (token, spaceId, accessPassword) =>
     verifySpaceAccessToken(token, spaceId, accessPassword).valid,
@@ -34,7 +32,5 @@ const teamReadActions = createTeamReadActions({
 
 const getPublicTeam = teamReadActions.getPublicTeam;
 const getTeamMembershipRole = teamReadActions.getTeamMembershipRole;
-const getTeamName = cache(teamReadActions.getTeamName);
-const validateTeam = cache(teamReadActions.validateTeam);
 
-export { getPublicTeam, getTeamMembershipRole, getTeamName, validateTeam };
+export { getPublicTeam, getTeamMembershipRole };

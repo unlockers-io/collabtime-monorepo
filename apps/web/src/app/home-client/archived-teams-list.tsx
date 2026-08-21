@@ -16,16 +16,16 @@ import { useState } from "react";
 import type { MyTeam, WorkspaceToDelete } from "./types";
 
 type ArchivedTeamsListProps = {
+  isArchivePending: boolean;
   onRequestDelete: (workspace: WorkspaceToDelete) => void;
   onUnarchive: (team: MyTeam) => void;
-  processingArchive: Set<string>;
   teams: Array<MyTeam>;
 };
 
 const ArchivedTeamsList = ({
+  isArchivePending,
   onRequestDelete,
   onUnarchive,
-  processingArchive,
   teams,
 }: ArchivedTeamsListProps) => {
   const [showArchived, setShowArchived] = useState(false);
@@ -76,7 +76,6 @@ const ArchivedTeamsList = ({
               >
                 <AnimatePresence mode="popLayout">
                   {teams.map((team) => {
-                    const isArchivePending = processingArchive.has(team.teamId);
                     return (
                       <m.div
                         animate={{ opacity: 1, transform: "scale(1)" }}
