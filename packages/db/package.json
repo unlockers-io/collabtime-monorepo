@@ -21,7 +21,7 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:push": "prisma db push",
-    "db:deploy": "if [ \"$VERCEL_ENV\" = \"production\" ]; then DATABASE_URL=\"$DIRECT_DATABASE_URL\" prisma db push --skip-generate; else echo \"db:deploy skipped (VERCEL_ENV=${VERCEL_ENV:-local})\"; fi",
+    "db:deploy": "if [ \"$VERCEL_ENV\" = \"production\" ]; then DATABASE_URL=\"$DIRECT_DATABASE_URL\" prisma db push; else echo \"db:deploy skipped (VERCEL_ENV=${VERCEL_ENV:-local})\"; fi",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "postinstall": "pnpm run db:generate"
