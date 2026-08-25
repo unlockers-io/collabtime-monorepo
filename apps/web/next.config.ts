@@ -9,8 +9,19 @@ const nextConfig: NextConfig = {
     instantInsights: { validationLevel: "manual-warning" },
     turbopackRustReactCompiler: true,
   },
+  headers: () =>
+    Promise.resolve([
+      {
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ],
+        source: "/:path*",
+      },
+    ]),
   partialPrefetching: true,
   reactCompiler: true,
+  reactStrictMode: true,
   transpilePackages: ["@repo/observability", "@repo/ui"],
   turbopack: {
     rules: {
