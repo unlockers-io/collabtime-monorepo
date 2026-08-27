@@ -20,7 +20,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "evlog": "^2.25.0"
+    "evlog": "^2.27.0"
   },
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
@@ -28,11 +28,11 @@
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "better-auth": "^1.7.1",
-    "hono": "^4.13.1",
-    "next": "^16.3.0",
+    "hono": "^4.13.3",
+    "next": "^16.3.2",
     "react": "^19.2.8",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "peerDependencies": {
     "better-auth": "^1.7.1",
