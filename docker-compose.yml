@@ -30,7 +30,7 @@ services:
       - shared_buffers=256MB
 
   redis:
-    image: redis:alpine
+    image: redis:8-alpine
     container_name: collabtime-redis
     restart: unless-stopped
     ports:
