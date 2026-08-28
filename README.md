@@ -55,7 +55,7 @@ pnpm install
 ### 2. Configure environment variables
 
 ```bash
-cp apps/web/.env.example apps/web/.env.local
+cp apps/web/.env.example apps/web/.env
 ```
 
 The example values already point at the Docker stack below (`DATABASE_URL` on `:5433`, `REDIS_URL` on `:6379`) and the portless URL. Set `BETTER_AUTH_SECRET` to any 32+ char random string (`openssl rand -base64 32`). Create `packages/db/.env` with the same `DATABASE_URL` so Prisma CLI commands run from that package.
