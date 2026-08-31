@@ -1,3 +1,5 @@
+import "zod/compile";
+
 import { init, replayIntegration } from "@sentry/nextjs";
 
 init({

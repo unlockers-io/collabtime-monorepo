@@ -1,3 +1,5 @@
+import "zod/compile";
+
 import { defineNodeInstrumentation } from "@repo/observability/next/instrumentation";
 
 const evlog = defineNodeInstrumentation(() => import("./lib/observability"));
