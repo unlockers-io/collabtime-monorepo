@@ -27,18 +27,18 @@
     "postinstall": "pnpm run db:generate"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.9.1",
-    "@prisma/client": "^7.9.1",
-    "better-auth": "^1.7.1",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "better-auth": "^1.7.2",
     "dotenv": "^17.4.2",
     "pg": "^8.23.0"
   },
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.4.0",
     "@types/pg": "8.23.1",
-    "prisma": "^7.9.1",
+    "prisma": "^7.10.0",
     "tsdown": "^0.22.14",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2",
