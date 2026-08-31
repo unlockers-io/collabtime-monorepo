@@ -70,6 +70,24 @@ describe("validateEnv", () => {
 
     expect(() => validateEnv()).toThrow("Invalid environment variables");
   });
+
+  it("accepts empty string for optional RESEND_FROM_EMAIL (CI passes unset secrets as '')", () => {
+    vi.stubEnv("RESEND_FROM_EMAIL", "");
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("accepts empty string for optional SPACE_ACCESS_SECRET (CI passes unset secrets as '')", () => {
+    vi.stubEnv("SPACE_ACCESS_SECRET", "");
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("accepts empty string for optional WEB_APP_URL (CI passes unset secrets as '')", () => {
+    vi.stubEnv("WEB_APP_URL", "");
+
+    expect(() => validateEnv()).not.toThrow();
+  });
 });
 
 describe("getEnv", () => {

@@ -19,9 +19,10 @@ const envSchema = z.object({
       },
       { message: "Must be a valid email or 'Display Name <email>' format" },
     )
-    .optional(),
-  SPACE_ACCESS_SECRET: z.string().min(32).optional(),
-  WEB_APP_URL: z.url("WEB_APP_URL must be a valid URL").optional(),
+    .optional()
+    .or(z.literal("")),
+  SPACE_ACCESS_SECRET: z.string().min(32).optional().or(z.literal("")),
+  WEB_APP_URL: z.url("WEB_APP_URL must be a valid URL").optional().or(z.literal("")),
 });
 
 type Env = z.infer<typeof envSchema>;
