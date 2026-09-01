@@ -98,9 +98,16 @@ const inviteMember = async (
     const fromEmail = getEnv("RESEND_FROM_EMAIL");
     const webAppUrl = getEnv("WEB_APP_URL") ?? "";
 
-    if (apiKey !== undefined && apiKey !== "") {
-      const emailOptions =
-        fromEmail !== undefined && fromEmail !== "" ? { apiKey, from: fromEmail } : { apiKey };
+    if (apiKey === undefined) {
+      after(() => {
+        log.warn({
+          message: "Resend not configured, skipping invitation email",
+          recipientEmail: trimmedEmail,
+          route: "actions/invitation",
+        });
+      });
+    } else {
+      const emailOptions = fromEmail === undefined ? { apiKey } : { apiKey, from: fromEmail };
       const result = await sendTransactionalEmail(
         {
           inviterName: session.user.name || session.user.email.split("@")[0] || "Someone",
@@ -120,14 +127,6 @@ const inviteMember = async (
           route: "actions/invitation",
         });
       }
-    } else {
-      after(() => {
-        log.warn({
-          message: "Resend not configured, skipping invitation email",
-          recipientEmail: trimmedEmail,
-          route: "actions/invitation",
-        });
-      });
     }
 
     return { data: { emailSent, invitationId: invitation.id }, success: true };

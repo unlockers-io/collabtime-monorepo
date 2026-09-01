@@ -7,7 +7,7 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  REDIS_URL: z.url("REDIS_URL must be a valid URL").optional().or(z.literal("")),
+  REDIS_URL: z.url("REDIS_URL must be a valid URL").optional(),
   // Accepts bare email or RFC 5322 "Display Name <email>", both valid Resend sender formats.
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z
@@ -19,16 +19,18 @@ const envSchema = z.object({
       },
       { message: "Must be a valid email or 'Display Name <email>' format" },
     )
-    .optional()
-    .or(z.literal("")),
-  SPACE_ACCESS_SECRET: z.string().min(32).optional().or(z.literal("")),
-  WEB_APP_URL: z.url("WEB_APP_URL must be a valid URL").optional().or(z.literal("")),
+    .optional(),
+  SPACE_ACCESS_SECRET: z.string().min(32).optional(),
+  WEB_APP_URL: z.url("WEB_APP_URL must be a valid URL").optional(),
 });
 
 type Env = z.infer<typeof envSchema>;
 
+const emptyStringAsUndefined = (source: NodeJS.ProcessEnv) =>
+  Object.fromEntries(Object.entries(source).filter(([, value]) => value !== ""));
+
 const validateEnv = (): Env => {
-  const result = envSchema.safeParse(process.env);
+  const result = envSchema.safeParse(emptyStringAsUndefined(process.env));
 
   if (!result.success) {
     const errors = result.error.issues
