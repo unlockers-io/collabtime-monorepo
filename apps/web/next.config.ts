@@ -1,5 +1,8 @@
+import { applyPortlessUrls } from "@repo/portless-env";
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+
+applyPortlessUrls({ WEB_APP_URL: ["collabtime.web"] });
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["collabtime.web.localhost", "*.collabtime.web.localhost", "*.vercel.app"],
