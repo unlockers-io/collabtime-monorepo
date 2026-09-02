@@ -27,7 +27,7 @@ minimumReleaseAgeExclude:
   - "@better-auth/prisma-adapter@1.7.1"
   - "@better-auth/telemetry@1.7.1"
   - better-auth@1.7.1
-  - cnfast@0.0.8
+  - cn@0.2.4
   - "@oxlint-tsgolint/darwin-arm64@7.0.2001"
   - "@oxlint-tsgolint/darwin-x64@7.0.2001"
   - "@oxlint-tsgolint/linux-arm64@7.0.2001"
