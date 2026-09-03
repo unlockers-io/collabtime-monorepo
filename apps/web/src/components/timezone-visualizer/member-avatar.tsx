@@ -19,26 +19,26 @@ const MemberAvatar = ({ dayOffset, isSelected, member, totalMembers }: MemberAva
 
   const content = (
     <div
-      className={`flex h-8 items-center justify-center sm:justify-start sm:gap-2 ${hasDayOffset ? "cursor-help" : ""}`}
+      className={`flex h-8 items-center justify-start gap-1.5 sm:gap-2 ${hasDayOffset ? "cursor-help" : ""}`}
     >
       <div className="relative">
         <div
-          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
+          className="flex size-6 shrink-0 items-center justify-center border border-border bg-secondary text-[0.6875rem] font-semibold text-secondary-foreground sm:size-7 sm:text-xs"
           title={member.name}
         >
           {member.name.charAt(0).toUpperCase()}
         </div>
         {isSelected && totalMembers > 1 && (
-          <div className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background bg-foreground sm:h-3 sm:w-3" />
+          <div className="absolute -top-0.5 -right-0.5 size-2.5 border-2 border-background bg-foreground sm:h-3 sm:w-3" />
         )}
         {dayOffset !== 0 && (
-          <div className="absolute -right-1 -bottom-0.5 flex size-5 items-center justify-center rounded-full bg-warning text-xs font-bold text-warning-foreground">
+          <div className="absolute -right-1 -bottom-0.5 flex size-4 items-center justify-center bg-warning font-mono text-[0.625rem] font-bold text-warning-foreground sm:size-5 sm:text-xs">
             {dayOffset > 0 ? `+${dayOffset}` : dayOffset}
           </div>
         )}
       </div>
       <span
-        className="hidden truncate text-sm font-medium text-foreground sm:block"
+        className="block truncate text-xs font-medium text-foreground sm:text-sm"
         title={member.name}
       >
         {member.name}

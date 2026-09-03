@@ -233,12 +233,12 @@ const ComparePanel = ({
 
       {canShowOverlap && (
         <div className="flex flex-col gap-3 border-t border-border pt-3">
-          <p className="text-right font-display text-xs text-muted-foreground tabular-nums">
+          <p className="text-right font-mono text-xs text-muted-foreground tabular-nums">
             <OverlapSummary hours={overlapData.hours} />
           </p>
 
           <div className="flex items-stretch gap-2 sm:gap-3">
-            <div className="flex w-8 shrink-0 flex-col sm:w-24">
+            <div className="flex w-28 shrink-0 flex-col sm:w-40">
               <div className="flex h-8 items-center justify-center sm:justify-start sm:gap-2">
                 <OverlapStatusIcon status={overlapStatus} />
                 <span className="hidden truncate text-sm font-medium text-foreground sm:block">
@@ -259,7 +259,7 @@ const ComparePanel = ({
           </div>
 
           <div className="flex gap-2 sm:gap-3">
-            <div className="w-8 shrink-0 sm:w-24" />
+            <div className="w-28 shrink-0 sm:w-40" />
             <div className="flex flex-1 justify-between">
               {TIME_AXIS_HOURS.map((hour, index, arr) => {
                 const isFirst = index === 0;
@@ -274,7 +274,7 @@ const ComparePanel = ({
                     }}
                   >
                     <div className="h-1.5 w-px bg-border" />
-                    <span className="font-display text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                    <span className="font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                       {formatHour(hour % HOURS_IN_DAY)}
                     </span>
                   </div>

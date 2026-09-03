@@ -51,8 +51,8 @@ const HomeData = async ({ email, userId }: HomeDataProps) => {
 const HomeDataSkeleton = () => (
   <div aria-hidden className="flex w-full flex-col gap-3">
     <Skeleton className="h-4 w-24" />
-    <Skeleton className="h-15 w-full rounded-xl" />
-    <Skeleton className="h-15 w-full rounded-xl" />
+    <Skeleton className="h-15 w-full" />
+    <Skeleton className="h-15 w-full" />
   </div>
 );
 
@@ -76,7 +76,7 @@ const HomeSkeleton = () => (
   <div aria-hidden className="flex flex-1 flex-col">
     <div className="flex items-center justify-between px-4 py-6 sm:px-6">
       <div className="flex items-center gap-3">
-        <Skeleton className="size-9 rounded-lg" />
+        <Skeleton className="size-9" />
         <Skeleton className="h-6 w-28" />
       </div>
       <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ const HomeSkeleton = () => (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-6 px-4 py-8 sm:px-6">
       <Skeleton className="h-10 w-64 sm:h-12 sm:w-80" />
       <Skeleton className="h-6 w-full max-w-sm" />
-      <Skeleton className="h-12 w-full rounded-xl sm:h-14 sm:w-72" />
+      <Skeleton className="h-12 w-full sm:h-14 sm:w-72" />
     </div>
   </div>
 );

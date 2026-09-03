@@ -40,24 +40,20 @@ const HomeShell = ({ children }: HomeShellProps) => {
       <Nav isAuthenticated />
 
       <main
-        className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-4 py-8 sm:gap-12 sm:px-6"
+        className="mx-auto flex w-full max-w-450 flex-1 flex-col gap-14 px-4 py-14 sm:px-6 sm:py-20 lg:px-8 xl:px-12"
         id="main"
       >
-        <div className="flex flex-col items-center gap-6 text-center">
-          <div className="flex flex-col gap-2 sm:gap-3">
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
-              Collab Time
+        <div className="grid items-end gap-8 border-b border-border pb-10 sm:grid-cols-[1fr_auto]">
+          <div className="flex flex-col gap-3">
+            <h1 className="font-display text-5xl font-semibold tracking-[-0.04em] text-balance sm:text-7xl">
+              Your workspaces
             </h1>
-            <p className="max-w-sm text-base text-pretty text-muted-foreground sm:text-lg">
-              Visualize your team&apos;s working hours across timezones. Find the perfect moment to
-              connect.
+            <p className="max-w-lg text-base text-pretty text-muted-foreground sm:text-lg">
+              Open a team to read the shared day, or create a new workspace.
             </p>
           </div>
-        </div>
-
-        <div className="flex w-full flex-col items-center gap-4">
           <button
-            className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:w-auto sm:min-w-72 sm:gap-3 sm:px-8 sm:text-lg"
+            className="group flex h-12 w-full items-center justify-center gap-2 bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             disabled={isCreating}
             onClick={() => {
               void handleCreateTeam();
@@ -71,13 +67,12 @@ const HomeShell = ({ children }: HomeShellProps) => {
               </>
             ) : (
               <>
-                Create Team Workspace
-                <ArrowRight className="size-5 shrink-0 transition-transform duration-300 group-hover:translate-x-1" />
+                Create a workspace
+                <ArrowRight className="size-5 shrink-0" />
               </>
             )}
           </button>
         </div>
-
         {children}
       </main>
     </div>

@@ -159,7 +159,7 @@ const TeamPageClient = ({
 
   const mainContent = (
     <div className="min-h-dvh w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
-      <main className="mx-auto flex w-full max-w-450 flex-col gap-6" id="main">
+      <main className="mx-auto flex w-full max-w-450 flex-col gap-10" id="main">
         <Nav
           canDeleteWorkspace={spaceId !== null}
           isAdmin={isAdmin}
@@ -177,13 +177,11 @@ const TeamPageClient = ({
           variant="team"
         />
 
-        {members.length > 0 && <TeamInsights groups={groups} members={orderedMembers} />}
-
         {members.length > 0 && (
           <SectionCard>
             <SectionCardHeader bordered>
               <SectionCardTitle description="Times shown in your local timezone" icon={Clock}>
-                Working Hours Overview
+                Working hours
               </SectionCardTitle>
             </SectionCardHeader>
             <SectionCardContent>
@@ -197,7 +195,9 @@ const TeamPageClient = ({
           </SectionCard>
         )}
 
-        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2 [&>*]:min-w-0">
+        {members.length > 0 && <TeamInsights groups={groups} members={orderedMembers} />}
+
+        <div className="grid grid-cols-1 items-start gap-10 xl:grid-cols-[1.4fr_0.6fr] [&>*]:min-w-0">
           <SectionCard>
             <SectionCardHeader>
               <SectionCardTitle icon={Users}>Team Members</SectionCardTitle>

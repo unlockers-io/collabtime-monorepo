@@ -1,33 +1,7 @@
 @import "@repo/ui/globals.css";
 
-.timezone-landing {
-  background-image:
-    radial-gradient(
-      circle at 78% 7%,
-      color-mix(in oklch, var(--primary) 10%, transparent),
-      transparent 22rem
-    ),
-    linear-gradient(
-      90deg,
-      transparent 49.9%,
-      color-mix(in oklch, var(--border) 45%, transparent) 50%,
-      transparent 50.1%
-    );
-}
-
-.time-rail {
-  position: relative;
-}
-
-.time-rail::before {
-  position: absolute;
-  z-index: 1;
-  top: -0.75rem;
-  bottom: -0.75rem;
-  left: 66.666%;
-  width: 1px;
-  background: var(--primary);
-  box-shadow: 0 0 1.5rem color-mix(in oklch, var(--primary) 70%, transparent);
-  content: "";
-  pointer-events: none;
+@layer base {
+  a {
+    text-underline-offset: 0.22em;
+  }
 }

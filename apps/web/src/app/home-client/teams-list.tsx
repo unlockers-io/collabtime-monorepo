@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
-import { Archive, MoreHorizontal, Shield, Trash2, Users } from "lucide-react";
+import { Archive, ArrowUpRight, MoreHorizontal, Shield, Trash2 } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import Link from "next/link";
 
@@ -24,43 +24,42 @@ const TeamsList = ({ isArchivePending, onArchive, onRequestDelete, teams }: Team
   <AnimatePresence>
     {teams.length > 0 && (
       <m.div
-        animate={{ opacity: 1, transform: "translateY(0)" }}
-        className="flex w-full flex-col gap-3"
-        exit={{ opacity: 0, transform: "translateY(-10px)" }}
-        initial={{ opacity: 0, transform: "translateY(20px)" }}
+        animate={{ opacity: 1 }}
+        className="flex w-full flex-col"
+        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
         transition={{
           delay: 0.3,
-          duration: 0.6,
+          duration: 0.15,
           ease: [0.16, 1, 0.3, 1],
         }}
       >
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-muted-foreground">My Teams</h2>
+        <div className="flex items-center justify-between border-b border-border pb-3">
+          <h2 className="font-display text-sm font-semibold tracking-[0.08em] text-foreground uppercase">
+            Active workspaces
+          </h2>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           <AnimatePresence mode="popLayout">
             {teams.map((team) => {
               return (
                 <m.div
-                  animate={{ opacity: 1, transform: "scale(1)" }}
-                  className="group flex items-center justify-between rounded-xl border border-border bg-card p-3 transition-colors hover:border-input"
-                  exit={{ opacity: 0, transform: "scale(0.95)" }}
-                  initial={{ opacity: 0, transform: "scale(0.95)" }}
+                  animate={{ opacity: 1 }}
+                  className="group flex min-h-24 items-center justify-between border-b border-border py-5 transition-colors hover:bg-muted/40"
+                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0 }}
                   key={team.teamId}
                   layout
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.12 }}
                 >
                   <Link
-                    className="flex flex-1 items-center gap-3"
+                    className="flex flex-1 items-center justify-between gap-6 pr-4"
                     href={`/${team.teamId}`}
                     prefetch
                   >
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-secondary">
-                      <Users className="size-4 text-muted-foreground" />
-                    </div>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">
+                      <span className="font-display text-xl font-semibold tracking-[-0.03em] text-foreground">
                         {team.teamName || "Team Workspace"}
                       </span>
                       <span className="text-xs text-muted-foreground">
@@ -69,6 +68,7 @@ const TeamsList = ({ isArchivePending, onArchive, onRequestDelete, teams }: Team
                           : `${team.memberCount} member${team.memberCount === 1 ? "" : "s"}`}
                       </span>
                     </div>
+                    <ArrowUpRight className="size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
                   </Link>
                   <div className="flex items-center gap-1 pl-2">
                     {team.role === "ADMIN" && (

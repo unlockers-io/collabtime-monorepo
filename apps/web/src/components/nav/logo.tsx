@@ -1,4 +1,3 @@
-import { Globe } from "lucide-react";
 import Link from "next/link";
 
 type NavLogoProps = {
@@ -8,14 +7,12 @@ type NavLogoProps = {
 const Logo = ({ showTitle = true }: NavLogoProps) => (
   <Link
     aria-label="Collab Time, homepage"
-    className="flex items-center gap-3 text-foreground transition-opacity hover:opacity-80"
+    className="flex items-center gap-3 text-foreground transition-opacity hover:opacity-70"
     href="/"
   >
-    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary">
-      <Globe className="size-5 text-primary-foreground" />
-    </div>
+    <span aria-hidden="true" className="size-3.5 shrink-0 border-2 border-current" />
     {showTitle && (
-      <span className="font-display text-xl font-bold tracking-tight">Collab Time</span>
+      <span className="font-display text-lg font-semibold tracking-[-0.03em]">Collabtime</span>
     )}
   </Link>
 );

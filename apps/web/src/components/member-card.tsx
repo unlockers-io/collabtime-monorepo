@@ -86,14 +86,14 @@ const MemberCard = ({
 
   return (
     <>
-      <Card className="group h-full gap-3 p-4 transition-shadow hover:shadow-md">
+      <Card className="group h-full gap-3 border-x-0 border-t-0 px-0 py-4 transition-colors hover:bg-muted/30">
         <div className="flex items-start justify-between">
           <div className="relative">
-            <div className="flex size-12 items-center justify-center rounded-full bg-secondary text-base font-semibold text-secondary-foreground">
+            <div className="flex size-10 items-center justify-center border border-border bg-secondary text-sm font-semibold text-secondary-foreground">
               {member.name.charAt(0).toUpperCase()}
             </div>
             {isAvailable && (
-              <span className="absolute -right-0.5 -bottom-0.5 size-3.5 rounded-full border-2 border-card bg-success" />
+              <span className="absolute -right-0.5 -bottom-0.5 size-3 border-2 border-background bg-success" />
             )}
           </div>
 
@@ -153,7 +153,7 @@ const MemberCard = ({
 
           <div className="mt-auto flex flex-col gap-1 text-xs text-muted-foreground">
             <span className="truncate">{formatTimezoneLabel(member.timezone)}</span>
-            <span className="font-display tabular-nums">
+            <span className="font-mono tabular-nums">
               {formatHour(member.workingHoursStart)} – {formatHour(member.workingHoursEnd)}
             </span>
           </div>

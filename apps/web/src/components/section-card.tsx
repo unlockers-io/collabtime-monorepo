@@ -10,7 +10,7 @@ const SectionCard = ({ className, ...props }: SectionCardProps) => {
   return (
     <section
       className={cn(
-        "flex flex-col gap-4 rounded-xl border bg-card py-4 text-card-foreground shadow-sm sm:py-5",
+        "flex flex-col gap-5 border-y border-border bg-transparent py-5 text-card-foreground sm:py-6",
         className,
       )}
       data-slot="section-card"
@@ -27,7 +27,7 @@ const SectionCardHeader = ({ bordered, className, ...props }: SectionCardHeaderP
   return (
     <div
       className={cn(
-        "flex items-start justify-between gap-3 px-4 sm:px-5",
+        "flex items-start justify-between gap-3",
         bordered === true && "border-b pb-4 sm:pb-5",
         className,
       )}
@@ -46,7 +46,7 @@ type SectionCardTitleProps = {
 const SectionCardTitle = ({ children, description, icon: Icon }: SectionCardTitleProps) => {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
+      <h2 className="flex items-center gap-2 font-display text-sm font-semibold tracking-[0.08em] text-foreground uppercase">
         {Icon !== undefined && <Icon className="size-4 shrink-0 text-muted-foreground" />}
         {children}
       </h2>
@@ -62,7 +62,7 @@ type SectionCardCountProps = ComponentProps<"span">;
 
 const SectionCardCount = ({ children, className, ...props }: SectionCardCountProps) => {
   return (
-    <Badge className={cn("tabular-nums", className)} variant="secondary" {...props}>
+    <Badge className={cn("font-mono tabular-nums", className)} variant="secondary" {...props}>
       {children}
     </Badge>
   );
@@ -71,9 +71,7 @@ const SectionCardCount = ({ children, className, ...props }: SectionCardCountPro
 type SectionCardContentProps = ComponentProps<"div">;
 
 const SectionCardContent = ({ className, ...props }: SectionCardContentProps) => {
-  return (
-    <div className={cn("px-4 sm:px-5", className)} data-slot="section-card-content" {...props} />
-  );
+  return <div className={cn(className)} data-slot="section-card-content" {...props} />;
 };
 
 type SectionCardFooterProps = ComponentProps<"div"> & {
@@ -84,7 +82,7 @@ const SectionCardFooter = ({ bordered, className, ...props }: SectionCardFooterP
   return (
     <div
       className={cn(
-        "flex items-center gap-2 px-4 sm:px-5",
+        "flex items-center gap-2",
         bordered === true && "border-t pt-4 sm:pt-5",
         className,
       )}

@@ -23,15 +23,18 @@ const QUESTIONS = [
 ];
 
 const Faq = () => (
-  <Section>
-    <div className="flex flex-col gap-12 sm:gap-16">
-      <h2 className="max-w-[35ch] font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+  <Section className="border-t border-border">
+    <div className="grid gap-12 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20">
+      <h2 className="font-display text-4xl font-semibold tracking-[-0.04em] text-balance sm:text-5xl">
         Questions
       </h2>
 
-      <dl className="grid gap-x-8 gap-y-10 sm:grid-cols-2">
+      <dl className="grid sm:grid-cols-2">
         {QUESTIONS.map(({ answer, question }) => (
-          <div className="flex flex-col gap-2" key={question}>
+          <div
+            className="flex min-h-40 flex-col gap-2 border-t border-border py-5 pr-6 sm:even:border-l sm:even:pl-6"
+            key={question}
+          >
             <dt className="text-base font-medium text-foreground sm:text-lg">{question}</dt>
             <dd className="max-w-[56ch] text-base text-pretty text-muted-foreground sm:text-sm">
               {answer}

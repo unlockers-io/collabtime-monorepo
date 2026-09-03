@@ -11,7 +11,7 @@ const SECTION_ROW_COUNTS = [2, 3];
 const PreviewSkeleton = () => (
   <div aria-hidden className="flex flex-col gap-6">
     <div className="flex gap-2 sm:gap-3">
-      <div className="w-8 shrink-0 sm:w-24" />
+      <div className="w-28 shrink-0 sm:w-40" />
       <Skeleton className="h-5 flex-1" />
     </div>
 
@@ -19,21 +19,21 @@ const PreviewSkeleton = () => (
       <div className="flex flex-col gap-3" key={sectionIndex}>
         <Skeleton className="h-4 w-28" />
         <div className="flex items-stretch gap-2 sm:gap-3">
-          <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
+          <div className="flex w-28 shrink-0 flex-col gap-3 sm:w-40">
             {Array.from({ length: rowCount }, (_, rowIndex) => (
               <Skeleton className="h-8" key={rowIndex} />
             ))}
           </div>
           <div className="flex flex-1 flex-col gap-3">
             {Array.from({ length: rowCount }, (_, rowIndex) => (
-              <Skeleton className="h-8 rounded-lg" key={rowIndex} />
+              <Skeleton className="h-8" key={rowIndex} />
             ))}
           </div>
         </div>
       </div>
     ))}
 
-    <Skeleton className="h-14 w-full rounded-lg" />
+    <Skeleton className="h-14 w-full" />
     <Skeleton className="mx-auto h-4 w-48" />
   </div>
 );
@@ -56,11 +56,13 @@ const ProductPreview = () => {
   };
 
   return (
-    <div className="rounded-xl bg-primary/15 p-2 outline-1 -outline-offset-1 outline-primary/35">
-      <div className="flex flex-col gap-4 rounded-lg bg-background p-4 sm:p-6">
+    <div className="border-y border-border py-5 sm:py-7">
+      <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-foreground">Sample team</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="font-display text-xs font-semibold tracking-[0.12em] text-foreground uppercase">
+            Sample team · Today
+          </p>
+          <p className="font-mono text-xs text-muted-foreground">
             {DEMO_MEMBERS.length} people, {DEMO_GROUPS.length} groups
           </p>
         </div>

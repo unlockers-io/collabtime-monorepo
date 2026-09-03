@@ -66,16 +66,11 @@ const StatusGroup = ({
   tone,
 }: StatusGroupProps) => {
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-2.5 rounded-lg border border-border/60 bg-secondary/40 p-3.5",
-        className,
-      )}
-    >
+    <div className={cn("flex flex-col gap-2.5 border-t border-border py-3.5", className)}>
       <div className="flex items-center gap-2">
         <Icon className={cn("size-4 shrink-0", iconClassName ?? TONE_TEXT[tone])} />
         <h3 className="text-xs font-medium text-muted-foreground">{label}</h3>
-        <Badge className="ml-auto tabular-nums" variant={tone}>
+        <Badge className="ml-auto font-mono tabular-nums" variant={tone}>
           {count}
         </Badge>
       </div>
@@ -180,7 +175,7 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
         <SectionCardTitle icon={Users}>Team Status</SectionCardTitle>
       </SectionCardHeader>
       <SectionCardContent>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
           <StatusGroup
             count={onlineMembers.length}
             emptyLabel="No one is currently working"
@@ -207,7 +202,9 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
             {comingSoonMembers.map(({ hoursUntilStart, member }) => (
               <StatusBadge groupName={getGroupName(member.groupId)} key={member.id} tone="warning">
                 {member.name}
-                <span className="text-xs tabular-nums opacity-80">in {hoursUntilStart}h</span>
+                <span className="font-mono text-xs tabular-nums opacity-80">
+                  in {hoursUntilStart}h
+                </span>
               </StatusBadge>
             ))}
           </StatusGroup>
@@ -223,7 +220,9 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => 
             {leavingSoonMembers.map(({ hoursUntilEnd, member }) => (
               <StatusBadge groupName={getGroupName(member.groupId)} key={member.id} tone="info">
                 {member.name}
-                <span className="text-xs tabular-nums opacity-80">{hoursUntilEnd}h left</span>
+                <span className="font-mono text-xs tabular-nums opacity-80">
+                  {hoursUntilEnd}h left
+                </span>
               </StatusBadge>
             ))}
           </StatusGroup>
