@@ -35,6 +35,7 @@ packages/observability/         # Structured logging (`@repo/observability`)
 packages/transactional/         # Email templates (Resend)
 packages/config-typescript/     # Base / Next / library tsconfigs
 packages/config-vitest/         # Shared Vitest configs (react.ts, node.ts)
+packages/portless-env/          # applyPortlessUrls: dev URL env vars from `portless get`
 tests/                          # Playwright e2e specs
 docker-compose.yml              # Postgres :5433, Redis :6379
 playwright.config.ts
@@ -88,6 +89,8 @@ sudo portless proxy start --https
 Branch worktrees auto-prefix the subdomain: `https://fix-styles.collabtime.web.localhost`. Each gets its own auto-assigned backing port, so there are no collisions.
 
 Docker host ports: Postgres `5433`, Redis `6379`. Only one project's stack runs at a time on these ports unless explicitly remapped.
+
+App configs resolve those URLs through `@repo/portless-env` rather than hardcoding them. `applyPortlessUrls({ ENV_VAR: ["<subdomain>"] })` runs at the top of each `next.config.ts` / `tsdown.config.ts` and shells out to `portless get` for every name, filling the env var only when it is unset or still holds the canonical `*.localhost` default. It is a no-op unless `PORTLESS_URL` is set, so CI and production keep their real values. Import it by bare specifier (`@repo/portless-env`): a relative path resolves from the process cwd and breaks `next start apps/web` from the repo root.
 
 ## Environment variables
 
@@ -159,7 +162,7 @@ Spaces link to teams via a unique `teamId` and support private access through `i
 ## References
 
 - Conventions: [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)
-- Sibling repos (control plane): `~/dev/orchestrator` (standards.md + verifiers)
+- Sibling repos (control plane): `~/dev/orchestrator` (standards.md + checks)
 - Template / source of truth for `saas` profile: `~/dev/acme-monorepo`
 - Better Auth docs: <https://better-auth.com>
 - Prisma 7: <https://www.prisma.io/docs>
