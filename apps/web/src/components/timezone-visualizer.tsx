@@ -76,6 +76,9 @@ const TimezoneVisualizer = ({
   const tick = useHalfMinuteTick();
 
   const nowPosition = !tick || !viewerTimezone ? null : getCurrentTimePosition(viewerTimezone);
+  const activeSelections: Array<Selection> = isComparing
+    ? compareSelections
+    : members.map((member) => ({ id: member.id, type: "member" }));
 
   const {
     canShowOverlap,
@@ -88,7 +91,15 @@ const TimezoneVisualizer = ({
     selectedMemberIds,
     totalPeopleSelected,
     validSelections,
-  } = getTimezoneData({ compareSelections, groups, members, viewerTimezone });
+  } = getTimezoneData({ compareSelections: activeSelections, groups, members, viewerTimezone });
+
+  const peakAvailability = overlapData.hours.reduce(
+    (peak, hour) => Math.max(peak, hour.availableCount),
+    0,
+  );
+  const sharedOverlapHours = overlapData.hours.map(
+    (hour) => !isComparing && peakAvailability >= 2 && hour.availableCount === peakAvailability,
+  );
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!timelineRef.current || !sectionsContainerRef.current) {
@@ -191,7 +202,7 @@ const TimezoneVisualizer = ({
                     key={`section-${section.group?.id ?? "ungrouped"}`}
                   >
                     <div className="flex items-stretch gap-2 sm:gap-3">
-                      <div className="flex w-8 shrink-0 flex-col gap-3 sm:w-24">
+                      <div className="flex w-28 shrink-0 flex-col gap-3 sm:w-40">
                         {visibleRows.map(({ dayOffset, member }) => (
                           <MemberAvatar
                             dayOffset={dayOffset}
@@ -216,6 +227,7 @@ const TimezoneVisualizer = ({
                               key={member.id}
                               memberId={member.id}
                               memberTimezone={member.timezone}
+                              sharedOverlapHours={sharedOverlapHours}
                               viewerTimezone={viewerTimezone}
                             />
                           ))}
@@ -278,6 +290,7 @@ const TimezoneVisualizer = ({
           canShowOverlap={canShowOverlap}
           hasCrossTeamOverlap={hasCrossTeamOverlap}
           isComparing={isComparing}
+          showsSharedWindow={sharedOverlapHours.some(Boolean)}
           totalPeopleSelected={totalPeopleSelected}
         />
       </div>

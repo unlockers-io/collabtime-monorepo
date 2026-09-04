@@ -2,7 +2,7 @@
 
 import { Button } from "@repo/ui/components/button";
 import { Spinner } from "@repo/ui/components/spinner";
-import { Check, Mail, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 
 import type { PendingInvitation } from "@/types";
@@ -18,38 +18,36 @@ const InvitationsList = ({ invitations, isPending, onAccept, onDecline }: Invita
   <AnimatePresence>
     {invitations.length > 0 && (
       <m.div
-        animate={{ opacity: 1, transform: "translateY(0)" }}
-        className="flex w-full flex-col gap-3"
-        exit={{ opacity: 0, transform: "translateY(-10px)" }}
-        initial={{ opacity: 0, transform: "translateY(20px)" }}
+        animate={{ opacity: 1 }}
+        className="flex w-full flex-col"
+        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
         transition={{
           delay: 0.2,
-          duration: 0.6,
+          duration: 0.15,
           ease: [0.16, 1, 0.3, 1],
         }}
       >
-        <div className="flex items-center gap-2">
-          <Mail className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-medium text-muted-foreground">Pending Invitations</h2>
+        <div className="border-b border-border pb-3">
+          <h2 className="font-display text-sm font-semibold tracking-[0.08em] text-foreground uppercase">
+            Pending invitations
+          </h2>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           <AnimatePresence mode="popLayout">
             {invitations.map((invitation) => {
               return (
                 <m.div
-                  animate={{ opacity: 1, transform: "scale(1)" }}
-                  className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-3"
-                  exit={{ opacity: 0, transform: "scale(0.95)" }}
-                  initial={{ opacity: 0, transform: "scale(0.95)" }}
+                  animate={{ opacity: 1 }}
+                  className="flex min-h-24 items-center justify-between gap-4 border-b border-border py-5"
+                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0 }}
                   key={invitation.id}
                   layout
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.12 }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
-                      <Mail className="size-4 text-primary" />
-                    </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-foreground">
                         {invitation.teamName}

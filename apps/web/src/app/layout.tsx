@@ -2,7 +2,7 @@ import "@/styles/globals.css";
 
 import { Toaster } from "@repo/ui/components/sonner";
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Inter } from "next/font/google";
+import { Geist_Mono, Inter, Manrope } from "next/font/google";
 import { Suspense } from "react";
 
 import { CopyrightYear } from "@/components/copyright-year";
@@ -28,6 +28,12 @@ const inter = Inter({
   display: "swap",
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+const manrope = Manrope({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-manrope",
 });
 
 export const viewport: Viewport = {
@@ -89,7 +95,7 @@ const RootLayout = ({
   return (
     <html className="antialiased" lang="en" suppressHydrationWarning>
       <body
-        className={`${geistMono.variable} ${inter.variable} flex min-h-dvh flex-col bg-background font-sans text-foreground selection:bg-accent selection:text-accent-foreground`}
+        className={`${geistMono.variable} ${inter.variable} ${manrope.variable} flex min-h-dvh flex-col bg-background font-sans text-foreground selection:bg-accent selection:text-accent-foreground`}
       >
         <a
           className="sr-only px-4 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:text-foreground focus:shadow-md focus:ring-2 focus:ring-ring focus:outline-none"

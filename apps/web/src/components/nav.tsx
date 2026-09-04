@@ -94,26 +94,9 @@ const NavView = (props: NavViewProps) => {
     const navRole: MobileMenuRole = isAdmin ? "admin" : signedInRole;
 
     return (
-      <header className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <Logo showTitle={false} />
-            <TeamTitle
-              isAdmin={isAdmin}
-              isEditing={isEditingName}
-              onCancel={onCancelEdit}
-              onChange={onNameChange}
-              onEdit={onEditName}
-              onSave={onSaveName}
-              teamName={teamName}
-            />
-            {isArchived && (
-              <Badge variant="secondary">
-                <Archive />
-                Archived
-              </Badge>
-            )}
-          </div>
+      <header className="flex flex-col gap-6 border-b border-border pb-8">
+        <div className="flex items-center justify-between gap-3">
+          <Logo />
 
           <div className="hidden items-center gap-2 sm:flex">
             <CurrentTimeDisplay />
@@ -151,6 +134,24 @@ const NavView = (props: NavViewProps) => {
           </div>
         </div>
 
+        <div className="flex min-w-0 items-center gap-3">
+          <TeamTitle
+            isAdmin={isAdmin}
+            isEditing={isEditingName}
+            onCancel={onCancelEdit}
+            onChange={onNameChange}
+            onEdit={onEditName}
+            onSave={onSaveName}
+            teamName={teamName}
+          />
+          {isArchived && (
+            <Badge variant="secondary">
+              <Archive />
+              Archived
+            </Badge>
+          )}
+        </div>
+
         <MobileMenu
           onClose={() => {
             setMobileMenuOpen(false);
@@ -171,7 +172,7 @@ const NavView = (props: NavViewProps) => {
   }
 
   return (
-    <header className="flex items-center justify-between px-4 py-6 sm:px-6">
+    <header className="mx-auto flex w-full max-w-450 items-center justify-between px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
       <Logo />
       <div className="flex items-center gap-2">
         <ModeToggle />

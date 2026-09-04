@@ -12,22 +12,18 @@ const CurrentTimeIndicator = ({ nowPosition }: CurrentTimeIndicatorProps) => {
   return (
     <>
       <div
-        className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 rounded-full bg-destructive shadow-sm sm:hidden"
+        className="pointer-events-none absolute top-0 bottom-0 z-20 w-px bg-foreground sm:hidden"
         style={{
-          left: `calc(2.5rem + (100% - 2.5rem) * ${nowPosition / 100})`,
+          left: `calc(7.5rem + (100% - 7.5rem) * ${nowPosition / 100})`,
         }}
-      >
-        <div className="absolute -top-1.5 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-destructive" />
-      </div>
+      />
       {/* Desktop */}
       <div
-        className="pointer-events-none absolute top-0 bottom-0 z-20 hidden w-0.5 rounded-full bg-destructive shadow-sm sm:block"
+        className="pointer-events-none absolute top-0 bottom-0 z-20 hidden w-px bg-foreground sm:block"
         style={{
-          left: `calc(6.75rem + (100% - 6.75rem) * ${nowPosition / 100})`,
+          left: `calc(10.75rem + (100% - 10.75rem) * ${nowPosition / 100})`,
         }}
-      >
-        <div className="absolute -top-1.5 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-destructive" />
-      </div>
+      />
     </>
   );
 };

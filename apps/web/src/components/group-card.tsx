@@ -125,12 +125,12 @@ const GroupCard = ({
   return (
     <Card
       className={cn(
-        "group h-full gap-3 p-4 transition-shadow hover:shadow-md",
+        "group h-full gap-3 border-x-0 border-t-0 px-0 py-4 transition-colors hover:bg-muted/30",
         isDropTarget && "outline-2 -outline-offset-1 outline-foreground",
       )}
     >
       <div className="flex items-start justify-between">
-        <div className="flex size-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+        <div className="flex size-10 items-center justify-center border border-border bg-secondary text-secondary-foreground">
           <Users className="size-5" />
         </div>
 

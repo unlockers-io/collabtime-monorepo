@@ -91,16 +91,6 @@ const formatDayOffset = (offset: number): string | null => {
   return offset > 0 ? `${absOffset} ${suffix} ahead` : `${absOffset} ${suffix} behind`;
 };
 
-const getRoundedCornerClass = (hour: number): string => {
-  if (hour === 0) {
-    return "rounded-l";
-  }
-  if (hour === HOURS_IN_DAY - 1) {
-    return "rounded-r";
-  }
-  return "";
-};
-
 const emptySubscribe = () => () => {};
 
 const useClientValue = <T>(clientValue: () => T, serverValue: T): T =>
@@ -120,7 +110,6 @@ export {
   getEdgeAlignment,
   getOverlapColorClass,
   getOverlapLabel,
-  getRoundedCornerClass,
   hasAnyOverlap,
   serializeSelection,
   useClientValue,

@@ -89,6 +89,6 @@ test.describe("Change email (two-stage confirmation + verification)", () => {
     await page.getByLabel("Password").fill(password);
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForURL("/");
-    await expect(page.getByRole("button", { name: /create team workspace/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /create a workspace/i })).toBeVisible();
   });
 });

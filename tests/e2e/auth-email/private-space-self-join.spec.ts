@@ -21,7 +21,7 @@ test.describe("Private space password self-join", () => {
     const owner = await browser.newContext({ storageState: "tests/e2e/.auth/user.json" });
     const ownerPage = await owner.newPage();
     await ownerPage.goto(`${webUrl}/`);
-    await ownerPage.getByRole("button", { name: /create team workspace/i }).click();
+    await ownerPage.getByRole("button", { name: /create a workspace/i }).click();
     await expect(ownerPage).toHaveURL(/\/[a-f0-9-]{36}$/u, { timeout: 15_000 });
     const teamId = new URL(ownerPage.url()).pathname.slice(1);
 
@@ -71,7 +71,7 @@ test.describe("Private space password self-join", () => {
     });
 
     await clickerPage.goto(`${webUrl}/`);
-    await expect(clickerPage.getByRole("heading", { name: "My Teams" })).toBeVisible({
+    await expect(clickerPage.getByRole("heading", { name: "Active workspaces" })).toBeVisible({
       timeout: 15_000,
     });
     await clicker.close();

@@ -25,8 +25,8 @@ const GroupsGrid = ({
 }: GroupsGridProps) => {
   if (orderedGroups.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border bg-muted/50 px-6 py-12 text-center">
-        <div className="flex size-14 items-center justify-center rounded-full bg-secondary">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 border-y border-dashed border-border px-6 py-12 text-center">
+        <div className="flex size-12 items-center justify-center border border-border">
           <FolderKanban className="size-6 text-muted-foreground" />
         </div>
         <div className="flex flex-col gap-1">
@@ -44,7 +44,7 @@ const GroupsGrid = ({
 
   return (
     <ScrollArea className="-m-px max-h-150">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4 p-px pr-4">
+      <div className="grid grid-cols-1 p-px pr-4">
         {isAdmin ? (
           <SortableContext items={groupIds} strategy={rectSortingStrategy}>
             {orderedGroups.map((group) => (

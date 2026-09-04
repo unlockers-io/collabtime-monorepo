@@ -34,19 +34,19 @@ const ArchivedTeamsList = ({
     <AnimatePresence>
       {teams.length > 0 && (
         <m.div
-          animate={{ opacity: 1, transform: "translateY(0)" }}
-          className="flex w-full flex-col gap-3"
-          exit={{ opacity: 0, transform: "translateY(-10px)" }}
-          initial={{ opacity: 0, transform: "translateY(20px)" }}
+          animate={{ opacity: 1 }}
+          className="flex w-full flex-col gap-3 border-t border-border pt-5"
+          exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }}
           transition={{
             delay: 0.4,
-            duration: 0.6,
+            duration: 0.15,
             ease: [0.16, 1, 0.3, 1],
           }}
         >
           <button
             aria-expanded={showArchived}
-            className="flex items-center justify-between rounded-md text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+            className="flex items-center justify-between text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
             onClick={() => {
               setShowArchived((prev) => !prev);
             }}
@@ -68,7 +68,7 @@ const ArchivedTeamsList = ({
             {showArchived && (
               <m.div
                 animate={{ height: "auto", opacity: 1 }}
-                className="flex flex-col gap-2 overflow-hidden"
+                className="flex flex-col overflow-hidden"
                 exit={{ height: 0, opacity: 0 }}
                 initial={{ height: 0, opacity: 0 }}
                 key="archived-list"
@@ -78,18 +78,16 @@ const ArchivedTeamsList = ({
                   {teams.map((team) => {
                     return (
                       <m.div
-                        animate={{ opacity: 1, transform: "scale(1)" }}
-                        className="group flex items-center justify-between rounded-xl border border-border bg-card/60 p-3 transition-colors hover:border-input"
-                        exit={{ opacity: 0, transform: "scale(0.95)" }}
-                        initial={{ opacity: 0, transform: "scale(0.95)" }}
+                        animate={{ opacity: 1 }}
+                        className="group flex items-center justify-between border-b border-border py-4 transition-colors hover:bg-muted/40"
+                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0 }}
                         key={team.teamId}
                         layout
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.12 }}
                       >
                         <Link className="flex flex-1 items-center gap-3" href={`/${team.teamId}`}>
-                          <div className="flex size-9 items-center justify-center rounded-lg bg-secondary">
-                            <Archive className="size-4 text-muted-foreground" />
-                          </div>
+                          <Archive className="size-4 text-muted-foreground" />
                           <div className="flex flex-col">
                             <span className="text-sm font-medium text-muted-foreground">
                               {team.teamName || "Team Workspace"}

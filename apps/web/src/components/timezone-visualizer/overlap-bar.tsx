@@ -5,13 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@repo/ui/components/too
 import { formatHour } from "@/lib/utils";
 import type { TeamMember } from "@/types";
 
-import {
-  HOURS_IN_DAY,
-  getOverlapColorClass,
-  getOverlapLabel,
-  getRoundedCornerClass,
-  hasAnyOverlap,
-} from "./helpers";
+import { HOURS_IN_DAY, getOverlapColorClass, getOverlapLabel, hasAnyOverlap } from "./helpers";
 import type { HourOverlap, MemberRow, OverlapData } from "./types";
 
 const NO_OVERLAP: HourOverlap = {
@@ -36,7 +30,7 @@ const OverlapBar = ({
   totalPeopleSelected,
 }: OverlapBarProps) => {
   return (
-    <div className="flex h-8 gap-px overflow-hidden rounded-lg bg-secondary p-1">
+    <div className="flex h-8 gap-px overflow-hidden bg-transparent">
       {Array.from({ length: HOURS_IN_DAY }, (_, hour) => {
         const hourOverlap = overlapData.hours[hour] ?? NO_OVERLAP;
         const isFullOverlap = hourOverlap.coverage === "full";
@@ -45,11 +39,9 @@ const OverlapBar = ({
         if (!hasAnyOverlap(hourOverlap)) {
           return (
             <Tooltip key={hour}>
-              <TooltipTrigger
-                render={<div className={`h-6 flex-1 bg-muted ${getRoundedCornerClass(hour)}`} />}
-              />
+              <TooltipTrigger render={<div className="h-8 flex-1 bg-muted/50" />} />
               <TooltipContent side="top">
-                <div className="font-display font-medium tabular-nums">
+                <div className="font-mono font-medium tabular-nums">
                   {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
                 </div>
               </TooltipContent>
@@ -99,13 +91,11 @@ const OverlapBar = ({
 
         return (
           <Tooltip key={hour}>
-            <TooltipTrigger
-              render={<div className={`h-6 flex-1 ${getRoundedCornerClass(hour)} ${colorClass}`} />}
-            />
+            <TooltipTrigger render={<div className={`h-8 flex-1 ${colorClass}`} />} />
             <TooltipContent side="top">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-0.5">
-                  <div className="font-display font-medium text-foreground tabular-nums">
+                  <div className="font-mono font-medium text-foreground tabular-nums">
                     {formatHour(hour)} – {formatHour((hour + 1) % HOURS_IN_DAY)}
                   </div>
                   <div className="text-xs text-muted-foreground">{overlapLabel}</div>
