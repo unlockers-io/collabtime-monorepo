@@ -14,7 +14,7 @@ test.describe("Register", () => {
     await signupPage.signup("Test Register User", uniqueEmail, "TestPassword123!");
 
     await expect(page).toHaveURL("/", { timeout: 10_000 });
-    await expect(page.getByRole("button", { name: /create team workspace/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /create a workspace/i })).toBeVisible();
   });
 
   test("shows error for duplicate email", async ({ page, signupPage, testUser }) => {

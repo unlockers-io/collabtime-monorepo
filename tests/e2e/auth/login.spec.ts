@@ -14,7 +14,7 @@ test.describe("Login", () => {
     await loginPage.login(testUser.email, testUser.password);
 
     await expect(page).toHaveURL("/", { timeout: 10_000 });
-    await expect(page.getByRole("button", { name: /create team workspace/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /create a workspace/i })).toBeVisible();
   });
 
   test("shows error with wrong password", async ({ loginPage, page, testUser }) => {

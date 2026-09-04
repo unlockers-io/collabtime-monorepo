@@ -9,7 +9,7 @@ test.describe.skip("Realtime Sync", () => {
     const contextA = await browser.newContext({ storageState: STORAGE_STATE });
     const pageA = await contextA.newPage();
     await pageA.goto("/");
-    await pageA.getByRole("button", { name: /create team workspace/i }).click();
+    await pageA.getByRole("button", { name: /create a workspace/i }).click();
     await expect(pageA).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
     teamId = new URL(pageA.url()).pathname.slice(1);
     await contextA.close();

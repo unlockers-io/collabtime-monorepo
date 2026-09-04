@@ -4,15 +4,15 @@ class HomePage {
   private readonly heading: Locator;
   private readonly createWorkspaceButton: Locator;
   private readonly getStartedLink: Locator;
-  private readonly myTeamsHeading: Locator;
+  private readonly activeWorkspacesHeading: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole("heading", { name: "Collab Time" });
     this.createWorkspaceButton = page.getByRole("button", {
-      name: /create team workspace/i,
+      name: /create a workspace/i,
     });
     this.getStartedLink = page.getByRole("link", { name: /get started/i });
-    this.myTeamsHeading = page.getByRole("heading", { name: "My Teams" });
+    this.activeWorkspacesHeading = page.getByRole("heading", { name: "Active workspaces" });
   }
 
   goto = async () => {
@@ -29,7 +29,7 @@ class HomePage {
 
   getGetStartedLink = () => this.getStartedLink;
 
-  getMyTeamsHeading = () => this.myTeamsHeading;
+  getActiveWorkspacesHeading = () => this.activeWorkspacesHeading;
 
   getTeamLink = (teamId: string) => this.page.locator(`a[href="/${teamId}"]`);
 

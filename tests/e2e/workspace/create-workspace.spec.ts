@@ -14,7 +14,7 @@ test.describe("Create Workspace", () => {
     await expect(page.getByRole("heading", { name: /team members/i })).toBeVisible();
   });
 
-  test("new workspace appears in My Teams list", async ({ homePage, page }) => {
+  test("new workspace appears in the active workspaces list", async ({ homePage, page }) => {
     await homePage.goto();
     await homePage.createWorkspace();
 
@@ -22,10 +22,10 @@ test.describe("Create Workspace", () => {
 
     await page.goto("/");
 
-    await expect(homePage.getMyTeamsHeading()).toBeVisible({ timeout: 10_000 });
+    await expect(homePage.getActiveWorkspacesHeading()).toBeVisible({ timeout: 10_000 });
   });
 
-  test("serves the workspace shell instantly when opened from My Teams", async ({
+  test("serves the workspace shell instantly when opened from active workspaces", async ({
     homePage,
     page,
   }) => {
@@ -36,7 +36,7 @@ test.describe("Create Workspace", () => {
     const teamId = new URL(page.url()).pathname.slice(1);
 
     await page.goto("/");
-    await expect(homePage.getMyTeamsHeading()).toBeVisible({ timeout: 10_000 });
+    await expect(homePage.getActiveWorkspacesHeading()).toBeVisible({ timeout: 10_000 });
 
     const teamMembersHeading = page.getByRole("heading", { name: /team members/i });
 
