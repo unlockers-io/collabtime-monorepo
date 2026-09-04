@@ -6,35 +6,74 @@ import { useState } from "react";
 
 import { DEMO_GROUPS, DEMO_MEMBERS } from "./demo-team";
 
-const SECTION_ROW_COUNTS = [2, 3];
+const PREVIEW_HOURS = Array.from({ length: 12 }, (_, index) => `preview-hour-${index}`);
+const PREVIEW_SECTIONS = [
+  { id: "design", rows: ["design-1", "design-2"] },
+  { id: "engineering", rows: ["engineering-1", "engineering-2", "engineering-3"] },
+];
+const PREVIEW_TICKS = ["midnight", "morning", "noon", "evening", "night"];
 
 const PreviewSkeleton = () => (
   <div aria-hidden className="flex flex-col gap-6">
     <div className="flex gap-2 sm:gap-3">
       <div className="w-28 shrink-0 sm:w-40" />
-      <Skeleton className="h-5 flex-1" />
+      <div className="flex flex-1 justify-between">
+        {PREVIEW_TICKS.map((tick) => (
+          <div className="flex flex-col items-center gap-1" key={tick}>
+            <Skeleton className="h-3 w-6 rounded-none sm:w-8" />
+            <div className="h-1.5 w-px bg-border" />
+          </div>
+        ))}
+      </div>
     </div>
 
-    {SECTION_ROW_COUNTS.map((rowCount, sectionIndex) => (
-      <div className="flex flex-col gap-3" key={sectionIndex}>
-        <Skeleton className="h-4 w-28" />
+    {PREVIEW_SECTIONS.map((section, sectionIndex) => (
+      <div
+        className="flex flex-col gap-3 border-b border-border/50 py-4 first:pt-0 last:border-b-0 last:pb-0"
+        key={section.id}
+      >
+        <div className="flex items-center gap-2 py-1">
+          <Skeleton className="size-3 rounded-none" />
+          <Skeleton className={`h-3 rounded-none ${sectionIndex === 0 ? "w-20" : "w-28"}`} />
+          <Skeleton className="h-3 w-4 rounded-none" />
+        </div>
         <div className="flex items-stretch gap-2 sm:gap-3">
           <div className="flex w-28 shrink-0 flex-col gap-3 sm:w-40">
-            {Array.from({ length: rowCount }, (_, rowIndex) => (
-              <Skeleton className="h-8" key={rowIndex} />
+            {section.rows.map((row) => (
+              <div className="flex h-8 items-center gap-2" key={row}>
+                <Skeleton className="size-6 shrink-0 rounded-none sm:size-7" />
+                <Skeleton className="h-3.5 w-14 rounded-none sm:w-20" />
+              </div>
             ))}
           </div>
           <div className="flex flex-1 flex-col gap-3">
-            {Array.from({ length: rowCount }, (_, rowIndex) => (
-              <Skeleton className="h-8" key={rowIndex} />
+            {section.rows.map((row, rowIndex) => (
+              <div className="grid h-8 grid-cols-12 gap-px" key={row}>
+                {PREVIEW_HOURS.map((hour, hourIndex) => (
+                  <Skeleton
+                    className={`h-full rounded-none ${
+                      (hourIndex + rowIndex + sectionIndex) % 4 === 0
+                        ? "bg-muted-foreground/25"
+                        : "bg-muted/70"
+                    }`}
+                    key={hour}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         </div>
       </div>
     ))}
 
-    <Skeleton className="h-14 w-full" />
-    <Skeleton className="mx-auto h-4 w-48" />
+    <div className="flex h-14 items-center justify-center border-y border-dashed border-border">
+      <Skeleton className="h-4 w-44 rounded-none" />
+    </div>
+    <div className="flex flex-wrap justify-center gap-4">
+      <Skeleton className="h-3 w-20 rounded-none" />
+      <Skeleton className="h-3 w-24 rounded-none" />
+      <Skeleton className="h-3 w-16 rounded-none" />
+    </div>
   </div>
 );
 

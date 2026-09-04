@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import { Skeleton } from "@repo/ui/components/skeleton";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
@@ -27,16 +28,16 @@ const Page = () => (
         fallback={
           <div aria-busy="true" className="flex flex-col gap-7">
             <div className="flex flex-col gap-3">
-              <div className="h-4 w-28 rounded-md bg-muted motion-safe:animate-pulse" />
-              <div className="h-9 rounded-md bg-muted motion-safe:animate-pulse" />
+              <Skeleton className="h-4 w-28 rounded-none" />
+              <Skeleton className="h-9 w-full" />
             </div>
             <div className="flex flex-col gap-3">
-              <div className="h-4 w-36 rounded-md bg-muted motion-safe:animate-pulse" />
-              <div className="h-9 rounded-md bg-muted motion-safe:animate-pulse" />
+              <Skeleton className="h-4 w-36 rounded-none" />
+              <Skeleton className="h-9 w-full" />
             </div>
             <div className="flex flex-col gap-3">
-              <div className="h-8 rounded-md bg-muted motion-safe:animate-pulse" />
-              <div className="mx-auto h-4 w-32 rounded-md bg-muted motion-safe:animate-pulse" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="mx-auto h-4 w-32 rounded-none" />
             </div>
           </div>
         }
