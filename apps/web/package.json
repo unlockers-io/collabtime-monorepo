@@ -47,7 +47,7 @@
     "@repo/portless-env": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/node": "^26.5.1",
