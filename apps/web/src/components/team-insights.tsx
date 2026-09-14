@@ -70,7 +70,7 @@ const StatusGroup = ({
       <div className="flex items-center gap-2">
         <Icon className={cn("size-4 shrink-0", iconClassName ?? TONE_TEXT[tone])} />
         <h3 className="text-xs font-medium text-muted-foreground">{label}</h3>
-        <Badge className="ml-auto font-mono tabular-nums" variant={tone}>
+        <Badge className="ml-auto" numeric variant={tone}>
           {count}
         </Badge>
       </div>

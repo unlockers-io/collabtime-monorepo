@@ -3,7 +3,30 @@ import awesomeness from "oxlint-config-awesomeness";
 
 export default defineConfig({
   extends: [awesomeness],
+  jsPlugins: ["@shadcn/lint"],
   overrides: [
+    {
+      files: ["apps/web/src/lib/utils.test.ts"],
+      rules: { "shadcn/no-unknown-classes": ["error", { allow: ["foo", "bar", "baz"] }] },
+    },
+    {
+      files: ["packages/ui/src/components/**"],
+      rules: {
+        "shadcn/no-restyle": "off",
+        "shadcn/require-static-classes": "off",
+      },
+    },
+    {
+      files: ["packages/ui/src/lib/utils.test.ts"],
+      rules: {
+        "shadcn/no-unknown-classes": [
+          "error",
+          {
+            allow: ["foo", "bar", "baz"],
+          },
+        ],
+      },
+    },
     {
       // Next route entrypoints and client hooks require their framework context; mock that boundary, not the behavior under test.
       files: [
@@ -114,4 +137,29 @@ export default defineConfig({
       },
     },
   ],
+  rules: {
+    "shadcn/no-restyle": [
+      "error",
+      {
+        allow: ["layout"],
+        contracts: [
+          { allow: ["layout", "shape", "color"], pattern: "^Skeleton$" },
+          { allow: ["layout", "spacing"], pattern: "^Card$" },
+          { allow: ["layout", "gap-*"], pattern: "^(DialogTitle|DropdownMenuItem|ScrollArea)$" },
+          {
+            allow: ["layout", "typography"],
+            deny: ["font-*"],
+            pattern: "^CardTitle$",
+          },
+          {
+            allow: ["layout", "spacing"],
+            pattern: "^CardContent$",
+          },
+        ],
+      },
+    ],
+    "shadcn/no-unknown-classes": "error",
+    "shadcn/require-static-classes": "error",
+  },
+  settings: { shadcn: { ui: "@repo/ui/components" } },
 });

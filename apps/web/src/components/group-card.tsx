@@ -92,7 +92,7 @@ const GroupCard = ({
     <Input
       aria-label={`Rename ${group.name}`}
       autoFocus
-      className="h-9 text-sm font-medium"
+      className="h-9"
       onBlur={handleSave}
       onChange={(e) => {
         setEditingName(e.target.value);
@@ -103,6 +103,7 @@ const GroupCard = ({
       onKeyDown={handleKeyDown}
       type="text"
       value={editingName}
+      variant="title"
     />
   );
 
@@ -136,10 +137,12 @@ const GroupCard = ({
         {canEdit && (
           <Button
             aria-label={`Remove group ${group.name}`}
-            className="shrink-0 text-muted-foreground opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+            className="shrink-0"
             disabled={isPending}
             onClick={handleRemove}
+            reveal="group"
             size="icon-sm"
+            tone="muted-danger"
             type="button"
             variant="ghost"
           >

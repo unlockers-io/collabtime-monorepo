@@ -53,7 +53,7 @@ type SectionCardCountProps = ComponentProps<"span">;
 
 const SectionCardCount = ({ children, className, ...props }: SectionCardCountProps) => {
   return (
-    <Badge className={cn("font-mono tabular-nums", className)} variant="secondary" {...props}>
+    <Badge className={className} numeric variant="secondary" {...props}>
       {children}
     </Badge>
   );

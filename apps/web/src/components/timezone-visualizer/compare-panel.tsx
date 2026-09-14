@@ -115,9 +115,10 @@ const ComparePanel = ({
         </div>
         <Button
           aria-label="Close meeting time comparison"
-          className="size-8 p-0 text-muted-foreground hover:text-foreground"
+          className="size-8"
           onClick={onClose}
-          size="sm"
+          size="icon-sm"
+          tone="muted"
           type="button"
           variant="ghost"
         >
@@ -128,8 +129,9 @@ const ComparePanel = ({
       <div className="flex flex-wrap items-center gap-2">
         {validSelections.map((sel) => (
           <Badge
-            className="flex items-center gap-1.5 py-1 pr-1 pl-2"
+            className="flex items-center"
             key={serializeSelection(sel)}
+            size="removable"
             variant="secondary"
           >
             {sel.type === "group" && <Users className="size-3" />}
@@ -162,7 +164,8 @@ const ComparePanel = ({
           {validSelections.length === 0 ? (
             <SelectTrigger
               aria-label="Add people or groups to compare"
-              className="h-8 w-auto gap-1.5 border-dashed px-3 [&>svg:last-child]:hidden"
+              className="h-8 w-auto [&>svg:last-child]:hidden"
+              variant="add"
             >
               <Plus className="size-4" />
               <span className="text-sm">Add</span>
@@ -170,7 +173,8 @@ const ComparePanel = ({
           ) : (
             <SelectTrigger
               aria-label="Add people or groups to compare"
-              className="size-7 justify-center rounded-full border-dashed p-0 [&>svg:last-child]:hidden"
+              className="size-7 justify-center [&>svg:last-child]:hidden"
+              variant="add-icon"
             >
               <Plus className="size-4" />
             </SelectTrigger>

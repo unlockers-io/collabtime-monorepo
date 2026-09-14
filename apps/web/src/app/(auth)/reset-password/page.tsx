@@ -26,7 +26,9 @@ const Page = () => (
     </Suspense>
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="font-display text-xl">Reset your password</CardTitle>
+        <CardTitle className="text-xl" display>
+          Reset your password
+        </CardTitle>
         <CardDescription>Enter a new password for your account</CardDescription>
       </CardHeader>
       <CardContent>

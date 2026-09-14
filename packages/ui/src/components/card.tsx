@@ -33,11 +33,17 @@ const CardHeader = ({ className, ...props }: ComponentProps<"div">) => {
   );
 };
 
-const CardTitle = ({ children, className, ...props }: ComponentProps<"h2">) => {
+const CardTitle = ({
+  children,
+  className,
+  display = false,
+  ...props
+}: ComponentProps<"h2"> & { display?: boolean }) => {
   return (
     <h2
       className={cn(
         "text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+        display && "font-display",
         className,
       )}
       data-slot="card-title"
