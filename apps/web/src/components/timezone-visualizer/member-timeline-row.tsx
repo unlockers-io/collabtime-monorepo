@@ -47,7 +47,7 @@ const HourBlock = ({
           <button
             aria-label={hourLabel}
             className={cn(
-              "h-full flex-1 cursor-[inherit]",
+              "h-full flex-1 cursor-inherit",
               getHourColorClass(isSharedOverlap, isWorking),
             )}
             type="button"

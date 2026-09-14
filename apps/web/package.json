@@ -24,6 +24,7 @@
     "@repo/auth": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/observability": "workspace:*",
+    "@repo/social-image": "workspace:*",
     "@repo/transactional": "workspace:*",
     "@repo/ui": "workspace:*",
     "@sentry/nextjs": "^10.74.0",

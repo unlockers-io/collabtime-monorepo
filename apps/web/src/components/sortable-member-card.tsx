@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@repo/ui/lib/utils";
 
 import { MemberCard } from "@/components/member-card";
 import type { MemberCardProps } from "@/components/member-card";
@@ -12,14 +13,14 @@ const SortableMemberCard = (props: MemberCardProps) => {
   });
 
   const style = {
-    opacity: isDragging ? 0.5 : 1,
-    transform: CSS.Translate.toString(transform),
-    transition,
+    "--sortable-member-card-opacity": isDragging ? 0.5 : 1,
+    "--sortable-member-card-transform": CSS.Translate.toString(transform),
+    "--sortable-member-card-transition": transition,
   };
 
   return (
     <div
-      className={isDragging ? "cursor-grabbing" : "cursor-grab"}
+      className={cn("sortable-member-geometry", isDragging ? "cursor-grabbing" : "cursor-grab")}
       ref={setNodeRef}
       style={style}
       {...attributes}

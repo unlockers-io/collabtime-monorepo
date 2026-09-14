@@ -37,7 +37,7 @@ type SectionCardTitleProps = {
 const SectionCardTitle = ({ children, description, icon: Icon }: SectionCardTitleProps) => {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <h2 className="flex items-center gap-2 font-display text-sm font-semibold tracking-[0.08em] text-foreground uppercase">
+      <h2 className="flex items-center gap-2 font-display text-sm font-semibold tracking-eyebrow-wide text-foreground uppercase">
         {Icon !== undefined && <Icon className="size-4 shrink-0 text-muted-foreground" />}
         {children}
       </h2>

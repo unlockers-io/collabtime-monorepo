@@ -59,7 +59,7 @@ const TeamsList = ({ isArchivePending, onArchive, onRequestDelete, teams }: Team
                       prefetch
                     >
                       <div className="flex flex-col">
-                        <span className="font-display text-xl font-semibold tracking-[-0.03em] text-foreground">
+                        <span className="font-display text-xl font-semibold tracking-display text-foreground">
                           {team.teamName || "Team Workspace"}
                         </span>
                         <span className="text-xs text-muted-foreground">

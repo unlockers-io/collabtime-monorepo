@@ -23,8 +23,8 @@ const ModeToggle = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button size="icon" variant="outline" />}>
-        <Sun className="size-[1.2rem] opacity-100 transition-opacity dark:opacity-0" />
-        <Moon className="absolute size-[1.2rem] opacity-0 transition-opacity dark:opacity-100" />
+        <Sun className="size-theme-toggle opacity-100 transition-opacity dark:opacity-0" />
+        <Moon className="absolute size-theme-toggle opacity-0 transition-opacity dark:opacity-100" />
         <span className="sr-only">Toggle theme</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

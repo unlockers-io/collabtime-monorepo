@@ -7,9 +7,9 @@ const STACK = ["Next.js", "React", "Prisma", "Redis Pub/Sub", "SSE", "Better Aut
 
 const OpenSource = () => (
   <Section className="border-t border-border">
-    <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20">
+    <div className="grid gap-8 lg:grid-cols-faq lg:gap-20">
       <div>
-        <h2 className="font-display text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+        <h2 className="font-display text-4xl font-semibold tracking-hero sm:text-5xl">
           Open source
         </h2>
         <p className="mt-6 text-base text-muted-foreground sm:text-sm">

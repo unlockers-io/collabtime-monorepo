@@ -29,13 +29,13 @@ const RouteError = ({ error, reset }: RouteErrorProps) => {
 
         <div className="flex flex-col gap-2">
           <h1
-            className="max-w-[24ch] font-display text-2xl font-semibold tracking-tight text-balance"
+            className="max-w-(--container-measure-hero) font-display text-2xl font-semibold tracking-tight text-balance"
             ref={headingRef}
             tabIndex={-1}
           >
             Something went wrong
           </h1>
-          <p className="max-w-[48ch] text-sm text-pretty text-muted-foreground">
+          <p className="max-w-(--container-measure-body) text-sm text-pretty text-muted-foreground">
             An unexpected error occurred. Please try again. If it keeps happening, refresh the page
             or come back in a few minutes.
           </p>

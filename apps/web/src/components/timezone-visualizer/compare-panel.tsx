@@ -271,11 +271,9 @@ const ComparePanel = ({
 
                 return (
                   <div
-                    className="flex flex-col gap-1"
+                    className="flex flex-col comparison-label-alignment gap-1"
                     key={hour}
-                    style={{
-                      alignItems: getEdgeAlignment(isFirst, isLast),
-                    }}
+                    style={{ "--compare-panel-align-items": getEdgeAlignment(isFirst, isLast) }}
                   >
                     <div className="h-1.5 w-px bg-border" />
                     <span className="font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums">

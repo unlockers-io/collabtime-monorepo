@@ -102,7 +102,7 @@ const OverlapBar = ({
                 </div>
                 {availableByTeam.size > 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-[0.625rem] font-medium tracking-wide text-success uppercase">
+                    <span className="text-(length:--text-micro) font-medium tracking-wide text-success uppercase">
                       Available by team
                     </span>
                     {[...availableByTeam.entries()].map(([teamName, names]) => (
@@ -118,7 +118,7 @@ const OverlapBar = ({
                 )}
                 {!isFullOverlap && unavailableByTeam.size > 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-[0.625rem] font-medium tracking-wide text-destructive uppercase">
+                    <span className="text-(length:--text-micro) font-medium tracking-wide text-destructive uppercase">
                       Unavailable
                     </span>
                     {/* Teams with no one available - shown with strikethrough */}

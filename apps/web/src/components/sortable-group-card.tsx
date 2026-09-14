@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@repo/ui/lib/utils";
 
 import { GroupCard } from "@/components/group-card";
 import type { TeamGroup } from "@/types";
@@ -20,14 +21,14 @@ const SortableGroupCard = (props: SortableGroupCardProps) => {
   });
 
   const style = {
-    opacity: isDragging ? 0.5 : 1,
-    transform: CSS.Translate.toString(transform),
-    transition,
+    "--sortable-group-card-opacity": isDragging ? 0.5 : 1,
+    "--sortable-group-card-transform": CSS.Translate.toString(transform),
+    "--sortable-group-card-transition": transition,
   };
 
   return (
     <div
-      className={isDragging ? "cursor-grabbing" : "cursor-grab"}
+      className={cn("sortable-group-geometry", isDragging ? "cursor-grabbing" : "cursor-grab")}
       ref={setNodeRef}
       style={style}
       {...attributes}
