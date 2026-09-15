@@ -13,7 +13,7 @@ const EmptyWorkspaces = () => (
     </SectionCardHeader>
     <SectionCardContent className="flex flex-col gap-8">
       <div className="flex min-h-24 flex-col justify-center gap-1 py-5">
-        <p className="font-display text-xl font-semibold tracking-[-0.03em] text-foreground">
+        <p className="font-display text-xl font-semibold tracking-display text-foreground">
           No workspaces yet
         </p>
         <p className="max-w-prose text-sm text-pretty text-muted-foreground">

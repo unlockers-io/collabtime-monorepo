@@ -1,3 +1,4 @@
+import { parseFont, svgText } from "@repo/social-image";
 import { ImageResponse } from "next/og";
 
 import { getAppUrl } from "@/lib/app-url";
@@ -7,12 +8,11 @@ import { BRAND_INK, THEME_COLORS } from "@/lib/theme-colors";
 
 const loadFont = async (): Promise<ArrayBuffer | null> => {
   try {
-    const text = encodeURIComponent(`${APP_NAME}${APP_TAGLINE}`);
     const signal = AbortSignal.timeout(3000);
-    const cssResponse = await fetch(
-      `https://fonts.googleapis.com/css2?family=Manrope:wght@600&text=${text}`,
-      { next: { revalidate: 86_400 }, signal },
-    );
+    const cssResponse = await fetch("https://fonts.googleapis.com/css2?family=Manrope:wght@600", {
+      next: { revalidate: 86_400 },
+      signal,
+    });
     if (!cssResponse.ok) {
       throw new Error("Font stylesheet unavailable");
     }
@@ -39,95 +39,53 @@ const ROWS = [
   { label: "Berlin", start: 40, width: 420 },
 ];
 
+const COLORS = { muted: "#a3a3a3", track: "#171717", working: "#737373" };
 const GET = async () => {
-  const font = await loadFont();
+  const data = await loadFont();
+  const font = data ? parseFont(Buffer.from(data)) : undefined;
   const host = new URL(getAppUrl()).host;
   return new ImageResponse(
-    <div
-      style={{
-        backgroundColor: THEME_COLORS.dark,
+    <svg height={630} viewBox="0 0 1200 630" width={1200}>
+      <rect fill={THEME_COLORS.dark} height={630} width={1200} />
+      {svgText(APP_TAGLINE, {
         color: BRAND_INK,
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        padding: 64,
-        width: "100%",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          fontFamily: font ? "Manrope" : "sans-serif",
-          fontSize: 64,
-          fontWeight: 600,
-          letterSpacing: "-0.03em",
-          lineHeight: 1.1,
-          maxWidth: 900,
-        }}
-      >
-        {APP_TAGLINE}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 44 }}>
-        {ROWS.map(({ label, start, width }) => (
-          <div key={label} style={{ alignItems: "center", display: "flex", gap: 24 }}>
-            <span style={{ color: "#a3a3a3", fontSize: 20, width: 160 }}>{label}</span>
-            <div
-              style={{
-                backgroundColor: "#171717",
-                display: "flex",
-                height: 28,
-                position: "relative",
-                width: 850,
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: "#737373",
-                  height: 28,
-                  left: start,
-                  position: "absolute",
-                  width,
-                }}
-              />
-              <div
-                style={{
-                  backgroundColor: BRAND_INK,
-                  height: 28,
-                  left: 220,
-                  position: "absolute",
-                  width: 240,
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-      <div
-        style={{
-          alignItems: "center",
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "auto",
-        }}
-      >
-        <div style={{ alignItems: "center", display: "flex", gap: 18 }}>
-          <div style={{ border: `4px solid ${BRAND_INK}`, height: 28, width: 28 }} />
-          <span
-            style={{ fontFamily: font ? "Manrope" : "sans-serif", fontSize: 30, fontWeight: 600 }}
-          >
-            {APP_NAME}
-          </span>
-        </div>
-        <span style={{ color: "#a3a3a3", fontSize: 20 }}>Free and open source · {host}</span>
-      </div>
-    </div>,
+        font,
+        lineHeight: 1.1,
+        size: 64,
+        tracking: -1.92,
+        width: 900,
+        x: 64,
+        y: 125,
+      })}
+      {ROWS.map(({ label, start, width }, index) => (
+        <g key={label}>
+          {svgText(label, { color: COLORS.muted, size: 20, x: 64, y: 273 + 44 * index })}
+          <rect fill={COLORS.track} height={28} width={850} x={248} y={250 + 44 * index} />
+          <rect
+            fill={COLORS.working}
+            height={28}
+            width={width}
+            x={248 + start}
+            y={250 + 44 * index}
+          />
+          <rect fill={BRAND_INK} height={28} width={240} x={468} y={250 + 44 * index} />
+        </g>
+      ))}
+      <rect fill="none" height={24} stroke={BRAND_INK} strokeWidth={4} width={24} x={66} y={534} />
+      {svgText(APP_NAME, { color: BRAND_INK, font, size: 30, x: 110, y: 558 })}
+      {svgText(`Free and open source · ${host}`, {
+        anchor: "end",
+        color: COLORS.muted,
+        size: 20,
+        x: 1136,
+        y: 558,
+      })}
+    </svg>,
     {
-      fonts: font ? [{ data: font, name: "Manrope", style: "normal", weight: 600 }] : undefined,
       headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400" },
       height: 630,
       width: 1200,
     },
   );
 };
-
 export { GET };

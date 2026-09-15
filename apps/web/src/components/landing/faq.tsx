@@ -35,8 +35,8 @@ const Faq = () => (
         })),
       }).replaceAll("<", String.raw`\u003c`)}
     </script>
-    <div className="grid gap-12 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20">
-      <h2 className="font-display text-4xl font-semibold tracking-[-0.04em] text-balance sm:text-5xl">
+    <div className="grid gap-12 lg:grid-cols-faq lg:gap-20">
+      <h2 className="font-display text-4xl font-semibold tracking-hero text-balance sm:text-5xl">
         Questions
       </h2>
 
@@ -47,7 +47,7 @@ const Faq = () => (
             key={question}
           >
             <dt className="text-base font-medium text-foreground sm:text-lg">{question}</dt>
-            <dd className="max-w-[56ch] text-base text-pretty text-muted-foreground sm:text-sm">
+            <dd className="max-w-(--container-measure-footer) text-base text-pretty text-muted-foreground sm:text-sm">
               {answer}
             </dd>
           </div>

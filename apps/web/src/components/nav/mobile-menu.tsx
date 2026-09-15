@@ -147,11 +147,12 @@ const MobileMenu = ({
               )}
               {canDeleteWorkspace && (
                 <Button
-                  className="justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  className="justify-start"
                   onClick={() => {
                     onDeleteWorkspace();
                     onClose();
                   }}
+                  tone="danger"
                   variant="ghost"
                 >
                   <span className="flex items-center gap-2">

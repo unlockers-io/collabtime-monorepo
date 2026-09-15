@@ -27,15 +27,24 @@ const ScrollBar = ({
   );
 };
 
-const ScrollArea = ({ children, className, ...props }: ScrollAreaPrimitive.Root.Props) => {
+const ScrollArea = ({
+  children,
+  className,
+  variant = "default",
+  ...props
+}: ScrollAreaPrimitive.Root.Props & { variant?: "default" | "framed" }) => {
   return (
     <ScrollAreaPrimitive.Root
-      className={cn("relative", className)}
+      className={cn(
+        "relative",
+        variant === "framed" && "rounded-lg border border-border",
+        className,
+      )}
       data-slot="scroll-area"
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
-        className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+        className="size-full rounded-inherit transition-input outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-1"
         data-slot="scroll-area-viewport"
       >
         {children}

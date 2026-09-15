@@ -36,7 +36,7 @@ const TeamTitle = ({
 
   if (!isAdmin) {
     return (
-      <h1 className="truncate font-display text-4xl font-semibold tracking-[-0.04em] sm:text-6xl">
+      <h1 className="truncate font-display text-4xl font-semibold tracking-hero sm:text-6xl">
         {teamName || "Team Workspace"}
       </h1>
     );
@@ -47,7 +47,7 @@ const TeamTitle = ({
       <input
         aria-label="Team name"
         autoFocus
-        className="h-14 w-full max-w-xl border border-input bg-background px-3 font-display text-3xl font-semibold tracking-[-0.04em] text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:h-18 sm:text-5xl"
+        className="h-14 w-full max-w-xl border border-input bg-background px-3 font-display text-3xl font-semibold tracking-hero text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:h-18 sm:text-5xl"
         maxLength={100}
         onBlur={onSave}
         onChange={(e) => {
@@ -71,7 +71,7 @@ const TeamTitle = ({
       onClick={onEdit}
       type="button"
     >
-      <h1 className="truncate font-display text-4xl font-semibold tracking-[-0.04em] sm:text-6xl">
+      <h1 className="truncate font-display text-4xl font-semibold tracking-hero sm:text-6xl">
         {teamName || "Team Workspace"}
       </h1>
       <Pencil

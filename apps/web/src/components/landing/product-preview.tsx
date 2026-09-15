@@ -98,7 +98,7 @@ const ProductPreview = () => {
     <div className="border-y border-border py-5 sm:py-7">
       <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between gap-3">
-          <p className="font-display text-xs font-semibold tracking-[0.12em] text-foreground uppercase">
+          <p className="font-display text-xs font-semibold tracking-caps text-foreground uppercase">
             Sample team · Today
           </p>
           <p className="font-mono text-xs text-muted-foreground">

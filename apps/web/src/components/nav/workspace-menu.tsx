@@ -21,7 +21,7 @@ const WorkspaceMenu = ({ onDeleteWorkspace, onEditVisibility }: WorkspaceMenuPro
     >
       <MoreHorizontal className="size-4" />
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-48 bg-popover">
+    <DropdownMenuContent align="end" className="w-48">
       {onEditVisibility && (
         <DropdownMenuItem onClick={onEditVisibility}>
           <Lock />

@@ -35,12 +35,12 @@ const FEATURES = [
 
 const Features = () => (
   <Section className="border-t border-border" id="features">
-    <div className="grid gap-12 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20">
+    <div className="grid gap-12 lg:grid-cols-faq lg:gap-20">
       <div>
-        <h2 className="max-w-[14ch] font-display text-4xl font-semibold tracking-[-0.04em] text-balance sm:text-5xl">
+        <h2 className="max-w-(--container-measure-14) font-display text-4xl font-semibold tracking-hero text-balance sm:text-5xl">
           No timezone arithmetic.
         </h2>
-        <p className="mt-6 max-w-[48ch] text-lg text-pretty text-muted-foreground">
+        <p className="mt-6 max-w-(--container-measure-body) text-lg text-pretty text-muted-foreground">
           No spreadsheets, no mental arithmetic, and no 6am call that nobody actually agreed to.
         </p>
       </div>
@@ -52,7 +52,7 @@ const Features = () => (
             key={title}
           >
             <dt className="text-base font-semibold text-foreground">{title}</dt>
-            <dd className="max-w-[52ch] text-sm leading-relaxed text-pretty text-muted-foreground">
+            <dd className="max-w-(--container-measure-52) text-sm leading-relaxed text-pretty text-muted-foreground">
               {description}
             </dd>
           </div>
