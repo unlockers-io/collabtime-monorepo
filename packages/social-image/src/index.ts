@@ -1,8 +1,7 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-
 import { create, type Font } from "fontkit";
 import { createElement } from "react";
+
+import geist from "./fonts/geist.json" with { type: "json" };
 
 const parseFont = (data: Buffer): Font => {
   const font = create(data);
@@ -12,9 +11,7 @@ const parseFont = (data: Buffer): Font => {
   return font;
 };
 
-const fontData = await readFile(
-  join(process.cwd(), "../../packages/social-image/src/fonts/Geist-Regular.ttf"),
-);
+const fontData = Buffer.from(geist.base64, "base64");
 const defaultFont = parseFont(fontData);
 
 type SvgTextOptions = {

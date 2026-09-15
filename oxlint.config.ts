@@ -6,28 +6,6 @@ export default defineConfig({
   jsPlugins: ["@shadcn/lint"],
   overrides: [
     {
-      files: ["apps/web/src/lib/utils.test.ts"],
-      rules: { "shadcn/no-unknown-classes": ["error", { allow: ["foo", "bar", "baz"] }] },
-    },
-    {
-      files: ["packages/ui/src/components/**"],
-      rules: {
-        "shadcn/no-restyle": "off",
-        "shadcn/require-static-classes": "off",
-      },
-    },
-    {
-      files: ["packages/ui/src/lib/utils.test.ts"],
-      rules: {
-        "shadcn/no-unknown-classes": [
-          "error",
-          {
-            allow: ["foo", "bar", "baz"],
-          },
-        ],
-      },
-    },
-    {
       // Next route entrypoints and client hooks require their framework context; mock that boundary, not the behavior under test.
       files: [
         "apps/web/src/app/[[]teamId]/page.test.tsx",

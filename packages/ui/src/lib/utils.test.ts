@@ -4,12 +4,12 @@ import { cn } from "./utils";
 
 describe("cn", () => {
   it("merges class names", () => {
-    expect(cn("foo", "bar")).toBe("foo bar");
+    expect(cn("block", "relative")).toBe("block relative");
   });
 
   it("handles conditional classes", () => {
     const condition = false;
-    expect(cn("foo", condition && "bar", "baz")).toBe("foo baz");
+    expect(cn("block", condition && "relative", "isolate")).toBe("block isolate");
   });
 
   it("deduplicates tailwind classes", () => {
