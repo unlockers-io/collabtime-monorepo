@@ -90,24 +90,24 @@ const JoinRequestRow = ({ onSettled, request }: JoinRequestRowProps) => {
       <div className="flex shrink-0 items-center gap-1.5">
         <Button
           aria-label={`Approve ${request.userName}`}
-          className="text-success hover:bg-success/10 hover:text-success"
           disabled={isBusy}
           onClick={() => {
             void run("approve");
           }}
           size="icon-sm"
+          tone="success"
           variant="ghost"
         >
           {action === "approve" ? <Spinner /> : <Check className="size-4" />}
         </Button>
         <Button
           aria-label={`Deny ${request.userName}`}
-          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           disabled={isBusy}
           onClick={() => {
             void run("deny");
           }}
           size="icon-sm"
+          tone="danger"
           variant="ghost"
         >
           {action === "deny" ? <Spinner /> : <X className="size-4" />}
@@ -167,7 +167,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
             <Bell aria-hidden="true" className="size-4" />
           </div>
           <span className="text-sm font-medium text-foreground">Pending Join Requests</span>
-          <Badge className="border-transparent bg-warning/30 text-warning">{requests.length}</Badge>
+          <Badge variant="pending">{requests.length}</Badge>
         </div>
         {isExpanded ? (
           <ChevronUp aria-hidden="true" className="size-4 text-muted-foreground" />

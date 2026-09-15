@@ -12,7 +12,7 @@ const Logo = ({ showTitle = true }: NavLogoProps) => (
   >
     <span aria-hidden="true" className="size-3.5 shrink-0 border-2 border-current" />
     {showTitle && (
-      <span className="font-display text-lg font-semibold tracking-[-0.03em]">Collabtime</span>
+      <span className="font-display text-lg font-semibold tracking-display">Collabtime</span>
     )}
   </Link>
 );

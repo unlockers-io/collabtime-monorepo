@@ -3,6 +3,7 @@ import awesomeness from "oxlint-config-awesomeness";
 
 export default defineConfig({
   extends: [awesomeness],
+  jsPlugins: ["@shadcn/lint"],
   overrides: [
     {
       // Next route entrypoints and client hooks require their framework context; mock that boundary, not the behavior under test.
@@ -114,4 +115,32 @@ export default defineConfig({
       },
     },
   ],
+  rules: {
+    "shadcn/no-arbitrary-values": "error",
+    "shadcn/no-inline-styles": "error",
+    "shadcn/no-raw-colors": "error",
+    "shadcn/no-restyle": [
+      "error",
+      {
+        allow: ["layout"],
+        contracts: [
+          { allow: ["layout", "shape", "color"], pattern: "^Skeleton$" },
+          { allow: ["layout", "spacing"], pattern: "^Card$" },
+          { allow: ["layout", "gap-*"], pattern: "^(DialogTitle|DropdownMenuItem|ScrollArea)$" },
+          {
+            allow: ["layout", "typography"],
+            deny: ["font-*"],
+            pattern: "^CardTitle$",
+          },
+          {
+            allow: ["layout", "spacing"],
+            pattern: "^CardContent$",
+          },
+        ],
+      },
+    ],
+    "shadcn/no-unknown-classes": "error",
+    "shadcn/require-static-classes": "error",
+  },
+  settings: { shadcn: { ui: "@repo/ui/components" } },
 });

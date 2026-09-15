@@ -47,7 +47,7 @@ const UserMenu = ({ isSigningOut, navRole, onSignOut }: UserMenuProps) => {
       >
         {navRole === "admin" ? <Shield className="size-4" /> : <User className="size-4" />}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48 bg-popover">
+      <DropdownMenuContent align="end" className="w-48">
         <div className="px-2 py-1.5 text-sm">
           <p className="font-medium text-popover-foreground">{title}</p>
           {description !== null && <p className="text-xs text-muted-foreground">{description}</p>}

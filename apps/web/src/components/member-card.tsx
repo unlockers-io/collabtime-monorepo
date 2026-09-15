@@ -61,11 +61,7 @@ const MemberDetails = ({
       <div className="flex flex-col gap-0.5">
         <span className="flex items-center gap-1.5 font-semibold text-foreground">
           {member.name}
-          {isOwnProfile && (
-            <Badge className="border-transparent text-xs" variant="secondary">
-              You
-            </Badge>
-          )}
+          {isOwnProfile && <Badge variant="secondary">You</Badge>}
         </span>
         {member.title && <span className="text-sm text-muted-foreground">{member.title}</span>}
       </div>
@@ -183,21 +179,21 @@ const MemberCard = ({
             <div className="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
               <Button
                 aria-label={`Edit ${member.name}`}
-                className="text-muted-foreground hover:text-foreground"
                 onClick={() => {
                   setIsEditDialogOpen(true);
                 }}
                 size="icon-sm"
+                tone="muted"
                 variant="ghost"
               >
                 <Pencil className="size-4" />
               </Button>
               <Button
                 aria-label={`Remove ${member.name}`}
-                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 disabled={isPending}
                 onClick={handleRemove}
                 size="icon-sm"
+                tone="muted-danger"
                 variant="ghost"
               >
                 {isPending ? <Spinner /> : <Trash2 className="size-4" />}
@@ -207,11 +203,10 @@ const MemberCard = ({
           {canClaim && (
             <Button
               aria-label={`Claim ${member.name}'s profile`}
-              className="gap-1.5 text-xs"
               onClick={() => {
                 setIsClaimDialogOpen(true);
               }}
-              size="sm"
+              size="caption"
               variant="outline"
             >
               <Hand className="size-3.5" />

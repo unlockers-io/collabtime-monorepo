@@ -16,11 +16,12 @@ const TimeAxis = () => (
 
         return (
           <div
-            className={cn("flex flex-col", (hour === 6 || hour === 18) && "max-sm:hidden")}
+            className={cn(
+              "time-label-alignment",
+              cn("flex flex-col", (hour === 6 || hour === 18) && "max-sm:hidden"),
+            )}
             key={hour}
-            style={{
-              alignItems: getEdgeAlignment(isFirst, isLast),
-            }}
+            style={{ "--time-axis-align-items": getEdgeAlignment(isFirst, isLast) }}
           >
             <div className="flex flex-col items-center gap-1">
               <span className="font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums">

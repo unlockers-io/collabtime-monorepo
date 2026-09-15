@@ -20,7 +20,7 @@ const NotFound = () => {
         <h1 className="font-display text-2xl font-semibold tracking-tight text-balance text-foreground sm:text-3xl">
           Page not found
         </h1>
-        <p className="max-w-[60ch] text-sm text-pretty text-muted-foreground">
+        <p className="max-w-(--container-measure-60) text-sm text-pretty text-muted-foreground">
           The page you&apos;re looking for doesn&apos;t exist or has moved.
         </p>
         <Link className={buttonVariants()} href="/">

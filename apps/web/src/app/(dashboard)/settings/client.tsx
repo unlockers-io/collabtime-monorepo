@@ -103,7 +103,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input className="bg-secondary" disabled id="email" value={user.email} />
+                <Input disabled id="email" value={user.email} variant="secondary" />
                 <p className="text-xs text-muted-foreground">Email cannot be changed</p>
               </div>
             </div>

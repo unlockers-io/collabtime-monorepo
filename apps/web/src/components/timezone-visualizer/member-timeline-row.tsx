@@ -47,7 +47,7 @@ const HourBlock = ({
           <button
             aria-label={hourLabel}
             className={cn(
-              "h-full flex-1 cursor-[inherit]",
+              "h-full flex-1 cursor-inherit",
               getHourColorClass(isSharedOverlap, isWorking),
             )}
             type="button"
@@ -151,10 +151,10 @@ type FindMeetingTimeButtonProps = {
 
 const FindMeetingTimeButton = ({ onClick }: FindMeetingTimeButtonProps) => (
   <Button
-    className="group flex h-14 w-full items-center justify-center gap-2 border-y border-dashed border-border bg-transparent text-muted-foreground hover:border-muted-foreground hover:bg-muted/50"
+    className="group flex h-14 w-full items-center justify-center"
     onClick={onClick}
     type="button"
-    variant="outline"
+    variant="meeting"
   >
     <Clock className="size-5 transition-transform group-hover:scale-110" />
     <span className="font-medium">Find Best Meeting Time</span>

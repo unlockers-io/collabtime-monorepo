@@ -165,7 +165,7 @@ const Loading = () => {
           </SectionCardContent>
         </SectionCard>
 
-        <div className="grid grid-cols-1 items-start gap-10 xl:grid-cols-[1.4fr_0.6fr] [&>*]:min-w-0">
+        <div className="grid grid-cols-1 items-start gap-10 xl:grid-cols-team [&>*]:min-w-0">
           <SectionCard>
             <SectionCardHeader>
               <SectionHeadingSkeleton />

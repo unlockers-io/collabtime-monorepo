@@ -7,13 +7,15 @@ import { buttonVariants } from "./button-variants";
 
 const Button = ({
   className,
+  tone,
+  reveal,
   size = "default",
   variant = "default",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) => {
   return (
     <ButtonPrimitive
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, className, tone, reveal }))}
       data-slot="button"
       {...props}
     />

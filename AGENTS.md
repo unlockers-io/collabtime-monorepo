@@ -165,3 +165,11 @@ Spaces link to teams via a unique `teamId` and support private access through `i
 - Prisma 7: <https://www.prisma.io/docs>
 - oxlint: <https://oxc.rs>
 - portless: <https://portless.dev>
+
+## Design-system linting
+
+Run `pnpm lint` after changes and fix every error. `oxlint.config.ts` registers `@shadcn/lint` and enforces all six rules as errors: component contracts, known Tailwind classes, static component class names, semantic colors, theme or scale values, and class-based styling. Use CSS custom properties for runtime geometry and named theme tokens for custom values. Use component variants for appearance and layout classes at call sites. All six rules also apply inside primitive directories. Shared styles belong to component variants or the owning stylesheet. Keep theme discovery local to each app. Exact class-merging fixture allowances apply only to the named test files.
+
+Skeleton callers own placeholder geometry and tone; card callers own spacing; dialog titles, menu items, and scroll areas allow content gaps. Buttons expose semantic tones and group reveal behavior, while inputs, CSV textareas, badges, and select triggers use named variants. Card titles use `display` for the brand heading font. Do not restyle these primitives at call sites.
+
+Button tones and reveal behavior apply after the base variant so semantic emphasis and focus/hover states survive class merging.

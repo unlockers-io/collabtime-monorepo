@@ -78,5 +78,6 @@ minimumReleaseAgeExclude:
   - "@react-email/ui@6.9.2"
   - react-email@6.9.2
   - "@testing-library/jest-dom@7.0.1"
+  - "@shadcn/lint@0.1.0"
 
 nodeLinker: hoisted

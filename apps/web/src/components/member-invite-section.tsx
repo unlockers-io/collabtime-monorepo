@@ -69,40 +69,42 @@ export const MemberInviteSection = ({
     );
   }
   return (
-    <Field className="border-t border-border py-4" data-invalid={Boolean(error) || undefined}>
-      <FieldLabel htmlFor={id}>Invite User</FieldLabel>
-      <div className="flex flex-wrap gap-2">
-        <Input
-          aria-describedby={error === null ? undefined : `${id}-error`}
-          aria-invalid={Boolean(error)}
-          autoComplete="email"
-          className="min-w-0 flex-1"
-          id={id}
-          onBlur={() => {
-            if (email && !InvitationEmailSchema.safeParse(normalizeEmail(email)).success) {
-              setError("Enter a valid email address");
-            }
-          }}
-          onChange={(event) => {
-            setEmail(event.target.value);
-            setError(null);
-          }}
-          type="email"
-          value={email}
-        />
-        <Button
-          aria-label="Send invitation"
-          disabled={pending || !email.trim()}
-          onClick={() => {
-            void send();
-          }}
-          type="button"
-          variant="outline"
-        >
-          {pending ? "Sending…" : "Send invitation"}
-        </Button>
-      </div>
-      {error !== null && <FieldError errors={[error]} id={`${id}-error`} />}
-    </Field>
+    <div className="border-t border-border py-4">
+      <Field data-invalid={Boolean(error) || undefined}>
+        <FieldLabel htmlFor={id}>Invite User</FieldLabel>
+        <div className="flex flex-wrap gap-2">
+          <Input
+            aria-describedby={error === null ? undefined : `${id}-error`}
+            aria-invalid={Boolean(error)}
+            autoComplete="email"
+            className="min-w-0 flex-1"
+            id={id}
+            onBlur={() => {
+              if (email && !InvitationEmailSchema.safeParse(normalizeEmail(email)).success) {
+                setError("Enter a valid email address");
+              }
+            }}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setError(null);
+            }}
+            type="email"
+            value={email}
+          />
+          <Button
+            aria-label="Send invitation"
+            disabled={pending || !email.trim()}
+            onClick={() => {
+              void send();
+            }}
+            type="button"
+            variant="outline"
+          >
+            {pending ? "Sending…" : "Send invitation"}
+          </Button>
+        </div>
+        {error !== null && <FieldError errors={[error]} id={`${id}-error`} />}
+      </Field>
+    </div>
   );
 };

@@ -49,18 +49,7 @@ const FieldGroup = ({
 );
 
 const FieldLabel = ({ className, ...props }: React.ComponentProps<typeof Label>) => {
-  return (
-    <Label
-      className={cn(
-        "group/field-label flex w-fit items-center gap-2 text-sm leading-snug font-medium text-foreground",
-        "group-data-[invalid=true]/field:text-destructive",
-        "group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50",
-        className,
-      )}
-      data-slot="field-label"
-      {...props}
-    />
-  );
+  return <Label className={className} data-slot="field-label" treatment="field" {...props} />;
 };
 
 const FieldContent = ({

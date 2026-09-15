@@ -181,3 +181,161 @@
     @apply bg-background text-foreground;
   }
 }
+
+@theme inline {
+  --radius-control-sm: min(var(--radius-md), 10px);
+}
+
+@theme inline {
+  --radius-control: min(var(--radius-md), 12px);
+}
+
+@theme {
+  --container-measure-body: 48ch;
+}
+
+@theme {
+  --container-measure-footer: 56ch;
+}
+
+@theme {
+  --container-measure-hero: 24ch;
+}
+
+@theme {
+  --text-control: 0.8rem;
+}
+
+@utility card-spacing {
+  --card-spacing: --spacing(4);
+}
+
+@utility card-spacing-sm {
+  --card-spacing: --spacing(3);
+}
+
+@utility grid-cols-content-action {
+  grid-template-columns: 1fr auto;
+}
+
+@utility grid-rows-card-header {
+  grid-template-rows: auto auto;
+}
+
+@utility transition-input {
+  transition-property: color, box-shadow;
+  transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--default-transition-duration));
+}
+
+@theme {
+  --text-caption-xs: 0.6875rem;
+}
+
+@theme {
+  --text-micro: 0.625rem;
+}
+
+@utility cursor-inherit {
+  cursor: inherit;
+}
+
+@theme {
+  --tracking-display: -0.03em;
+}
+
+@theme {
+  --tracking-hero: -0.04em;
+}
+
+@utility translate-y-tooltip-arrow {
+  @apply translate-y-[calc(-50%-2px)];
+}
+
+@theme inline {
+  --radius-arrow: 2px;
+}
+
+@theme {
+  --tracking-caps: 0.12em;
+}
+
+@theme inline {
+  --radius-inherit: inherit;
+}
+
+:root {
+  --layout-max-w-dialog-viewport: calc(100% - 2rem);
+}
+
+@theme {
+  --tracking-eyebrow-wide: 0.08em;
+}
+
+@theme {
+  --container-measure-22: 22ch;
+}
+
+@utility grid-cols-hero {
+  grid-template-columns: 1.2fr 0.8fr;
+}
+
+@theme {
+  --container-measure-11: 11ch;
+}
+
+@theme {
+  --leading-hero-compact: 0.92;
+}
+
+@theme {
+  --container-measure-42: 42ch;
+}
+
+@utility grid-cols-faq {
+  grid-template-columns: 0.7fr 1.3fr;
+}
+
+@theme {
+  --container-measure-14: 14ch;
+}
+
+@theme {
+  --container-measure-52: 52ch;
+}
+
+@theme {
+  --container-measure-60: 60ch;
+}
+
+@utility grid-cols-team {
+  grid-template-columns: 1.4fr 0.6fr;
+}
+
+@utility sortable-group-geometry {
+  opacity: var(--sortable-group-card-opacity);
+  transform: var(--sortable-group-card-transform);
+  transition: var(--sortable-group-card-transition);
+}
+
+@utility sortable-member-geometry {
+  opacity: var(--sortable-member-card-opacity);
+  transform: var(--sortable-member-card-transform);
+  transition: var(--sortable-member-card-transition);
+}
+
+@utility comparison-label-alignment {
+  align-items: var(--compare-panel-align-items);
+}
+
+@utility current-time-position {
+  left: var(--current-time-indicator-left);
+}
+
+@utility time-label-alignment {
+  align-items: var(--time-axis-align-items);
+}
+
+@theme {
+  --spacing-theme-toggle: 1.2rem;
+}
