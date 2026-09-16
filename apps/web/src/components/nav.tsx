@@ -2,6 +2,7 @@
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button, buttonVariants } from "@repo/ui/components/button";
+import { cn } from "@repo/ui/lib/utils";
 import { Archive, Lock, LogIn, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -199,7 +200,7 @@ const NavView = (props: NavViewProps) => {
         {!isAuthenticated && (
           <a
             aria-label="View on GitHub"
-            className={buttonVariants({ size: "icon", variant: "ghost" })}
+            className={cn(buttonVariants({ size: "icon", variant: "ghost" }))}
             href={APP_REPO_URL}
             rel="noreferrer"
             target="_blank"
@@ -219,7 +220,7 @@ const NavView = (props: NavViewProps) => {
         ) : (
           <Link
             aria-label="Sign in"
-            className={buttonVariants({ size: "sm", variant: "outline" })}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
             href="/login"
           >
             <LogIn aria-hidden className="size-4 sm:hidden" />
