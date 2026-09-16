@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@repo/ui/components/badge";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import {
   Tooltip,
@@ -8,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
+import { StatusBadge as StatusPill } from "@repo/ui/compositions/status-badge";
 import { cn } from "@repo/ui/lib/utils";
 import { Circle, Clock, Sunrise, Users } from "lucide-react";
 
@@ -70,12 +70,12 @@ const StatusGroup = ({
       <div className="flex items-center gap-2">
         <Icon className={cn("size-4 shrink-0", iconClassName ?? TONE_TEXT[tone])} />
         <h3 className="text-xs font-medium text-muted-foreground">{label}</h3>
-        <Badge className="ml-auto" numeric variant={tone}>
+        <StatusPill className="ml-auto" numeric tone={tone}>
           {count}
-        </Badge>
+        </StatusPill>
       </div>
       {count > 0 ? (
-        <ScrollArea className="max-h-30">
+        <ScrollArea className="h-30">
           <TooltipProvider>
             <div className="flex flex-wrap gap-1.5 px-1 py-0.5">{children}</div>
           </TooltipProvider>
@@ -96,9 +96,9 @@ type StatusBadgeProps = {
 const StatusBadge = ({ children, groupName, tone }: StatusBadgeProps) => {
   const hasGroup = groupName !== null && groupName !== "";
   const badge = (
-    <Badge className={cn(hasGroup && "cursor-help")} variant={tone}>
+    <StatusPill className={cn(hasGroup && "cursor-help")} tone={tone}>
       {children}
-    </Badge>
+    </StatusPill>
   );
 
   if (!hasGroup) {

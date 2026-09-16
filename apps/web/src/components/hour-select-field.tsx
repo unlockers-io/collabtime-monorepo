@@ -1,7 +1,6 @@
 "use client";
 
-import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
-import type { FieldErrorValue } from "@repo/ui/components/field";
+import { Field, FieldLabel } from "@repo/ui/components/field";
 import {
   Select,
   SelectContent,
@@ -9,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/select";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 
 import { formatHour } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 type HourSelectFieldProps = {
   errorId?: string;
-  errors?: Array<FieldErrorValue>;
+  errors?: Array<unknown>;
   id: string;
   isInvalid?: boolean;
   label: string;
@@ -64,7 +64,7 @@ const HourSelectField = ({
           ))}
         </SelectContent>
       </Select>
-      {invalid && errors !== undefined && <FieldError errors={errors} id={errorId} />}
+      {invalid && errors !== undefined && <FormFieldError errors={errors} id={errorId} />}
     </Field>
   );
 };

@@ -151,10 +151,11 @@ type FindMeetingTimeButtonProps = {
 
 const FindMeetingTimeButton = ({ onClick }: FindMeetingTimeButtonProps) => (
   <Button
-    className="group flex h-14 w-full items-center justify-center"
+    className="group flex w-full items-center justify-center"
     onClick={onClick}
+    size="lg"
     type="button"
-    variant="meeting"
+    variant="outline"
   >
     <Clock className="size-5 transition-transform group-hover:scale-110" />
     <span className="font-medium">Find Best Meeting Time</span>

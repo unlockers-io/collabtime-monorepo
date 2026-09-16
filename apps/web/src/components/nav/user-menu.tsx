@@ -1,7 +1,6 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
-import { buttonVariants } from "@repo/ui/components/button-variants";
+import { Button, buttonVariants } from "@repo/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -2,7 +2,6 @@
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import {
   Tooltip,
@@ -10,9 +9,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
+import { StatusBadge as StatusPill } from "@repo/ui/compositions/status-badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Hand, Pencil, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { EditMemberDialog } from "@/components/edit-member-dialog";
 import { teamQueryKeys } from "@/hooks/use-team-query";
@@ -88,21 +89,21 @@ const MemberDetails = ({
                     />
                   }
                 >
-                  <Badge variant="info">Invited</Badge>
+                  <StatusPill tone="info">Invited</StatusPill>
                 </TooltipTrigger>
                 <TooltipContent>{pendingInvite.email}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
         {isAvailable ? (
-          <Badge variant="success">Available</Badge>
+          <StatusPill tone="success">Available</StatusPill>
         ) : (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger render={<span />}>
-                <Badge className="cursor-help" variant="warning">
+                <StatusPill className="cursor-help" tone="warning">
                   Not Available
-                </Badge>
+                </StatusPill>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Available {formatTimeUntilAvailable(minutesUntilAvailable)}</p>
@@ -183,7 +184,6 @@ const MemberCard = ({
                   setIsEditDialogOpen(true);
                 }}
                 size="icon-sm"
-                tone="muted"
                 variant="ghost"
               >
                 <Pencil className="size-4" />
@@ -193,8 +193,7 @@ const MemberCard = ({
                 disabled={isPending}
                 onClick={handleRemove}
                 size="icon-sm"
-                tone="muted-danger"
-                variant="ghost"
+                variant="destructive"
               >
                 {isPending ? <Spinner /> : <Trash2 className="size-4" />}
               </Button>
@@ -206,7 +205,7 @@ const MemberCard = ({
               onClick={() => {
                 setIsClaimDialogOpen(true);
               }}
-              size="caption"
+              size="sm"
               variant="outline"
             >
               <Hand className="size-3.5" />

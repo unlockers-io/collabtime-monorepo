@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "shadcn/tailwind.css";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -338,4 +339,25 @@
 
 @theme {
   --spacing-theme-toggle: 1.2rem;
+}
+
+@theme inline {
+  --color-secondary-hover: color-mix(in oklch, var(--secondary), var(--foreground) 5%);
+}
+
+@utility toaster {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+  --border-radius: var(--radius);
+}
+
+@theme {
+  --spacing-switch: 18.4px;
+  --spacing-switch-sm: 14px;
+  --container-switch: 32px;
+  --container-switch-sm: 24px;
+}
+@utility translate-x-switch-thumb {
+  @apply translate-x-[calc(100%-2px)];
 }

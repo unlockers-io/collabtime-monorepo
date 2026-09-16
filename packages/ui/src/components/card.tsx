@@ -1,16 +1,15 @@
-import type { ComponentProps } from "react";
-
-import { cn } from "../lib/utils";
+import { cn } from "cn";
+import * as React from "react";
 
 const Card = ({
   className,
   size = "default",
   ...props
-}: ComponentProps<"div"> & { size?: "default" | "sm" }) => {
+}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) => {
   return (
     <div
       className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden border-y border-border bg-transparent py-(--card-spacing) text-sm text-card-foreground card-spacing has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:card-spacing-sm data-[size=sm]:has-data-[slot=card-footer]:pb-0",
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 card-spacing has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:card-spacing-sm data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         className,
       )}
       data-size={size}
@@ -20,11 +19,11 @@ const Card = ({
   );
 };
 
-const CardHeader = ({ className, ...props }: ComponentProps<"div">) => {
+const CardHeader = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
       className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 px-(--card-spacing) has-data-[slot=card-action]:grid-cols-content-action has-data-[slot=card-description]:grid-rows-card-header [.border-b]:pb-(--card-spacing)",
+        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-content-action has-data-[slot=card-description]:grid-rows-card-header [.border-b]:pb-(--card-spacing)",
         className,
       )}
       data-slot="card-header"
@@ -33,30 +32,22 @@ const CardHeader = ({ className, ...props }: ComponentProps<"div">) => {
   );
 };
 
-const CardTitle = ({
-  children,
-  className,
-  display = false,
-  ...props
-}: ComponentProps<"h2"> & { display?: boolean }) => {
+const CardTitle = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
-    <h2
+    <div
       className={cn(
         "text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
-        display && "font-display",
         className,
       )}
       data-slot="card-title"
       {...props}
-    >
-      {children}
-    </h2>
+    />
   );
 };
 
-const CardDescription = ({ className, ...props }: ComponentProps<"p">) => {
+const CardDescription = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
-    <p
+    <div
       className={cn("text-sm text-muted-foreground", className)}
       data-slot="card-description"
       {...props}
@@ -64,7 +55,7 @@ const CardDescription = ({ className, ...props }: ComponentProps<"p">) => {
   );
 };
 
-const CardAction = ({ className, ...props }: ComponentProps<"div">) => {
+const CardAction = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
       className={cn("col-start-2 row-span-2 row-start-1 self-start justify-self-end", className)}
@@ -74,16 +65,19 @@ const CardAction = ({ className, ...props }: ComponentProps<"div">) => {
   );
 };
 
-const CardContent = ({ className, ...props }: ComponentProps<"div">) => {
+const CardContent = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div className={cn("px-(--card-spacing)", className)} data-slot="card-content" {...props} />
   );
 };
 
-const CardFooter = ({ className, ...props }: ComponentProps<"div">) => {
+const CardFooter = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
-      className={cn("flex items-center border-t bg-muted/30 p-(--card-spacing)", className)}
+      className={cn(
+        "flex items-center rounded-b-xl border-t bg-muted/50 p-(--card-spacing)",
+        className,
+      )}
       data-slot="card-footer"
       {...props}
     />

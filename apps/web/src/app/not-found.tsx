@@ -1,4 +1,5 @@
-import { buttonVariants } from "@repo/ui/components/button-variants";
+import { buttonVariants } from "@repo/ui/components/button";
+import { cn } from "@repo/ui/lib/utils";
 import Link from "next/link";
 
 /** @public Next.js app-router reads metadata via the module loader */
@@ -23,7 +24,7 @@ const NotFound = () => {
         <p className="max-w-(--container-measure-60) text-sm text-pretty text-muted-foreground">
           The page you&apos;re looking for doesn&apos;t exist or has moved.
         </p>
-        <Link className={buttonVariants()} href="/">
+        <Link className={cn(buttonVariants())} href="/">
           Go home
         </Link>
       </div>

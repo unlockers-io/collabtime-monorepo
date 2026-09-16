@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
+import { Field, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import {
   Select,
@@ -19,12 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/select";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
@@ -180,7 +181,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                   value={field.state.value}
                 />
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} id="member-name-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="member-name-error" />
                 )}
               </Field>
             );
@@ -211,7 +212,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                   Send an invitation to this email address.
                 </p>
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} id="member-email-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="member-email-error" />
                 )}
               </Field>
             );
@@ -236,7 +237,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                   value={field.state.value}
                 />
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} id="member-title-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="member-title-error" />
                 )}
               </Field>
             );
@@ -259,7 +260,11 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                   }}
                   value={field.state.value}
                 >
-                  <SelectTrigger aria-invalid={isInvalid} id="member-timezone">
+                  <SelectTrigger
+                    aria-describedby={isInvalid ? "member-timezone-error" : undefined}
+                    aria-invalid={isInvalid}
+                    id="member-timezone"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,7 +275,9 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                     ))}
                   </SelectContent>
                 </Select>
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {isInvalid && (
+                  <FormFieldError errors={field.state.meta.errors} id="member-timezone-error" />
+                )}
               </Field>
             );
           }}
@@ -284,6 +291,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="member-group">Group (optional)</FieldLabel>
                   <GroupSelector
+                    aria-describedby={isInvalid ? "member-group-error" : undefined}
                     aria-invalid={isInvalid}
                     groups={groups}
                     id="member-group"
@@ -294,7 +302,9 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                     placeholder="No group"
                     value={field.state.value || undefined}
                   />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  {isInvalid && (
+                    <FormFieldError errors={field.state.meta.errors} id="member-group-error" />
+                  )}
                 </Field>
               );
             }}

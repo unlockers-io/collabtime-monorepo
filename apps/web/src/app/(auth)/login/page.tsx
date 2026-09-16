@@ -29,8 +29,8 @@ const Page = ({ searchParams }: Props) => (
     </Suspense>
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl" display>
-          Welcome back
+        <CardTitle>
+          <h2 className="font-display text-xl">Welcome back</h2>
         </CardTitle>
         <CardDescription>Sign in to your account to continue</CardDescription>
       </CardHeader>

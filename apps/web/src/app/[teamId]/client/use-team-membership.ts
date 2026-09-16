@@ -1,7 +1,7 @@
-import { toast } from "@repo/ui/components/sonner";
 import { captureException } from "@sentry/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { requestToJoin } from "@/lib/actions/join-requests";
 import { getTeamMembershipRole } from "@/lib/actions/team-read";

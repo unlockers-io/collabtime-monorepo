@@ -1,12 +1,12 @@
 "use client";
 
 import { Badge } from "@repo/ui/components/badge";
-import { Button } from "@repo/ui/components/button";
-import { buttonVariants } from "@repo/ui/components/button-variants";
-import { toast } from "@repo/ui/components/sonner";
+import { Button, buttonVariants } from "@repo/ui/components/button";
+import { cn } from "@repo/ui/lib/utils";
 import { Archive, Lock, LogIn, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { useSignOut } from "@/hooks/use-sign-out";
 import { APP_REPO_URL } from "@/lib/constants";
@@ -120,11 +120,10 @@ const TeamNav = (props: Extract<NavViewProps, { variant: "team" }>) => {
             aria-controls="mobile-menu"
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            className="size-9"
             onClick={() => {
               setMobileMenuOpen(!mobileMenuOpen);
             }}
-            size="icon"
+            size="icon-lg"
             variant="outline"
           >
             {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
@@ -201,7 +200,7 @@ const NavView = (props: NavViewProps) => {
         {!isAuthenticated && (
           <a
             aria-label="View on GitHub"
-            className={buttonVariants({ size: "icon", variant: "ghost" })}
+            className={cn(buttonVariants({ size: "icon", variant: "ghost" }))}
             href={APP_REPO_URL}
             rel="noreferrer"
             target="_blank"
@@ -221,7 +220,7 @@ const NavView = (props: NavViewProps) => {
         ) : (
           <Link
             aria-label="Sign in"
-            className={buttonVariants({ size: "sm", variant: "outline" })}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
             href="/login"
           >
             <LogIn aria-hidden className="size-4 sm:hidden" />

@@ -1,10 +1,10 @@
 "use client";
 import { Button } from "@repo/ui/components/button";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { resendInvitation, revokeInvitation } from "@/lib/actions/invitation-actions";
 import { queryKeys } from "@/lib/query-keys";

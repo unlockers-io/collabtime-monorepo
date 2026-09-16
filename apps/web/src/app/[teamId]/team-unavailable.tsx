@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
-import { buttonVariants } from "@repo/ui/components/button-variants";
+import { Button, buttonVariants } from "@repo/ui/components/button";
+import { cn } from "@repo/ui/lib/utils";
 import { CircleAlert } from "lucide-react";
 import Link from "next/link";
 
@@ -27,7 +27,7 @@ const TeamUnavailable = ({ isRetrying = false, message, onRetry }: TeamUnavailab
       <Button disabled={isRetrying} onClick={onRetry}>
         {isRetrying ? "Trying again…" : "Try again"}
       </Button>
-      <Link className={buttonVariants({ variant: "outline" })} href="/">
+      <Link className={cn(buttonVariants({ variant: "outline" }))} href="/">
         Back to workspaces
       </Link>
     </div>

@@ -36,79 +36,83 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
       )}
     </div>
 
-    <ScrollArea className="max-h-80" variant="framed">
-      <TooltipProvider delay={200}>
-        <table className="w-full text-sm">
-          <caption className="sr-only">Imported team members preview</caption>
-          <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
-            <tr className="border-b border-border">
-              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">#</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                Name
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                Timezone
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                Title
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                Hours
-              </th>
-              <th className="px-3 py-2">
-                <span className="sr-only">Status</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => {
-              const isValid = row.errors.length === 0;
-              return (
-                <tr
-                  className={`border-b border-border last:border-0 ${isValid ? "" : "opacity-50"}`}
-                  key={row.index}
-                >
-                  <td className="px-3 py-2 text-muted-foreground tabular-nums">{row.index}</td>
-                  <td className="px-3 py-2 font-medium">
-                    {row.name || <span className="text-destructive italic">missing</span>}
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {row.matchedTimezone ? (
-                      <span>
-                        {formatTimezoneLabel(row.matchedTimezone)}
-                        {row.rawTimezone !== row.matchedTimezone && (
-                          <span className="ml-1 text-xs opacity-60">(from {row.rawTimezone})</span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-destructive">{row.rawTimezone || "missing"}</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {row.title || <span className="opacity-40">–</span>}
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-muted-foreground tabular-nums">
-                    {row.workingHoursStart}:00–{row.workingHoursEnd}:00
-                  </td>
-                  <td className="px-3 py-2">
-                    {isValid ? (
-                      <CheckCircle className="size-4 text-success" />
-                    ) : (
-                      <Tooltip>
-                        <TooltipTrigger render={<span className="inline-flex cursor-default" />}>
-                          <XCircle className="size-4 text-destructive" />
-                        </TooltipTrigger>
-                        <TooltipContent>{row.errors.join(" · ")}</TooltipContent>
-                      </Tooltip>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </TooltipProvider>
-    </ScrollArea>
+    <div className="overflow-hidden rounded-lg border border-border">
+      <ScrollArea className="h-80">
+        <TooltipProvider delay={200}>
+          <table className="w-full text-sm">
+            <caption className="sr-only">Imported team members preview</caption>
+            <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
+              <tr className="border-b border-border">
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">#</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+                  Name
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+                  Timezone
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+                  Title
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+                  Hours
+                </th>
+                <th className="px-3 py-2">
+                  <span className="sr-only">Status</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const isValid = row.errors.length === 0;
+                return (
+                  <tr
+                    className={`border-b border-border last:border-0 ${isValid ? "" : "opacity-50"}`}
+                    key={row.index}
+                  >
+                    <td className="px-3 py-2 text-muted-foreground tabular-nums">{row.index}</td>
+                    <td className="px-3 py-2 font-medium">
+                      {row.name || <span className="text-destructive italic">missing</span>}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {row.matchedTimezone ? (
+                        <span>
+                          {formatTimezoneLabel(row.matchedTimezone)}
+                          {row.rawTimezone !== row.matchedTimezone && (
+                            <span className="ml-1 text-xs opacity-60">
+                              (from {row.rawTimezone})
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-destructive">{row.rawTimezone || "missing"}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {row.title || <span className="opacity-40">–</span>}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-muted-foreground tabular-nums">
+                      {row.workingHoursStart}:00–{row.workingHoursEnd}:00
+                    </td>
+                    <td className="px-3 py-2">
+                      {isValid ? (
+                        <CheckCircle className="size-4 text-success" />
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger render={<span className="inline-flex cursor-default" />}>
+                            <XCircle className="size-4 text-destructive" />
+                          </TooltipTrigger>
+                          <TooltipContent>{row.errors.join(" · ")}</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </TooltipProvider>
+      </ScrollArea>
+    </div>
   </div>
 );
 

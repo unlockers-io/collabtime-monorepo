@@ -10,14 +10,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
+import { Field, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { teamQueryKeys } from "@/hooks/use-team-query";
@@ -122,7 +123,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
                       value={field.state.value}
                     />
                     {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} id="group-name-error" />
+                      <FormFieldError errors={field.state.meta.errors} id="group-name-error" />
                     )}
                   </Field>
                 );

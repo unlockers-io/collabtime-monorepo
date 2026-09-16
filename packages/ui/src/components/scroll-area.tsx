@@ -1,7 +1,6 @@
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area";
+import { cn } from "cn";
 import * as React from "react";
-
-import { cn } from "../lib/utils";
 
 const ScrollBar = ({
   className,
@@ -27,19 +26,10 @@ const ScrollBar = ({
   );
 };
 
-const ScrollArea = ({
-  children,
-  className,
-  variant = "default",
-  ...props
-}: ScrollAreaPrimitive.Root.Props & { variant?: "default" | "framed" }) => {
+const ScrollArea = ({ children, className, ...props }: ScrollAreaPrimitive.Root.Props) => {
   return (
     <ScrollAreaPrimitive.Root
-      className={cn(
-        "relative",
-        variant === "framed" && "rounded-lg border border-border",
-        className,
-      )}
+      className={cn("relative", className)}
       data-slot="scroll-area"
       {...props}
     >

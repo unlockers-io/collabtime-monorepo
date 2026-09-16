@@ -4,12 +4,12 @@ import { Button } from "@repo/ui/components/button";
 import { Card } from "@repo/ui/components/card";
 import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { captureException } from "@sentry/nextjs";
 import { User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 
@@ -103,7 +103,7 @@ const SettingsClient = ({ user }: SettingsClientProps) => {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input disabled id="email" value={user.email} variant="secondary" />
+                <Input disabled id="email" value={user.email} />
                 <p className="text-xs text-muted-foreground">Email cannot be changed</p>
               </div>
             </div>
