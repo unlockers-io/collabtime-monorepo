@@ -1,19 +1,14 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@repo/ui/components/field";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { toast } from "@repo/ui/components/sonner";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, use, useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { signIn } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/form-schemas";
@@ -111,7 +106,7 @@ const LoginForm = ({ searchParams }: Props) => {
                   value={field.state.value}
                 />
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} id="login-email-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="login-email-error" />
                 )}
               </Field>
             );
@@ -146,7 +141,7 @@ const LoginForm = ({ searchParams }: Props) => {
                   value={field.state.value}
                 />
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} id="login-password-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="login-password-error" />
                 )}
               </Field>
             );

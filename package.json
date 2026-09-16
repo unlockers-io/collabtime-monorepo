@@ -28,7 +28,8 @@
     "fallow:dupes": "fallow dupes",
     "fallow:health": "fallow health --score",
     "fallow:audit": "fallow audit --base main",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:shadcn": "node scripts/check-shadcn.mjs"
   },
   "dependencies": {
     "ioredis": "^6.0.0"

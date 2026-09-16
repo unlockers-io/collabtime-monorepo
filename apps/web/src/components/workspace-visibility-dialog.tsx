@@ -9,12 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@repo/ui/components/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@repo/ui/components/field";
+import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { toast } from "@repo/ui/components/sonner";
 import { Switch } from "@repo/ui/components/switch";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { captureException } from "@sentry/nextjs";
 import { useForm, useSelector } from "@tanstack/react-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
@@ -144,7 +145,11 @@ const WorkspaceVisibilityDialog = ({
                             Workspace password
                           </FieldLabel>
                           <Input
-                            aria-describedby="workspace-password-help"
+                            aria-describedby={
+                              invalid
+                                ? "workspace-password-help workspace-access-password-error"
+                                : "workspace-password-help"
+                            }
                             aria-invalid={invalid}
                             autoComplete="new-password"
                             disabled={isSaving}
@@ -161,7 +166,12 @@ const WorkspaceVisibilityDialog = ({
                               ? "Leave blank to keep current password."
                               : "Set a password to share with guests (8–128 characters)."}
                           </p>
-                          {invalid && <FieldError errors={field.state.meta.errors} />}
+                          {invalid && (
+                            <FormFieldError
+                              errors={field.state.meta.errors}
+                              id="workspace-access-password-error"
+                            />
+                          )}
                         </Field>
                       );
                     }}

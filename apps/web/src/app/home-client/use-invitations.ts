@@ -1,9 +1,9 @@
 "use client";
 
-import { toast } from "@repo/ui/components/sonner";
 import { captureException } from "@sentry/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOptimistic, useTransition } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { acceptInvitation, declineInvitation } from "@/lib/actions/invitation-actions";

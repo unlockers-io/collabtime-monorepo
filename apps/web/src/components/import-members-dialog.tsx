@@ -10,11 +10,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Upload, Users } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { importMembers } from "@/lib/actions/member-actions";

@@ -2,7 +2,7 @@
 
 import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { toast } from "@repo/ui/components/sonner";
+import { toast } from "sonner";
 
 import type { TeamCacheUpdater, useTeamMutation } from "@/hooks/use-team-query";
 import { reorderGroups } from "@/lib/actions/group-actions";

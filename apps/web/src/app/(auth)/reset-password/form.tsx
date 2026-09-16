@@ -1,19 +1,14 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@repo/ui/components/field";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { toast } from "@repo/ui/components/sonner";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 import { resetPasswordSchema } from "@/lib/form-schemas";
@@ -82,7 +77,7 @@ const ResetPasswordForm = () => {
                   value={field.state.value}
                 />
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} id="reset-password-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="reset-password-error" />
                 )}
               </Field>
             );
@@ -109,7 +104,10 @@ const ResetPasswordForm = () => {
                   value={field.state.value}
                 />
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} id="reset-confirm-password-error" />
+                  <FormFieldError
+                    errors={field.state.meta.errors}
+                    id="reset-confirm-password-error"
+                  />
                 )}
               </Field>
             );

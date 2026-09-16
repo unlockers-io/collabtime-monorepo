@@ -1,8 +1,8 @@
 "use client";
 
-import { toast } from "@repo/ui/components/sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { updateTeamName } from "@/lib/actions/member-actions";

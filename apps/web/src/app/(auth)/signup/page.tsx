@@ -30,8 +30,8 @@ const Page = ({ searchParams }: Props) => (
     </Suspense>
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl" display>
-          Create your account
+        <CardTitle>
+          <h2 className="font-display text-xl">Create your account</h2>
         </CardTitle>
         <CardDescription>Enter your details to get started with {APP_NAME}</CardDescription>
       </CardHeader>

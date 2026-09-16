@@ -1,10 +1,10 @@
 "use client";
 
+import { ThemeProvider } from "@repo/ui/compositions/theme-provider";
 import { domAnimation, LazyMotion, MotionConfig } from "motion/react";
 import type { ReactNode } from "react";
 
 import { ThemeColorSync } from "@/components/theme-color-sync";
-import { ThemeProvider } from "@/components/theme-provider";
 
 type ProvidersProps = { children: ReactNode };
 

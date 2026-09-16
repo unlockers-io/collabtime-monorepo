@@ -25,8 +25,8 @@ const Page = () => (
     </Suspense>
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl" display>
-          Recover your account
+        <CardTitle>
+          <h2 className="font-display text-xl">Recover your account</h2>
         </CardTitle>
         <CardDescription>
           Enter your email and we&apos;ll send you a link to reset your password

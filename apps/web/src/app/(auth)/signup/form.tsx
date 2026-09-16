@@ -1,19 +1,14 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@repo/ui/components/field";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { toast } from "@repo/ui/components/sonner";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, use, useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
@@ -112,6 +107,7 @@ const SignupForm = ({ searchParams }: Props) => {
               <Field data-invalid={isInvalid || undefined}>
                 <FieldLabel htmlFor="signup-name">Full Name</FieldLabel>
                 <Input
+                  aria-describedby={isInvalid ? "signup-name-error" : undefined}
                   aria-invalid={isInvalid}
                   autoComplete="name"
                   disabled={isPending}
@@ -124,7 +120,9 @@ const SignupForm = ({ searchParams }: Props) => {
                   type="text"
                   value={field.state.value}
                 />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {isInvalid && (
+                  <FormFieldError errors={field.state.meta.errors} id="signup-name-error" />
+                )}
               </Field>
             );
           }}
@@ -137,6 +135,7 @@ const SignupForm = ({ searchParams }: Props) => {
               <Field data-invalid={isInvalid || undefined}>
                 <FieldLabel htmlFor="signup-email">Email</FieldLabel>
                 <Input
+                  aria-describedby={isInvalid ? "signup-email-error" : undefined}
                   aria-invalid={isInvalid}
                   autoComplete="email"
                   disabled={isPending}
@@ -149,7 +148,9 @@ const SignupForm = ({ searchParams }: Props) => {
                   type="email"
                   value={field.state.value}
                 />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {isInvalid && (
+                  <FormFieldError errors={field.state.meta.errors} id="signup-email-error" />
+                )}
               </Field>
             );
           }}
@@ -162,6 +163,7 @@ const SignupForm = ({ searchParams }: Props) => {
               <Field data-invalid={isInvalid || undefined}>
                 <FieldLabel htmlFor="signup-password">Password</FieldLabel>
                 <Input
+                  aria-describedby={isInvalid ? "signup-password-error" : undefined}
                   aria-invalid={isInvalid}
                   autoComplete="new-password"
                   disabled={isPending}
@@ -174,7 +176,7 @@ const SignupForm = ({ searchParams }: Props) => {
                   value={field.state.value}
                 />
                 {isInvalid ? (
-                  <FieldError errors={field.state.meta.errors} />
+                  <FormFieldError errors={field.state.meta.errors} id="signup-password-error" />
                 ) : (
                   <FieldDescription>Must be at least 12 characters long.</FieldDescription>
                 )}

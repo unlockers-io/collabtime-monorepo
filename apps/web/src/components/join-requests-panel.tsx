@@ -1,13 +1,13 @@
 "use client";
 
-import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
+import { StatusBadge as StatusPill } from "@repo/ui/compositions/status-badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import {
   approveJoinRequest,
@@ -95,7 +95,6 @@ const JoinRequestRow = ({ onSettled, request }: JoinRequestRowProps) => {
             void run("approve");
           }}
           size="icon-sm"
-          tone="success"
           variant="ghost"
         >
           {action === "approve" ? <Spinner /> : <Check className="size-4" />}
@@ -107,8 +106,7 @@ const JoinRequestRow = ({ onSettled, request }: JoinRequestRowProps) => {
             void run("deny");
           }}
           size="icon-sm"
-          tone="danger"
-          variant="ghost"
+          variant="destructive"
         >
           {action === "deny" ? <Spinner /> : <X className="size-4" />}
         </Button>
@@ -167,7 +165,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
             <Bell aria-hidden="true" className="size-4" />
           </div>
           <span className="text-sm font-medium text-foreground">Pending Join Requests</span>
-          <Badge variant="pending">{requests.length}</Badge>
+          <StatusPill tone="pending">{requests.length}</StatusPill>
         </div>
         {isExpanded ? (
           <ChevronUp aria-hidden="true" className="size-4 text-muted-foreground" />

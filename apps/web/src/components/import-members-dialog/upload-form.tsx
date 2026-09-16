@@ -94,7 +94,6 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
         placeholder={`name,timezone,title,work_start,work_end\nAlice Johnson,America/New_York,Engineering Lead,9,17`}
         spellCheck={false}
         value={csvText}
-        variant="code"
       />
 
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">

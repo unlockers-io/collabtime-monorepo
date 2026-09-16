@@ -3,12 +3,12 @@
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2, Users } from "lucide-react";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
@@ -103,7 +103,6 @@ const GroupCard = ({
       onKeyDown={handleKeyDown}
       type="text"
       value={editingName}
-      variant="title"
     />
   );
 
@@ -140,11 +139,9 @@ const GroupCard = ({
             className="shrink-0"
             disabled={isPending}
             onClick={handleRemove}
-            reveal="group"
             size="icon-sm"
-            tone="muted-danger"
             type="button"
-            variant="ghost"
+            variant="destructive"
           >
             {isPending ? <Spinner /> : <Trash2 className="size-4" />}
           </Button>

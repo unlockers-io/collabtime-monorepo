@@ -1,7 +1,7 @@
 "use client";
-import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
+import { StatusBadge as StatusPill } from "@repo/ui/compositions/status-badge";
 import { Mail, ChevronDown, ChevronUp } from "lucide-react";
 import { useId, useState } from "react";
 
@@ -37,12 +37,12 @@ export const PendingInvitationsPanelView = ({
         onClick={() => {
           setExpanded(!expanded);
         }}
-        size="disclosure"
+        size="default"
         variant="ghost"
       >
         <span className="flex items-center gap-2">
           <Mail className="size-4" />
-          Pending invitations<Badge variant="info">{invitations.length}</Badge>
+          Pending invitations<StatusPill tone="info">{invitations.length}</StatusPill>
         </span>
         {expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
       </Button>

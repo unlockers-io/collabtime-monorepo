@@ -1,8 +1,8 @@
 "use client";
 import { Button } from "@repo/ui/components/button";
-import { toast } from "@repo/ui/components/sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { createOwnMemberSlot } from "@/lib/actions/member-actions";
 import { queryKeys } from "@/lib/query-keys";

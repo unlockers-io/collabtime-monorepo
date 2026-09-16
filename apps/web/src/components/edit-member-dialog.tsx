@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@repo/ui/components/dialog";
-import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
+import { Field, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import {
   Select,
@@ -18,11 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/select";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTransition } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { GroupSelector } from "@/components/group-selector";
@@ -169,7 +170,7 @@ const EditMemberForm = ({
                     value={field.state.value}
                   />
                   {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} id="edit-name-error" />
+                    <FormFieldError errors={field.state.meta.errors} id="edit-name-error" />
                   )}
                 </Field>
               );
@@ -194,7 +195,7 @@ const EditMemberForm = ({
                     value={field.state.value}
                   />
                   {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} id="edit-title-error" />
+                    <FormFieldError errors={field.state.meta.errors} id="edit-title-error" />
                   )}
                 </Field>
               );
@@ -216,7 +217,11 @@ const EditMemberForm = ({
                     }}
                     value={field.state.value}
                   >
-                    <SelectTrigger aria-invalid={isInvalid} id="edit-timezone">
+                    <SelectTrigger
+                      aria-describedby={isInvalid ? "edit-timezone-error" : undefined}
+                      aria-invalid={isInvalid}
+                      id="edit-timezone"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -227,7 +232,9 @@ const EditMemberForm = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  {isInvalid && (
+                    <FormFieldError errors={field.state.meta.errors} id="edit-timezone-error" />
+                  )}
                 </Field>
               );
             }}
@@ -241,6 +248,7 @@ const EditMemberForm = ({
                   <Field data-invalid={isInvalid || undefined}>
                     <FieldLabel htmlFor="edit-group">Group</FieldLabel>
                     <GroupSelector
+                      aria-describedby={isInvalid ? "edit-group-error" : undefined}
                       aria-invalid={isInvalid}
                       groups={groups}
                       id="edit-group"
@@ -251,7 +259,9 @@ const EditMemberForm = ({
                       placeholder="No group"
                       value={field.state.value || undefined}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FormFieldError errors={field.state.meta.errors} id="edit-group-error" />
+                    )}
                   </Field>
                 );
               }}

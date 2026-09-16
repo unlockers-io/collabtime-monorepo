@@ -1,7 +1,6 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
-import { buttonVariants } from "@repo/ui/components/button-variants";
+import { Button, buttonVariants } from "@repo/ui/components/button";
 import { Check, Copy, Lock, LogIn, LogOut, Settings, Shield, Trash2, User } from "lucide-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import Link from "next/link";
@@ -152,8 +151,7 @@ const MobileMenu = ({
                     onDeleteWorkspace();
                     onClose();
                   }}
-                  tone="danger"
-                  variant="ghost"
+                  variant="destructive"
                 >
                   <span className="flex items-center gap-2">
                     <Trash2 className="size-4" />

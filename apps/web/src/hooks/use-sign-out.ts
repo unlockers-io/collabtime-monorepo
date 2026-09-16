@@ -1,9 +1,9 @@
 "use client";
 
-import { toast } from "@repo/ui/components/sonner";
 import { captureException } from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { signOut } from "@/lib/auth-client";
 

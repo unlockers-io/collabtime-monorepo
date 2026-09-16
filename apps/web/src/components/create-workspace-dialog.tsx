@@ -10,8 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
+import { Field, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
@@ -93,7 +94,9 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
                       }}
                       value={field.state.value}
                     />
-                    {invalid && <FieldError errors={field.state.meta.errors} id={`${id}-error`} />}
+                    {invalid && (
+                      <FormFieldError errors={field.state.meta.errors} id={`${id}-error`} />
+                    )}
                   </Field>
                 );
               }}

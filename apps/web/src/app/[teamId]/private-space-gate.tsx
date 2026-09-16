@@ -1,17 +1,17 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
-import { buttonVariants } from "@repo/ui/components/button-variants";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@repo/ui/components/field";
+import { Button, buttonVariants } from "@repo/ui/components/button";
+import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { cn } from "@repo/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { Lock, LogIn, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { InviteMismatchNotice } from "./client/invite-mismatch-notice";
@@ -158,6 +158,7 @@ const PrivateSpaceGate = ({
                       <Field data-invalid={isInvalid || undefined}>
                         <FieldLabel htmlFor="space-password">Password</FieldLabel>
                         <Input
+                          aria-describedby={isInvalid ? "space-password-error" : undefined}
                           aria-invalid={isInvalid}
                           autoComplete="current-password"
                           disabled={isPending}
@@ -171,9 +172,14 @@ const PrivateSpaceGate = ({
                           value={field.state.value}
                         />
                         {serverError !== null && serverError !== "" ? (
-                          <FieldError errors={[serverError]} />
+                          <FormFieldError errors={[serverError]} id="space-password-error" />
                         ) : (
-                          isInvalid && <FieldError errors={field.state.meta.errors} />
+                          isInvalid && (
+                            <FormFieldError
+                              errors={field.state.meta.errors}
+                              id="space-password-error"
+                            />
+                          )
                         )}
                       </Field>
                     );

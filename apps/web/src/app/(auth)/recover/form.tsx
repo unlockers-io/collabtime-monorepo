@@ -1,18 +1,13 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@repo/ui/components/field";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { toast } from "@repo/ui/components/sonner";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 import { recoverSchema } from "@/lib/form-schemas";
@@ -95,7 +90,7 @@ const RecoverForm = () => {
                   value={field.state.value}
                 />
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} id="recover-email-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="recover-email-error" />
                 )}
               </Field>
             );

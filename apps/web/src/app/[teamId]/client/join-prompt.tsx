@@ -1,7 +1,6 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
-import { buttonVariants } from "@repo/ui/components/button-variants";
+import { Button, buttonVariants } from "@repo/ui/components/button";
 import { Spinner } from "@repo/ui/components/spinner";
 import { cn } from "@repo/ui/lib/utils";
 import { LogIn, UserPlus } from "lucide-react";

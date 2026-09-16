@@ -9,10 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@repo/ui/components/dialog";
-import { toast } from "@repo/ui/components/sonner";
 import { Spinner } from "@repo/ui/components/spinner";
 import { captureException } from "@sentry/nextjs";
 import { useState } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 const errorBodySchema = z.object({ error: z.string() });

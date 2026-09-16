@@ -1,10 +1,12 @@
 "use client";
+
 import { Button } from "@repo/ui/components/button";
-import { Field, FieldError, FieldLabel } from "@repo/ui/components/field";
+import { Field, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { toast } from "@repo/ui/components/sonner";
+import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useQueryClient } from "@tanstack/react-query";
 import { useId, useState } from "react";
+import { toast } from "sonner";
 
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { formatExpiresIn } from "@/lib/invitation-expiry";
@@ -103,7 +105,7 @@ export const MemberInviteSection = ({
             {pending ? "Sending…" : "Send invitation"}
           </Button>
         </div>
-        {error !== null && <FieldError errors={[error]} id={`${id}-error`} />}
+        {error !== null && <FormFieldError errors={[error]} id={`${id}-error`} />}
       </Field>
     </div>
   );
