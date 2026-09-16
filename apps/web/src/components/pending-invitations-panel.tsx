@@ -33,7 +33,7 @@ export const PendingInvitationsPanelView = ({
       <Button
         aria-controls={id}
         aria-expanded={expanded}
-        className="h-auto w-full justify-between"
+        className="w-full justify-between"
         onClick={() => {
           setExpanded(!expanded);
         }}

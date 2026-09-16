@@ -115,9 +115,8 @@ const ComparePanel = ({
         </div>
         <Button
           aria-label="Close meeting time comparison"
-          className="size-8"
           onClick={onClose}
-          size="icon-sm"
+          size="icon"
           type="button"
           variant="ghost"
         >
@@ -158,16 +157,14 @@ const ComparePanel = ({
           {validSelections.length === 0 ? (
             <SelectTrigger
               aria-label="Add people or groups to compare"
-              className="h-8 w-auto [&>svg:last-child]:hidden"
+              className="w-auto"
+              size="default"
             >
               <Plus className="size-4" />
               <span className="text-sm">Add</span>
             </SelectTrigger>
           ) : (
-            <SelectTrigger
-              aria-label="Add people or groups to compare"
-              className="size-7 justify-center [&>svg:last-child]:hidden"
-            >
+            <SelectTrigger aria-label="Add people or groups to compare" className="justify-center">
               <Plus className="size-4" />
             </SelectTrigger>
           )}

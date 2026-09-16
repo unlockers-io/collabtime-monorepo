@@ -119,11 +119,10 @@ const TeamNav = (props: Extract<NavViewProps, { variant: "team" }>) => {
             aria-controls="mobile-menu"
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            className="size-9"
             onClick={() => {
               setMobileMenuOpen(!mobileMenuOpen);
             }}
-            size="icon"
+            size="icon-lg"
             variant="outline"
           >
             {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}

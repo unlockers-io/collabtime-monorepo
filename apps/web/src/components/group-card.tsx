@@ -92,7 +92,6 @@ const GroupCard = ({
     <Input
       aria-label={`Rename ${group.name}`}
       autoFocus
-      className="h-9"
       onBlur={handleSave}
       onChange={(e) => {
         setEditingName(e.target.value);

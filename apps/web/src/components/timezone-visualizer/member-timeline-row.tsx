@@ -151,8 +151,9 @@ type FindMeetingTimeButtonProps = {
 
 const FindMeetingTimeButton = ({ onClick }: FindMeetingTimeButtonProps) => (
   <Button
-    className="group flex h-14 w-full items-center justify-center"
+    className="group flex w-full items-center justify-center"
     onClick={onClick}
+    size="lg"
     type="button"
     variant="outline"
   >

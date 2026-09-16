@@ -87,7 +87,7 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
 
       <Textarea
         aria-label="Paste CSV data here"
-        className="h-32 resize-none"
+        className="resize-none"
         onChange={(e) => {
           onCsvTextChange(e.target.value);
         }}
