@@ -19,7 +19,7 @@ const RouteError = ({ error, reset }: RouteErrorProps) => {
   }, [error]);
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-6">
+    <div className="flex flex-1 flex-col items-center justify-center px-6">
       {/* The boundary sits above the segment layouts, so it renders in place of the only
           <main id="main"> the root layout's skip link can target. */}
       <main className="flex w-full max-w-md flex-col items-center gap-6 text-center" id="main">

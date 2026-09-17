@@ -6,11 +6,11 @@ test.describe.skip("Logout", () => {
   test("signs out from the team page and redirects to home", async ({
     homePage,
     page,
-    signupPage,
+    registerPage,
   }) => {
     const logoutEmail = `e2e-logout-${Date.now()}@collabtime.localhost`;
-    await signupPage.goto();
-    await signupPage.signup("Logout Test User", logoutEmail, "TestPassword123!");
+    await registerPage.goto();
+    await registerPage.register("Logout Test User", logoutEmail, "TestPassword123!");
     await expect(page).toHaveURL("/", { timeout: 10_000 });
 
     await homePage.createWorkspace();

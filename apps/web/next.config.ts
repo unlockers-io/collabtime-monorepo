@@ -4,6 +4,8 @@ import type { NextConfig } from "next";
 
 applyPortlessUrls({ WEB_APP_URL: ["collabtime.web"] });
 
+const WORKSPACE_ID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["collabtime.web.localhost", "*.collabtime.web.localhost", "*.vercel.app"],
   cacheComponents: true,
@@ -26,6 +28,13 @@ const nextConfig: NextConfig = {
     ]),
   partialPrefetching: true,
   reactStrictMode: true,
+  rewrites: () =>
+    Promise.resolve({
+      // No route lives under /404/, so Next answers with not-found.tsx and a real 404.
+      afterFiles: [{ destination: "/404/:path", source: `/:path((?!${WORKSPACE_ID}$)[^/]+)` }],
+      beforeFiles: [],
+      fallback: [],
+    }),
   transpilePackages: ["@repo/observability", "@repo/ui"],
   turbopack: {
     rules: {

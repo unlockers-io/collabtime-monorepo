@@ -21,7 +21,7 @@ const Cta = () => (
 
       <Link
         className={cn(buttonVariants({ size: "lg", variant: "default" }), LANDING_CTA_SIZE)}
-        href="/signup"
+        href="/register"
       >
         Create a workspace
         <ArrowRight className="size-5 shrink-0" />

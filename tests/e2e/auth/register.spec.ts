@@ -5,37 +5,37 @@ test.use({ storageState: { cookies: [], origins: [] } });
 const skipUnderResend = !!process.env.RESEND_API_KEY;
 
 test.describe("Register", () => {
-  test("registers a new user and redirects to home", async ({ page, signupPage }) => {
+  test("registers a new user and redirects to home", async ({ page, registerPage }) => {
     test.skip(skipUnderResend, "Resend-enabled flow is covered by auth-email/* specs");
 
     const uniqueEmail = `e2e-register-${Date.now()}@collabtime.localhost`;
 
-    await signupPage.goto();
-    await signupPage.signup("Test Register User", uniqueEmail, "TestPassword123!");
+    await registerPage.goto();
+    await registerPage.register("Test Register User", uniqueEmail, "TestPassword123!");
 
     await expect(page).toHaveURL("/", { timeout: 10_000 });
     await expect(page.getByRole("button", { name: /create a workspace/i })).toBeVisible();
   });
 
-  test("shows error for duplicate email", async ({ page, signupPage, testUser }) => {
+  test("shows error for duplicate email", async ({ page, registerPage, testUser }) => {
     test.skip(skipUnderResend, "Resend-enabled flow is covered by auth-email/* specs");
 
-    await signupPage.goto();
-    await signupPage.signup(testUser.name, testUser.email, testUser.password);
+    await registerPage.goto();
+    await registerPage.register(testUser.name, testUser.email, testUser.password);
 
     await expect(page.getByText(/already exists|failed to create/i)).toBeVisible({ timeout: 5000 });
   });
 
-  test("shows validation error for empty name", async ({ page, signupPage }) => {
-    await signupPage.goto();
+  test("shows validation error for empty name", async ({ page, registerPage }) => {
+    await registerPage.goto();
 
     await page.getByRole("button", { name: /create account/i }).click();
 
     await expect(page.getByText(/name is required/i)).toBeVisible();
   });
 
-  test("shows validation error for invalid email", async ({ page, signupPage }) => {
-    await signupPage.goto();
+  test("shows validation error for invalid email", async ({ page, registerPage }) => {
+    await registerPage.goto();
 
     const nameInput = page.getByLabel("Name");
     await nameInput.click();
@@ -49,8 +49,8 @@ test.describe("Register", () => {
     await expect(page.getByText(/valid email/i)).toBeVisible();
   });
 
-  test("shows validation error for short password", async ({ page, signupPage }) => {
-    await signupPage.goto();
+  test("shows validation error for short password", async ({ page, registerPage }) => {
+    await registerPage.goto();
 
     const nameInput = page.getByLabel("Name");
     await nameInput.click();
@@ -68,9 +68,9 @@ test.describe("Register", () => {
     await expect(page.getByText(/at least 12 characters/i)).toBeVisible();
   });
 
-  test("navigates to login page", async ({ page, signupPage }) => {
-    await signupPage.goto();
-    await signupPage.getSignInLink().click();
+  test("navigates to login page", async ({ page, registerPage }) => {
+    await registerPage.goto();
+    await registerPage.getSignInLink().click();
 
     await expect(page).toHaveURL("/login");
   });

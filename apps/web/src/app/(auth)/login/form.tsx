@@ -19,7 +19,7 @@ type Props = {
 };
 
 const SignUpLinkFallback = () => (
-  <Link className="text-foreground underline underline-offset-4" href="/signup">
+  <Link className="text-foreground underline underline-offset-4" href="/register">
     Sign up
   </Link>
 );
@@ -31,7 +31,7 @@ const SignUpLink = ({ searchParams }: Props) => {
   return (
     <Link
       className="text-foreground underline underline-offset-4"
-      href={redirect === "/" ? "/signup" : `/signup?redirect=${encodeURIComponent(redirect)}`}
+      href={redirect === "/" ? "/register" : `/register?redirect=${encodeURIComponent(redirect)}`}
     >
       Sign up
     </Link>
@@ -101,7 +101,7 @@ const LoginForm = ({ searchParams }: Props) => {
                   onChange={(e) => {
                     field.handleChange(e.target.value);
                   }}
-                  placeholder="m@example.com"
+                  placeholder="you@example.com"
                   type="email"
                   value={field.state.value}
                 />

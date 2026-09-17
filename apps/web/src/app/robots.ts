@@ -13,7 +13,7 @@ const robots = (): MetadataRoute.Robots => {
         "/api/",
         "/settings",
         "/login",
-        "/signup",
+        "/register",
         "/recover",
         "/reset-password",
       ],

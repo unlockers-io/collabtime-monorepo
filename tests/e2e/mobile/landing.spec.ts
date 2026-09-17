@@ -10,6 +10,6 @@ test("landing fits a phone and the primary CTA opens signup", async ({ page }) =
     true,
   );
   await page.getByRole("link", { exact: true, name: "Create a workspace" }).first().click();
-  await expect(page).toHaveURL(/\/signup/);
+  await expect(page).toHaveURL(/\/register/);
   await expect(page.getByLabel("Email")).toBeVisible();
 });

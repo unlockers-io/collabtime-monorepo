@@ -8,7 +8,7 @@ import {
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import SignupForm from "@/app/(auth)/signup/form";
+import RegisterForm from "@/app/(auth)/register/form";
 import { APP_NAME } from "@/lib/constants";
 
 import { AuthGate } from "../auth-gate";
@@ -36,7 +36,7 @@ const Page = ({ searchParams }: Props) => (
         <CardDescription>Enter your details to get started with {APP_NAME}</CardDescription>
       </CardHeader>
       <CardContent>
-        <SignupForm searchParams={searchParams} />
+        <RegisterForm searchParams={searchParams} />
       </CardContent>
     </Card>
   </>

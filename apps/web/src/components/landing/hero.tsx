@@ -22,7 +22,7 @@ const Hero = () => (
           </p>
 
           <div className="flex flex-col items-start gap-3">
-            <Link className={cn(buttonVariants({ size: "lg" }), LANDING_CTA_SIZE)} href="/signup">
+            <Link className={cn(buttonVariants({ size: "lg" }), LANDING_CTA_SIZE)} href="/register">
               Create a workspace
               <ArrowRight className="size-5 shrink-0" />
             </Link>

@@ -19,7 +19,7 @@ it("offers signup and login with the complete invitation destination", () => {
   );
   expect(screen.getByRole("link", { name: "Create account" })).toHaveAttribute(
     "href",
-    `/signup?redirect=${encodeURIComponent(returnTo)}`,
+    `/register?redirect=${encodeURIComponent(returnTo)}`,
   );
   expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
