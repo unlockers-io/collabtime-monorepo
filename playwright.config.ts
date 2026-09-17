@@ -86,6 +86,7 @@ export default defineConfig({
     ? [
         {
           command: "pnpm --filter @repo/web start",
+          env: { PGAPPNAME: "collabtime:ci:web" },
           timeout: 120_000,
           url: webUrl,
         },
