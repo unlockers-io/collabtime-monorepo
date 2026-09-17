@@ -34,6 +34,7 @@
     "coverage/**",
     "pnpm-lock.yaml",
     "packages/db/src/generated/**",
-    ".context/**"
+    ".context/**",
+    ".github/ci/*.mjs"
   ]
 }
