@@ -1,9 +1,10 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
+import { Button, buttonVariants } from "@repo/ui/components/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
+import { cn } from "@repo/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,20 +14,14 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { resetPasswordSchema } from "@/lib/form-schemas";
 
-const ResetPasswordForm = () => {
+const NewPasswordForm = ({ token }: { token: string }) => {
   const { push } = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
   const [isPending, startTransition] = useTransition();
 
   const form = useForm({
     defaultValues: { confirmPassword: "", password: "" },
     onSubmit: ({ value }) => {
       startTransition(async () => {
-        if (token === null || token === "") {
-          toast.error("Invalid reset token. Please request a new password reset.");
-          return;
-        }
         try {
           const result = await authClient.resetPassword({
             newPassword: value.password,
@@ -128,6 +123,28 @@ const ResetPasswordForm = () => {
       </FieldGroup>
     </form>
   );
+};
+
+const ResetPasswordForm = () => {
+  const token = useSearchParams().get("token");
+
+  if (token === null || token === "") {
+    return (
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex flex-col gap-2">
+          <p className="font-semibold">Invalid reset link</p>
+          <p className="text-sm text-muted-foreground">
+            This link is missing its reset token or has expired. Request a new one to continue.
+          </p>
+        </div>
+        <Link className={cn(buttonVariants())} href="/recover">
+          Request a new reset link
+        </Link>
+      </div>
+    );
+  }
+
+  return <NewPasswordForm token={token} />;
 };
 
 export default ResetPasswordForm;

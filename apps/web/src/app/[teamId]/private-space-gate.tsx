@@ -87,7 +87,7 @@ const PrivateSpaceGate = ({
   });
 
   return (
-    <main className="flex min-h-dvh w-full items-center justify-center px-4 py-12" id="main">
+    <main className="flex w-full flex-1 items-center justify-center px-4 py-12" id="main">
       <div className="w-full max-w-sm rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
         <div className="mb-5 flex flex-col items-center gap-2 text-center">
           <span className="flex size-10 items-center justify-center rounded-full bg-muted">
@@ -105,7 +105,7 @@ const PrivateSpaceGate = ({
 
         {accepted ? (
           <div className="flex flex-col gap-2">
-            <Link className={cn(buttonVariants())} href={withRedirect("/signup")}>
+            <Link className={cn(buttonVariants())} href={withRedirect("/register")}>
               <UserPlus aria-hidden className="mr-2 size-4" />
               Sign up to join
             </Link>
@@ -134,7 +134,7 @@ const PrivateSpaceGate = ({
                   Sign in
                 </Link>
                 {" or "}
-                <Link className="underline underline-offset-4" href={withRedirect("/signup")}>
+                <Link className="underline underline-offset-4" href={withRedirect("/register")}>
                   sign up
                 </Link>
                 {" to accept an invitation or access your workspace."}

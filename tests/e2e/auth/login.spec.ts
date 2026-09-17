@@ -52,7 +52,7 @@ test.describe("Login", () => {
     await loginPage.goto();
     await instant(page, async () => {
       await loginPage.getSignUpLink().click();
-      await page.waitForURL("/signup");
+      await page.waitForURL("/register");
       await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
     });
   });

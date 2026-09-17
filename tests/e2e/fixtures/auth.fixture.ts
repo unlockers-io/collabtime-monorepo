@@ -2,7 +2,7 @@ import { test as base } from "@playwright/test";
 
 import { HomePage } from "../pages/home.page";
 import { LoginPage } from "../pages/login.page";
-import { SignupPage } from "../pages/signup.page";
+import { RegisterPage } from "../pages/register.page";
 
 const TEST_USER = {
   email: "e2e-test@collabtime.localhost",
@@ -13,7 +13,7 @@ const TEST_USER = {
 type Fixtures = {
   homePage: HomePage;
   loginPage: LoginPage;
-  signupPage: SignupPage;
+  registerPage: RegisterPage;
   testUser: typeof TEST_USER;
 };
 
@@ -24,8 +24,8 @@ const test = base.extend<Fixtures>({
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page));
   },
-  signupPage: async ({ page }, use) => {
-    await use(new SignupPage(page));
+  registerPage: async ({ page }, use) => {
+    await use(new RegisterPage(page));
   },
   testUser: async ({}, use) => {
     await use(TEST_USER);

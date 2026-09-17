@@ -17,7 +17,7 @@ test.describe("Sign-up with redirect context", () => {
     const email = makeTestEmail(testInfo);
     const redirectPath = "/settings";
 
-    await page.goto(`${webUrl}/signup?redirect=${encodeURIComponent(redirectPath)}`);
+    await page.goto(`${webUrl}/register?redirect=${encodeURIComponent(redirectPath)}`);
 
     await expect(page.getByRole("link", { name: /sign in/i })).toHaveAttribute(
       "href",

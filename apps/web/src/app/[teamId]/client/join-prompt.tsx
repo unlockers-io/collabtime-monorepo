@@ -42,7 +42,7 @@ const JoinPrompt = ({
         <div className="flex flex-wrap gap-2">
           <Link
             className={cn(buttonVariants({ size: "sm" }))}
-            href={`/signup?redirect=${encodeURIComponent(returnTo)}`}
+            href={`/register?redirect=${encodeURIComponent(returnTo)}`}
           >
             Create account
           </Link>

@@ -38,7 +38,7 @@ const SignInLink = ({ searchParams }: Props) => {
   );
 };
 
-const SignupForm = ({ searchParams }: Props) => {
+const RegisterForm = ({ searchParams }: Props) => {
   const { push, refresh } = useRouter();
   const [isPending, startTransition] = useTransition();
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
@@ -105,23 +105,22 @@ const SignupForm = ({ searchParams }: Props) => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="signup-name">Full Name</FieldLabel>
+                <FieldLabel htmlFor="register-name">Full Name</FieldLabel>
                 <Input
-                  aria-describedby={isInvalid ? "signup-name-error" : undefined}
+                  aria-describedby={isInvalid ? "register-name-error" : undefined}
                   aria-invalid={isInvalid}
                   autoComplete="name"
                   disabled={isPending}
-                  id="signup-name"
+                  id="register-name"
                   onBlur={field.handleBlur}
                   onChange={(e) => {
                     field.handleChange(e.target.value);
                   }}
-                  placeholder="John Doe"
                   type="text"
                   value={field.state.value}
                 />
                 {isInvalid && (
-                  <FormFieldError errors={field.state.meta.errors} id="signup-name-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="register-name-error" />
                 )}
               </Field>
             );
@@ -133,23 +132,23 @@ const SignupForm = ({ searchParams }: Props) => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="signup-email">Email</FieldLabel>
+                <FieldLabel htmlFor="register-email">Email</FieldLabel>
                 <Input
-                  aria-describedby={isInvalid ? "signup-email-error" : undefined}
+                  aria-describedby={isInvalid ? "register-email-error" : undefined}
                   aria-invalid={isInvalid}
                   autoComplete="email"
                   disabled={isPending}
-                  id="signup-email"
+                  id="register-email"
                   onBlur={field.handleBlur}
                   onChange={(e) => {
                     field.handleChange(e.target.value);
                   }}
-                  placeholder="m@example.com"
+                  placeholder="you@example.com"
                   type="email"
                   value={field.state.value}
                 />
                 {isInvalid && (
-                  <FormFieldError errors={field.state.meta.errors} id="signup-email-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="register-email-error" />
                 )}
               </Field>
             );
@@ -161,13 +160,13 @@ const SignupForm = ({ searchParams }: Props) => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
             return (
               <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="signup-password">Password</FieldLabel>
+                <FieldLabel htmlFor="register-password">Password</FieldLabel>
                 <Input
-                  aria-describedby={isInvalid ? "signup-password-error" : undefined}
+                  aria-describedby={isInvalid ? "register-password-error" : undefined}
                   aria-invalid={isInvalid}
                   autoComplete="new-password"
                   disabled={isPending}
-                  id="signup-password"
+                  id="register-password"
                   onBlur={field.handleBlur}
                   onChange={(e) => {
                     field.handleChange(e.target.value);
@@ -176,7 +175,7 @@ const SignupForm = ({ searchParams }: Props) => {
                   value={field.state.value}
                 />
                 {isInvalid ? (
-                  <FormFieldError errors={field.state.meta.errors} id="signup-password-error" />
+                  <FormFieldError errors={field.state.meta.errors} id="register-password-error" />
                 ) : (
                   <FieldDescription>Must be at least 12 characters long.</FieldDescription>
                 )}
@@ -201,4 +200,4 @@ const SignupForm = ({ searchParams }: Props) => {
   );
 };
 
-export default SignupForm;
+export default RegisterForm;

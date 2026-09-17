@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-class SignupPage {
+class RegisterPage {
   private readonly nameInput: Locator;
   private readonly emailInput: Locator;
   private readonly passwordInput: Locator;
@@ -16,10 +16,10 @@ class SignupPage {
   }
 
   goto = async () => {
-    await this.page.goto("/signup");
+    await this.page.goto("/register");
   };
 
-  signup = async (name: string, email: string, password: string) => {
+  register = async (name: string, email: string, password: string) => {
     await this.nameInput.click();
     await this.nameInput.fill(name);
     await this.page.keyboard.press("Tab");
@@ -37,4 +37,4 @@ class SignupPage {
   getSubmitButton = () => this.submitButton;
 }
 
-export { SignupPage };
+export { RegisterPage };

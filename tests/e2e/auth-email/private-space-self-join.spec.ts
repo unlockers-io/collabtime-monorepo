@@ -48,11 +48,11 @@ test.describe("Private space password self-join", () => {
     await expect(signUpToJoin).toBeVisible();
     await expect(signUpToJoin).toHaveAttribute(
       "href",
-      `/signup?redirect=${encodeURIComponent(`/${teamId}`)}`,
+      `/register?redirect=${encodeURIComponent(`/${teamId}`)}`,
     );
     await signUpToJoin.click();
 
-    await expect(page).toHaveURL(/\/signup/u);
+    await expect(page).toHaveURL(/\/register/u);
     await page.getByLabel("Full Name").fill("Gate Joiner");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill("SecurePassword1!");
