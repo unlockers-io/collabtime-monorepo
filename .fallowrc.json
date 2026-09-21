@@ -12,7 +12,7 @@
     "apps/*/src/lib/observability.ts",
     "packages/transactional/src/emails/**/*.tsx"
   ],
-  "ignorePatterns": ["packages/db/src/generated/**"],
+  "ignorePatterns": ["packages/db/src/generated/**", ".github/ci/*.mjs"],
   "ignoreDependencies": [
     "eslint-plugin-*",
     "better-auth",
