@@ -19,7 +19,7 @@
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/fontkit": "2.0.9",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.6.1",
     "@types/react": "^19.3.0",
     "typescript": "^7.0.2"
   }
