@@ -1,16 +1,9 @@
 // @vitest-environment node
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
 import renderOpengraphImage, { contentType, size } from "./opengraph-image";
 
-beforeEach(() => {
-  vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/test");
-  vi.stubEnv("BETTER_AUTH_SECRET", "a-secret-that-is-at-least-32-characters-long");
-  vi.stubEnv("WEB_APP_URL", "https://collabtime.io");
-});
-
 afterEach(() => {
-  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
 

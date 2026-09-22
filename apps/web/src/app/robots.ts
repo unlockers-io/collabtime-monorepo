@@ -1,26 +1,22 @@
 import type { MetadataRoute } from "next";
 
-import { getAppUrl } from "@/lib/app-url";
+import { SITE_URL } from "@/lib/constants";
 
-const robots = (): MetadataRoute.Robots => {
-  const baseUrl = getAppUrl();
-
-  return {
-    rules: {
-      allow: "/",
-      disallow: [
-        "/monitoring",
-        "/api/",
-        "/settings",
-        "/login",
-        "/register",
-        "/recover",
-        "/reset-password",
-      ],
-      userAgent: "*",
-    },
-    sitemap: `${baseUrl}/sitemap.xml`,
-  };
-};
+const robots = (): MetadataRoute.Robots => ({
+  rules: {
+    allow: "/",
+    disallow: [
+      "/monitoring",
+      "/api/",
+      "/settings",
+      "/login",
+      "/register",
+      "/recover",
+      "/reset-password",
+    ],
+    userAgent: "*",
+  },
+  sitemap: `${SITE_URL}/sitemap.xml`,
+});
 
 export default robots;

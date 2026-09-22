@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
 
-import { getAppUrl } from "@/lib/app-url";
+import { SITE_URL } from "@/lib/constants";
 
 const sitemap = (): MetadataRoute.Sitemap => [
   {
     changeFrequency: "monthly",
     priority: 1,
-    url: getAppUrl(),
+    url: SITE_URL,
   },
 ];
 

@@ -11,6 +11,8 @@ const APP_DESCRIPTION_SHORT = APP_TAGLINE;
 
 const APP_REPO_URL = "https://github.com/unlockers-io/collabtime-monorepo";
 
+const SITE_URL = "https://www.collabtime.io";
+
 const APP_KEYWORDS = [
   "timezone",
   "team collaboration",
@@ -30,4 +32,5 @@ export {
   APP_REPO_URL,
   APP_TAGLINE,
   APP_TITLE,
+  SITE_URL,
 };
