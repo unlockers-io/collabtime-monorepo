@@ -85,7 +85,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
         <Users className="size-4" />
         Add Group
       </DialogTrigger>
-      <DialogContent className="max-w-sm">
+      <DialogContent>
         <form
           noValidate
           onSubmit={(e) => {
