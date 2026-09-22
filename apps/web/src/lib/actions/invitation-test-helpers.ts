@@ -4,7 +4,7 @@ import { createInvitationActions } from "./invitation-actions-core";
 import type { InvitationDeps, InvitationRecord } from "./invitation-deps";
 import { createInvitationManagementActions } from "./invitation-management-core";
 import {
-  createMockSession,
+  createTestGuards,
   createTestMember,
   createTestTeamRecord,
   VALID_UUID,
@@ -25,7 +25,10 @@ export const invitation: InvitationRecord = {
   updatedAt: NOW,
 };
 export const setupInvitations = () => {
+  const guards = createTestGuards();
   const deps = {
+    authenticate: guards.authenticate,
+    authorizeTeamAdmin: guards.authorizeTeamAdmin,
     checkRateLimit: vi
       .fn<InvitationDeps["checkRateLimit"]>()
       .mockResolvedValue({ allowed: true, remaining: 49 }),
@@ -48,8 +51,6 @@ export const setupInvitations = () => {
     now: () => NOW,
     refreshExpiry: vi.fn<InvitationDeps["refreshExpiry"]>().mockResolvedValue(),
     reportError: vi.fn<InvitationDeps["reportError"]>(),
-    requireAuth: vi.fn<InvitationDeps["requireAuth"]>().mockResolvedValue(createMockSession()),
-    requireTeamAdmin: vi.fn<InvitationDeps["requireTeamAdmin"]>().mockResolvedValue("user-123"),
     sendEmail: vi.fn<InvitationDeps["sendEmail"]>().mockResolvedValue({ sent: true }),
     upsertInvitation: vi.fn<InvitationDeps["upsertInvitation"]>().mockResolvedValue(invitation),
   } satisfies InvitationDeps;

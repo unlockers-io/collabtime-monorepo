@@ -15,8 +15,15 @@ type Props = {
   onSettled: () => void;
   resend: typeof resendInvitation;
   revoke: typeof revokeInvitation;
+  teamId: string;
 };
-export const InvitationControlsView = ({ invitation, onSettled, resend, revoke }: Props) => {
+export const InvitationControlsView = ({
+  invitation,
+  onSettled,
+  resend,
+  revoke,
+  teamId,
+}: Props) => {
   const [action, setAction] = useState<"resend" | "revoke" | null>(null);
   const run = async (next: "resend" | "revoke") => {
     setAction(next);
@@ -24,7 +31,7 @@ export const InvitationControlsView = ({ invitation, onSettled, resend, revoke }
       async () => {
         try {
           if (next === "resend") {
-            const result = await resend(invitation.id);
+            const result = await resend(teamId, invitation.id);
             if (result.success) {
               toast.success(
                 result.data.emailSent
@@ -35,7 +42,7 @@ export const InvitationControlsView = ({ invitation, onSettled, resend, revoke }
               toast.error(result.error);
             }
           } else {
-            const result = await revoke(invitation.id);
+            const result = await revoke(teamId, invitation.id);
             if (result.success) {
               toast.success("Invitation revoked");
             } else {
@@ -97,6 +104,7 @@ export const InvitationControls = ({
       }}
       resend={resendInvitation}
       revoke={revokeInvitation}
+      teamId={teamId}
     />
   );
 };

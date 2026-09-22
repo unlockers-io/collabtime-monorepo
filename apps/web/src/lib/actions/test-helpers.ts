@@ -1,5 +1,11 @@
 import { vi } from "vitest";
 
+import type {
+  authenticate,
+  authorizeTeamAdmin,
+  authorizeTeamMember,
+  TeamAccess,
+} from "@/lib/team-auth";
 import type { TeamGroup, TeamMember, TeamRecord } from "@/types";
 
 import { createTeamMutator } from "./helpers";
@@ -84,21 +90,17 @@ const createTestTeamMutator = () => {
     return Promise.resolve({ ok: true, value: outcome.value });
   };
 
-  const requireTeamAdmin = vi.fn<TeamMutatorDeps["requireTeamAdmin"]>();
   const reportError = vi.fn<TeamMutatorDeps["reportError"]>();
-  const mutateTeam = createTeamMutator({ applyTeamContents, reportError, requireTeamAdmin });
+  const mutateTeam = createTeamMutator({ applyTeamContents, reportError });
 
   return {
     mutateTeam,
     persistedTeam: () => team,
     reportError,
-    requireTeamAdmin,
     reset: () => {
       team = null;
       readFailure = false;
       writeFailure = false;
-      requireTeamAdmin.mockReset();
-      requireTeamAdmin.mockResolvedValue("user-123");
       reportError.mockReset();
     },
     seedTeam: (nextTeam: TeamRecord | null) => {
@@ -113,8 +115,40 @@ const createTestTeamMutator = () => {
   };
 };
 
+const createTestAccess = (teamId = VALID_UUID): TeamAccess => ({
+  teamId,
+  user: createMockSession().user,
+});
+
+const createTestGuards = () => {
+  const authenticateCaller = vi.fn<typeof authenticate>();
+  const authorizeAdmin = vi.fn<typeof authorizeTeamAdmin>();
+  const authorizeMember = vi.fn<typeof authorizeTeamMember>();
+  const grant = (teamId: string) =>
+    Promise.resolve({ data: createTestAccess(teamId), success: true as const });
+
+  const reset = () => {
+    authenticateCaller.mockReset();
+    authenticateCaller.mockResolvedValue({ data: createMockSession().user, success: true });
+    authorizeAdmin.mockReset();
+    authorizeAdmin.mockImplementation(grant);
+    authorizeMember.mockReset();
+    authorizeMember.mockImplementation(grant);
+  };
+  reset();
+
+  return {
+    authenticate: authenticateCaller,
+    authorizeTeamAdmin: authorizeAdmin,
+    authorizeTeamMember: authorizeMember,
+    reset,
+  };
+};
+
 export {
   createMockSession,
+  createTestAccess,
+  createTestGuards,
   createTestGroup,
   createTestMember,
   createTestTeamRecord,

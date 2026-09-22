@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as joinRequests from "./join-requests";
 import { createJoinRequestActions } from "./join-requests-core";
-import { createMockSession, VALID_UUID } from "./test-helpers";
+import { createTestGuards, VALID_UUID, VALID_UUID_2 } from "./test-helpers";
 
 type JoinRequestDeps = Parameters<typeof createJoinRequestActions>[0];
 
@@ -15,12 +15,13 @@ const findRequest = vi.fn<JoinRequestDeps["findRequest"]>();
 const listPending = vi.fn<JoinRequestDeps["listPending"]>();
 const loadJoinContext = vi.fn<JoinRequestDeps["loadJoinContext"]>();
 const reportError = vi.fn<JoinRequestDeps["reportError"]>();
-const requireAuth = vi.fn<JoinRequestDeps["requireAuth"]>();
-const requireTeamAdmin = vi.fn<JoinRequestDeps["requireTeamAdmin"]>();
+const guards = createTestGuards();
 const upsertRequest = vi.fn<JoinRequestDeps["upsertRequest"]>();
 const { approveJoinRequest, denyJoinRequest, getPendingJoinRequests, requestToJoin } =
   createJoinRequestActions({
     approveMembership,
+    authenticate: guards.authenticate,
+    authorizeTeamAdmin: guards.authorizeTeamAdmin,
     denyRequest,
     ensureMemberSlot,
     findRequest,
@@ -29,8 +30,6 @@ const { approveJoinRequest, denyJoinRequest, getPendingJoinRequests, requestToJo
     notifyAdmins,
     notifyRequester,
     reportError,
-    requireAuth,
-    requireTeamAdmin,
     upsertRequest,
   });
 
@@ -54,12 +53,21 @@ beforeEach(() => {
     existingRequest: null,
     teamExists: true,
   });
-  requireAuth.mockResolvedValue(createMockSession());
-  requireTeamAdmin.mockResolvedValue("admin-1");
+  guards.reset();
   upsertRequest.mockResolvedValue({ id: "jr-1" });
 });
 
 describe("requestToJoin", () => {
+  it("requires a session before loading the team", async () => {
+    guards.authenticate.mockResolvedValue({ error: "Authentication required", success: false });
+
+    expect(await requestToJoin(VALID_UUID)).toEqual({
+      error: "Authentication required",
+      success: false,
+    });
+    expect(loadJoinContext).not.toHaveBeenCalled();
+  });
+
   it("returns error when team not found", async () => {
     loadJoinContext.mockResolvedValue({
       existingMembership: false,
@@ -109,11 +117,41 @@ describe("requestToJoin", () => {
   });
 });
 
+describe("join request decisions", () => {
+  it.each([
+    ["approveJoinRequest", approveJoinRequest],
+    ["denyJoinRequest", denyJoinRequest],
+  ])("%s refuses a non-admin before looking the request up", async (_name, decide) => {
+    guards.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
+
+    expect(await decide(VALID_UUID, "jr-1")).toEqual({
+      error: "Admin access required",
+      success: false,
+    });
+    expect(findRequest).not.toHaveBeenCalled();
+    expect(approveMembership).not.toHaveBeenCalled();
+    expect(denyRequest).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["approveJoinRequest", approveJoinRequest],
+    ["denyJoinRequest", denyJoinRequest],
+  ])("%s treats another team's request as missing", async (_name, decide) => {
+    expect(await decide(VALID_UUID_2, "jr-1")).toEqual({
+      error: "Join request not found",
+      success: false,
+    });
+    expect(guards.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID_2);
+    expect(approveMembership).not.toHaveBeenCalled();
+    expect(denyRequest).not.toHaveBeenCalled();
+  });
+});
+
 describe("approveJoinRequest", () => {
   it("returns error when request not found", async () => {
     findRequest.mockResolvedValue(null);
 
-    expect(await approveJoinRequest("jr-1")).toEqual({
+    expect(await approveJoinRequest(VALID_UUID, "jr-1")).toEqual({
       error: "Join request not found",
       success: false,
     });
@@ -122,22 +160,22 @@ describe("approveJoinRequest", () => {
   it("returns error when request is no longer pending", async () => {
     findRequest.mockResolvedValue({ ...pendingRequest, status: "APPROVED" });
 
-    expect(await approveJoinRequest("jr-1")).toEqual({
+    expect(await approveJoinRequest(VALID_UUID, "jr-1")).toEqual({
       error: "Join request is no longer pending",
       success: false,
     });
   });
 
   it("requires an admin and commits the membership", async () => {
-    const result = await approveJoinRequest("jr-1");
+    const result = await approveJoinRequest(VALID_UUID, "jr-1");
 
-    expect(requireTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
+    expect(guards.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
     expect(approveMembership).toHaveBeenCalledWith("jr-1", VALID_UUID, "user-456");
     expect(result).toEqual({ data: { memberId: "member-1" }, success: true });
   });
 
   it("persists the member before approval", async () => {
-    await approveJoinRequest("jr-1");
+    await approveJoinRequest(VALID_UUID, "jr-1");
 
     expect(ensureMemberSlot).toHaveBeenCalledWith(VALID_UUID, "user-456", "Bob");
     expect(ensureMemberSlot.mock.invocationCallOrder[0]).toBeLessThan(
@@ -153,7 +191,7 @@ describe("approveJoinRequest", () => {
       reason: "write-failed",
     });
 
-    const result = await approveJoinRequest("jr-1");
+    const result = await approveJoinRequest(VALID_UUID, "jr-1");
     expect(result.success).toBe(false);
     expect(approveMembership).not.toHaveBeenCalled();
     expect(notifyRequester).not.toHaveBeenCalled();
@@ -166,7 +204,7 @@ describe("approveJoinRequest", () => {
       reason: "read-failed",
     });
 
-    expect(await approveJoinRequest("jr-1")).toEqual({
+    expect(await approveJoinRequest(VALID_UUID, "jr-1")).toEqual({
       error: "Could not read the team",
       success: false,
     });
@@ -177,14 +215,14 @@ describe("denyJoinRequest", () => {
   it("returns error when request not found", async () => {
     findRequest.mockResolvedValue(null);
 
-    expect(await denyJoinRequest("jr-1")).toEqual({
+    expect(await denyJoinRequest(VALID_UUID, "jr-1")).toEqual({
       error: "Join request not found",
       success: false,
     });
   });
 
   it("updates a pending request to denied", async () => {
-    expect(await denyJoinRequest("jr-1")).toEqual({ data: undefined, success: true });
+    expect(await denyJoinRequest(VALID_UUID, "jr-1")).toEqual({ data: undefined, success: true });
     expect(denyRequest).toHaveBeenCalledWith("jr-1");
     expect(notifyRequester).toHaveBeenCalledWith(pendingRequest, "denied");
   });
@@ -192,12 +230,13 @@ describe("denyJoinRequest", () => {
 
 describe("getPendingJoinRequests", () => {
   it("requires team admin", async () => {
-    requireTeamAdmin.mockRejectedValue(new Error("Not admin"));
+    guards.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
 
     expect(await getPendingJoinRequests(VALID_UUID)).toEqual({
-      error: "Failed to get join requests",
+      error: "Admin access required",
       success: false,
     });
+    expect(listPending).not.toHaveBeenCalled();
   });
 
   it("formats pending requests and hides existing members", async () => {
