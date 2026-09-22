@@ -52,14 +52,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(getAppUrl()),
   openGraph: {
     description: APP_DESCRIPTION_SHORT,
-    images: [
-      {
-        alt: APP_TITLE,
-        height: 630,
-        url: "/og",
-        width: 1200,
-      },
-    ],
     locale: "en_US",
     siteName: APP_NAME,
     title: APP_TITLE,
@@ -83,7 +75,6 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     description: APP_DESCRIPTION_SHORT,
-    images: ["/og"],
     title: APP_TITLE,
   },
 };

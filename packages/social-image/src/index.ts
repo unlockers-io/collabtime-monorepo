@@ -1,4 +1,4 @@
-import { create, type Font } from "fontkit";
+import { create, type Font, type GlyphRun } from "fontkit";
 import { createElement } from "react";
 
 import geist from "./fonts/geist.json" with { type: "json" };
@@ -43,9 +43,9 @@ const svgText = (
   }: SvgTextOptions,
 ) => {
   const scale = size / font.unitsPerEm;
-  const measure = (value: string) =>
-    font.layout(value).advanceWidth * scale +
-    Math.max(0, font.layout(value).glyphs.length - 1) * tracking;
+  const runWidth = (run: GlyphRun) =>
+    run.advanceWidth * scale + Math.max(0, run.glyphs.length - 1) * tracking;
+  const measure = (value: string) => runWidth(font.layout(value));
   const lines: Array<string> = [];
   let line = "";
   for (const word of text.trim().split(/\s+/v)) {
@@ -72,7 +72,7 @@ const svgText = (
 
   const paths = lines.flatMap((value, lineIndex) => {
     const run = font.layout(value);
-    const lineWidth = measure(value);
+    const lineWidth = runWidth(run);
     const offsets = { end: lineWidth, middle: lineWidth / 2, start: 0 };
     const offset = offsets[anchor];
     let cursor = x - offset;

@@ -18,7 +18,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: {
     description: APP_DESCRIPTION_SHORT,
-    images: [{ alt: APP_TITLE, height: 630, url: "/og", width: 1200 }],
     locale: "en_US",
     siteName: APP_NAME,
     title: APP_TITLE,
