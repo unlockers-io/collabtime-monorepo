@@ -63,7 +63,7 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
       open={open}
     >
       <DialogTrigger render={<Button size="lg" />}>Create a workspace</DialogTrigger>
-      <DialogContent className="max-w-sm">
+      <DialogContent>
         <form
           noValidate
           onSubmit={(event) => {
