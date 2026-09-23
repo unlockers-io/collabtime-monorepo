@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { formatExpiresIn } from "@/lib/invitation-expiry";
 import { queryKeys } from "@/lib/query-keys";
+import { runWithCleanup } from "@/lib/run-with-cleanup";
 import { InvitationEmailSchema, normalizeEmail } from "@/lib/validation";
 import type { PendingTeamInvitation } from "@/types";
 
@@ -38,24 +39,29 @@ export const MemberInviteSection = ({
     }
     setPending(true);
     setError(null);
-    try {
-      const result = await inviteMember(teamId, memberId, parsed.data);
-      if (!result.success) {
-        setError(result.error);
-        return;
-      }
-      toast.success(
-        result.data.emailSent
-          ? `Invitation sent to ${parsed.data}`
-          : `Invitation created for ${parsed.data} (email was not delivered)`,
-      );
-      setEmail("");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
-    } catch {
-      setError("Could not send the invitation. Try again.");
-    } finally {
-      setPending(false);
-    }
+    await runWithCleanup(
+      async () => {
+        try {
+          const result = await inviteMember(teamId, memberId, parsed.data);
+          if (!result.success) {
+            setError(result.error);
+            return;
+          }
+          toast.success(
+            result.data.emailSent
+              ? `Invitation sent to ${parsed.data}`
+              : `Invitation created for ${parsed.data} (email was not delivered)`,
+          );
+          setEmail("");
+          await queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
+        } catch {
+          setError("Could not send the invitation. Try again.");
+        }
+      },
+      () => {
+        setPending(false);
+      },
+    );
   };
   if (pendingInvite) {
     return (

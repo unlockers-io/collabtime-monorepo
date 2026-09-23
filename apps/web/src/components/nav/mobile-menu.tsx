@@ -24,6 +24,80 @@ type MobileMenuProps = {
   state: { hasCopied: boolean; isOpen: boolean; isSigningOut: boolean };
 };
 
+const COLLAPSE_MOTION = {
+  animate: { height: "auto", opacity: 1 },
+  exit: { height: 0, opacity: 0 },
+  initial: { height: 0, opacity: 0 },
+  transition: { duration: 0.2 },
+};
+
+const FADE_MOTION = {
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  initial: { opacity: 0 },
+  transition: { duration: 0 },
+};
+
+const RoleSummary = ({ role }: { role: MobileMenuRole }) => (
+  <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
+    {role === "admin" ? (
+      <Shield className="size-4 text-muted-foreground" />
+    ) : (
+      <User className="size-4 text-muted-foreground" />
+    )}
+    <div>
+      <p className="text-sm font-medium text-foreground">{role === "admin" ? "Admin" : "Member"}</p>
+      <p className="text-xs text-muted-foreground">
+        {role === "admin" ? "Full access" : "View only"}
+      </p>
+    </div>
+  </div>
+);
+
+const AccountLinks = ({
+  isSigningOut,
+  onClose,
+  onSignOut,
+  role,
+}: Pick<MobileMenuProps, "onClose" | "onSignOut" | "role"> & { isSigningOut: boolean }) => {
+  const linkClassName = cn(
+    buttonVariants({ variant: "ghost" }),
+    "flex items-center justify-start gap-2",
+  );
+
+  if (role === "guest") {
+    return (
+      <Link className={linkClassName} href="/login">
+        <LogIn className="size-4" />
+        Sign in
+      </Link>
+    );
+  }
+
+  return (
+    <>
+      <Link className={linkClassName} href="/settings">
+        <Settings className="size-4" />
+        Settings
+      </Link>
+      <Button
+        className="justify-start"
+        disabled={isSigningOut}
+        onClick={() => {
+          onSignOut();
+          onClose();
+        }}
+        variant="ghost"
+      >
+        <span className="flex items-center gap-2">
+          <LogOut className="size-4" />
+          {isSigningOut ? "Signing out…" : "Sign out"}
+        </span>
+      </Button>
+    </>
+  );
+};
+
 const MobileMenu = ({
   onClose,
   onCopy,
@@ -34,35 +108,21 @@ const MobileMenu = ({
   role,
   state: { hasCopied, isOpen, isSigningOut },
 }: MobileMenuProps) => {
-  const prefersReducedMotion = useReducedMotion();
+  const menuMotion = useReducedMotion() === true ? FADE_MOTION : COLLAPSE_MOTION;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <m.div
-          animate={prefersReducedMotion === true ? { opacity: 1 } : { height: "auto", opacity: 1 }}
+          animate={menuMotion.animate}
           className="overflow-hidden sm:hidden"
-          exit={prefersReducedMotion === true ? { opacity: 0 } : { height: 0, opacity: 0 }}
+          exit={menuMotion.exit}
           id="mobile-menu"
-          initial={prefersReducedMotion === true ? { opacity: 0 } : { height: 0, opacity: 0 }}
-          transition={{ duration: prefersReducedMotion === true ? 0 : 0.2 }}
+          initial={menuMotion.initial}
+          transition={menuMotion.transition}
         >
           <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
-            <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
-              {role === "admin" ? (
-                <Shield className="size-4 text-muted-foreground" />
-              ) : (
-                <User className="size-4 text-muted-foreground" />
-              )}
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  {role === "admin" ? "Admin" : "Member"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {role === "admin" ? "Full access" : "View only"}
-                </p>
-              </div>
-            </div>
+            <RoleSummary role={role} />
 
             <CurrentTimeDisplay />
             <div className="flex flex-col gap-1">
@@ -89,47 +149,12 @@ const MobileMenu = ({
                 <ModeToggle />
               </div>
 
-              {role === "guest" && (
-                <Link
-                  className={cn(
-                    buttonVariants({ variant: "ghost" }),
-                    "flex items-center justify-start gap-2",
-                  )}
-                  href="/login"
-                >
-                  <LogIn className="size-4" />
-                  Sign in
-                </Link>
-              )}
-
-              {role !== "guest" && (
-                <>
-                  <Link
-                    className={cn(
-                      buttonVariants({ variant: "ghost" }),
-                      "flex items-center justify-start gap-2",
-                    )}
-                    href="/settings"
-                  >
-                    <Settings className="size-4" />
-                    Settings
-                  </Link>
-                  <Button
-                    className="justify-start"
-                    disabled={isSigningOut}
-                    onClick={() => {
-                      onSignOut();
-                      onClose();
-                    }}
-                    variant="ghost"
-                  >
-                    <span className="flex items-center gap-2">
-                      <LogOut className="size-4" />
-                      {isSigningOut ? "Signing out…" : "Sign out"}
-                    </span>
-                  </Button>
-                </>
-              )}
+              <AccountLinks
+                isSigningOut={isSigningOut}
+                onClose={onClose}
+                onSignOut={onSignOut}
+                role={role}
+              />
 
               {canEditVisibility && (
                 <Button
