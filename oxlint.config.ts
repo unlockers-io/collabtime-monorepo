@@ -13,7 +13,6 @@ export default defineConfig({
         "apps/web/src/app/[[]teamId]/page.test.tsx",
         "apps/web/src/app/home-client/lists.test.tsx",
         "apps/web/src/components/accept-workspace-invitation.test.tsx",
-        "apps/web/src/app/og/route.test.tsx",
         "apps/web/src/app/(auth)/auth-gate.test.tsx",
       ],
       rules: { "anti-slop/no-module-mocking": "off" },

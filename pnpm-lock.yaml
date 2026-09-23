@@ -375,6 +375,9 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0
     devDependencies:
+      '@repo/config-vitest':
+        specifier: workspace:*
+        version: link:../config-vitest
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../config-typescript
@@ -382,7 +385,7 @@ importers:
         specifier: 2.0.9
         version: 2.0.9
       '@types/node':
-        specifier: ^26.2.0
+        specifier: ^26.5.1
         version: 26.5.1
       '@types/react':
         specifier: ^19.3.0
@@ -390,6 +393,9 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@opentelemetry/api@1.9.1)(@types/node@26.5.1)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@2.4.0))(vite@8.2.2(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.13)(yaml@2.9.1))
 
   packages/transactional:
     dependencies:
