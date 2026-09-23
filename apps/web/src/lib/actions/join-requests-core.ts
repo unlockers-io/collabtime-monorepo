@@ -1,4 +1,4 @@
-import type { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
+import type { authenticate, authorizeTeamAdmin } from "@/lib/team-auth";
 
 import { displayName } from "../display-name";
 import type { SlotClaimResult } from "../team-slots";
@@ -26,6 +26,8 @@ type PendingJoinRequestView = {
 
 type JoinRequestDeps = {
   approveMembership: (requestId: string, teamId: string, userId: string) => Promise<void>;
+  authenticate: typeof authenticate;
+  authorizeTeamAdmin: typeof authorizeTeamAdmin;
   denyRequest: (requestId: string) => Promise<void>;
   ensureMemberSlot: (teamId: string, userId: string, name: string) => Promise<SlotClaimResult>;
   findRequest: (requestId: string) => Promise<JoinRequestRecord | null>;
@@ -43,21 +45,23 @@ type JoinRequestDeps = {
   notifyAdmins: (teamId: string, user: { email: string; name: string | null }) => void;
   notifyRequester: (request: JoinRequestRecord, decision: "approved" | "denied") => void;
   reportError: (event: ActionErrorEvent) => void;
-  requireAuth: typeof requireAuth;
-  requireTeamAdmin: typeof requireTeamAdmin;
   upsertRequest: (teamId: string, userId: string) => Promise<{ id: string }>;
 };
 
 const createJoinRequestActions = (deps: JoinRequestDeps) => {
   const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: string }>> => {
+    const auth = await deps.authenticate();
+    if (!auth.success) {
+      return auth;
+    }
+    const user = auth.data;
     try {
-      const session = await deps.requireAuth();
       const uuidResult = UUIDSchema.safeParse(teamId);
       if (!uuidResult.success) {
         return { error: "Invalid team ID", success: false };
       }
 
-      const context = await deps.loadJoinContext(teamId, session.user.id);
+      const context = await deps.loadJoinContext(teamId, user.id);
       if (!context.teamExists) {
         return { error: "Team not found", success: false };
       }
@@ -68,8 +72,8 @@ const createJoinRequestActions = (deps: JoinRequestDeps) => {
         return { error: "You already have a pending request for this team", success: false };
       }
 
-      const joinRequest = await deps.upsertRequest(teamId, session.user.id);
-      deps.notifyAdmins(teamId, session.user);
+      const joinRequest = await deps.upsertRequest(teamId, user.id);
+      deps.notifyAdmins(teamId, user);
       return { data: { requestId: joinRequest.id }, success: true };
     } catch (error) {
       deps.reportError({
@@ -81,19 +85,34 @@ const createJoinRequestActions = (deps: JoinRequestDeps) => {
     }
   };
 
+  const findPendingRequest = async (
+    teamId: string,
+    requestId: string,
+  ): Promise<ActionResult<JoinRequestRecord>> => {
+    const joinRequest = await deps.findRequest(requestId);
+    if (joinRequest?.teamId !== teamId) {
+      return { error: "Join request not found", success: false };
+    }
+    if (joinRequest.status !== "PENDING") {
+      return { error: "Join request is no longer pending", success: false };
+    }
+    return { data: joinRequest, success: true };
+  };
+
   const approveJoinRequest = async (
+    teamId: string,
     requestId: string,
   ): Promise<ActionResult<{ memberId: string }>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     try {
-      const joinRequest = await deps.findRequest(requestId);
-      if (!joinRequest) {
-        return { error: "Join request not found", success: false };
+      const found = await findPendingRequest(teamId, requestId);
+      if (!found.success) {
+        return found;
       }
-      if (joinRequest.status !== "PENDING") {
-        return { error: "Join request is no longer pending", success: false };
-      }
-
-      await deps.requireTeamAdmin(joinRequest.teamId);
+      const joinRequest = found.data;
 
       const memberName = displayName(joinRequest.user.name, joinRequest.user.email);
       const applied = await deps.ensureMemberSlot(
@@ -118,19 +137,21 @@ const createJoinRequestActions = (deps: JoinRequestDeps) => {
     }
   };
 
-  const denyJoinRequest = async (requestId: string): Promise<ActionResult<void>> => {
+  const denyJoinRequest = async (
+    teamId: string,
+    requestId: string,
+  ): Promise<ActionResult<void>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     try {
-      const joinRequest = await deps.findRequest(requestId);
-      if (!joinRequest) {
-        return { error: "Join request not found", success: false };
+      const found = await findPendingRequest(teamId, requestId);
+      if (!found.success) {
+        return found;
       }
-      if (joinRequest.status !== "PENDING") {
-        return { error: "Join request is no longer pending", success: false };
-      }
-
-      await deps.requireTeamAdmin(joinRequest.teamId);
       await deps.denyRequest(requestId);
-      deps.notifyRequester(joinRequest, "denied");
+      deps.notifyRequester(found.data, "denied");
       return { data: undefined, success: true };
     } catch (error) {
       deps.reportError({
@@ -145,13 +166,11 @@ const createJoinRequestActions = (deps: JoinRequestDeps) => {
   const getPendingJoinRequests = async (
     teamId: string,
   ): Promise<ActionResult<Array<PendingJoinRequestView>>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     try {
-      const uuidResult = UUIDSchema.safeParse(teamId);
-      if (!uuidResult.success) {
-        return { error: "Invalid team ID", success: false };
-      }
-
-      await deps.requireTeamAdmin(teamId);
       const { memberUserIds, requests } = await deps.listPending(teamId);
       const existingMembers = new Set(memberUserIds);
       const data: Array<PendingJoinRequestView> = [];

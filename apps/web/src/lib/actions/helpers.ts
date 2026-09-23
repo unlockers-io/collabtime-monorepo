@@ -1,5 +1,5 @@
 import { log } from "@/lib/observability";
-import { requireTeamAdmin } from "@/lib/team-auth";
+import type { TeamAccess } from "@/lib/team-auth";
 import type { Team, TeamRecord } from "@/types";
 
 import { applyTeamContents } from "../team-store";
@@ -34,17 +34,15 @@ type MutationOutcome<TResult> = { error: string; ok: false } | { ok: true; value
 type ErrorEvent = Parameters<typeof log.error>[0];
 
 type MutateTeamArgs<TPrelude, TResult> = {
-  authorize?: (teamId: string) => Promise<MutationOutcome<void>>;
+  access: TeamAccess;
   errorContext: string;
   mutate: (team: TeamRecord, prelude: TPrelude) => MutationOutcome<TResult>;
   prelude: () => MutationOutcome<TPrelude> | Promise<MutationOutcome<TPrelude>>;
-  teamId: string;
 };
 
 type TeamMutatorDeps = {
   applyTeamContents: typeof applyTeamContents;
   reportError: (event: ErrorEvent) => void;
-  requireTeamAdmin: typeof requireTeamAdmin;
 };
 
 type MutateTeam = <TPrelude, TResult>(
@@ -53,28 +51,14 @@ type MutateTeam = <TPrelude, TResult>(
 
 const createTeamMutator = (deps: TeamMutatorDeps): MutateTeam =>
   async function mutateTeam<TPrelude, TResult>(args: MutateTeamArgs<TPrelude, TResult>) {
-    const { authorize, errorContext, mutate, prelude, teamId } = args;
+    const { access, errorContext, mutate, prelude } = args;
     try {
-      const uuidResult = UUIDSchema.safeParse(teamId);
-      if (!uuidResult.success) {
-        return { error: "Invalid team ID", success: false };
-      }
-
-      if (authorize) {
-        const authorizeOutcome = await authorize(teamId);
-        if (!authorizeOutcome.ok) {
-          return { error: authorizeOutcome.error, success: false };
-        }
-      } else {
-        await deps.requireTeamAdmin(teamId);
-      }
-
       const preludeOutcome = await prelude();
       if (!preludeOutcome.ok) {
         return { error: preludeOutcome.error, success: false };
       }
 
-      const applied = await deps.applyTeamContents(teamId, (team) => {
+      const applied = await deps.applyTeamContents(access.teamId, (team) => {
         if (team === null) {
           return { error: "Team not found", ok: false };
         }
@@ -97,11 +81,7 @@ const createTeamMutator = (deps: TeamMutatorDeps): MutateTeam =>
     }
   };
 
-const mutateTeam = createTeamMutator({
-  applyTeamContents,
-  reportError: log.error,
-  requireTeamAdmin,
-});
+const mutateTeam = createTeamMutator({ applyTeamContents, reportError: log.error });
 
 const checkUuid = (value: string, label: string): MutationOutcome<void> => {
   const result = UUIDSchema.safeParse(value);

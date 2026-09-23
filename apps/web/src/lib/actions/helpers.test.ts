@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { checkUuid, sanitizeTeam } from "./helpers";
 import {
+  createTestAccess,
   createTestMember,
   createTestTeamMutator,
   createTestTeamRecord,
@@ -10,6 +11,7 @@ import {
 
 const testMutator = createTestTeamMutator();
 const { mutateTeam } = testMutator;
+const access = createTestAccess();
 const continueMutation = () => ({ ok: true as const, value: undefined });
 
 describe("sanitizeTeam", () => {
@@ -73,61 +75,30 @@ describe("mutateTeam", () => {
     testMutator.reset();
   });
 
-  it("returns 'Invalid team ID' for non-UUID teamId without auth or load", async () => {
-    const mutate = vi.fn();
-
-    const result = await mutateTeam({
-      errorContext: "do thing",
-      mutate,
-      prelude: continueMutation,
-      teamId: "not-a-uuid",
-    });
-
-    expect(result).toEqual({ error: "Invalid team ID", success: false });
-    expect(testMutator.requireTeamAdmin).not.toHaveBeenCalled();
-    expect(mutate).not.toHaveBeenCalled();
-  });
-
   it("short-circuits on prelude failure before load", async () => {
     const mutate = vi.fn();
 
     const result = await mutateTeam({
+      access,
       errorContext: "do thing",
       mutate,
       prelude: () => ({ error: "Bad input", ok: false }),
-      teamId: VALID_UUID,
     });
 
     expect(result).toEqual({ error: "Bad input", success: false });
     expect(mutate).not.toHaveBeenCalled();
   });
 
-  it("authorizes before running the prelude, so a denied caller never sees a payload error", async () => {
-    const prelude = vi.fn();
-
+  it("converts thrown prelude errors to 'Failed to <errorContext>'", async () => {
     const result = await mutateTeam({
-      authorize: () => Promise.resolve({ error: "Not a member", ok: false }),
-      errorContext: "do thing",
-      mutate: () => ({ ok: true, value: 1 }),
-      prelude,
-      teamId: VALID_UUID,
-    });
-
-    expect(result).toEqual({ error: "Not a member", success: false });
-    expect(prelude).not.toHaveBeenCalled();
-  });
-
-  it("converts thrown auth errors to 'Failed to <errorContext>'", async () => {
-    testMutator.requireTeamAdmin.mockRejectedValue(new Error("Unauthorized"));
-
-    const result = await mutateTeam({
+      access,
       errorContext: "remove widget",
       mutate: () => ({ ok: true, value: 1 }),
-      prelude: continueMutation,
-      teamId: VALID_UUID,
+      prelude: () => Promise.reject(new Error("Database unavailable")),
     });
 
     expect(result).toEqual({ error: "Failed to remove widget", success: false });
+    expect(testMutator.reportError).toHaveBeenCalledOnce();
   });
 
   it("returns 'Team not found' when redis has no team", async () => {
@@ -135,10 +106,10 @@ describe("mutateTeam", () => {
     const mutate = vi.fn();
 
     const result = await mutateTeam({
+      access,
       errorContext: "do thing",
       mutate,
       prelude: continueMutation,
-      teamId: VALID_UUID,
     });
 
     expect(result).toEqual({ error: "Team not found", success: false });
@@ -150,13 +121,13 @@ describe("mutateTeam", () => {
     testMutator.seedTeam(team);
 
     const result = await mutateTeam({
+      access,
       errorContext: "do thing",
       mutate: (loaded, payload) => {
         loaded.name = payload;
         return { ok: true, value: payload };
       },
       prelude: () => ({ ok: true, value: "Renamed" }),
-      teamId: VALID_UUID,
     });
 
     expect(result).toEqual({ data: "Renamed", success: true });
@@ -168,56 +139,24 @@ describe("mutateTeam", () => {
     testMutator.seedTeam(team);
 
     const result = await mutateTeam({
+      access,
       errorContext: "do thing",
       mutate: () => ({ error: "Item not found", ok: false }),
       prelude: continueMutation,
-      teamId: VALID_UUID,
     });
 
     expect(result).toEqual({ error: "Item not found", success: false });
     expect(testMutator.persistedTeam()).toEqual(team);
   });
 
-  it("uses a supplied authorize callback instead of requireTeamAdmin", async () => {
-    testMutator.seedTeam(createTestTeamRecord());
-    const authorize = vi.fn(() => Promise.resolve({ ok: true as const, value: undefined }));
-
-    await mutateTeam({
-      authorize,
-      errorContext: "do thing",
-      mutate: () => ({ ok: true, value: undefined }),
-      prelude: continueMutation,
-      teamId: VALID_UUID,
-    });
-
-    expect(authorize).toHaveBeenCalledWith(VALID_UUID);
-    expect(testMutator.requireTeamAdmin).not.toHaveBeenCalled();
-    expect(testMutator.persistedTeam()).not.toBeNull();
-  });
-
-  it("returns the authorize error without loading or mutating", async () => {
-    const mutate = vi.fn();
-
-    const result = await mutateTeam({
-      authorize: () => Promise.resolve({ error: "Not allowed", ok: false }),
-      errorContext: "do thing",
-      mutate,
-      prelude: continueMutation,
-      teamId: VALID_UUID,
-    });
-
-    expect(result).toEqual({ error: "Not allowed", success: false });
-    expect(mutate).not.toHaveBeenCalled();
-  });
-
   it("supports async preludes", async () => {
     testMutator.seedTeam(createTestTeamRecord());
 
     const result = await mutateTeam({
+      access,
       errorContext: "do thing",
       mutate: (_team, payload) => ({ ok: true, value: payload }),
       prelude: () => Promise.resolve({ ok: true as const, value: 42 }),
-      teamId: VALID_UUID,
     });
 
     expect(result).toEqual({ data: 42, success: true });

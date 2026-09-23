@@ -27,6 +27,7 @@ it("keeps expired invitations visible and exposes resend and revoke after expans
           onSettled={onSettled}
           resend={resend}
           revoke={revoke}
+          teamId="team"
         />
       )}
     />,
@@ -38,12 +39,12 @@ it("keeps expired invitations visible and exposes resend and revoke after expans
   await waitFor(() => {
     expect(onSettled).toHaveBeenCalledTimes(1);
   });
-  expect(resend).toHaveBeenCalledWith("invite");
+  expect(resend).toHaveBeenCalledWith("team", "invite");
   fireEvent.click(screen.getByRole("button", { name: /Revoke invitation/ }));
   await waitFor(() => {
     expect(onSettled).toHaveBeenCalledTimes(2);
   });
-  expect(revoke).toHaveBeenCalledWith("invite");
+  expect(revoke).toHaveBeenCalledWith("team", "invite");
 });
 it("disables both row actions during delivery and restores them on failure", async () => {
   const deferred = Promise.withResolvers<{ error: string; success: false }>();
@@ -55,6 +56,7 @@ it("disables both row actions during delivery and restores them on failure", asy
       onSettled={onSettled}
       resend={resend}
       revoke={vi.fn()}
+      teamId="team"
     />,
   );
   fireEvent.click(screen.getByRole("button", { name: /Resend invitation/ }));

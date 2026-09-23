@@ -2,7 +2,8 @@ import type { PendingTeamInvitation } from "@/types";
 
 import { displayName } from "../display-name";
 import { invitationExpiryFrom } from "../invitations";
-import { CuidSchema, UUIDSchema } from "../validation";
+import type { TeamAccess } from "../team-auth";
+import { CuidSchema } from "../validation";
 
 import type { InvitationDeps } from "./invitation-deps";
 import { allowInvitationSend, INVITATION_RATE_ERROR } from "./invitation-guards";
@@ -12,11 +13,11 @@ export const createInvitationManagementActions = (deps: InvitationDeps) => {
   const getPendingTeamInvitations = async (
     teamId: string,
   ): Promise<ActionResult<Array<PendingTeamInvitation>>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     try {
-      if (!UUIDSchema.safeParse(teamId).success) {
-        return { error: "Invalid team ID", success: false };
-      }
-      await deps.requireTeamAdmin(teamId);
       const invitations = await deps.listPendingForTeam(teamId);
       return {
         data: invitations.map(({ createdAt, email, expiresAt, id, memberId }) => ({
@@ -38,19 +39,18 @@ export const createInvitationManagementActions = (deps: InvitationDeps) => {
     }
   };
   const manageInvitation = async (
+    { teamId, user }: TeamAccess,
     id: string,
     action: "resend" | "revoke",
   ): Promise<ActionResult<{ emailSent: boolean }>> => {
     try {
-      const session = await deps.requireAuth();
       if (!CuidSchema.safeParse(id).success) {
         return { error: "Invalid invitation ID", success: false };
       }
       const invitation = await deps.findInvitation(id);
-      if (!invitation) {
+      if (invitation?.teamId !== teamId) {
         return { error: "Invitation not found", success: false };
       }
-      await deps.requireTeamAdmin(invitation.teamId);
       if (invitation.status !== "PENDING") {
         return { error: "This invitation is no longer pending", success: false };
       }
@@ -58,11 +58,11 @@ export const createInvitationManagementActions = (deps: InvitationDeps) => {
         await deps.markRevoked(invitation);
         return { data: { emailSent: false }, success: true };
       }
-      const { team } = await deps.loadInviteContext(invitation.teamId, invitation.email);
+      const { team } = await deps.loadInviteContext(teamId, invitation.email);
       if (!team) {
         return { error: "Team not found", success: false };
       }
-      if (!(await allowInvitationSend(deps, session.user.id, invitation.teamId))) {
+      if (!(await allowInvitationSend(deps, user.id, teamId))) {
         return { error: INVITATION_RATE_ERROR, success: false };
       }
       const expiresAt = invitationExpiryFrom(deps.now());
@@ -71,9 +71,9 @@ export const createInvitationManagementActions = (deps: InvitationDeps) => {
         expiresAt: expiresAt.toISOString(),
         inviterName: displayName(invitation.invitedBy.name, invitation.invitedBy.email),
         recipientEmail: invitation.email,
-        teamId: invitation.teamId,
+        teamId,
         teamName: team.name,
-        teamUrl: deps.inviteLink(invitation.teamId, id),
+        teamUrl: deps.inviteLink(teamId, id),
         type: "invitation",
       });
       return { data: { emailSent: sent }, success: true };
@@ -87,12 +87,24 @@ export const createInvitationManagementActions = (deps: InvitationDeps) => {
       return { error: "Could not update this invitation. Refresh and try again.", success: false };
     }
   };
-  return {
-    getPendingTeamInvitations,
-    resendInvitation: (id: string) => manageInvitation(id, "resend"),
-    revokeInvitation: async (id: string): Promise<ActionResult<void>> => {
-      const result = await manageInvitation(id, "revoke");
-      return result.success ? { data: undefined, success: true } : result;
-    },
+  const resendInvitation = async (
+    teamId: string,
+    id: string,
+  ): Promise<ActionResult<{ emailSent: boolean }>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
+    const result = await manageInvitation(access.data, id, "resend");
+    return result;
   };
+  const revokeInvitation = async (teamId: string, id: string): Promise<ActionResult<void>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
+    const result = await manageInvitation(access.data, id, "revoke");
+    return result.success ? { data: undefined, success: true } : result;
+  };
+  return { getPendingTeamInvitations, resendInvitation, revokeInvitation };
 };

@@ -5,18 +5,27 @@ import { updateTag } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
-import { requireAuth, requireTeamMember } from "@/lib/team-auth";
+import { authorizeTeamAdmin, authorizeTeamMember } from "@/lib/team-auth";
 import { teamNameTag } from "@/lib/team-meta";
-import type { Team } from "@/types";
 
 import { claimOrCreateMemberSlot } from "../team-slots";
 import { readTeamRecord } from "../team-store";
 
 import { mutateTeam } from "./helpers";
 import { createMemberActions } from "./member-actions-core";
-import type { ActionResult } from "./types";
 
-const memberActions = createMemberActions({
+const {
+  addMember,
+  createOwnMemberSlot,
+  importMembers,
+  removeMember,
+  reorderMembers,
+  updateMember,
+  updateOwnMember,
+  updateTeamName,
+} = createMemberActions({
+  authorizeTeamAdmin,
+  authorizeTeamMember,
   claimOrCreateSlot: claimOrCreateMemberSlot,
   createId: uuidv4,
   mutateTeam,
@@ -27,8 +36,9 @@ const memberActions = createMemberActions({
     }
   },
   reportError: log.error,
-  requireAuth,
-  requireTeamMember,
+  revalidateTeamName: (teamId) => {
+    updateTag(teamNameTag(teamId));
+  },
   revokeInvitationsForMember: async (teamId, memberId) => {
     await prisma.invitation.updateMany({
       data: { status: "REVOKED" },
@@ -36,26 +46,6 @@ const memberActions = createMemberActions({
     });
   },
 });
-
-const {
-  addMember,
-  createOwnMemberSlot,
-  importMembers,
-  removeMember,
-  reorderMembers,
-  updateMember,
-  updateOwnMember,
-} = memberActions;
-
-const updateTeamName = async (teamId: string, name: string): Promise<ActionResult<Team>> => {
-  const result = await memberActions.updateTeamName(teamId, name);
-
-  if (result.success) {
-    updateTag(teamNameTag(teamId));
-  }
-
-  return result;
-};
 
 export {
   createOwnMemberSlot,
