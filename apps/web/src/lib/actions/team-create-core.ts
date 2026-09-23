@@ -1,4 +1,4 @@
-import type { requireAuth } from "@/lib/team-auth";
+import type { authenticate } from "@/lib/team-auth";
 import type { TeamMember, TeamRecord } from "@/types";
 
 import { MAX_TEAMS_PER_USER } from "../limits";
@@ -12,6 +12,7 @@ type StoreTeamResult =
   | { ok: false; reason: "read-failed" | "rejected" | "unconfigured" | "write-failed" };
 
 type TeamCreateDeps = {
+  authenticate: typeof authenticate;
   countAdminTeams: (userId: string) => Promise<number>;
   createId: () => string;
   createMember: (overrides: Partial<TeamMember>) => TeamMember;
@@ -19,14 +20,17 @@ type TeamCreateDeps = {
   deleteSpace: (teamId: string) => Promise<void>;
   now: () => Date;
   reportError: (event: ActionErrorEvent) => void;
-  requireAuth: typeof requireAuth;
   storeTeam: (teamId: string, team: TeamRecord, ttlSeconds: number) => Promise<StoreTeamResult>;
 };
 
 const createTeamAction = (deps: TeamCreateDeps) => {
   return async (timezone: string, name: string): Promise<ActionResult<string>> => {
+    const auth = await deps.authenticate();
+    if (!auth.success) {
+      return auth;
+    }
+    const user = auth.data;
     try {
-      const session = await deps.requireAuth();
       const parsed = TeamNameSchema.safeParse(name);
       if (!parsed.success) {
         return {
@@ -34,7 +38,7 @@ const createTeamAction = (deps: TeamCreateDeps) => {
           success: false,
         };
       }
-      if ((await deps.countAdminTeams(session.user.id)) >= MAX_TEAMS_PER_USER) {
+      if ((await deps.countAdminTeams(user.id)) >= MAX_TEAMS_PER_USER) {
         return {
           error: `You can administer up to ${MAX_TEAMS_PER_USER} workspaces`,
           success: false,
@@ -42,15 +46,13 @@ const createTeamAction = (deps: TeamCreateDeps) => {
       }
       const teamId = deps.createId();
 
-      await deps.createTeamRecords(session.user.id, teamId);
+      await deps.createTeamRecords(user.id, teamId);
 
       const team: TeamRecord = {
         createdAt: deps.now().toISOString(),
         groups: [],
         id: teamId,
-        members: [
-          deps.createMember({ name: session.user.name ?? "", timezone, userId: session.user.id }),
-        ],
+        members: [deps.createMember({ name: user.name ?? "", timezone, userId: user.id })],
         name: parsed.data,
       };
       const applied = await deps.storeTeam(teamId, team, TEAM_INITIAL_TTL_SECONDS);

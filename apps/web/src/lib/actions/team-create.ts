@@ -4,13 +4,14 @@ import { prisma } from "@repo/db";
 import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
-import { requireAuth } from "@/lib/team-auth";
+import { authenticate } from "@/lib/team-auth";
 
 import { applyTeamContents, newTeamMember } from "../team-store";
 
 import { createTeamAction } from "./team-create-core";
 
 const createTeam = createTeamAction({
+  authenticate,
   countAdminTeams: (userId) => prisma.membership.count({ where: { role: "ADMIN", userId } }),
   createId: uuidv4,
   createMember: newTeamMember,
@@ -25,7 +26,6 @@ const createTeam = createTeamAction({
   },
   now: () => new Date(),
   reportError: log.error,
-  requireAuth,
   storeTeam: async (teamId, team, ttlSeconds) => {
     const result = await applyTeamContents(
       teamId,

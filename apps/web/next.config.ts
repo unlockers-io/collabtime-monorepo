@@ -28,6 +28,8 @@ const nextConfig: NextConfig = {
     ]),
   partialPrefetching: true,
   reactStrictMode: true,
+  redirects: () =>
+    Promise.resolve([{ destination: "/register", permanent: true, source: "/signup" }]),
   rewrites: () =>
     Promise.resolve({
       // No route lives under /404/, so Next answers with not-found.tsx and a real 404.

@@ -1,5 +1,6 @@
 import { displayName } from "../display-name";
 import { invitationExpiryFrom } from "../invitations";
+import type { SessionUser } from "../team-auth";
 import { CuidSchema, InvitationEmailSchema, normalizeEmail, UUIDSchema } from "../validation";
 
 import type { InvitationDeps } from "./invitation-deps";
@@ -16,15 +17,15 @@ export const createInvitationActions = (deps: InvitationDeps) => {
     memberId: string,
     email: string,
   ): Promise<ActionResult<{ emailSent: boolean; invitationId: string }>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
+    const { user } = access.data;
     try {
-      const session = await deps.requireAuth();
-      if (!UUIDSchema.safeParse(teamId).success) {
-        return { error: "Invalid team ID", success: false };
-      }
       if (!UUIDSchema.safeParse(memberId).success) {
         return { error: "Invalid member ID", success: false };
       }
-      await deps.requireTeamAdmin(teamId);
       const normalized = normalizeEmail(email);
       if (!InvitationEmailSchema.safeParse(normalized).success) {
         return { error: "Invalid email address", success: false };
@@ -43,20 +44,20 @@ export const createInvitationActions = (deps: InvitationDeps) => {
       if (existingMembership) {
         return { error: "This user is already a member of the team", success: false };
       }
-      if (!(await allowInvitationSend(deps, session.user.id, teamId))) {
+      if (!(await allowInvitationSend(deps, user.id, teamId))) {
         return { error: INVITATION_RATE_ERROR, success: false };
       }
       const expiresAt = invitationExpiryFrom(deps.now());
       const invitation = await deps.upsertInvitation({
         email: normalized,
         expiresAt,
-        invitedById: session.user.id,
+        invitedById: user.id,
         memberId,
         teamId,
       });
       const { sent } = await deps.sendEmail({
         expiresAt: expiresAt.toISOString(),
-        inviterName: displayName(session.user.name, session.user.email),
+        inviterName: displayName(user.name, user.email),
         recipientEmail: normalized,
         teamId,
         teamName: team.name,
@@ -70,11 +71,11 @@ export const createInvitationActions = (deps: InvitationDeps) => {
     }
   };
   const decideInvitation = async (
+    user: SessionUser,
     invitationId: string,
     decision: "accepted" | "declined",
   ): Promise<ActionResult<{ teamId: string }>> => {
     try {
-      const session = await deps.requireAuth();
       if (!CuidSchema.safeParse(invitationId).success) {
         return { error: "Invalid invitation ID", success: false };
       }
@@ -82,24 +83,24 @@ export const createInvitationActions = (deps: InvitationDeps) => {
       if (!invitation) {
         return { error: "Invitation not found", success: false };
       }
-      const error = checkInvitationRecipient(invitation, session.user.email, deps.now());
+      const error = checkInvitationRecipient(invitation, user.email, deps.now());
       if (error !== null) {
         return { error, success: false };
       }
       if (decision === "accepted") {
         const result = await deps.claimOrCreateSlot(invitation.teamId, {
           memberId: invitation.memberId,
-          name: displayName(session.user.name, session.user.email),
-          userId: session.user.id,
+          name: displayName(user.name, user.email),
+          userId: user.id,
         });
         if (!result.ok) {
           return { error: result.error, success: false };
         }
-        await deps.commitAcceptance(invitation, result.memberId, session.user.id);
+        await deps.commitAcceptance(invitation, result.memberId, user.id);
       } else {
         await deps.markDeclined(invitation);
       }
-      deps.notifyInviter(invitation, session.user, decision);
+      deps.notifyInviter(invitation, user, decision);
       return { data: { teamId: invitation.teamId }, success: true };
     } catch (error) {
       deps.reportError({
@@ -111,12 +112,23 @@ export const createInvitationActions = (deps: InvitationDeps) => {
       return { error: "Could not update this invitation. Refresh and try again.", success: false };
     }
   };
-  return {
-    acceptInvitation: (id: string) => decideInvitation(id, "accepted"),
-    declineInvitation: async (id: string): Promise<ActionResult<void>> => {
-      const result = await decideInvitation(id, "declined");
-      return result.success ? { data: undefined, success: true } : result;
-    },
-    inviteMember,
+  const acceptInvitation = async (
+    invitationId: string,
+  ): Promise<ActionResult<{ teamId: string }>> => {
+    const auth = await deps.authenticate();
+    if (!auth.success) {
+      return auth;
+    }
+    const result = await decideInvitation(auth.data, invitationId, "accepted");
+    return result;
   };
+  const declineInvitation = async (invitationId: string): Promise<ActionResult<void>> => {
+    const auth = await deps.authenticate();
+    if (!auth.success) {
+      return auth;
+    }
+    const result = await decideInvitation(auth.data, invitationId, "declined");
+    return result.success ? { data: undefined, success: true } : result;
+  };
+  return { acceptInvitation, declineInvitation, inviteMember };
 };

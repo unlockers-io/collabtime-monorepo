@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTeamAction } from "./team-create-core";
-import { createMockSession, createTestMember } from "./test-helpers";
+import { createTestGuards, createTestMember } from "./test-helpers";
 
 type TeamCreateDeps = Parameters<typeof createTeamAction>[0];
 
@@ -10,9 +10,10 @@ const countAdminTeams = vi.fn<TeamCreateDeps["countAdminTeams"]>();
 const createTeamRecords = vi.fn<TeamCreateDeps["createTeamRecords"]>();
 const deleteSpace = vi.fn<TeamCreateDeps["deleteSpace"]>();
 const reportError = vi.fn<TeamCreateDeps["reportError"]>();
-const requireAuth = vi.fn<TeamCreateDeps["requireAuth"]>();
+const guards = createTestGuards();
 const storeTeam = vi.fn<TeamCreateDeps["storeTeam"]>();
 const createTeam = createTeamAction({
+  authenticate: guards.authenticate,
   countAdminTeams,
   createId: () => `test-uuid-${uuidCounter++}`,
   createMember: (overrides) => createTestMember({ id: "member-id", ...overrides }),
@@ -20,7 +21,6 @@ const createTeam = createTeamAction({
   deleteSpace,
   now: () => new Date("2026-01-01T00:00:00.000Z"),
   reportError,
-  requireAuth,
   storeTeam,
 });
 
@@ -33,7 +33,7 @@ describe("createTeam", () => {
     countAdminTeams.mockResolvedValue(0);
     createTeamRecords.mockResolvedValue();
     deleteSpace.mockResolvedValue();
-    requireAuth.mockResolvedValue(createMockSession());
+    guards.reset();
     storeTeam.mockResolvedValue({ ok: true });
   });
 
@@ -50,12 +50,14 @@ describe("createTeam", () => {
     expect(storeTeam.mock.calls[0][1].name).toBe("Platform team");
   });
 
-  it("returns error when not authenticated", async () => {
-    requireAuth.mockRejectedValue(new Error("Unauthorized"));
+  it("requires a session before any write", async () => {
+    guards.authenticate.mockResolvedValue({ error: "Authentication required", success: false });
 
     const result = await createTeam(TEST_TIMEZONE, "My workspace");
 
-    expect(result).toEqual({ error: "Failed to create team", success: false });
+    expect(result).toEqual({ error: "Authentication required", success: false });
+    expect(countAdminTeams).not.toHaveBeenCalled();
+    expect(createTeamRecords).not.toHaveBeenCalled();
   });
 
   it("creates space and membership in a transaction", async () => {

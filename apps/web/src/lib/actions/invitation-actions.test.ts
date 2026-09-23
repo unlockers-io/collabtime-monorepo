@@ -28,12 +28,15 @@ describe("inviting and managing invitations", () => {
       [`invite:team:${VALID_UUID}`, 200, 86_400],
     ]);
   });
-  it("requires an administrator before creating or sending", async () => {
+  it("requires an administrator before validating, creating or sending", async () => {
     const { deps, inviteMember } = setupInvitations();
-    deps.requireTeamAdmin.mockRejectedValue(new Error("Forbidden"));
-    expect(await inviteMember(VALID_UUID, VALID_UUID_2, invitation.email)).toMatchObject({
+    deps.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
+    expect(await inviteMember(VALID_UUID, "not-a-uuid", "not-an-email")).toEqual({
+      error: "Admin access required",
       success: false,
     });
+    expect(deps.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
+    expect(deps.loadInviteContext).not.toHaveBeenCalled();
     expect(deps.upsertInvitation).not.toHaveBeenCalled();
     expect(deps.sendEmail).not.toHaveBeenCalled();
   });
@@ -73,40 +76,62 @@ describe("inviting and managing invitations", () => {
       data: [{ expiresAt: NOW.toISOString(), id: INVITATION_ID }],
       success: true,
     });
-    expect(await resendInvitation(INVITATION_ID)).toMatchObject({ success: true });
+    expect(await resendInvitation(VALID_UUID, INVITATION_ID)).toMatchObject({ success: true });
     expect(deps.refreshExpiry).toHaveBeenCalledWith(expired, new Date("2026-09-24T12:00:00Z"));
     expect(deps.checkRateLimit).toHaveBeenCalledTimes(2);
   });
   it("does not refresh expiry or send when resend is rate limited", async () => {
     const { deps, resendInvitation } = setupInvitations();
     deps.checkRateLimit.mockResolvedValue({ allowed: false, remaining: 0 });
-    expect(await resendInvitation(INVITATION_ID)).toMatchObject({ success: false });
+    expect(await resendInvitation(VALID_UUID, INVITATION_ID)).toMatchObject({ success: false });
     expect(deps.refreshExpiry).not.toHaveBeenCalled();
     expect(deps.sendEmail).not.toHaveBeenCalled();
   });
-  it("requires an admin for list, revoke and resend", async () => {
+  it("requires an admin for list, revoke and resend before any lookup", async () => {
     const { deps, getPendingTeamInvitations, resendInvitation, revokeInvitation } =
       setupInvitations();
-    deps.requireTeamAdmin.mockRejectedValue(new Error("Forbidden"));
-    expect(await getPendingTeamInvitations(VALID_UUID)).toMatchObject({ success: false });
-    expect(await resendInvitation(INVITATION_ID)).toMatchObject({ success: false });
-    expect(await revokeInvitation(INVITATION_ID)).toMatchObject({ success: false });
+    const denied = { error: "Admin access required", success: false };
+    deps.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
+    expect(await getPendingTeamInvitations(VALID_UUID)).toEqual(denied);
+    expect(await resendInvitation(VALID_UUID, INVITATION_ID)).toEqual(denied);
+    expect(await revokeInvitation(VALID_UUID, INVITATION_ID)).toEqual(denied);
     expect(deps.listPendingForTeam).not.toHaveBeenCalled();
+    expect(deps.findInvitation).not.toHaveBeenCalled();
     expect(deps.markRevoked).not.toHaveBeenCalled();
     expect(deps.refreshExpiry).not.toHaveBeenCalled();
   });
+  it("treats another team's invitation as missing", async () => {
+    const { deps, resendInvitation, revokeInvitation } = setupInvitations();
+    const missing = { error: "Invitation not found", success: false };
+    expect(await resendInvitation(VALID_UUID_2, INVITATION_ID)).toEqual(missing);
+    expect(await revokeInvitation(VALID_UUID_2, INVITATION_ID)).toEqual(missing);
+    expect(deps.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID_2);
+    expect(deps.markRevoked).not.toHaveBeenCalled();
+    expect(deps.sendEmail).not.toHaveBeenCalled();
+  });
   it("revokes without sending email", async () => {
     const { deps, revokeInvitation } = setupInvitations();
-    expect(await revokeInvitation(INVITATION_ID)).toMatchObject({ success: true });
+    expect(await revokeInvitation(VALID_UUID, INVITATION_ID)).toMatchObject({ success: true });
     expect(deps.markRevoked).toHaveBeenCalledWith(invitation);
     expect(deps.sendEmail).not.toHaveBeenCalled();
   });
 });
 
 describe("invitation decisions", () => {
+  it("requires a session before looking the invitation up", async () => {
+    const { acceptInvitation, declineInvitation, deps } = setupInvitations();
+    const denied = { error: "Authentication required", success: false };
+    deps.authenticate.mockResolvedValue({ error: "Authentication required", success: false });
+    expect(await acceptInvitation(INVITATION_ID)).toEqual(denied);
+    expect(await declineInvitation(INVITATION_ID)).toEqual(denied);
+    expect(deps.findInvitation).not.toHaveBeenCalled();
+  });
   it("accepts case-insensitive addresses and commits the actual slot before notifying", async () => {
     const { acceptInvitation, deps } = setupInvitations();
-    deps.requireAuth.mockResolvedValue(createMockSession({ email: " TEST@EXAMPLE.COM " }));
+    deps.authenticate.mockResolvedValue({
+      data: createMockSession({ email: " TEST@EXAMPLE.COM " }).user,
+      success: true,
+    });
     deps.claimOrCreateSlot.mockResolvedValue({ created: true, memberId: "replacement", ok: true });
     expect(await acceptInvitation(INVITATION_ID)).toMatchObject({ success: true });
     expect(deps.commitAcceptance).toHaveBeenCalledWith(invitation, "replacement", "user-123");
@@ -160,7 +185,10 @@ describe("invitation decisions", () => {
   });
   it("rejects a different email before claiming any slot", async () => {
     const { acceptInvitation, deps } = setupInvitations();
-    deps.requireAuth.mockResolvedValue(createMockSession({ email: "someone@example.com" }));
+    deps.authenticate.mockResolvedValue({
+      data: createMockSession({ email: "someone@example.com" }).user,
+      success: true,
+    });
     expect(await acceptInvitation(INVITATION_ID)).toEqual({
       error: "This invitation is not for you",
       success: false,

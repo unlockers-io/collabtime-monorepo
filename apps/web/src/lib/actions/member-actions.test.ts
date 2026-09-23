@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMemberActions } from "./member-actions-core";
 import {
-  createMockSession,
+  createTestGuards,
   createTestMember,
   createTestTeamMutator,
   createTestTeamRecord,
@@ -14,12 +14,12 @@ import {
 type MemberActionDeps = Parameters<typeof createMemberActions>[0];
 
 const testMutator = createTestTeamMutator();
-const requireAuth = vi.fn<MemberActionDeps["requireAuth"]>();
-const requireTeamMember = vi.fn<MemberActionDeps["requireTeamMember"]>();
+const guards = createTestGuards();
 const claimOrCreateSlot = vi.fn<MemberActionDeps["claimOrCreateSlot"]>();
 const revokeInvitationsForMember = vi.fn<MemberActionDeps["revokeInvitationsForMember"]>();
 const removeMembershipForSlot = vi.fn<MemberActionDeps["removeMembershipForSlot"]>();
 const reportError = vi.fn<MemberActionDeps["reportError"]>();
+const revalidateTeamName = vi.fn<MemberActionDeps["revalidateTeamName"]>();
 const {
   addMember,
   createOwnMemberSlot,
@@ -30,14 +30,15 @@ const {
   updateOwnMember,
   updateTeamName,
 } = createMemberActions({
+  authorizeTeamAdmin: guards.authorizeTeamAdmin,
+  authorizeTeamMember: guards.authorizeTeamMember,
   claimOrCreateSlot,
   createId: () => "test-uuid",
   mutateTeam: testMutator.mutateTeam,
   readTeam: () => Promise.resolve(testMutator.persistedTeam()),
   removeMembershipForSlot,
   reportError,
-  requireAuth,
-  requireTeamMember,
+  revalidateTeamName,
   revokeInvitationsForMember,
 });
 
@@ -63,24 +64,53 @@ const validMemberInput = {
 
 beforeEach(() => {
   testMutator.reset();
-  requireAuth.mockReset();
-  requireAuth.mockResolvedValue(createMockSession());
+  guards.reset();
   claimOrCreateSlot.mockReset();
   revokeInvitationsForMember.mockReset();
   removeMembershipForSlot.mockReset();
-  requireTeamMember.mockReset();
   reportError.mockReset();
+  revalidateTeamName.mockReset();
+});
+
+describe("authorization", () => {
+  it.each([
+    ["addMember", () => addMember(VALID_UUID, { ...validMemberInput, name: "" })],
+    ["removeMember", () => removeMember(VALID_UUID, VALID_UUID_2)],
+    ["updateMember", () => updateMember(VALID_UUID, VALID_UUID_2, { name: "" })],
+    ["updateTeamName", () => updateTeamName(VALID_UUID, "")],
+    ["importMembers", () => importMembers(VALID_UUID, [])],
+    ["reorderMembers", () => reorderMembers(VALID_UUID, [])],
+  ])("%s refuses a non-admin before validating input or cleanup", async (_name, run) => {
+    const team = createTestTeamRecord({
+      members: [createTestMember({ id: VALID_UUID_2, userId: "other" })],
+    });
+    seedTeam(team);
+    guards.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
+
+    expect(await run()).toEqual({ error: "Admin access required", success: false });
+    expect(guards.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
+    expect(revokeInvitationsForMember).not.toHaveBeenCalled();
+    expect(removeMembershipForSlot).not.toHaveBeenCalled();
+    expect(revalidateTeamName).not.toHaveBeenCalled();
+    expect(testMutator.persistedTeam()).toEqual(team);
+  });
+
+  it.each([
+    ["updateOwnMember", () => updateOwnMember(VALID_UUID, VALID_UUID_2, { name: "" })],
+    ["createOwnMemberSlot", () => createOwnMemberSlot(VALID_UUID)],
+  ])("%s refuses a non-member before touching the team", async (_name, run) => {
+    guards.authorizeTeamMember.mockResolvedValue({
+      error: "You are not a member of this team",
+      success: false,
+    });
+
+    expect(await run()).toEqual({ error: "You are not a member of this team", success: false });
+    expect(guards.authorizeTeamMember).toHaveBeenCalledWith(VALID_UUID);
+    expect(claimOrCreateSlot).not.toHaveBeenCalled();
+  });
 });
 
 describe("addMember", () => {
-  it("returns error when auth fails", async () => {
-    testMutator.requireTeamAdmin.mockRejectedValue(new Error("Unauthorized"));
-
-    const result = await addMember(VALID_UUID, validMemberInput);
-
-    expect(result).toEqual({ error: "Failed to add member", success: false });
-  });
-
   it("returns error when team not found", async () => {
     testMutator.seedTeam(null);
 
@@ -170,18 +200,20 @@ describe("updateMember", () => {
 });
 
 describe("updateTeamName", () => {
-  it("trims name", async () => {
+  it("trims name and revalidates the cached name", async () => {
     seedTeam(createTestTeamRecord());
 
     await updateTeamName(VALID_UUID, "  My Team  ");
 
     expect(persistedTeam().name).toBe("My Team");
+    expect(revalidateTeamName).toHaveBeenCalledWith(VALID_UUID);
   });
 
   it("rejects empty name after trimming", async () => {
     const result = await updateTeamName(VALID_UUID, "   ");
 
     expect(result).toEqual({ error: "Workspace name is required", success: false });
+    expect(revalidateTeamName).not.toHaveBeenCalled();
   });
 
   it("rejects names longer than 100 characters", async () => {
@@ -240,14 +272,7 @@ describe("importMembers", () => {
 });
 
 describe("updateOwnMember", () => {
-  const session = createMockSession();
-
-  beforeEach(() => {
-    requireAuth.mockResolvedValue(session);
-    requireTeamMember.mockResolvedValue("user-123");
-  });
-
-  it("uses requireAuth instead of requireTeamAdmin", async () => {
+  it("requires membership rather than admin access", async () => {
     seedTeam(
       createTestTeamRecord({
         members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
@@ -256,18 +281,8 @@ describe("updateOwnMember", () => {
 
     await updateOwnMember(VALID_UUID, VALID_UUID_2, { name: "Updated" });
 
-    expect(requireAuth).toHaveBeenCalled();
-    expect(testMutator.requireTeamAdmin).not.toHaveBeenCalled();
-  });
-
-  it("returns error when user is not a team member (no membership)", async () => {
-    requireTeamMember.mockRejectedValue(new Error("Not a member of this team"));
-
-    const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
-      name: "X",
-    });
-
-    expect(result).toEqual({ error: "You are not a member of this team", success: false });
+    expect(guards.authorizeTeamMember).toHaveBeenCalledWith(VALID_UUID);
+    expect(guards.authorizeTeamAdmin).not.toHaveBeenCalled();
   });
 
   it("returns error when member not found in team record", async () => {
@@ -325,16 +340,6 @@ describe("updateOwnMember", () => {
 
     expect(result.success).toBe(true);
     expect(persistedTeam().members[0].userId).toBe("user-123");
-  });
-
-  it("propagates auth error", async () => {
-    requireAuth.mockRejectedValue(new Error("Not authenticated"));
-
-    const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
-      name: "X",
-    });
-
-    expect(result).toEqual({ error: "Failed to update member", success: false });
   });
 });
 
@@ -479,11 +484,6 @@ describe("removal cleanup and self repair", () => {
     );
     expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: true });
     expect(removeMembershipForSlot).not.toHaveBeenCalled();
-  });
-  it("requires membership before repairing a profile", async () => {
-    requireTeamMember.mockRejectedValue(new Error("Not a member"));
-    expect(await createOwnMemberSlot(VALID_UUID)).toMatchObject({ success: false });
-    expect(claimOrCreateSlot).not.toHaveBeenCalled();
   });
   it("returns an existing profile without creating another", async () => {
     claimOrCreateSlot.mockResolvedValue({ created: false, memberId: VALID_UUID_2, ok: true });

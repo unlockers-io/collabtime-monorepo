@@ -104,6 +104,7 @@ Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(k
 
 ## Conventions & gotchas
 
+- **Server actions authorize first**: every exported action opens with a guard from `lib/team-auth.ts` (`authenticate`, `authorizeTeamAdmin`, `authorizeTeamMember`) and returns its failure unchanged. `mutateTeam` takes the `TeamAccess` a guard returns, so no team write runs without one. Look up invitations and join requests only after authorizing, and only within the authorized team.
 - **Lazy init via Proxy**: Auth client, Redis, and Prisma instances defer initialization until first access. Avoids build-time errors when env vars are absent.
 - **Server/client boundary**: `@repo/auth/server` holds the Better Auth server instance; `@repo/auth/client` re-exports the React auth client. Never cross.
 - **Live sync**: `use-team-live-sync.ts` shares an SSE connection per team per tab; Redis Pub/Sub notifications invalidate the existing `getPublicTeam` query. `use-team-query.ts` polls every five minutes while live and every 20s otherwise. Mutations use `useTeamMutation` for optimistic updates. `LIVE_SYNC_ENABLED=false` disables streams; Turbo forwards this optional server flag. Stream callbacks use captured access tokens, never request-scoped cookies or sessions.
