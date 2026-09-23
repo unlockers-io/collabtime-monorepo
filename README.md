@@ -55,7 +55,7 @@ Only `DATABASE_URL` and `BETTER_AUTH_SECRET` (32+ characters) are required by st
 | ------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `REDIS_URL`                           | Optional at startup; required for creating and updating teams. Supports `redis://` and `rediss://`. |
 | `LIVE_SYNC_ENABLED`                   | SSE team updates; enabled when unset. Set `false` to use 20-second polling.                         |
-| `WEB_APP_URL`                         | Absolute app URL for email and metadata; set your public URL in production.                         |
+| `WEB_APP_URL`                         | Absolute app URL for links in email; set your public URL in production.                             |
 | `AUTH_ALLOWED_HOSTS`                  | Additional hostnames accepted by Better Auth.                                                       |
 | `CORS_ORIGINS`, `TRUSTED_ORIGINS`     | Browser origins accepted for authentication.                                                        |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Transactional email; without configuration, email verification is disabled.                         |
@@ -66,7 +66,7 @@ Only `DATABASE_URL` and `BETTER_AUTH_SECRET` (32+ characters) are required by st
 
 ## Deploying
 
-The app runs on Vercel with Postgres and Redis hosted anywhere accessible to it. Configure the variables above, use the web app's `vercel-build` script, and set `WEB_APP_URL` and auth host/origin settings to your domain.
+The app runs on Vercel with Postgres and Redis hosted anywhere accessible to it. Configure the variables above, use the web app's `vercel-build` script, and set `WEB_APP_URL` and auth host/origin settings to your domain. Robots, the sitemap and canonical and Open Graph URLs use `SITE_URL` in `apps/web/src/lib/constants.ts` rather than the environment; change it when you deploy under another domain.
 
 Live team updates use Redis Pub/Sub and `GET /api/teams/[teamId]/events`. Confirm that the Vercel project supports 300-second Node functions before enabling live sync in production; otherwise set `LIVE_SYNC_ENABLED=false`. Streams rotate at 285 seconds, heartbeat every 25 seconds, and close after a tab has been hidden for ten seconds. Live tabs keep a five-minute safety poll; connection failures restore the 20-second poll. Missing Redis still prevents team writes.
 

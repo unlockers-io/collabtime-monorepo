@@ -8,7 +8,6 @@ import { Suspense } from "react";
 import { CopyrightYear } from "@/components/copyright-year";
 import { GithubIcon } from "@/components/github-icon";
 import { Providers } from "@/components/providers";
-import { getAppUrl } from "@/lib/app-url";
 import {
   APP_DESCRIPTION,
   APP_DESCRIPTION_SHORT,
@@ -16,6 +15,7 @@ import {
   APP_NAME,
   APP_REPO_URL,
   APP_TITLE,
+  SITE_URL,
 } from "@/lib/constants";
 import { THEME_COLORS } from "@/lib/theme-colors";
 
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   creator: APP_NAME,
   description: APP_DESCRIPTION,
   keywords: APP_KEYWORDS,
-  metadataBase: new URL(getAppUrl()),
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     description: APP_DESCRIPTION_SHORT,
     locale: "en_US",
