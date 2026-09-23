@@ -20,6 +20,8 @@ import type { TeamStatus } from "@/types";
 import { TeamPageClient } from "./client";
 import { PrivateSpaceGate } from "./private-space-gate";
 
+type Session = NonNullable<Awaited<ReturnType<typeof getSession>>>;
+
 type TeamPageProps = {
   params: Promise<{ teamId: string }>;
   searchParams: Promise<{ invite?: string | Array<string> }>;
@@ -51,10 +53,13 @@ const GUEST_STATUS: TeamStatusResult = { isArchived: false, status: "none" };
  * re-running the same query.
  */
 const getTeamStatus = async (
-  userId: string,
-  email: string,
+  session: Session | null,
   teamId: string,
 ): Promise<TeamStatusResult> => {
+  if (!session) {
+    return GUEST_STATUS;
+  }
+  const { email, id: userId } = session.user;
   const [membership, invitation, joinRequest] = await Promise.all([
     prisma.membership.findUnique({
       where: { userId_teamId: { teamId, userId } },
@@ -88,6 +93,30 @@ const getTeamStatus = async (
   return { isArchived: false, status: "none" };
 };
 
+const findInviteMismatch = async (
+  session: Session | null,
+  teamId: string,
+  teamStatus: TeamStatus,
+  invitationId: string | undefined,
+): Promise<{ invitedEmailMasked: string } | undefined> => {
+  if (
+    !session ||
+    invitationId === undefined ||
+    (teamStatus !== "none" && teamStatus !== "PENDING")
+  ) {
+    return undefined;
+  }
+  const invitation = await prisma.invitation.findUnique({ where: { id: invitationId } });
+  if (
+    invitation?.teamId !== teamId ||
+    !isInvitationOpen(invitation, new Date()) ||
+    normalizeEmail(invitation.email) === normalizeEmail(session.user.email)
+  ) {
+    return undefined;
+  }
+  return { invitedEmailMasked: maskEmail(invitation.email) };
+};
+
 const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
   const { teamId } = await params;
 
@@ -109,21 +138,10 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
     inviterName,
     isArchived,
     status: teamStatus,
-  } = session ? await getTeamStatus(session.user.id, session.user.email, teamId) : GUEST_STATUS;
+  } = await getTeamStatus(session, teamId);
 
   const teamName = (await getTeamName(teamId)) ?? "Untitled workspace";
-  let inviteMismatch: { invitedEmailMasked: string } | undefined;
-  if (invite.success && session && (teamStatus === "none" || teamStatus === "PENDING")) {
-    const hintedInvitation = await prisma.invitation.findUnique({ where: { id: invite.data } });
-    if (
-      hintedInvitation &&
-      hintedInvitation.teamId === teamId &&
-      isInvitationOpen(hintedInvitation, new Date()) &&
-      normalizeEmail(hintedInvitation.email) !== normalizeEmail(session.user.email)
-    ) {
-      inviteMismatch = { invitedEmailMasked: maskEmail(hintedInvitation.email) };
-    }
-  }
+  const inviteMismatch = await findInviteMismatch(session, teamId, teamStatus, invite.data);
 
   if (space.isPrivate && teamStatus === "INVITED" && invitationId !== undefined) {
     return (

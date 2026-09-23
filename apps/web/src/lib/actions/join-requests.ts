@@ -4,7 +4,7 @@ import { prisma } from "@repo/db";
 import { after } from "next/server";
 
 import { log } from "@/lib/observability";
-import { requireAuth, requireTeamAdmin } from "@/lib/team-auth";
+import { authenticate, authorizeTeamAdmin } from "@/lib/team-auth";
 
 import { teamNotifier } from "../team-notifier";
 import { claimOrCreateMemberSlot } from "../team-slots";
@@ -26,6 +26,8 @@ const joinRequestActions = createJoinRequestActions({
       }),
     ]);
   },
+  authenticate,
+  authorizeTeamAdmin,
   denyRequest: async (requestId) => {
     await prisma.joinRequest.update({
       data: { status: "DENIED" },
@@ -68,8 +70,6 @@ const joinRequestActions = createJoinRequestActions({
     after(() => teamNotifier.notifyRequesterOfDecision(request, decision));
   },
   reportError: log.error,
-  requireAuth,
-  requireTeamAdmin,
   upsertRequest: (teamId, userId) =>
     prisma.joinRequest.upsert({
       create: { status: "PENDING", teamId, userId },

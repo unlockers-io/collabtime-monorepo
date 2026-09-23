@@ -3,7 +3,7 @@ import type { TransactionalEmail } from "@repo/transactional";
 import type { TeamRecord } from "@/types";
 
 import type { checkRateLimit } from "../space-rate-limit";
-import type { requireAuth, requireTeamAdmin } from "../team-auth";
+import type { authenticate, authorizeTeamAdmin } from "../team-auth";
 import type { claimOrCreateMemberSlot } from "../team-slots";
 
 import type { ActionErrorEvent } from "./types";
@@ -20,6 +20,8 @@ export type InvitationRecord = {
   updatedAt: Date;
 };
 export type InvitationDeps = {
+  authenticate: typeof authenticate;
+  authorizeTeamAdmin: typeof authorizeTeamAdmin;
   checkRateLimit: typeof checkRateLimit;
   claimOrCreateSlot: typeof claimOrCreateMemberSlot;
   commitAcceptance: (
@@ -44,8 +46,6 @@ export type InvitationDeps = {
   now: () => Date;
   refreshExpiry: (invitation: InvitationRecord, expiresAt: Date) => Promise<void>;
   reportError: (event: ActionErrorEvent) => void;
-  requireAuth: typeof requireAuth;
-  requireTeamAdmin: typeof requireTeamAdmin;
   sendEmail: (email: TransactionalEmail) => Promise<{ sent: boolean }>;
   upsertInvitation: (input: {
     email: string;

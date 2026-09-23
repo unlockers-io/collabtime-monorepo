@@ -22,19 +22,19 @@ const QUESTIONS = [
   },
 ];
 
+const FAQ_JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: QUESTIONS.map(({ answer, question }) => ({
+    "@type": "Question",
+    acceptedAnswer: { "@type": "Answer", text: answer },
+    name: question,
+  })),
+}).replaceAll("<", String.raw`\u003c`);
+
 const Faq = () => (
   <Section className="border-t border-border" id="faq">
-    <script type="application/ld+json">
-      {JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        mainEntity: QUESTIONS.map(({ answer, question }) => ({
-          "@type": "Question",
-          acceptedAnswer: { "@type": "Answer", text: answer },
-          name: question,
-        })),
-      }).replaceAll("<", String.raw`\u003c`)}
-    </script>
+    <script type="application/ld+json">{FAQ_JSON_LD}</script>
     <div className="grid gap-12 lg:grid-cols-faq lg:gap-20">
       <h2 className="font-display text-4xl font-semibold tracking-hero text-balance sm:text-5xl">
         Questions

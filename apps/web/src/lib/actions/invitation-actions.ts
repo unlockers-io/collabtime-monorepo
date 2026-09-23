@@ -8,7 +8,7 @@ import { inviteLink, openInvitationWhere } from "../invitations";
 import { sendAppEmail } from "../mailer";
 import { log } from "../observability";
 import { checkRateLimit } from "../space-rate-limit";
-import { requireAuth, requireTeamAdmin } from "../team-auth";
+import { authenticate, authorizeTeamAdmin } from "../team-auth";
 import { teamNotifier } from "../team-notifier";
 import { claimOrCreateMemberSlot } from "../team-slots";
 import { readTeamRecord } from "../team-store";
@@ -24,6 +24,8 @@ const pendingVersion = (invitation: InvitationRecord) => ({
 });
 const include = { invitedBy: { select: { email: true, name: true } } };
 const deps: InvitationDeps = {
+  authenticate,
+  authorizeTeamAdmin,
   checkRateLimit,
   claimOrCreateSlot: claimOrCreateMemberSlot,
   commitAcceptance: async (invitation, memberId, userId) => {
@@ -75,8 +77,6 @@ const deps: InvitationDeps = {
     await prisma.invitation.update({ data: { expiresAt }, where: pendingVersion(invitation) });
   },
   reportError: log.error,
-  requireAuth,
-  requireTeamAdmin,
   sendEmail: sendAppEmail,
   upsertInvitation: (input) =>
     prisma.invitation.upsert({

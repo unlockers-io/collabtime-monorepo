@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { acceptInvitation, declineInvitation } from "@/lib/actions/invitation-actions";
+import { runWithCleanup } from "@/lib/run-with-cleanup";
 
 const AcceptWorkspaceInvitation = ({
   invitationId,
@@ -24,24 +25,29 @@ const AcceptWorkspaceInvitation = ({
   const handleDecision = async (decision: "accept" | "decline") => {
     setAction(decision);
     setError(null);
-    try {
-      const result =
-        decision === "accept"
-          ? await acceptInvitation(invitationId)
-          : await declineInvitation(invitationId);
-      if (!result.success) {
-        setError(result.error);
-      }
-      if (result.success) {
-        toast.success(decision === "accept" ? "Invitation accepted" : "Invitation declined");
-      }
-      refresh();
-    } catch (error) {
-      captureException(error);
-      setError("Couldn't update the invitation. Please try again.");
-    } finally {
-      setAction(null);
-    }
+    await runWithCleanup(
+      async () => {
+        try {
+          const result =
+            decision === "accept"
+              ? await acceptInvitation(invitationId)
+              : await declineInvitation(invitationId);
+          if (!result.success) {
+            setError(result.error);
+          }
+          if (result.success) {
+            toast.success(decision === "accept" ? "Invitation accepted" : "Invitation declined");
+          }
+          refresh();
+        } catch (error) {
+          captureException(error);
+          setError("Couldn't update the invitation. Please try again.");
+        }
+      },
+      () => {
+        setAction(null);
+      },
+    );
   };
   return (
     <div className="flex flex-col gap-4">

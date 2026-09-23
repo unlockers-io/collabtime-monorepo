@@ -1,29 +1,25 @@
-import type { requireAuth, requireTeamMember } from "@/lib/team-auth";
+import type { authorizeTeamAdmin, authorizeTeamMember } from "@/lib/team-auth";
 import type { Team, TeamMember, TeamRecord } from "@/types";
 
 import { displayName } from "../display-name";
 import { MAX_MEMBERS_PER_TEAM } from "../limits";
 import type { claimOrCreateMemberSlot } from "../team-slots";
-import {
-  TeamMemberInputSchema,
-  TeamMemberUpdateSchema,
-  TeamNameSchema,
-  UUIDSchema,
-} from "../validation";
+import { TeamMemberInputSchema, TeamMemberUpdateSchema, TeamNameSchema } from "../validation";
 
 import { checkUuid, sanitizeTeam } from "./helpers";
 import type { MutateTeam } from "./helpers";
 import type { ActionErrorEvent, ActionResult } from "./types";
 
 type MemberActionDeps = {
+  authorizeTeamAdmin: typeof authorizeTeamAdmin;
+  authorizeTeamMember: typeof authorizeTeamMember;
   claimOrCreateSlot: typeof claimOrCreateMemberSlot;
   createId: () => string;
   mutateTeam: MutateTeam;
   readTeam: (teamId: string) => Promise<TeamRecord | null>;
   removeMembershipForSlot: (teamId: string, userId: string, callerUserId: string) => Promise<void>;
   reportError: (event: ActionErrorEvent) => void;
-  requireAuth: typeof requireAuth;
-  requireTeamMember: typeof requireTeamMember;
+  revalidateTeamName: (teamId: string) => void;
   revokeInvitationsForMember: (teamId: string, memberId: string) => Promise<void>;
 };
 
@@ -32,7 +28,12 @@ const createMemberActions = (deps: MemberActionDeps) => {
     teamId: string,
     member: Omit<TeamMember, "id" | "order">,
   ): Promise<ActionResult<{ member: TeamMember; team: Team }>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "add member",
       mutate: (team, parsed) => {
         if (team.members.length >= MAX_MEMBERS_PER_TEAM) {
@@ -53,13 +54,17 @@ const createMemberActions = (deps: MemberActionDeps) => {
         }
         return { ok: true, value: result.data };
       },
-      teamId,
     });
     return mutationResult;
   };
 
   const removeMember = async (teamId: string, memberId: string): Promise<ActionResult<Team>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "remove member",
       mutate: (team, prepared) => {
         const member = team.members.find((slot) => slot.id === memberId);
@@ -80,7 +85,7 @@ const createMemberActions = (deps: MemberActionDeps) => {
         if (!check.ok) {
           return check;
         }
-        const session = await deps.requireAuth();
+        const callerId = access.data.user.id;
         const team = await deps.readTeam(teamId);
         if (team === null) {
           return { error: "Team not found", ok: false };
@@ -91,12 +96,11 @@ const createMemberActions = (deps: MemberActionDeps) => {
         }
         const userId = member.userId;
         await deps.revokeInvitationsForMember(teamId, memberId);
-        if (userId !== undefined && userId !== "" && userId !== session.user.id) {
-          await deps.removeMembershipForSlot(teamId, userId, session.user.id);
+        if (userId !== undefined && userId !== "" && userId !== callerId) {
+          await deps.removeMembershipForSlot(teamId, userId, callerId);
         }
         return { ok: true, value: { userId } };
       },
-      teamId,
     });
     return mutationResult;
   };
@@ -106,7 +110,12 @@ const createMemberActions = (deps: MemberActionDeps) => {
     memberId: string,
     updates: Partial<Omit<TeamMember, "id">>,
   ): Promise<ActionResult<Team>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "update member",
       mutate: (team, parsed) => {
         const memberIndex = team.members.findIndex((member) => member.id === memberId);
@@ -127,13 +136,17 @@ const createMemberActions = (deps: MemberActionDeps) => {
         }
         return { ok: true, value: result.data };
       },
-      teamId,
     });
     return mutationResult;
   };
 
   const updateTeamName = async (teamId: string, name: string): Promise<ActionResult<Team>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "update team name",
       mutate: (team, parsed) => {
         team.name = parsed;
@@ -145,8 +158,10 @@ const createMemberActions = (deps: MemberActionDeps) => {
           ? { ok: true, value: parsed.data }
           : { error: parsed.error.issues[0]?.message ?? "Invalid workspace name", ok: false };
       },
-      teamId,
     });
+    if (mutationResult.success) {
+      deps.revalidateTeamName(teamId);
+    }
     return mutationResult;
   };
 
@@ -154,7 +169,12 @@ const createMemberActions = (deps: MemberActionDeps) => {
     teamId: string,
     members: Array<Omit<TeamMember, "id" | "order">>,
   ): Promise<ActionResult<{ imported: number; members: Array<TeamMember>; team: Team }>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "import members",
       mutate: (team, validated) => {
         if (team.members.length + validated.length > MAX_MEMBERS_PER_TEAM) {
@@ -189,7 +209,6 @@ const createMemberActions = (deps: MemberActionDeps) => {
         }
         return { ok: true, value: validated };
       },
-      teamId,
     });
     return mutationResult;
   };
@@ -201,23 +220,13 @@ const createMemberActions = (deps: MemberActionDeps) => {
       Pick<TeamMember, "name" | "title" | "timezone" | "workingHoursStart" | "workingHoursEnd">
     >,
   ): Promise<ActionResult<Team>> => {
-    let session: Awaited<ReturnType<typeof requireAuth>>;
-    try {
-      session = await deps.requireAuth();
-    } catch (error) {
-      deps.reportError({ error, message: "Failed to update own member", route: "actions/member" });
-      return { error: "Failed to update member", success: false };
+    const access = await deps.authorizeTeamMember(teamId);
+    if (!access.success) {
+      return access;
     }
-
+    const callerId = access.data.user.id;
     const mutationResult = await deps.mutateTeam({
-      authorize: async (id) => {
-        try {
-          await deps.requireTeamMember(id);
-        } catch {
-          return { error: "You are not a member of this team", ok: false };
-        }
-        return { ok: true, value: undefined };
-      },
+      access: access.data,
       errorContext: "update own member",
       mutate: (team, parsed) => {
         const memberIndex = team.members.findIndex((member) => member.id === memberId);
@@ -225,15 +234,11 @@ const createMemberActions = (deps: MemberActionDeps) => {
           return { error: "Member not found", ok: false };
         }
         const member = team.members[memberIndex];
-        if (
-          member.userId !== undefined &&
-          member.userId !== "" &&
-          member.userId !== session.user.id
-        ) {
+        if (member.userId !== undefined && member.userId !== "" && member.userId !== callerId) {
           return { error: "You can only edit your own member record", ok: false };
         }
-        team.members[memberIndex] = { ...member, ...parsed, userId: session.user.id };
-        return { ok: true, value: sanitizeTeam(team, session.user.id) };
+        team.members[memberIndex] = { ...member, ...parsed, userId: callerId };
+        return { ok: true, value: sanitizeTeam(team, callerId) };
       },
       prelude: () => {
         const idCheck = checkUuid(memberId, "member ID");
@@ -247,7 +252,6 @@ const createMemberActions = (deps: MemberActionDeps) => {
         const { groupId: _stripped, ...safe } = result.data;
         return { ok: true, value: safe };
       },
-      teamId,
     });
     return mutationResult;
   };
@@ -255,15 +259,15 @@ const createMemberActions = (deps: MemberActionDeps) => {
   const createOwnMemberSlot = async (
     teamId: string,
   ): Promise<ActionResult<{ created: boolean; memberId: string }>> => {
+    const access = await deps.authorizeTeamMember(teamId);
+    if (!access.success) {
+      return access;
+    }
+    const { user } = access.data;
     try {
-      if (!UUIDSchema.safeParse(teamId).success) {
-        return { error: "Invalid team ID", success: false };
-      }
-      const session = await deps.requireAuth();
-      await deps.requireTeamMember(teamId);
       const result = await deps.claimOrCreateSlot(teamId, {
-        name: displayName(session.user.name, session.user.email),
-        userId: session.user.id,
+        name: displayName(user.name, user.email),
+        userId: user.id,
       });
       return result.ok
         ? { data: { created: result.created, memberId: result.memberId }, success: true }
@@ -283,7 +287,12 @@ const createMemberActions = (deps: MemberActionDeps) => {
     teamId: string,
     memberIds: Array<string>,
   ): Promise<ActionResult<void>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "reorder members",
       mutate: (team) => {
         const existingIds = new Set(team.members.map((member) => member.id));
@@ -299,7 +308,6 @@ const createMemberActions = (deps: MemberActionDeps) => {
         return { ok: true, value: undefined };
       },
       prelude: () => ({ ok: true, value: undefined }),
-      teamId,
     });
     return mutationResult;
   };
