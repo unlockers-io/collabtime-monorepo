@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createGroupActions } from "./group-actions-core";
 import {
   createTestGroup,
+  createTestGuards,
   createTestMember,
   createTestTeamMutator,
   createTestTeamRecord,
@@ -12,7 +13,9 @@ import {
 } from "./test-helpers";
 
 const testMutator = createTestTeamMutator();
+const guards = createTestGuards();
 const { createGroup, removeGroup, reorderGroups, updateGroup } = createGroupActions({
+  authorizeTeamAdmin: guards.authorizeTeamAdmin,
   createId: () => "test-uuid",
   mutateTeam: testMutator.mutateTeam,
 });
@@ -31,15 +34,27 @@ const persistedTeam = () => {
 
 beforeEach(() => {
   testMutator.reset();
+  guards.reset();
+});
+
+describe("authorization", () => {
+  it.each([
+    ["createGroup", () => createGroup(VALID_UUID, { name: "" })],
+    ["updateGroup", () => updateGroup(VALID_UUID, "not-a-uuid", { name: "" })],
+    ["removeGroup", () => removeGroup(VALID_UUID, "not-a-uuid")],
+    ["reorderGroups", () => reorderGroups(VALID_UUID, [])],
+  ])("%s refuses a non-admin before validating input", async (_name, run) => {
+    const team = createTestTeamRecord({ groups: [createTestGroup()] });
+    seedTeam(team);
+    guards.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
+
+    expect(await run()).toEqual({ error: "Admin access required", success: false });
+    expect(guards.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
+    expect(testMutator.persistedTeam()).toEqual(team);
+  });
 });
 
 describe("createGroup", () => {
-  it("returns error when teamId is not a UUID", async () => {
-    const result = await createGroup("not-a-uuid", { name: "Design" });
-
-    expect(result).toEqual({ error: "Invalid team ID", success: false });
-  });
-
   it("returns error when name is empty", async () => {
     const result = await createGroup(VALID_UUID, { name: "" });
 
@@ -47,14 +62,6 @@ describe("createGroup", () => {
     if (!result.success) {
       expect(result.error.toLowerCase()).toContain("name");
     }
-  });
-
-  it("returns error when auth check fails", async () => {
-    testMutator.requireTeamAdmin.mockRejectedValue(new Error("Unauthorized"));
-
-    const result = await createGroup(VALID_UUID, { name: "Design" });
-
-    expect(result).toEqual({ error: "Failed to create group", success: false });
   });
 
   it("returns error when team is not found", async () => {

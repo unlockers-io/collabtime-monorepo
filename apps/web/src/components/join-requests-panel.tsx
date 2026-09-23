@@ -33,6 +33,7 @@ type RowAction = "approve" | "deny" | null;
 type JoinRequestRowProps = {
   onSettled: () => void;
   request: JoinRequest;
+  teamId: string;
 };
 
 /**
@@ -40,7 +41,7 @@ type JoinRequestRowProps = {
  * only describe one row, so starting a second action cleared the first row's
  * spinner and re-enabled its buttons mid-flight, allowing a duplicate submit.
  */
-const JoinRequestRow = ({ onSettled, request }: JoinRequestRowProps) => {
+const JoinRequestRow = ({ onSettled, request, teamId }: JoinRequestRowProps) => {
   const [action, setAction] = useState<RowAction>(null);
 
   const run = async (next: Exclude<RowAction, null>) => {
@@ -55,8 +56,8 @@ const JoinRequestRow = ({ onSettled, request }: JoinRequestRowProps) => {
         try {
           const result: ActionResult<unknown> =
             next === "approve"
-              ? await approveJoinRequest(request.id)
-              : await denyJoinRequest(request.id);
+              ? await approveJoinRequest(teamId, request.id)
+              : await denyJoinRequest(teamId, request.id);
 
           if (result.success) {
             toast.success(successMessage);
@@ -179,7 +180,12 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
           <ScrollArea className="max-h-64">
             <ul aria-live="polite" className="divide-y divide-warning/20">
               {requests.map((request) => (
-                <JoinRequestRow key={request.id} onSettled={invalidateRequests} request={request} />
+                <JoinRequestRow
+                  key={request.id}
+                  onSettled={invalidateRequests}
+                  request={request}
+                  teamId={teamId}
+                />
               ))}
             </ul>
           </ScrollArea>

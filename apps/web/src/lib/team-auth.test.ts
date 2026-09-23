@@ -5,14 +5,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { getSession } from "@/lib/auth-server";
 
-import { createMockSession } from "./actions/test-helpers";
+import { createMockSession, VALID_UUID } from "./actions/test-helpers";
 import { createTeamAuth } from "./team-auth";
 
+type TeamAuthDeps = Parameters<typeof createTeamAuth>[0];
+
 const mockedGetSession = vi.fn<typeof getSession>();
-const mockedFindMembership = vi.fn<Parameters<typeof createTeamAuth>[0]["findMembership"]>();
-const { getTeamRole, requireAuth, requireTeamAdmin, requireTeamMember } = createTeamAuth({
+const mockedFindMembership = vi.fn<TeamAuthDeps["findMembership"]>();
+const reportError = vi.fn<TeamAuthDeps["reportError"]>();
+const { authenticate, authorizeTeamAdmin, authorizeTeamMember, getTeamRole } = createTeamAuth({
   findMembership: mockedFindMembership,
   getSession: mockedGetSession,
+  reportError,
 });
 
 describe("module surface", () => {
@@ -67,77 +71,100 @@ describe("getTeamRole", () => {
   });
 });
 
-describe("requireTeamAdmin", () => {
+describe("authenticate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("throws when user is not a member", async () => {
+  it("refuses a request without a session", async () => {
     mockedGetSession.mockResolvedValue(null);
 
-    await expect(requireTeamAdmin("team-1")).rejects.toThrow("Not a member of this team");
+    expect(await authenticate()).toEqual({ error: "Authentication required", success: false });
   });
 
-  it("throws when user is MEMBER not ADMIN", async () => {
-    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
-    mockedFindMembership.mockResolvedValue({ role: "MEMBER" });
-
-    await expect(requireTeamAdmin("team-1")).rejects.toThrow("Admin access required");
-  });
-
-  it("returns userId when user is ADMIN", async () => {
-    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
-    mockedFindMembership.mockResolvedValue({ role: "ADMIN" });
-
-    const result = await requireTeamAdmin("team-1");
-    expect(result).toBe("user-1");
-  });
-});
-
-describe("requireTeamMember", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("throws when user is not a member", async () => {
-    mockedGetSession.mockResolvedValue(null);
-
-    await expect(requireTeamMember("team-1")).rejects.toThrow("Not a member of this team");
-  });
-
-  it("returns userId when user is MEMBER", async () => {
-    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
-    mockedFindMembership.mockResolvedValue({ role: "MEMBER" });
-
-    const result = await requireTeamMember("team-1");
-    expect(result).toBe("user-1");
-  });
-
-  it("returns userId when user is ADMIN", async () => {
-    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
-    mockedFindMembership.mockResolvedValue({ role: "ADMIN" });
-
-    const result = await requireTeamMember("team-1");
-    expect(result).toBe("user-1");
-  });
-});
-
-describe("requireAuth", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("throws when no session exists", async () => {
-    mockedGetSession.mockResolvedValue(null);
-
-    await expect(requireAuth()).rejects.toThrow("Authentication required");
-  });
-
-  it("returns session when authenticated", async () => {
+  it("returns the session user", async () => {
     const session = createMockSession({ email: "test@test.com", userId: "user-1" });
     mockedGetSession.mockResolvedValue(session);
 
-    const result = await requireAuth();
-    expect(result).toEqual(session);
+    expect(await authenticate()).toEqual({ data: session.user, success: true });
+  });
+});
+
+describe.each([
+  ["authorizeTeamAdmin", authorizeTeamAdmin],
+  ["authorizeTeamMember", authorizeTeamMember],
+])("%s", (_name, authorize) => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("rejects a malformed team ID before reading the session", async () => {
+    expect(await authorize("team-1")).toEqual({ error: "Invalid team ID", success: false });
+    expect(mockedGetSession).not.toHaveBeenCalled();
+  });
+
+  it("requires a session", async () => {
+    mockedGetSession.mockResolvedValue(null);
+
+    expect(await authorize(VALID_UUID)).toEqual({
+      error: "Authentication required",
+      success: false,
+    });
+    expect(mockedFindMembership).not.toHaveBeenCalled();
+  });
+
+  it("refuses a caller without a membership", async () => {
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockResolvedValue(null);
+
+    expect(await authorize(VALID_UUID)).toEqual({
+      error: "You are not a member of this team",
+      success: false,
+    });
+  });
+
+  it("grants an admin", async () => {
+    const session = createMockSession({ userId: "user-1" });
+    mockedGetSession.mockResolvedValue(session);
+    mockedFindMembership.mockResolvedValue({ role: "ADMIN" });
+
+    expect(await authorize(VALID_UUID)).toEqual({
+      data: { teamId: VALID_UUID, user: session.user },
+      success: true,
+    });
+    expect(mockedFindMembership).toHaveBeenCalledWith(VALID_UUID, "user-1");
+  });
+
+  it("reports a failed membership lookup instead of throwing", async () => {
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockRejectedValue(new Error("Database unavailable"));
+
+    expect(await authorize(VALID_UUID)).toEqual({
+      error: "Could not verify your access. Try again.",
+      success: false,
+    });
+    expect(reportError).toHaveBeenCalledOnce();
+  });
+});
+
+describe("member roles", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
+    mockedFindMembership.mockResolvedValue({ role: "MEMBER" });
+  });
+
+  it("refuses a member admin access", async () => {
+    expect(await authorizeTeamAdmin(VALID_UUID)).toEqual({
+      error: "Admin access required",
+      success: false,
+    });
+  });
+
+  it("grants a member member access", async () => {
+    expect(await authorizeTeamMember(VALID_UUID)).toMatchObject({
+      data: { teamId: VALID_UUID },
+      success: true,
+    });
   });
 });

@@ -1,3 +1,4 @@
+import type { authorizeTeamAdmin } from "@/lib/team-auth";
 import type { Team, TeamGroup } from "@/types";
 
 import { MAX_GROUPS_PER_TEAM } from "../limits";
@@ -8,6 +9,7 @@ import type { MutateTeam } from "./helpers";
 import type { ActionResult } from "./types";
 
 type GroupActionDeps = {
+  authorizeTeamAdmin: typeof authorizeTeamAdmin;
   createId: () => string;
   mutateTeam: MutateTeam;
 };
@@ -17,7 +19,12 @@ const createGroupActions = (deps: GroupActionDeps) => {
     teamId: string,
     input: { name: string },
   ): Promise<ActionResult<{ group: TeamGroup; team: Team }>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "create group",
       mutate: (team, parsed) => {
         if (team.groups.length >= MAX_GROUPS_PER_TEAM) {
@@ -38,7 +45,6 @@ const createGroupActions = (deps: GroupActionDeps) => {
         }
         return { ok: true, value: result.data };
       },
-      teamId,
     });
     return mutationResult;
   };
@@ -48,7 +54,12 @@ const createGroupActions = (deps: GroupActionDeps) => {
     groupId: string,
     updates: Partial<{ name: string }>,
   ): Promise<ActionResult<Team>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "update group",
       mutate: (team, parsed) => {
         const groupIndex = team.groups.findIndex((group) => group.id === groupId);
@@ -69,13 +80,17 @@ const createGroupActions = (deps: GroupActionDeps) => {
         }
         return { ok: true, value: result.data };
       },
-      teamId,
     });
     return mutationResult;
   };
 
   const removeGroup = async (teamId: string, groupId: string): Promise<ActionResult<Team>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "remove group",
       mutate: (team) => {
         if (!team.groups.some((group) => group.id === groupId)) {
@@ -89,7 +104,6 @@ const createGroupActions = (deps: GroupActionDeps) => {
         return { ok: true, value: sanitizeTeam(team) };
       },
       prelude: () => checkUuid(groupId, "group ID"),
-      teamId,
     });
     return mutationResult;
   };
@@ -98,7 +112,12 @@ const createGroupActions = (deps: GroupActionDeps) => {
     teamId: string,
     groupIds: Array<string>,
   ): Promise<ActionResult<void>> => {
+    const access = await deps.authorizeTeamAdmin(teamId);
+    if (!access.success) {
+      return access;
+    }
     const mutationResult = await deps.mutateTeam({
+      access: access.data,
       errorContext: "reorder groups",
       mutate: (team) => {
         const existingIds = new Set(team.groups.map((group) => group.id));
@@ -114,7 +133,6 @@ const createGroupActions = (deps: GroupActionDeps) => {
         return { ok: true, value: undefined };
       },
       prelude: () => ({ ok: true, value: undefined }),
-      teamId,
     });
     return mutationResult;
   };
