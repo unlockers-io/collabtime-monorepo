@@ -23,7 +23,7 @@ type NavRole = "account" | "admin" | "guest" | "member";
 const ROLE_LABELS = {
   account: { description: null, title: "Account" },
   admin: { description: "Full access", title: "Admin" },
-  guest: { description: "View only", title: "Member" },
+  guest: { description: "View only", title: "Guest" },
   member: { description: "View only", title: "Member" },
 } satisfies Record<NavRole, { description: string | null; title: string }>;
 

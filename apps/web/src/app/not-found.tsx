@@ -1,33 +1,35 @@
 import { buttonVariants } from "@repo/ui/components/button";
 import { cn } from "@repo/ui/lib/utils";
+import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Logo } from "@/components/nav/logo";
+import { PageHeader, PageMain } from "@/components/page-layout";
+
 /** @public Next.js app-router reads metadata via the module loader */
-export const metadata = {
-  description: "The page you're looking for doesn't exist or has moved.",
+export const metadata: Metadata = {
+  description: "There is no page at this address.",
   robots: { follow: false, index: false },
   title: "Page not found",
 };
 
-const NotFound = () => {
-  return (
-    <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6" id="main">
-      <div className="flex max-w-xl flex-col items-center gap-4 text-center">
-        <p className="font-display text-7xl font-semibold tracking-tight text-foreground tabular-nums sm:text-8xl">
-          404
-        </p>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-balance text-foreground sm:text-3xl">
-          Page not found
-        </h1>
-        <p className="max-w-(--container-measure-60) text-sm text-pretty text-muted-foreground">
-          The page you&apos;re looking for doesn&apos;t exist or has moved.
-        </p>
-        <Link className={cn(buttonVariants())} href="/">
-          Go home
+const NotFound = () => (
+  <div className="flex flex-1 flex-col">
+    <header className="mx-auto flex min-h-20 w-full max-w-450 items-center px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
+      <Logo />
+    </header>
+    <PageMain>
+      <PageHeader
+        description="The link may be mistyped, or the page may have moved. If someone shared a workspace link with you, ask them to send it again."
+        title="Page not found"
+      />
+      <div>
+        <Link className={cn(buttonVariants({ size: "lg" }))} href="/">
+          Back to home
         </Link>
       </div>
-    </main>
-  );
-};
+    </PageMain>
+  </div>
+);
 
 export default NotFound;

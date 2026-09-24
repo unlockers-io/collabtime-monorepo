@@ -1,261 +1,248 @@
-"use client";
-
-import { convertHourToTimezone, getDayOffset } from "@/lib/timezones";
+import {
+  MINUTES_IN_DAY,
+  getDayOffset,
+  getWorkingInterval,
+  isMinuteInInterval,
+  wrapMinutes,
+} from "@/lib/timezones";
 import type { TeamGroup, TeamMember } from "@/types";
 
-import { EMPTY_HOURS, EMPTY_OVERLAP_DATA, HOURS_IN_DAY, serializeSelection } from "./helpers";
 import type {
   GroupedSection,
-  HourOverlap,
   MemberRow,
-  OverlapData,
-  OverlapStatus,
-  Selection,
+  SharedWindow,
+  SharedWindowReading,
+  SlotRun,
+  TimedRun,
+  WindowTiming,
 } from "./types";
 
-type GroupIndex = {
-  byGroupId: Map<string, Array<TeamMember>>;
-  ungrouped: Array<TeamMember>;
+// Every real UTC offset is a multiple of 15 minutes, so slots this size
+// represent any member's hours in any viewer's frame exactly.
+const SLOT_MINUTES = 15;
+const SLOTS_PER_HOUR = 60 / SLOT_MINUTES;
+const SLOTS_IN_DAY = MINUTES_IN_DAY / SLOT_MINUTES;
+
+const EMPTY_SLOTS: ReadonlyArray<boolean> = Object.freeze(
+  Array.from<boolean>({ length: SLOTS_IN_DAY }).fill(false),
+);
+
+const toSlots = (row: Pick<MemberRow, "interval">): Array<boolean> =>
+  Array.from({ length: SLOTS_IN_DAY }, (_, slot) =>
+    isMinuteInInterval(slot * SLOT_MINUTES, row.interval),
+  );
+
+type KeyedRun = SlotRun & { key: string };
+
+/** Groups consecutive slots sharing a key, joining a run that crosses midnight. */
+const toRuns = (keys: ReadonlyArray<string | null>): Array<KeyedRun> => {
+  const runs: Array<KeyedRun> = [];
+
+  keys.forEach((key, slot) => {
+    if (key === null) {
+      return;
+    }
+    const last = runs.at(-1);
+    if (last !== undefined && last.key === key && last.startSlot + last.lengthSlots === slot) {
+      last.lengthSlots += 1;
+      return;
+    }
+    runs.push({ key, lengthSlots: 1, startSlot: slot });
+  });
+
+  const first = runs[0];
+  const last = runs.at(-1);
+  if (
+    runs.length > 1 &&
+    first !== undefined &&
+    last !== undefined &&
+    first.startSlot === 0 &&
+    last.startSlot + last.lengthSlots === SLOTS_IN_DAY &&
+    first.key === last.key
+  ) {
+    last.lengthSlots += first.lengthSlots;
+    runs.shift();
+  }
+
+  return runs;
 };
 
-const indexMembersByGroup = (members: Array<TeamMember>): GroupIndex => {
-  const byGroupId = new Map<string, Array<TeamMember>>();
-  const ungrouped: Array<TeamMember> = [];
+const getTiming = (run: SlotRun, nowMinute: number): WindowTiming => {
+  const startMinute = run.startSlot * SLOT_MINUTES;
+  const lengthMinutes = run.lengthSlots * SLOT_MINUTES;
+  const sinceStart = wrapMinutes(nowMinute - startMinute);
 
-  for (const member of members) {
-    if (member.groupId === undefined || member.groupId === "") {
-      ungrouped.push(member);
+  if (sinceStart < lengthMinutes) {
+    return { kind: "now", minutesLeft: lengthMinutes - sinceStart };
+  }
+
+  const minutesUntil = wrapMinutes(startMinute - nowMinute);
+  return { isTomorrow: nowMinute + minutesUntil >= MINUTES_IN_DAY, kind: "later", minutesUntil };
+};
+
+/** The run happening now, otherwise the soonest one to start. */
+const pickUpcoming = <T extends SlotRun>(
+  runs: ReadonlyArray<T>,
+  nowMinute: number,
+): TimedRun<T> | null => {
+  let best: TimedRun<T> | null = null;
+  let bestRank = Infinity;
+
+  for (const run of runs) {
+    const timing = getTiming(run, nowMinute);
+    const rank = timing.kind === "now" ? -1 : timing.minutesUntil;
+    if (rank < bestRank) {
+      best = { run, timing };
+      bestRank = rank;
+    }
+  }
+
+  return best;
+};
+
+const readGroupCoverage = (
+  counted: ReadonlyArray<MemberRow>,
+  nowMinute: number,
+): TimedRun<SlotRun> | null => {
+  const rowsByGroup = new Map<string, Array<MemberRow>>();
+  for (const row of counted) {
+    const { groupId } = row.member;
+    if (groupId === undefined || groupId === "") {
       continue;
     }
-    const bucket = byGroupId.get(member.groupId);
-    if (bucket) {
-      bucket.push(member);
-    } else {
-      byGroupId.set(member.groupId, [member]);
-    }
+    rowsByGroup.set(groupId, [...(rowsByGroup.get(groupId) ?? []), row]);
   }
 
-  return { byGroupId, ungrouped };
-};
-
-type TimezoneDataArgs = {
-  compareSelections: Array<Selection>;
-  groups: Array<TeamGroup>;
-  members: Array<TeamMember>;
-  viewerTimezone: string;
-};
-
-const addSelection = (selections: Array<Selection>, sel: Selection): Array<Selection> => {
-  const key = serializeSelection(sel);
-  if (selections.some((s) => serializeSelection(s) === key)) {
-    return selections;
+  if (rowsByGroup.size < 2) {
+    return null;
   }
-  return [...selections, sel];
-};
 
-const removeSelection = (selections: Array<Selection>, sel: Selection): Array<Selection> => {
-  const key = serializeSelection(sel);
-  return selections.filter((s) => serializeSelection(s) !== key);
-};
-
-const toMemberRow = (member: TeamMember, viewerTimezone: string): MemberRow => {
-  const hours = [...EMPTY_HOURS];
-  const startInViewerTz = convertHourToTimezone(
-    member.workingHoursStart,
-    member.timezone,
-    viewerTimezone,
-  );
-  const endInViewerTz = convertHourToTimezone(
-    member.workingHoursEnd,
-    member.timezone,
-    viewerTimezone,
+  const groupRows = [...rowsByGroup.values()];
+  const keys = Array.from({ length: SLOTS_IN_DAY }, (_, slot) =>
+    groupRows.every((rows) => rows.some((row) => row.slots[slot])) ? "covered" : null,
   );
 
-  if (startInViewerTz <= endInViewerTz) {
-    for (let h = startInViewerTz; h < endInViewerTz; h++) {
-      hours[h] = true;
-    }
-  } else {
-    for (let h = startInViewerTz; h < HOURS_IN_DAY; h++) {
-      hours[h] = true;
-    }
-    for (let h = 0; h < endInViewerTz; h++) {
-      hours[h] = true;
-    }
+  return pickUpcoming(toRuns(keys), nowMinute);
+};
+
+const EMPTY_READING: SharedWindowReading = Object.freeze({
+  bestSlots: EMPTY_SLOTS,
+  countedCount: 0,
+  groupCoverage: null,
+  primary: null,
+  windows: Object.freeze([]),
+});
+
+/**
+ * Best slots are where the most counted people work at once (at least two).
+ * A window splits when the people free change, so each one names who is free.
+ */
+const readSharedWindow = (
+  rows: ReadonlyArray<MemberRow>,
+  nowMinute: number,
+): SharedWindowReading => {
+  const counted = rows.filter((row) => row.isCounted);
+
+  if (counted.length < 2) {
+    return { ...EMPTY_READING, countedCount: counted.length };
   }
 
-  const dayOffset = getDayOffset(member.timezone, viewerTimezone);
-  return { dayOffset, hours, member };
+  const counts = Array.from(
+    { length: SLOTS_IN_DAY },
+    (_, slot) => counted.filter((row) => row.slots[slot]).length,
+  );
+  const peak = Math.max(...counts);
+  const groupCoverage = readGroupCoverage(counted, nowMinute);
+
+  if (peak < 2) {
+    return { ...EMPTY_READING, countedCount: counted.length, groupCoverage };
+  }
+
+  const bestSlots = counts.map((count) => count === peak);
+  const keys = bestSlots.map((isBest, slot) =>
+    isBest ? counted.flatMap((row) => (row.slots[slot] ? [row.member.id] : [])).join(",") : null,
+  );
+  const windows: Array<SharedWindow> = toRuns(keys).map(({ key, lengthSlots, startSlot }) => ({
+    availableMemberIds: key.split(","),
+    lengthSlots,
+    startSlot,
+  }));
+
+  return {
+    bestSlots,
+    countedCount: counted.length,
+    groupCoverage,
+    primary: pickUpcoming(windows, nowMinute),
+    windows,
+  };
 };
+
+const isGrouped = (member: TeamMember, groupIds: ReadonlySet<string>): boolean =>
+  member.groupId !== undefined && member.groupId !== "" && groupIds.has(member.groupId);
 
 const toGroupedSections = (
-  groups: Array<TeamGroup>,
-  groupIndex: GroupIndex,
-  memberRows: Array<MemberRow>,
+  groups: ReadonlyArray<TeamGroup>,
+  rows: ReadonlyArray<MemberRow>,
 ): Array<GroupedSection> => {
   if (groups.length === 0) {
-    return [{ group: null, rows: memberRows }];
+    return [{ group: null, rows: [...rows] }];
   }
 
-  const rowByMemberId = new Map(memberRows.map((row) => [row.member.id, row]));
-  const sections: Array<GroupedSection> = [];
-
-  const toRows = (groupMembers: Array<TeamMember>): Array<MemberRow> =>
-    groupMembers.flatMap((m) => {
-      const row = rowByMemberId.get(m.id);
-      return row === undefined ? [] : [row];
+  const groupIds = new Set(groups.map((group) => group.id));
+  const sections: Array<GroupedSection> = [...groups]
+    .toSorted((a, b) => a.order - b.order)
+    .flatMap((group) => {
+      const groupRows = rows.filter((row) => row.member.groupId === group.id);
+      return groupRows.length > 0 ? [{ group, rows: groupRows }] : [];
     });
 
-  const sortedGroups = [...groups].toSorted((a, b) => a.order - b.order);
-
-  for (const group of sortedGroups) {
-    const groupMembers = groupIndex.byGroupId.get(group.id);
-    if (groupMembers === undefined) {
-      continue;
-    }
-
-    sections.push({ group, rows: toRows(groupMembers) });
-  }
-
-  if (groupIndex.ungrouped.length > 0) {
-    sections.push({ group: null, rows: toRows(groupIndex.ungrouped) });
+  const ungrouped = rows.filter((row) => !isGrouped(row.member, groupIds));
+  if (ungrouped.length > 0) {
+    sections.push({ group: null, rows: ungrouped });
   }
 
   return sections;
 };
 
-const toOverlapData = (
-  groupIndex: GroupIndex,
-  memberRowById: Map<string, MemberRow>,
-  selectedMemberIds: Set<string>,
-  validSelections: Array<Selection>,
-): OverlapData => {
-  const allMemberHours: Array<Array<boolean>> = [];
-  const selectionCoverage: Array<Array<boolean>> = [];
-
-  for (const sel of validSelections) {
-    const selectionHours = Array.from({ length: HOURS_IN_DAY }, () => false);
-    const selectionMembers =
-      sel.type === "member" ? [sel.id] : (groupIndex.byGroupId.get(sel.id) ?? []).map((m) => m.id);
-
-    for (const memberId of selectionMembers) {
-      const row = memberRowById.get(memberId);
-      if (!row) {
-        continue;
-      }
-      row.hours.forEach((isWorking, hour) => {
-        if (isWorking) {
-          selectionHours[hour] = true;
-        }
-      });
-    }
-
-    selectionCoverage.push(selectionHours);
-  }
-
-  for (const memberId of selectedMemberIds) {
-    const row = memberRowById.get(memberId);
-    if (row) {
-      allMemberHours.push(row.hours);
-    }
-  }
-
-  if (allMemberHours.length < 2) {
-    return EMPTY_OVERLAP_DATA;
-  }
-
-  const totalPeople = allMemberHours.length;
-
-  const hours = Array.from<unknown, HourOverlap>({ length: HOURS_IN_DAY }, (_, hour) => {
-    const availableCount = allMemberHours.filter((memberHours) => memberHours[hour]).length;
-    let coverage: HourOverlap["coverage"] = "none";
-    if (availableCount === totalPeople) {
-      coverage = "full";
-    } else if (availableCount >= 2) {
-      coverage = "partial";
-    }
-
-    return {
-      availableCount,
-      coverage,
-      isEveryTeamRepresented:
-        selectionCoverage.length >= 2 && selectionCoverage.every((covered) => covered[hour]),
-    };
-  });
-
-  return { hours };
-};
-
-const toOverlapStatus = ({ hours }: OverlapData): OverlapStatus => {
-  const hasFullOverlap = hours.some((hour) => hour.coverage === "full");
-  const hasPartialOverlap = hours.some((hour) => hour.coverage === "partial");
-
-  if (!hasFullOverlap && !hasPartialOverlap) {
-    return "none";
-  }
-  if (hasFullOverlap && hasPartialOverlap) {
-    return "mixed";
-  }
-  if (hasFullOverlap) {
-    return "full";
-  }
-  return "partial";
+type TimezoneDataArgs = {
+  collapsedGroupIds: ReadonlySet<string>;
+  excludedMemberIds: ReadonlySet<string>;
+  groups: ReadonlyArray<TeamGroup>;
+  members: ReadonlyArray<TeamMember>;
+  now: Date;
+  nowMinute: number;
+  viewerTimezone: string;
 };
 
 const getTimezoneData = ({
-  compareSelections,
+  collapsedGroupIds,
+  excludedMemberIds,
   groups,
   members,
+  now,
+  nowMinute,
   viewerTimezone,
 }: TimezoneDataArgs) => {
-  const memberRows =
-    viewerTimezone === "" ? [] : members.map((member) => toMemberRow(member, viewerTimezone));
+  const groupIds = new Set(groups.map((group) => group.id));
 
-  const memberRowById = new Map(memberRows.map((row) => [row.member.id, row]));
-
-  const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
-
-  const groupIndex = indexMembersByGroup(members);
-
-  const validSelections = compareSelections.filter((sel) => {
-    if (sel.type === "member") {
-      return members.some((m) => m.id === sel.id);
-    }
-    return groups.some((g) => g.id === sel.id);
+  const rows: Array<MemberRow> = members.map((member) => {
+    const interval = getWorkingInterval(member, viewerTimezone, now);
+    const isInCollapsedGroup =
+      isGrouped(member, groupIds) && collapsedGroupIds.has(member.groupId ?? "");
+    return {
+      dayOffset: getDayOffset(member.timezone, viewerTimezone),
+      interval,
+      isCounted: !excludedMemberIds.has(member.id) && !isInCollapsedGroup,
+      member,
+      slots: toSlots({ interval }),
+    };
   });
 
-  const selectedMemberIds = new Set<string>();
-
-  for (const sel of validSelections) {
-    if (sel.type === "member") {
-      selectedMemberIds.add(sel.id);
-      continue;
-    }
-
-    for (const member of groupIndex.byGroupId.get(sel.id) ?? []) {
-      selectedMemberIds.add(member.id);
-    }
-  }
-
-  const totalPeopleSelected = selectedMemberIds.size;
-  const canShowOverlap = totalPeopleSelected >= 2;
-
-  const overlapData = canShowOverlap
-    ? toOverlapData(groupIndex, memberRowById, selectedMemberIds, validSelections)
-    : EMPTY_OVERLAP_DATA;
-
   return {
-    canShowOverlap,
-    groupedSections: toGroupedSections(groups, groupIndex, memberRows),
-    groupNameById,
-    memberRowById,
-    membersByGroupId: groupIndex.byGroupId,
-    overlapData,
-    overlapStatus: toOverlapStatus(overlapData),
-    selectedMemberIds,
-    totalPeopleSelected,
-    validSelections,
+    groupedSections: toGroupedSections(groups, rows),
+    reading: readSharedWindow(rows, nowMinute),
+    rows,
   };
 };
 
-export { addSelection, getTimezoneData, removeSelection };
+export { SLOTS_IN_DAY, SLOTS_PER_HOUR, SLOT_MINUTES, getTimezoneData, toRuns };

@@ -12,7 +12,7 @@ import {
 } from "@repo/ui/components/dialog";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useQueryClient } from "@tanstack/react-query";
-import { Upload, Users } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -112,12 +112,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
         {open && (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-xl bg-primary">
-                  <Users className="size-5 text-primary-foreground" />
-                </div>
-                Import Members
-              </DialogTitle>
+              <DialogTitle>Import members</DialogTitle>
               <DialogDescription>
                 Upload a CSV file or paste data from a spreadsheet. Timezones are matched to the
                 nearest supported one.
@@ -146,14 +141,14 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                     Cancel
                   </Button>
                   <Button disabled={!csvText.trim()} onClick={handlePreview}>
-                    Preview →
+                    Preview
                   </Button>
                 </>
               )}
               {state.step === "preview" && (
                 <>
                   <Button onClick={handleReset} variant="outline">
-                    ← Back
+                    Back
                   </Button>
                   <Button
                     disabled={validCount === 0}

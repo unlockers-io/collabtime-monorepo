@@ -8,18 +8,21 @@ import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, use, useState, useTransition } from "react";
-import { toast } from "sonner";
 
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
 import { safeRedirectPath } from "@/lib/redirect-validation";
+
+import { AuthErrorNotice, authErrorKind } from "../auth-error";
+import type { AuthErrorKind } from "../auth-error";
+import { AUTH_LINK_CLASS, AuthConfirmation, AuthFooter } from "../auth-shell";
 
 type Props = {
   searchParams: Promise<{ redirect?: string }>;
 };
 
 const SignInLinkFallback = () => (
-  <Link className="text-foreground underline underline-offset-4" href="/login">
+  <Link className={AUTH_LINK_CLASS} href="/login">
     Sign in
   </Link>
 );
@@ -30,7 +33,7 @@ const SignInLink = ({ searchParams }: Props) => {
 
   return (
     <Link
-      className="text-foreground underline underline-offset-4"
+      className={AUTH_LINK_CLASS}
       href={redirect === "/" ? "/login" : `/login?redirect=${encodeURIComponent(redirect)}`}
     >
       Sign in
@@ -42,10 +45,13 @@ const RegisterForm = ({ searchParams }: Props) => {
   const { push, refresh } = useRouter();
   const [isPending, startTransition] = useTransition();
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
 
   const form = useForm({
     defaultValues: { email: "", name: "", password: "" },
     onSubmit: ({ value }) => {
+      // Clearing first re-inserts the alert, so a repeated failure is announced again.
+      setErrorKind(null);
       startTransition(async () => {
         try {
           const { redirect: redirectParam } = await searchParams;
@@ -57,7 +63,7 @@ const RegisterForm = ({ searchParams }: Props) => {
             password: value.password,
           });
           if (result.error) {
-            toast.error(result.error.message ?? "Failed to create account");
+            setErrorKind(authErrorKind(result.error));
             return;
           }
           const sessionToken = result.data?.token;
@@ -67,10 +73,8 @@ const RegisterForm = ({ searchParams }: Props) => {
           }
           push(redirect);
           refresh();
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : "An error occurred. Please try again.";
-          toast.error(message);
+        } catch {
+          setErrorKind("unknown");
         }
       });
     },
@@ -79,124 +83,138 @@ const RegisterForm = ({ searchParams }: Props) => {
 
   if (sentToEmail !== null && sentToEmail !== "") {
     return (
-      <output aria-live="polite" className="block space-y-1 text-center">
-        <span className="block font-medium">Check your email</span>
-        <span className="block text-sm text-muted-foreground">
-          We sent a verification link to <span className="font-medium">{sentToEmail}</span>. Click
-          it to verify your account and sign in.
-        </span>
-      </output>
+      <AuthConfirmation title="Check your email">
+        We sent a verification link to{" "}
+        <span className="font-medium text-foreground">{sentToEmail}</span>. Open it to verify your
+        account and sign in.
+      </AuthConfirmation>
     );
   }
 
+  const signInLink = (
+    <Suspense fallback={<SignInLinkFallback />}>
+      <SignInLink searchParams={searchParams} />
+    </Suspense>
+  );
+
   return (
-    // oxlint-disable-next-line react-doctor/no-prevent-default -- TanStack Form + Better Auth client drives submit; JS-off progressive enhancement is N/A
-    <form
-      noValidate
-      onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        void form.handleSubmit();
-      }}
-    >
-      <FieldGroup>
-        <form.Field name="name">
-          {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="register-name">Full Name</FieldLabel>
-                <Input
-                  aria-describedby={isInvalid ? "register-name-error" : undefined}
-                  aria-invalid={isInvalid}
-                  autoComplete="name"
-                  disabled={isPending}
-                  id="register-name"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  type="text"
-                  value={field.state.value}
-                />
-                {isInvalid && (
-                  <FormFieldError errors={field.state.meta.errors} id="register-name-error" />
-                )}
-              </Field>
-            );
-          }}
-        </form.Field>
+    <>
+      {/* oxlint-disable-next-line react-doctor/no-prevent-default -- TanStack Form + Better Auth client drives submit; JS-off progressive enhancement is N/A */}
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          void form.handleSubmit();
+        }}
+      >
+        <FieldGroup>
+          <form.Field name="name">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor="register-name">Full name</FieldLabel>
+                  <Input
+                    aria-describedby={isInvalid ? "register-name-error" : undefined}
+                    aria-invalid={isInvalid}
+                    autoComplete="name"
+                    className="h-11 sm:h-10"
+                    disabled={isPending}
+                    id="register-name"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value);
+                    }}
+                    type="text"
+                    value={field.state.value}
+                  />
+                  {isInvalid && (
+                    <FormFieldError errors={field.state.meta.errors} id="register-name-error" />
+                  )}
+                </Field>
+              );
+            }}
+          </form.Field>
 
-        <form.Field name="email">
-          {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="register-email">Email</FieldLabel>
-                <Input
-                  aria-describedby={isInvalid ? "register-email-error" : undefined}
-                  aria-invalid={isInvalid}
-                  autoComplete="email"
-                  disabled={isPending}
-                  id="register-email"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="you@example.com"
-                  type="email"
-                  value={field.state.value}
-                />
-                {isInvalid && (
-                  <FormFieldError errors={field.state.meta.errors} id="register-email-error" />
-                )}
-              </Field>
-            );
-          }}
-        </form.Field>
+          <form.Field name="email">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor="register-email">Email</FieldLabel>
+                  <Input
+                    aria-describedby={isInvalid ? "register-email-error" : undefined}
+                    aria-invalid={isInvalid}
+                    autoComplete="email"
+                    className="h-11 sm:h-10"
+                    disabled={isPending}
+                    id="register-email"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value);
+                    }}
+                    placeholder="you@example.com"
+                    type="email"
+                    value={field.state.value}
+                  />
+                  {isInvalid && (
+                    <FormFieldError errors={field.state.meta.errors} id="register-email-error" />
+                  )}
+                </Field>
+              );
+            }}
+          </form.Field>
 
-        <form.Field name="password">
-          {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="register-password">Password</FieldLabel>
-                <Input
-                  aria-describedby={isInvalid ? "register-password-error" : undefined}
-                  aria-invalid={isInvalid}
-                  autoComplete="new-password"
-                  disabled={isPending}
-                  id="register-password"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  type="password"
-                  value={field.state.value}
-                />
-                {isInvalid ? (
-                  <FormFieldError errors={field.state.meta.errors} id="register-password-error" />
-                ) : (
-                  <FieldDescription>Must be at least 12 characters long.</FieldDescription>
-                )}
-              </Field>
-            );
-          }}
-        </form.Field>
+          <form.Field name="password">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid || undefined}>
+                  <FieldLabel htmlFor="register-password">Password</FieldLabel>
+                  <Input
+                    aria-describedby={
+                      isInvalid ? "register-password-error" : "register-password-hint"
+                    }
+                    aria-invalid={isInvalid}
+                    autoComplete="new-password"
+                    className="h-11 sm:h-10"
+                    disabled={isPending}
+                    id="register-password"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value);
+                    }}
+                    type="password"
+                    value={field.state.value}
+                  />
+                  {isInvalid ? (
+                    <FormFieldError errors={field.state.meta.errors} id="register-password-error" />
+                  ) : (
+                    <FieldDescription id="register-password-hint">
+                      Must be at least 12 characters long.
+                    </FieldDescription>
+                  )}
+                </Field>
+              );
+            }}
+          </form.Field>
 
-        <Field>
-          <Button aria-busy={isPending} disabled={isPending} type="submit">
+          {errorKind !== null && <AuthErrorNotice kind={errorKind} signInLink={signInLink} />}
+
+          <Button
+            aria-busy={isPending}
+            className="h-11 w-full sm:h-10"
+            disabled={isPending}
+            type="submit"
+          >
             {isPending ? "Creating account…" : "Create account"}
           </Button>
-          <FieldDescription className="text-center">
-            Already have an account?{" "}
-            <Suspense fallback={<SignInLinkFallback />}>
-              <SignInLink searchParams={searchParams} />
-            </Suspense>
-          </FieldDescription>
-        </Field>
-      </FieldGroup>
-    </form>
+        </FieldGroup>
+      </form>
+
+      <AuthFooter>Already have an account? {signInLink}</AuthFooter>
+    </>
   );
 };
 

@@ -16,88 +16,74 @@ type InvitationsListProps = {
   onDecline: (invitation: PendingInvitation) => void;
 };
 
-const InvitationsList = ({ invitations, isPending, onAccept, onDecline }: InvitationsListProps) => (
-  <AnimatePresence>
-    {invitations.length > 0 && (
-      <m.div
-        animate={{ opacity: 1 }}
-        className="flex w-full flex-col"
-        exit={{ opacity: 0 }}
-        initial={{ opacity: 0 }}
-        transition={{
-          delay: 0.2,
-          duration: 0.15,
-          ease: [0.16, 1, 0.3, 1],
-        }}
-      >
-        <SectionCard>
-          <SectionCardHeader>
-            <SectionCardTitle>Pending invitations</SectionCardTitle>
-          </SectionCardHeader>
-          <div className="flex flex-col divide-y divide-border">
-            <AnimatePresence mode="popLayout">
-              {invitations.map((invitation) => {
-                return (
-                  <m.div
-                    animate={{ opacity: 1 }}
-                    className="flex min-h-24 items-center justify-between gap-4 py-5"
-                    exit={{ opacity: 0 }}
-                    initial={{ opacity: 0 }}
-                    key={invitation.id}
-                    layout
-                    transition={{ duration: 0.12 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-foreground">
-                          {invitation.teamName}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          Invited by {invitation.inviterName}
-                          {invitation.expiresAt !== null &&
-                            ` · ${formatExpiresIn(invitation.expiresAt)}`}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        aria-label={`Decline invitation to ${invitation.teamName}`}
-                        disabled={isPending}
-                        onClick={() => {
-                          onDecline(invitation);
-                        }}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        {isPending ? <Spinner className="size-4" /> : <X className="size-4" />}
-                      </Button>
-                      <Button
-                        aria-label={`Accept invitation to ${invitation.teamName}`}
-                        disabled={isPending}
-                        onClick={() => {
-                          onAccept(invitation);
-                        }}
-                        size="sm"
-                      >
-                        {isPending ? (
-                          <Spinner className="size-4" />
-                        ) : (
-                          <>
-                            <Check className="size-4" />
-                            Accept
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </m.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        </SectionCard>
-      </m.div>
-    )}
-  </AnimatePresence>
-);
+const InvitationsList = ({ invitations, isPending, onAccept, onDecline }: InvitationsListProps) => {
+  if (invitations.length === 0) {
+    return null;
+  }
+
+  return (
+    <SectionCard>
+      <SectionCardHeader>
+        <SectionCardTitle>Pending invitations</SectionCardTitle>
+      </SectionCardHeader>
+      <ul className="flex flex-col divide-y divide-border">
+        {/* Rows only animate when one is answered, never on page load. */}
+        <AnimatePresence initial={false} mode="popLayout">
+          {invitations.map((invitation) => (
+            <m.li
+              animate={{ opacity: 1 }}
+              className="flex min-h-20 items-center justify-between gap-4 py-4"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              key={invitation.id}
+              layout
+              transition={{ duration: 0.12 }}
+            >
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate font-display text-xl font-semibold tracking-display text-foreground">
+                  {invitation.teamName}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Invited by {invitation.inviterName}
+                  {invitation.expiresAt !== null && ` · ${formatExpiresIn(invitation.expiresAt)}`}
+                </span>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  aria-label={`Decline invitation to ${invitation.teamName}`}
+                  disabled={isPending}
+                  onClick={() => {
+                    onDecline(invitation);
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  {isPending ? <Spinner className="size-4" /> : <X className="size-4" />}
+                </Button>
+                <Button
+                  aria-label={`Accept invitation to ${invitation.teamName}`}
+                  disabled={isPending}
+                  onClick={() => {
+                    onAccept(invitation);
+                  }}
+                  size="sm"
+                >
+                  {isPending ? (
+                    <Spinner className="size-4" />
+                  ) : (
+                    <>
+                      <Check className="size-4" />
+                      Accept
+                    </>
+                  )}
+                </Button>
+              </div>
+            </m.li>
+          ))}
+        </AnimatePresence>
+      </ul>
+    </SectionCard>
+  );
+};
 
 export { InvitationsList };

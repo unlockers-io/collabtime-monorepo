@@ -9,34 +9,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@repo/ui/components/dialog";
-import { Field, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@repo/ui/components/select";
+import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { GroupSelector } from "@/components/group-selector";
 import { HourSelectField } from "@/components/hour-select-field";
+import {
+  MemberGroupField,
+  MemberTextField,
+  TITLE_PLACEHOLDER,
+  WorkingHoursFieldset,
+} from "@/components/member-form-fields";
+import { TimezoneField } from "@/components/timezone-field";
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
-import {
-  COMMON_TIMEZONES,
-  DEFAULT_MEMBER_TIMEZONE,
-  formatTimezoneLabel,
-  fuzzyMatchTimezone,
-  isCommonTimezone,
-} from "@/lib/timezones";
+import { DEFAULT_MEMBER_TIMEZONE, fuzzyMatchTimezone, isCommonTimezone } from "@/lib/timezones";
 import type { PendingTeamInvitation, TeamGroup, TeamMember } from "@/types";
 
 import { MemberInviteSection } from "./member-invite-section";
@@ -79,9 +70,9 @@ const SaveButtonLabel = ({ isClaim, isPending }: SaveButtonLabelProps) => {
     );
   }
   if (isClaim) {
-    return <>Claim Profile</>;
+    return <>Claim profile</>;
   }
-  return <>Save Changes</>;
+  return <>Save changes</>;
 };
 
 const EditMemberForm = ({
@@ -127,15 +118,13 @@ const EditMemberForm = ({
         void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
       });
     },
-    validators: {
-      onSubmit: formSchema,
-    },
+    validators: { onBlur: formSchema, onChange: formSchema, onSubmit: formSchema },
   });
 
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{isClaim ? "Claim this profile" : "Edit Member"}</DialogTitle>
+        <DialogTitle>{isClaim ? "Claim this profile" : "Edit member"}</DialogTitle>
         <DialogDescription>
           {isClaim
             ? "This looks like you. Update your profile information."
@@ -151,159 +140,120 @@ const EditMemberForm = ({
           void form.handleSubmit();
         }}
       >
-        <div className="flex flex-col gap-4 py-2">
-          <form.Field name="name">
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="edit-name">Name</FieldLabel>
-                  <Input
-                    aria-describedby={isInvalid ? "edit-name-error" : undefined}
-                    aria-invalid={isInvalid}
-                    id="edit-name"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    placeholder="John Doe"
-                    value={field.state.value}
-                  />
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="edit-name-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <form.Field name="title">
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="edit-title">Title (optional)</FieldLabel>
-                  <Input
-                    aria-describedby={isInvalid ? "edit-title-error" : undefined}
-                    aria-invalid={isInvalid}
-                    id="edit-title"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    placeholder="Software Engineer"
-                    value={field.state.value}
-                  />
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="edit-title-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <form.Field name="timezone">
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="edit-timezone">Timezone</FieldLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      if (value !== null && isCommonTimezone(value)) {
-                        field.handleChange(value);
-                      }
-                      field.handleBlur();
-                    }}
-                    value={field.state.value}
-                  >
-                    <SelectTrigger
-                      aria-describedby={isInvalid ? "edit-timezone-error" : undefined}
-                      aria-invalid={isInvalid}
-                      id="edit-timezone"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COMMON_TIMEZONES.map((tz) => (
-                        <SelectItem key={tz} value={tz}>
-                          {formatTimezoneLabel(tz, true)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="edit-timezone-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          {!isClaim && groups.length > 0 && (
-            <form.Field name="groupId">
-              {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                return (
-                  <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor="edit-group">Group</FieldLabel>
-                    <GroupSelector
-                      aria-describedby={isInvalid ? "edit-group-error" : undefined}
-                      aria-invalid={isInvalid}
-                      groups={groups}
-                      id="edit-group"
-                      onValueChange={(value) => {
-                        field.handleChange(value ?? "");
-                        field.handleBlur();
-                      }}
-                      placeholder="No group"
-                      value={field.state.value || undefined}
-                    />
-                    {isInvalid && (
-                      <FormFieldError errors={field.state.meta.errors} id="edit-group-error" />
-                    )}
-                  </Field>
-                );
-              }}
-            </form.Field>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <form.Field name="workingHoursStart">
+        <div className="flex flex-col gap-5 py-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <form.Field name="name">
               {(field) => (
-                <HourSelectField
-                  errorId="edit-work-start-error"
+                <MemberTextField
                   errors={field.state.meta.errors}
-                  id="edit-work-start"
+                  id="edit-name"
                   isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                  label="Work Starts"
+                  label="Full name"
                   onBlur={field.handleBlur}
                   onChange={field.handleChange}
+                  placeholder="Jane Doe"
+                  required
                   value={field.state.value}
                 />
               )}
             </form.Field>
 
-            <form.Field name="workingHoursEnd">
+            <form.Field name="title">
               {(field) => (
-                <HourSelectField
-                  errorId="edit-work-end-error"
+                <MemberTextField
                   errors={field.state.meta.errors}
-                  id="edit-work-end"
+                  id="edit-title"
                   isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                  label="Work Ends"
+                  label="Title (optional)"
                   onBlur={field.handleBlur}
                   onChange={field.handleChange}
+                  placeholder={TITLE_PLACEHOLDER}
                   value={field.state.value}
                 />
               )}
             </form.Field>
           </div>
-        </div>
 
-        {!isClaim && (member.userId === undefined || member.userId === "") && (
-          <MemberInviteSection memberId={member.id} pendingInvite={pendingInvite} teamId={teamId} />
-        )}
+          <FieldSeparator />
+
+          <form.Field name="timezone">
+            {(field) => (
+              <TimezoneField
+                errors={field.state.meta.errors}
+                id="edit-timezone"
+                isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                onBlur={field.handleBlur}
+                onChange={field.handleChange}
+                value={field.state.value}
+              />
+            )}
+          </form.Field>
+
+          <form.Subscribe selector={(state) => state.values.timezone}>
+            {(timezone) => (
+              <WorkingHoursFieldset timezone={timezone}>
+                <form.Field name="workingHoursStart">
+                  {(field) => (
+                    <HourSelectField
+                      errors={field.state.meta.errors}
+                      id="edit-work-start"
+                      isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                      label="Starts"
+                      onBlur={field.handleBlur}
+                      onChange={field.handleChange}
+                      value={field.state.value}
+                    />
+                  )}
+                </form.Field>
+
+                <form.Field name="workingHoursEnd">
+                  {(field) => (
+                    <HourSelectField
+                      errors={field.state.meta.errors}
+                      id="edit-work-end"
+                      isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                      label="Ends"
+                      onBlur={field.handleBlur}
+                      onChange={field.handleChange}
+                      value={field.state.value}
+                    />
+                  )}
+                </form.Field>
+              </WorkingHoursFieldset>
+            )}
+          </form.Subscribe>
+
+          {!isClaim && groups.length > 0 && (
+            <>
+              <FieldSeparator />
+              <form.Field name="groupId">
+                {(field) => (
+                  <MemberGroupField
+                    errors={field.state.meta.errors}
+                    groups={groups}
+                    id="edit-group"
+                    isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    label="Group (optional)"
+                    onBlur={field.handleBlur}
+                    onChange={field.handleChange}
+                    value={field.state.value}
+                  />
+                )}
+              </form.Field>
+            </>
+          )}
+
+          {!isClaim && (member.userId === undefined || member.userId === "") && (
+            <>
+              <FieldSeparator />
+              <MemberInviteSection
+                memberId={member.id}
+                pendingInvite={pendingInvite}
+                teamId={teamId}
+              />
+            </>
+          )}
+        </div>
 
         <DialogFooter>
           <Button

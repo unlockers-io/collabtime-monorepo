@@ -92,12 +92,6 @@ export default defineConfig({
       },
     },
     {
-      files: ["apps/web/src/app/home-client/archived-teams-list.tsx"],
-      rules: {
-        "react-doctor/no-layout-property-animation": "off",
-      },
-    },
-    {
       files: ["tests/e2e/teardown/**/*.ts", "apps/web/scripts/**/*.ts"],
       rules: {
         "no-console": "off",

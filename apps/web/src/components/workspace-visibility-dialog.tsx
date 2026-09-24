@@ -15,6 +15,8 @@ import { Switch } from "@repo/ui/components/switch";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { captureException } from "@sentry/nextjs";
 import { useForm, useSelector } from "@tanstack/react-form";
+import { Check, Copy } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -33,6 +35,49 @@ type WorkspaceVisibilityDialogProps = Visibility & {
   onSaved: (space: Visibility) => void;
   open: boolean;
   spaceId: string;
+};
+
+const readShareUrl = () => `${window.location.origin}${window.location.pathname}`;
+const emptySubscribe = () => () => {};
+
+const ShareLink = () => {
+  const url = useSyncExternalStore(emptySubscribe, readShareUrl, () => "");
+  const [hasCopied, setHasCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setHasCopied(true);
+    } catch {
+      toast.error("Couldn't copy the link. Select it and copy it instead.");
+    }
+  };
+
+  return (
+    <Field>
+      <FieldLabel htmlFor="workspace-share-link">Workspace link</FieldLabel>
+      <div className="flex gap-2">
+        <Input
+          id="workspace-share-link"
+          onFocus={(event) => {
+            event.currentTarget.select();
+          }}
+          readOnly
+          value={url}
+        />
+        <Button
+          onClick={() => {
+            void handleCopy();
+          }}
+          type="button"
+          variant="outline"
+        >
+          {hasCopied ? <Check aria-hidden /> : <Copy aria-hidden />}
+          {hasCopied ? "Copied" : "Copy"}
+        </Button>
+      </div>
+    </Field>
+  );
 };
 
 const WorkspaceVisibilityDialog = ({
@@ -105,11 +150,9 @@ const WorkspaceVisibilityDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Sharing &amp; privacy</DialogTitle>
-          <DialogDescription>
-            Public workspaces can be read by anyone with the link. Private workspaces require a
-            password or membership.
-          </DialogDescription>
+          <DialogDescription>Choose who can open this workspace&apos;s link.</DialogDescription>
         </DialogHeader>
+        <ShareLink />
         <form
           noValidate
           onSubmit={(event) => {
@@ -133,6 +176,15 @@ const WorkspaceVisibilityDialog = ({
                 </Field>
               )}
             </form.Field>
+            <form.Subscribe selector={(state) => state.values.isPrivate}>
+              {(privateWorkspace) => (
+                <p className="text-sm text-pretty text-muted-foreground">
+                  {privateWorkspace
+                    ? "Only members, and guests with the password, can open the link."
+                    : "Anyone with the link can see each person's name, title, timezone, working hours and group, without signing in. Guests can't change anything."}
+                </p>
+              )}
+            </form.Subscribe>
             <form.Subscribe selector={(state) => state.values.isPrivate}>
               {(privateWorkspace) =>
                 privateWorkspace && (

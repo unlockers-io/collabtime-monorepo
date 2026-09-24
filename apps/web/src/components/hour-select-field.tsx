@@ -15,7 +15,6 @@ import { formatHour } from "@/lib/utils";
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 type HourSelectFieldProps = {
-  errorId?: string;
   errors?: Array<unknown>;
   id: string;
   isInvalid?: boolean;
@@ -26,7 +25,6 @@ type HourSelectFieldProps = {
 };
 
 const HourSelectField = ({
-  errorId,
   errors,
   id,
   isInvalid,
@@ -36,6 +34,7 @@ const HourSelectField = ({
   value,
 }: HourSelectFieldProps) => {
   const invalid = isInvalid === true;
+  const errorId = `${id}-error`;
 
   return (
     <Field data-invalid={invalid || undefined}>
@@ -51,15 +50,17 @@ const HourSelectField = ({
       >
         <SelectTrigger
           aria-describedby={invalid ? errorId : undefined}
-          aria-invalid={isInvalid}
+          aria-invalid={invalid}
           id={id}
         >
-          <SelectValue />
+          <SelectValue>
+            <span className="font-mono tabular-nums">{formatHour(value)}</span>
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {HOURS.map((hour) => (
             <SelectItem key={hour} value={String(hour)}>
-              {formatHour(hour)}
+              <span className="font-mono tabular-nums">{formatHour(hour)}</span>
             </SelectItem>
           ))}
         </SelectContent>

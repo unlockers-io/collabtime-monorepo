@@ -21,7 +21,7 @@ test.describe("Login", () => {
     await loginPage.goto();
     await loginPage.login(testUser.email, "WrongPassword999!");
 
-    await expect(page.getByText(/failed to sign in|invalid/i)).toBeVisible({
+    await expect(page.getByRole("alert").filter({ hasText: /incorrect/i })).toBeVisible({
       timeout: 5000,
     });
   });

@@ -2,10 +2,13 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { cn } from "@repo/ui/lib/utils";
+import { GripVertical } from "lucide-react";
 
 import { GroupCard } from "@/components/group-card";
 import type { TeamGroup } from "@/types";
+
+const DRAG_HANDLE_CLASS =
+  "flex h-8 w-6 shrink-0 cursor-grab items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 active:cursor-grabbing";
 
 type SortableGroupCardProps = {
   canEdit: boolean;
@@ -16,9 +19,15 @@ type SortableGroupCardProps = {
 };
 
 const SortableGroupCard = (props: SortableGroupCardProps) => {
-  const { attributes, isDragging, listeners, setNodeRef, transform, transition } = useSortable({
-    id: props.group.id,
-  });
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: props.group.id });
 
   const style = {
     "--sortable-group-card-opacity": isDragging ? 0.5 : 1,
@@ -27,15 +36,23 @@ const SortableGroupCard = (props: SortableGroupCardProps) => {
   };
 
   return (
-    <div
-      className={cn("sortable-group-geometry", isDragging ? "cursor-grabbing" : "cursor-grab")}
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      aria-roledescription="draggable item, press Space to lift"
-    >
-      <GroupCard {...props} />
+    <div className="sortable-group-geometry" ref={setNodeRef} style={style}>
+      <GroupCard
+        {...props}
+        dragHandle={
+          <button
+            className={DRAG_HANDLE_CLASS}
+            ref={setActivatorNodeRef}
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label={`Move ${props.group.name}`}
+            aria-roledescription="draggable"
+          >
+            <GripVertical className="size-4" />
+          </button>
+        }
+      />
     </div>
   );
 };

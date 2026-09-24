@@ -37,8 +37,10 @@ const JoinPrompt = ({
 }: JoinPromptProps) => {
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3">
-        <p className="text-sm text-muted-foreground">Join this workspace</p>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
+        <p className="text-sm text-pretty text-muted-foreground">
+          Work on this team? Create an account to add your own hours.
+        </p>
         <div className="flex flex-wrap gap-2">
           <Link
             className={cn(buttonVariants({ size: "sm" }))}
@@ -77,7 +79,7 @@ const JoinPrompt = ({
         <p className="text-sm text-muted-foreground">
           {teamStatus === "PENDING"
             ? "Your join request is pending admin approval."
-            : "Request access to edit this team"}
+            : "Work on this team? Ask an admin to let you in."}
         </p>
         {teamStatus !== "PENDING" && (
           <Button disabled={isRequestingJoin} onClick={onRequestJoin} size="sm" variant="outline">
@@ -86,7 +88,7 @@ const JoinPrompt = ({
             ) : (
               <UserPlus className="mr-2 size-4" />
             )}
-            Request to Join
+            Request to join
           </Button>
         )}
       </div>

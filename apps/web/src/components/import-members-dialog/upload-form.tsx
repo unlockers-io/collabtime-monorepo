@@ -41,10 +41,8 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
     <div className="flex flex-col gap-4 py-2">
       <button
         aria-label="Upload CSV file: drop a file here or click to browse"
-        className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
-          isDragging
-            ? "border-primary bg-primary/5"
-            : "border-border bg-muted/50 hover:border-muted-foreground hover:bg-muted"
+        className={`flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 ${
+          isDragging ? "border-foreground bg-muted" : "border-input hover:bg-muted/50"
         }`}
         onClick={() => fileInputRef.current?.click()}
         onDragLeave={() => {
@@ -59,7 +57,7 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
         }}
         type="button"
       >
-        <Upload className="size-8 text-muted-foreground" />
+        <Upload className="size-5 text-muted-foreground" />
         <div>
           <p className="text-sm font-medium">Drop a CSV file here, or click to browse</p>
           <p className="mt-0.5 text-xs text-muted-foreground">

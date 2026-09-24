@@ -21,6 +21,7 @@ import {
 } from "@/components/section-card";
 import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
+import { ViewerZoneNote } from "@/components/timezone-visualizer/viewer-zone-note";
 import { WorkspaceVisibilityDialog } from "@/components/workspace-visibility-dialog";
 import { useTeamLiveSync } from "@/hooks/use-team-live-sync";
 import { useTeamMutation, useTeamQuery } from "@/hooks/use-team-query";
@@ -31,6 +32,7 @@ import { MembersGrid } from "./client/members-grid";
 import { MembershipActions } from "./client/membership-actions";
 import { useCollapsedGroups } from "./client/use-collapsed-groups";
 import { useDragEnd } from "./client/use-drag-end";
+import { useExcludedMembers } from "./client/use-excluded-members";
 import { useTeamMembership } from "./client/use-team-membership";
 import { useTeamNameEdit } from "./client/use-team-name-edit";
 import Loading from "./loading";
@@ -122,6 +124,7 @@ const TeamPageClient = ({
   } = useTeamNameEdit({ isAdmin, teamId, teamName });
 
   const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members);
+  const { excludedMemberIds, setExcludedMemberIds } = useExcludedMembers();
 
   const orderedMembers = [...members].toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const orderedGroups = [...groups].toSorted((a, b) => a.order - b.order);
@@ -169,15 +172,17 @@ const TeamPageClient = ({
         {members.length > 0 && (
           <SectionCard>
             <SectionCardHeader>
-              <SectionCardTitle description="Times shown in your local timezone" icon={Clock}>
+              <SectionCardTitle description={<ViewerZoneNote />} icon={Clock}>
                 Working hours
               </SectionCardTitle>
             </SectionCardHeader>
             <SectionCardContent>
               <TimezoneVisualizer
                 collapsedGroupIds={collapsedGroupIds}
+                excludedMemberIds={excludedMemberIds}
                 groups={groups}
                 members={orderedMembers}
+                onExcludedMemberIdsChange={setExcludedMemberIds}
                 onToggleGroupCollapse={toggleGroupCollapse}
               />
             </SectionCardContent>
@@ -189,7 +194,7 @@ const TeamPageClient = ({
         <div className="grid grid-cols-1 items-start gap-10 xl:grid-cols-team [&>*]:min-w-0">
           <SectionCard>
             <SectionCardHeader>
-              <SectionCardTitle icon={Users}>Team Members</SectionCardTitle>
+              <SectionCardTitle icon={Users}>Team members</SectionCardTitle>
               <SectionCardCount>{members.length}</SectionCardCount>
             </SectionCardHeader>
             <SectionCardContent className="flex flex-col gap-4">

@@ -38,20 +38,17 @@ const FADE_MOTION = {
   transition: { duration: 0 },
 };
 
+const ROLE_SUMMARY = {
+  admin: "Admin · full access",
+  guest: "Guest · view only",
+  member: "Member · view only",
+} satisfies Record<MobileMenuRole, string>;
+
 const RoleSummary = ({ role }: { role: MobileMenuRole }) => (
-  <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
-    {role === "admin" ? (
-      <Shield className="size-4 text-muted-foreground" />
-    ) : (
-      <User className="size-4 text-muted-foreground" />
-    )}
-    <div>
-      <p className="text-sm font-medium text-foreground">{role === "admin" ? "Admin" : "Member"}</p>
-      <p className="text-xs text-muted-foreground">
-        {role === "admin" ? "Full access" : "View only"}
-      </p>
-    </div>
-  </div>
+  <p className="flex items-center gap-2 px-2.5 text-xs text-muted-foreground">
+    {role === "admin" ? <Shield className="size-3.5" /> : <User className="size-3.5" />}
+    {ROLE_SUMMARY[role]}
+  </p>
 );
 
 const AccountLinks = ({
@@ -121,10 +118,9 @@ const MobileMenu = ({
           initial={menuMotion.initial}
           transition={menuMotion.transition}
         >
-          <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
+          <div className="flex flex-col gap-3 border-t border-border pt-3">
             <RoleSummary role={role} />
 
-            <CurrentTimeDisplay />
             <div className="flex flex-col gap-1">
               <Button
                 className="justify-start"
@@ -135,27 +131,10 @@ const MobileMenu = ({
                 variant="ghost"
               >
                 <span className="flex items-center gap-2">
-                  {hasCopied ? (
-                    <Check className="size-4 text-success" />
-                  ) : (
-                    <Copy className="size-4" />
-                  )}
-                  {hasCopied ? "Copied!" : "Copy Link"}
+                  {hasCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                  {hasCopied ? "Copied" : "Copy link"}
                 </span>
               </Button>
-
-              <div className="flex items-center justify-between rounded-lg px-4 py-2">
-                <span className="text-sm text-foreground">Theme</span>
-                <ModeToggle />
-              </div>
-
-              <AccountLinks
-                isSigningOut={isSigningOut}
-                onClose={onClose}
-                onSignOut={onSignOut}
-                role={role}
-              />
-
               {canEditVisibility && (
                 <Button
                   className="justify-start"
@@ -176,14 +155,30 @@ const MobileMenu = ({
                     onDeleteWorkspace();
                     onClose();
                   }}
-                  variant="destructive"
+                  variant="ghost"
                 >
                   <span className="flex items-center gap-2">
                     <Trash2 className="size-4" />
-                    Delete workspace
+                    Delete workspace…
                   </span>
                 </Button>
               )}
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <div className="flex items-center justify-between px-2.5">
+                <CurrentTimeDisplay />
+                <ModeToggle />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1 border-t border-border pt-3">
+              <AccountLinks
+                isSigningOut={isSigningOut}
+                onClose={onClose}
+                onSignOut={onSignOut}
+                role={role}
+              />
             </div>
           </div>
         </m.div>

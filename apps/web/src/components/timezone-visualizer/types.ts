@@ -1,9 +1,13 @@
+import type { WorkingInterval } from "@/lib/timezones";
 import type { TeamGroup, TeamMember } from "@/types";
 
 type MemberRow = {
   dayOffset: number;
-  hours: Array<boolean>;
+  interval: WorkingInterval;
+  isCounted: boolean;
   member: TeamMember;
+  /** Viewer-frame working state for each 15-minute slot of the day. */
+  slots: ReadonlyArray<boolean>;
 };
 
 type GroupedSection = {
@@ -11,21 +15,39 @@ type GroupedSection = {
   rows: Array<MemberRow>;
 };
 
-type Selection = {
-  id: string;
-  type: "member" | "group";
+type SlotRun = {
+  lengthSlots: number;
+  startSlot: number;
 };
 
-type OverlapStatus = "none" | "partial" | "full" | "mixed";
+type WindowTiming =
+  | { kind: "now"; minutesLeft: number }
+  | { isTomorrow: boolean; kind: "later"; minutesUntil: number };
 
-type HourOverlap = {
-  availableCount: number;
-  coverage: "none" | "partial" | "full";
-  isEveryTeamRepresented: boolean;
+type SharedWindow = SlotRun & {
+  availableMemberIds: ReadonlyArray<string>;
 };
 
-type OverlapData = {
-  hours: ReadonlyArray<HourOverlap>;
+type TimedRun<T extends SlotRun> = {
+  run: T;
+  timing: WindowTiming;
 };
 
-export type { GroupedSection, HourOverlap, MemberRow, OverlapData, OverlapStatus, Selection };
+type SharedWindowReading = {
+  bestSlots: ReadonlyArray<boolean>;
+  countedCount: number;
+  /** Hours where every counted group has at least one person working. */
+  groupCoverage: TimedRun<SlotRun> | null;
+  primary: TimedRun<SharedWindow> | null;
+  windows: ReadonlyArray<SharedWindow>;
+};
+
+export type {
+  GroupedSection,
+  MemberRow,
+  SharedWindow,
+  SharedWindowReading,
+  SlotRun,
+  TimedRun,
+  WindowTiming,
+};

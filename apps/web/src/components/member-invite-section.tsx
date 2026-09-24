@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
-import { Field, FieldLabel } from "@repo/ui/components/field";
+import { Field, FieldDescription, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useQueryClient } from "@tanstack/react-query";
@@ -65,8 +65,8 @@ export const MemberInviteSection = ({
   };
   if (pendingInvite) {
     return (
-      <div className="flex flex-col gap-3 border-t border-border py-4">
-        <p className="text-sm break-all">Invited: {pendingInvite.email}</p>
+      <div className="flex flex-col gap-3">
+        <p className="text-sm break-all">Invited {pendingInvite.email}</p>
         {pendingInvite.expiresAt !== null && (
           <p className="text-xs text-muted-foreground">
             {formatExpiresIn(pendingInvite.expiresAt)}
@@ -76,43 +76,46 @@ export const MemberInviteSection = ({
       </div>
     );
   }
+  const descriptionId = `${id}-description`;
+  const errorId = `${id}-error`;
   return (
-    <div className="border-t border-border py-4">
-      <Field data-invalid={Boolean(error) || undefined}>
-        <FieldLabel htmlFor={id}>Invite User</FieldLabel>
-        <div className="flex flex-wrap gap-2">
-          <Input
-            aria-describedby={error === null ? undefined : `${id}-error`}
-            aria-invalid={Boolean(error)}
-            autoComplete="email"
-            className="min-w-0 flex-1"
-            id={id}
-            onBlur={() => {
-              if (email && !InvitationEmailSchema.safeParse(normalizeEmail(email)).success) {
-                setError("Enter a valid email address");
-              }
-            }}
-            onChange={(event) => {
-              setEmail(event.target.value);
-              setError(null);
-            }}
-            type="email"
-            value={email}
-          />
-          <Button
-            aria-label="Send invitation"
-            disabled={pending || !email.trim()}
-            onClick={() => {
-              void send();
-            }}
-            type="button"
-            variant="outline"
-          >
-            {pending ? "Sending…" : "Send invitation"}
-          </Button>
-        </div>
-        {error !== null && <FormFieldError errors={[error]} id={`${id}-error`} />}
-      </Field>
-    </div>
+    <Field data-invalid={Boolean(error) || undefined}>
+      <FieldLabel htmlFor={id}>Invite by email</FieldLabel>
+      <div className="flex flex-wrap gap-2">
+        <Input
+          aria-describedby={error === null ? descriptionId : `${descriptionId} ${errorId}`}
+          aria-invalid={Boolean(error)}
+          autoComplete="off"
+          className="min-w-0 flex-1"
+          id={id}
+          onBlur={() => {
+            if (email && !InvitationEmailSchema.safeParse(normalizeEmail(email)).success) {
+              setError("Enter a valid email address");
+            }
+          }}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setError(null);
+          }}
+          placeholder="name@company.com"
+          type="email"
+          value={email}
+        />
+        <Button
+          disabled={pending || !email.trim()}
+          onClick={() => {
+            void send();
+          }}
+          type="button"
+          variant="outline"
+        >
+          {pending ? "Sending…" : "Send invitation"}
+        </Button>
+      </div>
+      <FieldDescription id={descriptionId}>
+        We&apos;ll email a link so they can claim this profile.
+      </FieldDescription>
+      {error !== null && <FormFieldError errors={[error]} id={errorId} />}
+    </Field>
   );
 };

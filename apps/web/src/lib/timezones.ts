@@ -51,81 +51,152 @@ const COMMON_TIMEZONE_SET: ReadonlySet<string> = new Set(COMMON_TIMEZONES);
 
 type CommonTimezone = (typeof COMMON_TIMEZONES)[number];
 
-export type { CommonTimezone };
+const MINUTES_IN_DAY = 24 * 60;
 
-const getTimezoneOffset = (timezone: string): number => {
-  const now = new Date();
-  const utcDate = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
-  const tzDate = new Date(now.toLocaleString("en-US", { timeZone: timezone }));
-  return (tzDate.getTime() - utcDate.getTime()) / (1000 * 60 * 60);
+const offsetFormatters = new Map<string, Intl.DateTimeFormat>();
+const clockFormatters = new Map<string, Intl.DateTimeFormat>();
+
+const getOffsetFormatter = (timezone: string): Intl.DateTimeFormat => {
+  let formatter = offsetFormatters.get(timezone);
+  if (formatter === undefined) {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      timeZoneName: "longOffset",
+    });
+    offsetFormatters.set(timezone, formatter);
+  }
+  return formatter;
 };
 
-const getCurrentTimeInTimezone = (timezone: string): string => {
-  return new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    hour12: true,
-    minute: "2-digit",
-    timeZone: timezone,
-  });
+const getClockFormatter = (timezone: string): Intl.DateTimeFormat => {
+  let formatter = clockFormatters.get(timezone);
+  if (formatter === undefined) {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      hourCycle: "h23",
+      minute: "2-digit",
+      timeZone: timezone,
+    });
+    clockFormatters.set(timezone, formatter);
+  }
+  return formatter;
 };
+
+const OFFSET_PATTERN = /^GMT(?<sign>[+\-\u2212])(?<hours>\d{1,2})(?::(?<minutes>\d{2}))?$/v;
+
+/** UTC offset in minutes at `at`, e.g. 330 for Asia/Kolkata. */
+const getOffsetMinutes = (timezone: string, at: Date = new Date()): number => {
+  const name =
+    getOffsetFormatter(timezone)
+      .formatToParts(at)
+      .find((part) => part.type === "timeZoneName")?.value ?? "GMT";
+  const groups = OFFSET_PATTERN.exec(name)?.groups;
+  if (groups === undefined) {
+    return 0;
+  }
+  const minutes = Number(groups.hours) * 60 + Number(groups.minutes ?? 0);
+  return groups.sign === "+" ? minutes : -minutes;
+};
+
+/** Minutes since local midnight in `timezone`, 0 to 1439. */
+const getMinuteOfDay = (timezone: string, at: Date = new Date()): number => {
+  const parts = getClockFormatter(timezone).formatToParts(at);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
+  return (hour % 24) * 60 + minute;
+};
+
+const wrapMinutes = (minutes: number): number =>
+  ((minutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY;
+
+const formatMinuteOfDay = (minutes: number): string => {
+  const wrapped = wrapMinutes(minutes);
+  const hours = Math.floor(wrapped / 60);
+  const mins = wrapped % 60;
+  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+};
+
+/** A range end of midnight reads as 24:00 so "22:00 – 24:00" never looks inverted. */
+const formatMinuteRange = (startMinute: number, endMinute: number): string => {
+  const end = wrapMinutes(endMinute) === 0 ? "24:00" : formatMinuteOfDay(endMinute);
+  return `${formatMinuteOfDay(startMinute)} – ${end}`;
+};
+
+const formatUtcOffset = (timezone: string, at: Date = new Date()): string => {
+  const offset = getOffsetMinutes(timezone, at);
+  if (offset === 0) {
+    return "UTC";
+  }
+  const sign = offset > 0 ? "+" : "-";
+  const hours = Math.floor(Math.abs(offset) / 60);
+  const minutes = Math.abs(offset) % 60;
+  return minutes === 0
+    ? `UTC${sign}${hours}`
+    : `UTC${sign}${hours}:${minutes.toString().padStart(2, "0")}`;
+};
+
+const formatTimezoneCity = (timezone: string): string =>
+  timezone.split("/").pop()?.replaceAll("_", " ") ?? timezone;
 
 const formatTimezoneLabel = (timezone: string, includeCurrentTime = false): string => {
-  const offset = getTimezoneOffset(timezone);
-  const sign = offset >= 0 ? "+" : "";
-  const hours = Math.floor(Math.abs(offset));
-  const minutes = Math.round((Math.abs(offset) % 1) * 60);
-  const offsetStr =
-    minutes > 0
-      ? `${sign}${offset < 0 ? "-" : ""}${hours}:${minutes.toString().padStart(2, "0")}`
-      : `${sign}${offset}`;
-
-  const cityName = timezone.split("/").pop()?.replaceAll("_", " ") ?? timezone;
-  const base = `${cityName} (UTC${offsetStr})`;
-
-  if (includeCurrentTime) {
-    const currentTime = getCurrentTimeInTimezone(timezone);
-    return `${base} - ${currentTime}`;
-  }
-
-  return base;
+  const base = `${formatTimezoneCity(timezone)} (${formatUtcOffset(timezone)})`;
+  return includeCurrentTime ? `${base} · ${formatMinuteOfDay(getMinuteOfDay(timezone))}` : base;
 };
 
-const convertHourToTimezone = (hour: number, fromTimezone: string, toTimezone: string): number => {
-  const fromOffset = getTimezoneOffset(fromTimezone);
-  const toOffset = getTimezoneOffset(toTimezone);
-  const diff = toOffset - fromOffset;
-  let converted = Math.round(hour + diff);
-
-  if (converted < 0) {
-    converted += 24;
-  } else if (converted >= 24) {
-    converted -= 24;
-  }
-
-  return converted;
+type WorkingInterval = {
+  lengthMinutes: number;
+  startMinute: number;
 };
+
+/**
+ * A member's working hours placed on the viewer's day, to the minute. Hours
+ * are stored as whole hours in the member's own zone, so a half-hour offset
+ * such as Asia/Kolkata lands on :30 in the viewer's frame.
+ */
+const getWorkingInterval = (
+  member: { timezone: string; workingHoursEnd: number; workingHoursStart: number },
+  viewerTimezone: string,
+  at: Date = new Date(),
+): WorkingInterval => {
+  const shift = getOffsetMinutes(viewerTimezone, at) - getOffsetMinutes(member.timezone, at);
+  const lengthHours = (member.workingHoursEnd - member.workingHoursStart + 24) % 24;
+  return {
+    lengthMinutes: lengthHours * 60,
+    startMinute: wrapMinutes(member.workingHoursStart * 60 + shift),
+  };
+};
+
+const isMinuteInInterval = (minute: number, { lengthMinutes, startMinute }: WorkingInterval) =>
+  wrapMinutes(minute - startMinute) < lengthMinutes;
 
 const isCurrentlyWorking = (
   timezone: string,
   workingHoursStart: number,
   workingHoursEnd: number,
-): boolean => {
-  const now = new Date();
-  const currentHour = Math.trunc(
-    Number(
-      now.toLocaleString("en-US", {
-        hour: "numeric",
-        hour12: false,
-        timeZone: timezone,
-      }),
-    ),
-  );
+  at: Date = new Date(),
+): boolean =>
+  isMinuteInInterval(getMinuteOfDay(timezone, at), {
+    lengthMinutes: ((workingHoursEnd - workingHoursStart + 24) % 24) * 60,
+    startMinute: workingHoursStart * 60,
+  });
 
-  if (workingHoursStart <= workingHoursEnd) {
-    return currentHour >= workingHoursStart && currentHour < workingHoursEnd;
+const getMinutesUntilAvailable = (
+  timezone: string,
+  workingHoursStart: number,
+  workingHoursEnd: number,
+  at: Date = new Date(),
+): number => {
+  if (isCurrentlyWorking(timezone, workingHoursStart, workingHoursEnd, at)) {
+    return 0;
   }
-  return currentHour >= workingHoursStart || currentHour < workingHoursEnd;
+  return wrapMinutes(workingHoursStart * 60 - getMinuteOfDay(timezone, at));
 };
+
+const getMinutesUntilDayEnds = (
+  timezone: string,
+  workingHoursEnd: number,
+  at: Date = new Date(),
+): number => wrapMinutes(workingHoursEnd * 60 - getMinuteOfDay(timezone, at));
 
 const getDayOffset = (memberTimezone: string, viewerTimezone: string): number => {
   const now = new Date();
@@ -145,78 +216,32 @@ const getDayOffset = (memberTimezone: string, viewerTimezone: string): number =>
   return diffDays;
 };
 
-const getMinutesUntilAvailable = (
-  timezone: string,
-  workingHoursStart: number,
-  workingHoursEnd: number,
-): number => {
-  if (isCurrentlyWorking(timezone, workingHoursStart, workingHoursEnd)) {
-    return 0;
-  }
-
-  const now = new Date();
-  const currentHour = Math.trunc(
-    Number(
-      now.toLocaleString("en-US", {
-        hour: "numeric",
-        hour12: false,
-        timeZone: timezone,
-      }),
-    ),
-  );
-  const currentMinute = Math.trunc(
-    Number(
-      now.toLocaleString("en-US", {
-        minute: "numeric",
-        timeZone: timezone,
-      }),
-    ),
-  );
-
-  const currentMinutesFromMidnight = currentHour * 60 + currentMinute;
-  const workStartMinutes = workingHoursStart * 60;
-
-  let minutesUntilAvailable: number;
-
-  if (currentMinutesFromMidnight < workStartMinutes) {
-    minutesUntilAvailable = workStartMinutes - currentMinutesFromMidnight;
-  } else {
-    const minutesUntilMidnight = 24 * 60 - currentMinutesFromMidnight;
-    minutesUntilAvailable = minutesUntilMidnight + workStartMinutes;
-  }
-
-  return minutesUntilAvailable;
-};
-
-const formatTimeUntilAvailable = (minutes: number): string => {
-  if (minutes === 0) {
-    return "Available now";
-  }
-
+const formatDuration = (minutes: number): string => {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
 
   if (hours === 0) {
-    return `in ${mins}m`;
+    return `${mins}m`;
   }
   if (mins === 0) {
-    return `in ${hours}h`;
+    return `${hours}h`;
   }
-  return `in ${hours}h ${mins}m`;
+  return `${hours}h ${mins}m`;
 };
 
-const formatTimezoneAbbreviation = (timezone: string): string => {
-  const now = new Date();
-  const parts = now
-    .toLocaleTimeString("en-US", {
-      timeZone: timezone,
-      timeZoneName: "short",
-    })
-    .split(" ");
-  return parts.at(-1) ?? timezone.split("/").pop() ?? timezone;
-};
+const formatTimeUntilAvailable = (minutes: number): string =>
+  minutes === 0 ? "Available now" : `in ${formatDuration(minutes)}`;
 
 const isCommonTimezone = (value: string): value is CommonTimezone => COMMON_TIMEZONE_SET.has(value);
+
+const isValidTimezone = (value: string): boolean => {
+  try {
+    Intl.DateTimeFormat("en", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const fuzzyMatchTimezone = (input: string): CommonTimezone | null => {
   const trimmed = input.trim();
@@ -228,19 +253,16 @@ const fuzzyMatchTimezone = (input: string): CommonTimezone | null => {
     return trimmed;
   }
 
-  let inputOffset: number;
-  try {
-    Intl.DateTimeFormat("en", { timeZone: trimmed });
-    inputOffset = getTimezoneOffset(trimmed);
-  } catch {
+  if (!isValidTimezone(trimmed)) {
     return null;
   }
+  const inputOffset = getOffsetMinutes(trimmed);
 
   let best: CommonTimezone | null = null;
   let bestDiff = Infinity;
 
   for (const tz of COMMON_TIMEZONES) {
-    const diff = Math.abs(getTimezoneOffset(tz) - inputOffset);
+    const diff = Math.abs(getOffsetMinutes(tz) - inputOffset);
     if (diff < bestDiff) {
       bestDiff = diff;
       best = tz;
@@ -250,6 +272,7 @@ const fuzzyMatchTimezone = (input: string): CommonTimezone | null => {
   return best;
 };
 
+/** The supported zone closest to the browser's, for defaults that must be stored. */
 const getUserTimezone = (): CommonTimezone => {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return (
@@ -259,19 +282,42 @@ const getUserTimezone = (): CommonTimezone => {
   );
 };
 
+/**
+ * The browser's own zone, for displaying times. Unlike getUserTimezone it is
+ * never snapped to a supported zone, so a viewer in Adelaide or Kathmandu
+ * sees their real clock rather than the nearest listed city's.
+ */
+const getViewerTimezone = (): string => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return timezone !== "" && isValidTimezone(timezone) ? timezone : getUserTimezone();
+};
+
 export {
   COMMON_TIMEZONES,
   DEFAULT_MEMBER_TIMEZONE,
   DEFAULT_WORKING_HOURS_END,
   DEFAULT_WORKING_HOURS_START,
-  formatTimezoneLabel,
-  fuzzyMatchTimezone,
-  getUserTimezone,
-  isCommonTimezone,
-  convertHourToTimezone,
-  isCurrentlyWorking,
-  getDayOffset,
-  getMinutesUntilAvailable,
+  MINUTES_IN_DAY,
+  formatDuration,
+  formatMinuteOfDay,
+  formatMinuteRange,
   formatTimeUntilAvailable,
-  formatTimezoneAbbreviation,
+  formatTimezoneCity,
+  formatTimezoneLabel,
+  formatUtcOffset,
+  fuzzyMatchTimezone,
+  getDayOffset,
+  getMinuteOfDay,
+  getMinutesUntilAvailable,
+  getMinutesUntilDayEnds,
+  getOffsetMinutes,
+  getUserTimezone,
+  getViewerTimezone,
+  getWorkingInterval,
+  isCommonTimezone,
+  isCurrentlyWorking,
+  isMinuteInInterval,
+  wrapMinutes,
 };
+
+export type { CommonTimezone, WorkingInterval };

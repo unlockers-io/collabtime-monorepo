@@ -1,8 +1,6 @@
 "use client";
 
-import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
-import { ScrollArea } from "@repo/ui/components/scroll-area";
-import { Users } from "lucide-react";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 import { MemberCard } from "@/components/member-card";
 import { SortableMemberCard } from "@/components/sortable-member-card";
@@ -44,13 +42,10 @@ const MembersGrid = ({
 
   if (orderedMembers.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
-        <div className="flex size-12 items-center justify-center border border-border">
-          <Users className="size-6 text-muted-foreground" />
-        </div>
+      <div className="flex flex-col gap-1 border-y border-border py-8">
         <div className="flex flex-col gap-1">
           <h3 className="font-semibold text-foreground">Build your team</h3>
-          <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+          <p className="max-w-md text-sm text-pretty text-muted-foreground">
             Add team members to see their working hours and find the best times to collaborate
             across timezones.
           </p>
@@ -62,38 +57,36 @@ const MembersGrid = ({
   const memberIds = orderedMembers.map((m) => m.id);
 
   return (
-    <ScrollArea className="-mx-4 -my-px max-h-150">
-      <div className="grid grid-cols-1 divide-y divide-border px-4 py-px">
-        {isAdmin ? (
-          <SortableContext items={memberIds} strategy={rectSortingStrategy}>
-            {orderedMembers.map((member) => (
-              <SortableMemberCard
-                canEdit={isAdmin}
-                currentUserId={currentUserId}
-                groups={groups}
-                hasClaimedProfile={hasClaimedProfile}
-                key={member.id}
-                member={member}
-                pendingInvite={inviteByMember.get(member.id)}
-                teamId={teamId}
-              />
-            ))}
-          </SortableContext>
-        ) : (
-          orderedMembers.map((member) => (
-            <MemberCard
-              canEdit={false}
+    <div className="flex flex-col divide-y divide-border border-y border-border">
+      {isAdmin ? (
+        <SortableContext items={memberIds} strategy={verticalListSortingStrategy}>
+          {orderedMembers.map((member) => (
+            <SortableMemberCard
+              canEdit={isAdmin}
               currentUserId={currentUserId}
               groups={groups}
               hasClaimedProfile={hasClaimedProfile}
               key={member.id}
               member={member}
+              pendingInvite={inviteByMember.get(member.id)}
               teamId={teamId}
             />
-          ))
-        )}
-      </div>
-    </ScrollArea>
+          ))}
+        </SortableContext>
+      ) : (
+        orderedMembers.map((member) => (
+          <MemberCard
+            canEdit={false}
+            currentUserId={currentUserId}
+            groups={groups}
+            hasClaimedProfile={hasClaimedProfile}
+            key={member.id}
+            member={member}
+            teamId={teamId}
+          />
+        ))
+      )}
+    </div>
   );
 };
 

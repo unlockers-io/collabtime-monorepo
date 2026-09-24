@@ -10,17 +10,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { Field, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@repo/ui/components/select";
+import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
@@ -28,17 +19,21 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { GroupSelector } from "@/components/group-selector";
 import { HourSelectField } from "@/components/hour-select-field";
+import {
+  MemberGroupField,
+  MemberTextField,
+  TITLE_PLACEHOLDER,
+  WorkingHoursFieldset,
+} from "@/components/member-form-fields";
+import { TimezoneField } from "@/components/timezone-field";
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { addMember } from "@/lib/actions/member-actions";
 import { queryKeys } from "@/lib/query-keys";
 import {
-  COMMON_TIMEZONES,
   DEFAULT_WORKING_HOURS_END,
   DEFAULT_WORKING_HOURS_START,
-  formatTimezoneLabel,
   getUserTimezone,
   isCommonTimezone,
 } from "@/lib/timezones";
@@ -49,27 +44,6 @@ type AddMemberDialogProps = {
   isFirstMember: boolean;
   teamId: string;
 };
-
-const TITLE_PLACEHOLDERS = [
-  "Software Engineer",
-  "Product Manager",
-  "Designer",
-  "Marketing Manager",
-  "CEO",
-  "CTO",
-  "Business Analyst",
-  "Data Scientist",
-  "DevOps Engineer",
-  "QA Engineer",
-  "Sales Representative",
-  "Customer Success",
-  "HR Manager",
-  "Finance Manager",
-  "Operations Manager",
-];
-
-const getRandomPlaceholder = () =>
-  TITLE_PLACEHOLDERS[Math.floor(Math.random() * TITLE_PLACEHOLDERS.length)];
 
 const formSchema = z.object({
   email: z.email("Invalid email address").or(z.literal("")),
@@ -92,7 +66,6 @@ type AddMemberFormProps = {
 
 const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMemberFormProps) => {
   const queryClient = useQueryClient();
-  const [titlePlaceholder, _setTitlePlaceholder] = useState(getRandomPlaceholder);
 
   const [defaultValues] = useState<FormValues>(() => ({
     email: "",
@@ -136,9 +109,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
         toast.error(result.error);
       }
     },
-    validators: {
-      onSubmit: formSchema,
-    },
+    validators: { onBlur: formSchema, onChange: formSchema, onSubmit: formSchema },
   });
 
   return (
@@ -151,191 +122,134 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
       }}
     >
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary">
-            <UserPlus className="size-5 text-primary-foreground" />
-          </div>
-          Add Team Member
-        </DialogTitle>
+        <DialogTitle>Add team member</DialogTitle>
         <DialogDescription>
-          {isFirstMember ? "Start by adding your own details." : "Add a new member to your team."}
+          {isFirstMember ? "Start with your own details." : "Add someone to the team timeline."}
         </DialogDescription>
       </DialogHeader>
 
-      <div className="flex flex-col gap-4 py-4">
-        <form.Field name="name">
-          {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="member-name">Name *</FieldLabel>
-                <Input
-                  aria-describedby={isInvalid ? "member-name-error" : undefined}
-                  aria-invalid={isInvalid}
-                  id="member-name"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="John Doe"
-                  value={field.state.value}
-                />
-                {isInvalid && (
-                  <FormFieldError errors={field.state.meta.errors} id="member-name-error" />
-                )}
-              </Field>
-            );
-          }}
-        </form.Field>
-
-        <form.Field name="email">
-          {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="member-email">Email (optional)</FieldLabel>
-                <Input
-                  aria-describedby={isInvalid ? "member-email-error" : undefined}
-                  aria-invalid={isInvalid}
-                  autoComplete="email"
-                  id="member-email"
-                  inputMode="email"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="m@example.com"
-                  type="email"
-                  value={field.state.value}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Send an invitation to this email address.
-                </p>
-                {isInvalid && (
-                  <FormFieldError errors={field.state.meta.errors} id="member-email-error" />
-                )}
-              </Field>
-            );
-          }}
-        </form.Field>
-
-        <form.Field name="title">
-          {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="member-title">Title (optional)</FieldLabel>
-                <Input
-                  aria-describedby={isInvalid ? "member-title-error" : undefined}
-                  aria-invalid={isInvalid}
-                  id="member-title"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder={titlePlaceholder}
-                  value={field.state.value}
-                />
-                {isInvalid && (
-                  <FormFieldError errors={field.state.meta.errors} id="member-title-error" />
-                )}
-              </Field>
-            );
-          }}
-        </form.Field>
-
-        <form.Field name="timezone">
-          {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid || undefined}>
-                <FieldLabel htmlFor="member-timezone">Timezone</FieldLabel>
-                <Select
-                  onValueChange={(value) => {
-                    if (value === null || !isCommonTimezone(value)) {
-                      return;
-                    }
-                    field.handleChange(value);
-                    field.handleBlur();
-                  }}
-                  value={field.state.value}
-                >
-                  <SelectTrigger
-                    aria-describedby={isInvalid ? "member-timezone-error" : undefined}
-                    aria-invalid={isInvalid}
-                    id="member-timezone"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COMMON_TIMEZONES.map((tz) => (
-                      <SelectItem key={tz} value={tz}>
-                        {formatTimezoneLabel(tz, true)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isInvalid && (
-                  <FormFieldError errors={field.state.meta.errors} id="member-timezone-error" />
-                )}
-              </Field>
-            );
-          }}
-        </form.Field>
-
-        {groups.length > 0 && (
-          <form.Field name="groupId">
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="member-group">Group (optional)</FieldLabel>
-                  <GroupSelector
-                    aria-describedby={isInvalid ? "member-group-error" : undefined}
-                    aria-invalid={isInvalid}
-                    groups={groups}
-                    id="member-group"
-                    onValueChange={(value) => {
-                      field.handleChange(value ?? "");
-                      field.handleBlur();
-                    }}
-                    placeholder="No group"
-                    value={field.state.value || undefined}
-                  />
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="member-group-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-        )}
-
-        <div className="grid grid-cols-2 gap-4">
-          <form.Field name="workingHoursStart">
+      <div className="flex flex-col gap-5 py-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <form.Field name="name">
             {(field) => (
-              <HourSelectField
-                id="member-work-start"
-                label="Work Starts"
+              <MemberTextField
+                errors={field.state.meta.errors}
+                id="member-name"
+                isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                label="Full name"
                 onBlur={field.handleBlur}
                 onChange={field.handleChange}
+                placeholder="Jane Doe"
+                required
                 value={field.state.value}
               />
             )}
           </form.Field>
 
-          <form.Field name="workingHoursEnd">
+          <form.Field name="title">
             {(field) => (
-              <HourSelectField
-                id="member-work-end"
-                label="Work Ends"
+              <MemberTextField
+                errors={field.state.meta.errors}
+                id="member-title"
+                isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                label="Title (optional)"
                 onBlur={field.handleBlur}
                 onChange={field.handleChange}
+                placeholder={TITLE_PLACEHOLDER}
                 value={field.state.value}
               />
             )}
           </form.Field>
         </div>
+
+        <FieldSeparator />
+
+        <form.Field name="timezone">
+          {(field) => (
+            <TimezoneField
+              errors={field.state.meta.errors}
+              id="member-timezone"
+              isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+              onBlur={field.handleBlur}
+              onChange={field.handleChange}
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
+
+        <form.Subscribe selector={(state) => state.values.timezone}>
+          {(timezone) => (
+            <WorkingHoursFieldset timezone={timezone}>
+              <form.Field name="workingHoursStart">
+                {(field) => (
+                  <HourSelectField
+                    errors={field.state.meta.errors}
+                    id="member-work-start"
+                    isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    label="Starts"
+                    onBlur={field.handleBlur}
+                    onChange={field.handleChange}
+                    value={field.state.value}
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="workingHoursEnd">
+                {(field) => (
+                  <HourSelectField
+                    errors={field.state.meta.errors}
+                    id="member-work-end"
+                    isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    label="Ends"
+                    onBlur={field.handleBlur}
+                    onChange={field.handleChange}
+                    value={field.state.value}
+                  />
+                )}
+              </form.Field>
+            </WorkingHoursFieldset>
+          )}
+        </form.Subscribe>
+
+        {groups.length > 0 && (
+          <>
+            <FieldSeparator />
+            <form.Field name="groupId">
+              {(field) => (
+                <MemberGroupField
+                  errors={field.state.meta.errors}
+                  groups={groups}
+                  id="member-group"
+                  isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                  label="Group (optional)"
+                  onBlur={field.handleBlur}
+                  onChange={field.handleChange}
+                  value={field.state.value}
+                />
+              )}
+            </form.Field>
+          </>
+        )}
+
+        <FieldSeparator />
+
+        <form.Field name="email">
+          {(field) => (
+            <MemberTextField
+              autoComplete="off"
+              description="We'll email a link so they can claim this profile."
+              errors={field.state.meta.errors}
+              id="member-email"
+              isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
+              label="Invite by email (optional)"
+              onBlur={field.handleBlur}
+              onChange={field.handleChange}
+              placeholder="name@company.com"
+              type="email"
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
       </div>
 
       <DialogFooter>
@@ -365,7 +279,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
                   Adding…
                 </span>
               ) : (
-                "Add Member"
+                "Add member"
               )}
             </Button>
           )}
@@ -392,7 +306,7 @@ const AddMemberDialog = ({ groups, isFirstMember, teamId }: AddMemberDialogProps
     >
       <DialogTrigger render={<Button size="sm" type="button" />}>
         <UserPlus className="size-4" />
-        Add Team Member
+        Add team member
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <AddMemberForm

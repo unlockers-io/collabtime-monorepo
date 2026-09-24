@@ -5,7 +5,7 @@ import { expect, test as base } from "../fixtures/realtime.fixture";
 
 const members = (page: Page) =>
   page.locator("section").filter({
-    has: page.getByRole("heading", { exact: true, name: "Team Members" }),
+    has: page.getByRole("heading", { exact: true, name: "Team members" }),
   });
 
 const openLiveTeam = async (page: Page, teamId: string) => {
@@ -32,14 +32,14 @@ const openLiveTeam = async (page: Page, teamId: string) => {
   expect(response.status()).toBe(200);
   expect(response.headers()["content-type"]).toContain("text/event-stream");
   await expect(page.locator("html")).toHaveAttribute("data-live-sync-ready", "true");
-  await expect(page.getByRole("heading", { exact: true, name: "Team Members" })).toBeVisible();
+  await expect(page.getByRole("heading", { exact: true, name: "Team members" })).toBeVisible();
 };
 
 const addMember = async (page: Page, name: string) => {
   await page.getByRole("button", { name: /add team member/i }).click();
-  await page.getByLabel("Name *").fill(name);
+  await page.getByLabel("Full name").fill(name);
   await page.keyboard.press("Tab");
-  await page.getByRole("button", { exact: true, name: "Add Member" }).click();
+  await page.getByRole("button", { exact: true, name: "Add member" }).click();
   await expect(members(page).getByText(name, { exact: true })).toBeVisible({ timeout: 5000 });
 };
 
@@ -118,11 +118,11 @@ for (const change of ["privacy", "password", "deletion"] as const) {
       await expect(
         guest.getByRole("heading", {
           exact: true,
-          name: change === "deletion" ? "Page not found" : "Private team",
+          name: change === "deletion" ? "Workspace not found" : "Private workspace",
         }),
       ).toBeVisible();
       await expect(
-        guest.getByRole("heading", { exact: true, name: "Team Members" }),
+        guest.getByRole("heading", { exact: true, name: "Team members" }),
       ).not.toBeVisible();
     } finally {
       await guestContext.close();
@@ -147,8 +147,10 @@ test.describe("Realtime Sync", () => {
   });
 
   test("team name change syncs to second browser", async ({ page, peer }) => {
-    await page.getByRole("button", { name: "Edit team name" }).click();
-    await page.getByRole("textbox", { exact: true, name: "Team name" }).fill("Synced Team Name");
+    await page.getByRole("button", { name: "Rename workspace" }).click();
+    await page
+      .getByRole("textbox", { exact: true, name: "Workspace name" })
+      .fill("Synced Team Name");
     await page.keyboard.press("Tab");
     await expect(peer.getByRole("heading", { exact: true, name: "Synced Team Name" })).toBeVisible({
       timeout: 5000,
@@ -160,7 +162,11 @@ test.describe("Realtime Sync", () => {
     await expect(members(peer).getByText("Removal Target", { exact: true })).toBeVisible({
       timeout: 5000,
     });
-    await page.getByRole("button", { exact: true, name: "Remove Removal Target" }).click();
+    await page
+      .getByRole("button", { exact: true, name: "More actions for Removal Target" })
+      .click();
+    await page.getByRole("menuitem", { name: "Remove from workspace" }).click();
+    await page.getByRole("button", { exact: true, name: "Remove member" }).click();
     await expect(members(peer).getByText("Removal Target", { exact: true })).not.toBeVisible({
       timeout: 5000,
     });
