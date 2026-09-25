@@ -67,8 +67,8 @@ const RegisterForm = ({ searchParams }: Props) => {
             setErrorKind(authErrorKind(result.error));
             return;
           }
-          const sessionToken = result.data?.token;
-          if (typeof sessionToken !== "string" || sessionToken === "") {
+          const sessionToken = result.data.token;
+          if (sessionToken === null || sessionToken === "") {
             setSentToEmail(value.email);
             return;
           }
@@ -100,7 +100,6 @@ const RegisterForm = ({ searchParams }: Props) => {
 
   return (
     <>
-      {/* oxlint-disable-next-line react-doctor/no-prevent-default -- TanStack Form + Better Auth client drives submit; JS-off progressive enhancement is N/A */}
       <form
         noValidate
         onSubmit={(e) => {

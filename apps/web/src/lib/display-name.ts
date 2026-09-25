@@ -4,5 +4,5 @@ export const displayName = (name: string | null, email: string): string => {
     return trimmed;
   }
   const localPart = email.split("@")[0];
-  return localPart !== undefined && localPart !== "" ? localPart : "Someone";
+  return localPart === "" ? "Someone" : localPart;
 };

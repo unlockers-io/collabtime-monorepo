@@ -68,7 +68,6 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
           <SectionCardTitle description="Your name and sign-in email.">Profile</SectionCardTitle>
         </SectionCardHeader>
 
-        {/* oxlint-disable-next-line react-doctor/no-prevent-default -- TanStack Form + Better Auth client drives submit; JS-off progressive enhancement is N/A */}
         <form
           className="flex max-w-xl flex-col gap-6"
           noValidate

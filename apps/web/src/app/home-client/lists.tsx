@@ -106,7 +106,7 @@ const HomeLists = () => {
               setWorkspaceToDelete(null);
             }
           }}
-          open={workspaceToDelete !== null}
+          open
           spaceId={workspaceToDelete.spaceId}
           teamName={workspaceToDelete.teamName}
         />

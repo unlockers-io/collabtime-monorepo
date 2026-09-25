@@ -111,6 +111,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
       try {
         access = await withTimeout(deps.checkAccess(), 2000, work.signal);
       } catch (error) {
+        // oxlint-disable-next-line typescript/no-unnecessary-condition -- close() and handleEvent() reassign this while withTimeout is awaited; TypeScript keeps the pre-await narrowing
         if (!closed) {
           deps.log.error({ ...context, error, message: "Live sync access recheck failed" });
           reconnect("access-error");
@@ -119,6 +120,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
       } finally {
         checking = false;
       }
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- close() and handleEvent() reassign this while withTimeout is awaited; TypeScript keeps the pre-await narrowing
       if (closed) {
         return;
       }
@@ -127,6 +129,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
         close(access);
         return;
       }
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- close() and handleEvent() reassign this while withTimeout is awaited; TypeScript keeps the pre-await narrowing
       if (accessPending) {
         await flush();
         return;

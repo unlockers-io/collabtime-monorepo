@@ -1,11 +1,11 @@
 import { defineConfig } from "oxlint";
 import awesomeness from "oxlint-config-awesomeness";
+import shadcn from "oxlint-config-awesomeness/shadcn";
 
 export default defineConfig({
-  extends: [awesomeness],
+  extends: [awesomeness, shadcn],
   // Generated runtime is byte-verified and tested in the control plane.
   ignorePatterns: [".github/ci/*.mjs"],
-  jsPlugins: ["@shadcn/lint"],
   overrides: [
     {
       // Next route entrypoints and client hooks require their framework context; mock that boundary, not the behavior under test.
@@ -40,7 +40,7 @@ export default defineConfig({
       },
     },
     {
-      files: ["packages/ui/src/components/field.tsx", "packages/ui/src/components/spinner.tsx"],
+      files: ["packages/ui/src/components/spinner.tsx"],
       rules: {
         "jsx-a11y/prefer-tag-over-role": "off",
       },
@@ -55,30 +55,9 @@ export default defineConfig({
       },
     },
     {
-      files: ["apps/web/src/app/layout.tsx", "apps/web/src/lib/timezones.ts"],
-      rules: {
-        "new-cap": "off",
-      },
-    },
-    {
       files: ["apps/web/src/app/layout.tsx"],
       rules: {
         "react/no-danger": "off",
-      },
-    },
-    {
-      files: ["packages/transactional/src/utils/senders.ts"],
-      rules: {
-        "require-await": "off",
-      },
-    },
-    {
-      files: [
-        "apps/web/src/lib/actions/group-actions.ts",
-        "apps/web/src/lib/actions/member-actions.ts",
-      ],
-      rules: {
-        "require-await": "off",
       },
     },
     {
@@ -92,28 +71,13 @@ export default defineConfig({
       },
     },
     {
-      files: ["tests/e2e/teardown/**/*.ts", "apps/web/scripts/**/*.ts"],
+      files: ["tests/e2e/teardown/**/*.ts"],
       rules: {
         "no-console": "off",
       },
     },
-    {
-      files: ["tests/e2e/fixtures/**/*.ts"],
-      rules: {
-        "no-empty-pattern": "off",
-      },
-    },
-    {
-      files: ["tests/**", "playwright.config.ts"],
-      rules: {
-        "require-unicode-regexp": "off",
-      },
-    },
   ],
   rules: {
-    "shadcn/no-arbitrary-values": "error",
-    "shadcn/no-inline-styles": "error",
-    "shadcn/no-raw-colors": "error",
     "shadcn/no-restyle": [
       "error",
       {
@@ -134,8 +98,9 @@ export default defineConfig({
         ],
       },
     ],
-    "shadcn/no-unknown-classes": "error",
-    "shadcn/require-static-classes": "error",
   },
-  settings: { shadcn: { ui: "@repo/ui/components" } },
+  settings: {
+    "react-doctor": { rootDirectory: "apps/web" },
+    shadcn: { ui: "@repo/ui/components" },
+  },
 });

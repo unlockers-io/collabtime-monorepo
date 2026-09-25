@@ -80,7 +80,6 @@ const main = async (): Promise<void> => {
         const teamId = key.slice("team:".length);
         scanned += 1;
 
-        // oxlint-disable-next-line react-doctor/async-await-in-loop -- Redis SCAN can repeat keys; finish each mirror write and readback before processing another occurrence.
         const raw = await redis.get(key);
         if (raw === null) {
           continue;
