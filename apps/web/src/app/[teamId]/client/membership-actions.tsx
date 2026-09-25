@@ -26,11 +26,9 @@ export const MembershipActions = ({
   return (
     <div className="flex flex-col gap-4">
       {hasClaimedProfile ? (
-        !isAdmin && (
-          <p className="text-center text-sm text-muted-foreground">You are a member of this team</p>
-        )
+        !isAdmin && <p className="text-sm text-muted-foreground">You are a member of this team.</p>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">Your profile isn&apos;t on this team yet</p>
           <AddOwnProfileButton teamId={props.teamId} />
         </div>

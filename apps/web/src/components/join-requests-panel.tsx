@@ -3,7 +3,6 @@
 import { Button } from "@repo/ui/components/button";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Spinner } from "@repo/ui/components/spinner";
-import { StatusBadge as StatusPill } from "@repo/ui/compositions/status-badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useState } from "react";
@@ -78,8 +77,8 @@ const JoinRequestRow = ({ onSettled, request, teamId }: JoinRequestRowProps) => 
   const isBusy = action !== null;
 
   return (
-    <li aria-busy={isBusy} className="flex items-center gap-3 px-4 py-3">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+    <li aria-busy={isBusy} className="flex items-center gap-3 py-2.5">
+      <div className="flex size-8 shrink-0 items-center justify-center border border-border bg-secondary text-xs font-semibold text-secondary-foreground">
         {request.userName.charAt(0).toUpperCase()}
       </div>
 
@@ -107,7 +106,7 @@ const JoinRequestRow = ({ onSettled, request, teamId }: JoinRequestRowProps) => 
             void run("deny");
           }}
           size="icon-sm"
-          variant="destructive"
+          variant="ghost"
         >
           {action === "deny" ? <Spinner /> : <X className="size-4" />}
         </Button>
@@ -141,7 +140,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4">
+      <div className="flex items-center gap-2">
         <Spinner />
         <span className="text-sm text-muted-foreground">Loading join requests…</span>
       </div>
@@ -153,20 +152,20 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   }
 
   return (
-    <div className="rounded-xl border border-warning/40 bg-warning/10">
+    <div className="border-b border-border">
       <button
         aria-controls="join-requests-list"
         aria-expanded={isExpanded}
-        className="flex w-full items-center justify-between gap-3 p-4"
+        className="flex w-full items-center justify-between gap-3 rounded-sm py-2 outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
         onClick={handleToggle}
         type="button"
       >
         <div className="flex items-center gap-2.5">
-          <div className="flex size-8 items-center justify-center rounded-full bg-warning/20 text-warning">
-            <Bell aria-hidden="true" className="size-4" />
-          </div>
-          <span className="text-sm font-medium text-foreground">Pending Join Requests</span>
-          <StatusPill tone="pending">{requests.length}</StatusPill>
+          <Bell aria-hidden="true" className="size-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">Join requests</span>
+          <span className="font-mono text-xs text-muted-foreground tabular-nums">
+            {requests.length}
+          </span>
         </div>
         {isExpanded ? (
           <ChevronUp aria-hidden="true" className="size-4 text-muted-foreground" />
@@ -176,9 +175,9 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
       </button>
 
       {isExpanded && (
-        <div className="border-t border-warning/40" id="join-requests-list">
+        <div className="border-t border-border" id="join-requests-list">
           <ScrollArea className="max-h-64">
-            <ul aria-live="polite" className="divide-y divide-warning/20">
+            <ul aria-live="polite" className="divide-y divide-border">
               {requests.map((request) => (
                 <JoinRequestRow
                   key={request.id}

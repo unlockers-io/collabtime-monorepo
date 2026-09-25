@@ -1,7 +1,6 @@
 "use client";
 import { Button } from "@repo/ui/components/button";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
-import { StatusBadge as StatusPill } from "@repo/ui/compositions/status-badge";
 import { Mail, ChevronDown, ChevronUp } from "lucide-react";
 import { useId, useState } from "react";
 
@@ -29,29 +28,35 @@ export const PendingInvitationsPanelView = ({
     return null;
   }
   return (
-    <div className="border-y border-border">
-      <Button
+    <div className="border-b border-border">
+      <button
         aria-controls={id}
         aria-expanded={expanded}
-        className="w-full justify-between"
+        className="flex w-full items-center justify-between gap-3 rounded-sm py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         onClick={() => {
           setExpanded(!expanded);
         }}
-        size="default"
-        variant="ghost"
+        type="button"
       >
-        <span className="flex items-center gap-2">
-          <Mail className="size-4" />
-          Pending invitations<StatusPill tone="info">{invitations.length}</StatusPill>
+        <span className="flex items-center gap-2.5 text-sm font-medium text-foreground">
+          <Mail aria-hidden className="size-4 text-muted-foreground" />
+          Pending invitations
+          <span className="font-mono text-xs text-muted-foreground tabular-nums">
+            {invitations.length}
+          </span>
         </span>
-        {expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-      </Button>
+        {expanded ? (
+          <ChevronUp aria-hidden className="size-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown aria-hidden className="size-4 text-muted-foreground" />
+        )}
+      </button>
       {expanded && (
         <ScrollArea className="max-h-80" id={id}>
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-border border-t border-border">
             {invitations.map((invitation) => (
               <li
-                className="flex flex-wrap items-center justify-between gap-3 py-4"
+                className="flex flex-wrap items-center justify-between gap-3 py-2.5"
                 key={invitation.id}
               >
                 <div className="min-w-0 flex-1 basis-48">

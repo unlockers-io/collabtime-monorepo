@@ -37,7 +37,7 @@ const JoinPrompt = ({
 }: JoinPromptProps) => {
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-pretty text-muted-foreground">
           Work on this team? Create an account to add your own hours.
         </p>
@@ -62,7 +62,7 @@ const JoinPrompt = ({
 
   if (teamStatus === "INVITED" && invitationId !== undefined) {
     return (
-      <div className="border-y border-border py-6">
+      <div>
         <AcceptWorkspaceInvitation
           invitationId={invitationId}
           inviterName={inviterName}
@@ -75,7 +75,7 @@ const JoinPrompt = ({
   return (
     <div className="flex flex-col gap-3">
       {inviteMismatch && <InviteMismatchNotice {...inviteMismatch} returnTo={returnTo} />}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {teamStatus === "PENDING"
             ? "Your join request is pending admin approval."

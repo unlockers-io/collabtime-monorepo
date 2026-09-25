@@ -70,10 +70,7 @@ type SectionCardFooterProps = ComponentProps<"div">;
 const SectionCardFooter = ({ className, ...props }: SectionCardFooterProps) => {
   return (
     <div
-      className={cn(
-        "flex flex-wrap items-center gap-2 border-t border-border pt-4 sm:pt-5",
-        className,
-      )}
+      className={cn("flex flex-wrap items-center gap-2", className)}
       data-slot="section-card-footer"
       {...props}
     />
