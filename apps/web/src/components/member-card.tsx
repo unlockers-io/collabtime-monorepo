@@ -102,6 +102,178 @@ const MemberActions = ({ memberName, onEdit, onRemove }: MemberActionsProps) => 
   </div>
 );
 
+const getGroupName = (member: TeamMember, groups: Array<TeamGroup>) =>
+  member.groupId === undefined || member.groupId === ""
+    ? undefined
+    : groups.find((group) => group.id === member.groupId)?.name;
+
+const hasAccount = (member: TeamMember) => member.userId !== undefined && member.userId !== "";
+
+/** The invitation worth showing: only for an unclaimed profile, and only while it can be accepted. */
+const getLiveInvite = (member: TeamMember, pendingInvite?: PendingTeamInvitation) =>
+  !hasAccount(member) &&
+  pendingInvite !== undefined &&
+  formatExpiresIn(pendingInvite.expiresAt) !== "Expired"
+    ? pendingInvite
+    : undefined;
+
+type MemberIdentityProps = {
+  groupName?: string;
+  isOwnProfile: boolean;
+  liveInvite?: PendingTeamInvitation;
+  member: TeamMember;
+};
+
+const MemberIdentity = ({ groupName, isOwnProfile, liveInvite, member }: MemberIdentityProps) => (
+  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+    <p className="flex min-w-0 items-center gap-1.5">
+      <span className="truncate font-medium text-foreground">{member.name}</span>
+      {isOwnProfile && <Badge variant="secondary">You</Badge>}
+      {liveInvite !== undefined && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  aria-label={`Invitation sent to ${liveInvite.email}`}
+                  className="cursor-help"
+                  type="button"
+                />
+              }
+            >
+              <Badge variant="outline">Invited</Badge>
+            </TooltipTrigger>
+            <TooltipContent>{liveInvite.email}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </p>
+    <p className="truncate text-xs text-muted-foreground">
+      {[member.title, formatTimezoneLabel(member.timezone), groupName].filter(Boolean).join(" · ")}
+    </p>
+  </div>
+);
+
+const MemberSchedule = ({ member }: { member: TeamMember }) => {
+  useHalfMinuteTick();
+  const status = getStatus(member);
+
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs sm:flex-col sm:items-end">
+      <span className="font-mono text-foreground tabular-nums">
+        {formatMinuteRange(member.workingHoursStart * 60, member.workingHoursEnd * 60)}
+        <span className="font-sans text-muted-foreground"> local</span>
+      </span>
+      <span className="flex items-center gap-1.5 text-muted-foreground">
+        <span
+          aria-hidden
+          className={cn(
+            "size-1.5 shrink-0",
+            status.isWorking ? "bg-foreground" : "border border-muted-foreground",
+          )}
+        />
+        <span className="font-mono tabular-nums">{status.label}</span>
+      </span>
+    </div>
+  );
+};
+
+type MemberAdminControlsProps = Pick<
+  MemberCardProps,
+  "groups" | "member" | "pendingInvite" | "teamId"
+>;
+
+const MemberAdminControls = ({
+  groups,
+  member,
+  pendingInvite,
+  teamId,
+}: MemberAdminControlsProps) => {
+  const queryClient = useQueryClient();
+  const [isPending, startTransition] = useTransition();
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isRemoveOpen, setIsRemoveOpen] = useState(false);
+
+  const handleRemove = () => {
+    startTransition(async () => {
+      const result = await removeMember(teamId, member.id);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      setIsRemoveOpen(false);
+      toast.success(`${member.name} removed`);
+      void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
+    });
+  };
+
+  const consequence = hasAccount(member)
+    ? "They leave the timeline and lose access to this workspace."
+    : "They leave the timeline and any pending invitation is cancelled.";
+
+  return (
+    <>
+      <MemberActions
+        memberName={member.name}
+        onEdit={() => {
+          setIsEditOpen(true);
+        }}
+        onRemove={() => {
+          setIsRemoveOpen(true);
+        }}
+      />
+      <EditMemberDialog
+        groups={groups}
+        member={member}
+        onOpenChange={setIsEditOpen}
+        open={isEditOpen}
+        pendingInvite={pendingInvite}
+        teamId={teamId}
+      />
+      <ConfirmRemoveDialog
+        confirmLabel="Remove member"
+        description={`${consequence} This can't be undone.`}
+        isPending={isPending}
+        onConfirm={handleRemove}
+        onOpenChange={setIsRemoveOpen}
+        open={isRemoveOpen}
+        title={`Remove ${member.name}?`}
+      />
+    </>
+  );
+};
+
+type ClaimProfileControlProps = Pick<MemberCardProps, "groups" | "member" | "teamId">;
+
+const ClaimProfileControl = ({ groups, member, teamId }: ClaimProfileControlProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        aria-label={`Claim ${member.name}'s profile`}
+        onClick={() => {
+          setIsOpen(true);
+        }}
+        size="sm"
+        variant="outline"
+      >
+        <Hand className="size-3.5" />
+        That&apos;s me
+      </Button>
+      <EditMemberDialog
+        groups={groups}
+        member={member}
+        mode="claim"
+        onOpenChange={setIsOpen}
+        open={isOpen}
+        teamId={teamId}
+      />
+    </>
+  );
+};
+
 const MemberCard = ({
   canEdit,
   currentUserId,
@@ -112,166 +284,36 @@ const MemberCard = ({
   pendingInvite,
   teamId,
 }: MemberCardProps) => {
-  const queryClient = useQueryClient();
-  const [isPending, startTransition] = useTransition();
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
-  const [isRemoveOpen, setIsRemoveOpen] = useState(false);
-
   const hasCurrentUser = currentUserId !== undefined && currentUserId !== "";
-  const hasAccount = member.userId !== undefined && member.userId !== "";
-  const isOwnProfile = hasCurrentUser && member.userId === currentUserId;
-  const canClaim = hasCurrentUser && !hasAccount && !hasClaimedProfile;
-  const hasLiveInvite =
-    !hasAccount &&
-    pendingInvite !== undefined &&
-    formatExpiresIn(pendingInvite.expiresAt) !== "Expired";
-  const groupName =
-    member.groupId === undefined || member.groupId === ""
-      ? undefined
-      : groups.find((group) => group.id === member.groupId)?.name;
-
-  useHalfMinuteTick();
-  const status = getStatus(member);
-
-  const handleRemove = () => {
-    if (!canEdit) {
-      return;
-    }
-    startTransition(async () => {
-      const result = await removeMember(teamId, member.id);
-      if (result.success) {
-        setIsRemoveOpen(false);
-        toast.success(`${member.name} removed`);
-        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
-      } else {
-        toast.error(result.error);
-      }
-    });
-  };
-
-  const removeConsequence = hasAccount
-    ? "They leave the timeline and lose access to this workspace."
-    : "They leave the timeline and any pending invitation is cancelled.";
+  const canClaim = hasCurrentUser && !hasAccount(member) && !hasClaimedProfile;
 
   return (
-    <>
-      <div className="flex items-start gap-2 py-2.5 text-sm sm:items-center sm:gap-3">
-        {dragHandle}
-        <div className="relative shrink-0">
-          <div className="flex size-8 items-center justify-center border border-border bg-secondary text-xs font-semibold text-secondary-foreground">
-            {member.name.charAt(0).toUpperCase()}
-          </div>
-        </div>
+    <div className="flex items-start gap-2 py-2.5 text-sm sm:items-center sm:gap-3">
+      {dragHandle}
+      <div className="flex size-8 shrink-0 items-center justify-center border border-border bg-secondary text-xs font-semibold text-secondary-foreground">
+        {member.name.charAt(0).toUpperCase()}
+      </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <p className="flex min-w-0 items-center gap-1.5">
-              <span className="truncate font-medium text-foreground">{member.name}</span>
-              {isOwnProfile && <Badge variant="secondary">You</Badge>}
-              {hasLiveInvite && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <button
-                          aria-label={`Invitation sent to ${pendingInvite.email}`}
-                          className="cursor-help"
-                          type="button"
-                        />
-                      }
-                    >
-                      <Badge variant="outline">Invited</Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>{pendingInvite.email}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {[member.title, formatTimezoneLabel(member.timezone), groupName]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          </div>
-
-          <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs sm:flex-col sm:items-end">
-            <span className="font-mono text-foreground tabular-nums">
-              {formatMinuteRange(member.workingHoursStart * 60, member.workingHoursEnd * 60)}
-              <span className="font-sans text-muted-foreground"> local</span>
-            </span>
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span
-                aria-hidden
-                className={cn(
-                  "size-1.5 shrink-0",
-                  status.isWorking ? "bg-foreground" : "border border-muted-foreground",
-                )}
-              />
-              <span className="font-mono tabular-nums">{status.label}</span>
-            </span>
-          </div>
-        </div>
-
-        {canEdit && (
-          <MemberActions
-            memberName={member.name}
-            onEdit={() => {
-              setIsEditDialogOpen(true);
-            }}
-            onRemove={() => {
-              setIsRemoveOpen(true);
-            }}
-          />
-        )}
-        {canClaim && (
-          <Button
-            aria-label={`Claim ${member.name}'s profile`}
-            onClick={() => {
-              setIsClaimDialogOpen(true);
-            }}
-            size="sm"
-            variant="outline"
-          >
-            <Hand className="size-3.5" />
-            That&apos;s me
-          </Button>
-        )}
+      <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+        <MemberIdentity
+          groupName={getGroupName(member, groups)}
+          isOwnProfile={hasCurrentUser && member.userId === currentUserId}
+          liveInvite={getLiveInvite(member, pendingInvite)}
+          member={member}
+        />
+        <MemberSchedule member={member} />
       </div>
 
       {canEdit && (
-        <>
-          <EditMemberDialog
-            groups={groups}
-            member={member}
-            onOpenChange={setIsEditDialogOpen}
-            open={isEditDialogOpen}
-            pendingInvite={pendingInvite}
-            teamId={teamId}
-          />
-          <ConfirmRemoveDialog
-            confirmLabel="Remove member"
-            description={`${removeConsequence} This can't be undone.`}
-            isPending={isPending}
-            onConfirm={handleRemove}
-            onOpenChange={setIsRemoveOpen}
-            open={isRemoveOpen}
-            title={`Remove ${member.name}?`}
-          />
-        </>
-      )}
-      {canClaim && (
-        <EditMemberDialog
+        <MemberAdminControls
           groups={groups}
           member={member}
-          mode="claim"
-          onOpenChange={setIsClaimDialogOpen}
-          open={isClaimDialogOpen}
+          pendingInvite={pendingInvite}
           teamId={teamId}
         />
       )}
-    </>
+      {canClaim && <ClaimProfileControl groups={groups} member={member} teamId={teamId} />}
+    </div>
   );
 };
 

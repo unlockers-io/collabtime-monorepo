@@ -13,8 +13,9 @@ import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
 import { safeRedirectPath } from "@/lib/redirect-validation";
 
-import { AuthErrorNotice, authErrorKind } from "../auth-error";
-import type { AuthErrorKind } from "../auth-error";
+import { AuthErrorNotice } from "../auth-error";
+import { authErrorKind } from "../auth-error-kind";
+import type { AuthErrorKind } from "../auth-error-kind";
 import { AUTH_LINK_CLASS, AuthConfirmation, AuthFooter } from "../auth-shell";
 
 type Props = {

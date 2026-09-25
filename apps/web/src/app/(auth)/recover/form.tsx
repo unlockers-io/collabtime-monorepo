@@ -11,8 +11,9 @@ import { useState, useTransition } from "react";
 import { authClient } from "@/lib/auth-client";
 import { recoverSchema } from "@/lib/form-schemas";
 
-import { AuthErrorNotice, authErrorKind } from "../auth-error";
-import type { AuthErrorKind } from "../auth-error";
+import { AuthErrorNotice } from "../auth-error";
+import { authErrorKind } from "../auth-error-kind";
+import type { AuthErrorKind } from "../auth-error-kind";
 import { AUTH_LINK_CLASS, AuthConfirmation, AuthFooter } from "../auth-shell";
 
 const RecoverForm = () => {

@@ -1,5 +1,7 @@
 "use client";
 
+import { cn } from "@repo/ui/lib/utils";
+
 import { formatDuration, formatMinuteRange, formatUtcOffset } from "@/lib/timezones";
 
 import { formatNameList } from "./helpers";
@@ -61,6 +63,94 @@ const readAnswer = (reading: SharedWindowReading, rows: ReadonlyArray<MemberRow>
   return { detail, headline: "Best time to meet:", range: formatRun(run), timing };
 };
 
+const isCountingSome = (reading: SharedWindowReading, rows: ReadonlyArray<MemberRow>) =>
+  rows.length >= 2 && reading.countedCount < rows.length;
+
+const readNotes = (
+  reading: SharedWindowReading,
+  rows: ReadonlyArray<MemberRow>,
+  hasCollapsedGroups: boolean,
+): Array<string> => {
+  const primaryRun = reading.primary?.run;
+  const otherWindows = reading.windows.flatMap((window) =>
+    window === primaryRun ? [] : [formatRun(window)],
+  );
+  const notes: Array<string> = [];
+
+  if (otherWindows.length > 0) {
+    notes.push(`Also ${formatNameList(otherWindows)}.`);
+  }
+  if (reading.groupCoverage !== null) {
+    notes.push(`Every group has someone working ${formatRun(reading.groupCoverage.run)}.`);
+  }
+  if (isCountingSome(reading, rows)) {
+    const collapsed = hasCollapsedGroups ? "; collapsed groups are left out" : "";
+    notes.push(`Counting ${reading.countedCount} of ${rows.length} people${collapsed}.`);
+  }
+
+  return notes;
+};
+
+/** The answer as one sentence for the live region; the countdown is left out so it isn't re-read every tick. */
+const speak = ({ detail, headline, range }: Answer): string =>
+  [range === null ? headline : `${headline} ${range}, your time.`, detail]
+    .filter(Boolean)
+    .join(" ");
+
+const AnswerHeadline = ({ answer, zone }: { answer: Answer; zone: string }) => (
+  <div
+    aria-hidden
+    className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
+  >
+    <p className="font-display text-xl font-semibold text-balance text-foreground sm:text-2xl">
+      {answer.headline}
+      {answer.range !== null && (
+        <>
+          {" "}
+          <span className="font-mono tracking-normal whitespace-nowrap tabular-nums">
+            {answer.range}
+          </span>{" "}
+          <span className="text-base font-medium whitespace-nowrap text-muted-foreground sm:text-lg">
+            your time, {zone}
+          </span>
+        </>
+      )}
+    </p>
+    {answer.timing !== null && (
+      <p
+        className={cn(
+          "shrink-0 font-mono text-sm tabular-nums",
+          answer.timing.kind === "now" ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {formatTiming(answer.timing)}
+      </p>
+    )}
+  </div>
+);
+
+type SummaryNotesProps = {
+  notes: ReadonlyArray<string>;
+  onCountEveryone?: () => void;
+  showHint: boolean;
+};
+
+const SummaryNotes = ({ notes, onCountEveryone, showHint }: SummaryNotesProps) => (
+  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+    {notes.length > 0 && <p>{notes.join(" ")}</p>}
+    {onCountEveryone !== undefined && (
+      <button
+        className="rounded-sm font-medium text-foreground underline underline-offset-4 outline-none hover:no-underline focus-visible:ring-3 focus-visible:ring-ring/50"
+        onClick={onCountEveryone}
+        type="button"
+      >
+        Count everyone
+      </button>
+    )}
+    {showHint && <p>Select a name to count or leave someone out.</p>}
+  </div>
+);
+
 type SharedWindowSummaryProps = {
   hasCollapsedGroups: boolean;
   hasExplicitExclusions: boolean;
@@ -79,87 +169,24 @@ const SharedWindowSummary = ({
   viewerTimezone,
 }: SharedWindowSummaryProps) => {
   const answer = readAnswer(reading, rows);
-  const zone = formatUtcOffset(viewerTimezone);
-  const primaryRun = reading.primary?.run;
-  const otherWindows = reading.windows.flatMap((window) =>
-    window === primaryRun ? [] : [formatRun(window)],
-  );
-  const coverage = reading.groupCoverage === null ? null : formatRun(reading.groupCoverage.run);
-  const isCountingSome = rows.length >= 2 && reading.countedCount < rows.length;
-
-  const notes: Array<string> = [];
-  if (otherWindows.length > 0) {
-    notes.push(`Also ${formatNameList(otherWindows)}.`);
-  }
-  if (coverage !== null) {
-    notes.push(`Every group has someone working ${coverage}.`);
-  }
-  if (isCountingSome) {
-    notes.push(
-      `Counting ${reading.countedCount} of ${rows.length} people${hasCollapsedGroups ? "; collapsed groups are left out" : ""}.`,
-    );
-  }
-
-  const spoken = [
-    answer.range === null ? answer.headline : `${answer.headline} ${answer.range}, your time.`,
-    answer.detail,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const canCountEveryone = hasExplicitExclusions && isCountingSome(reading, rows);
 
   return (
     <section aria-label="Best time to meet" className="flex flex-col gap-2">
       <span aria-live="polite" className="sr-only">
-        {spoken}
+        {speak(answer)}
       </span>
-      <div
-        aria-hidden
-        className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
-      >
-        <p className="font-display text-xl font-semibold text-balance text-foreground sm:text-2xl">
-          {answer.headline}
-          {answer.range !== null && (
-            <>
-              {" "}
-              <span className="font-mono tracking-normal whitespace-nowrap tabular-nums">
-                {answer.range}
-              </span>{" "}
-              <span className="text-base font-medium whitespace-nowrap text-muted-foreground sm:text-lg">
-                your time, {zone}
-              </span>
-            </>
-          )}
-        </p>
-        {answer.timing !== null && (
-          <p
-            className={
-              answer.timing.kind === "now"
-                ? "shrink-0 font-mono text-sm text-foreground tabular-nums"
-                : "shrink-0 font-mono text-sm text-muted-foreground tabular-nums"
-            }
-          >
-            {formatTiming(answer.timing)}
-          </p>
-        )}
-      </div>
+      <AnswerHeadline answer={answer} zone={formatUtcOffset(viewerTimezone)} />
       {answer.detail !== null && (
         <p aria-hidden className="text-sm text-pretty text-muted-foreground">
           {answer.detail}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        {notes.length > 0 && <p>{notes.join(" ")}</p>}
-        {isCountingSome && hasExplicitExclusions && (
-          <button
-            className="rounded-sm font-medium text-foreground underline underline-offset-4 outline-none hover:no-underline focus-visible:ring-3 focus-visible:ring-ring/50"
-            onClick={onCountEveryone}
-            type="button"
-          >
-            Count everyone
-          </button>
-        )}
-        {rows.length >= 2 && <p>Select a name to count or leave someone out.</p>}
-      </div>
+      <SummaryNotes
+        notes={readNotes(reading, rows, hasCollapsedGroups)}
+        onCountEveryone={canCountEveryone ? onCountEveryone : undefined}
+        showHint={rows.length >= 2}
+      />
     </section>
   );
 };
