@@ -119,10 +119,11 @@ const createMemberActions = (deps: MemberActionDeps) => {
       errorContext: "update member",
       mutate: (team, parsed) => {
         const memberIndex = team.members.findIndex((member) => member.id === memberId);
-        if (memberIndex === -1) {
+        const member = team.members[memberIndex];
+        if (member === undefined) {
           return { error: "Member not found", ok: false };
         }
-        team.members[memberIndex] = { ...team.members[memberIndex], ...parsed };
+        team.members[memberIndex] = { ...member, ...parsed };
         return { ok: true, value: sanitizeTeam(team) };
       },
       prelude: () => {
@@ -230,10 +231,10 @@ const createMemberActions = (deps: MemberActionDeps) => {
       errorContext: "update own member",
       mutate: (team, parsed) => {
         const memberIndex = team.members.findIndex((member) => member.id === memberId);
-        if (memberIndex === -1) {
+        const member = team.members[memberIndex];
+        if (member === undefined) {
           return { error: "Member not found", ok: false };
         }
-        const member = team.members[memberIndex];
         if (member.userId !== undefined && member.userId !== "" && member.userId !== callerId) {
           return { error: "You can only edit your own member record", ok: false };
         }

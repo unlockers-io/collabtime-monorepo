@@ -205,13 +205,7 @@ const getDayOffset = (memberTimezone: string, viewerTimezone: string): number =>
   const viewerDate = now.toLocaleDateString("en-CA", { timeZone: viewerTimezone });
   const memberDate = now.toLocaleDateString("en-CA", { timeZone: memberTimezone });
 
-  const [viewerYear, viewerMonth, viewerDay] = viewerDate.split("-").map(Number);
-  const [memberYear, memberMonth, memberDay] = memberDate.split("-").map(Number);
-
-  const viewerDateObj = new Date(viewerYear, viewerMonth - 1, viewerDay);
-  const memberDateObj = new Date(memberYear, memberMonth - 1, memberDay);
-
-  const diffTime = memberDateObj.getTime() - viewerDateObj.getTime();
+  const diffTime = new Date(memberDate).getTime() - new Date(viewerDate).getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
   return diffDays;

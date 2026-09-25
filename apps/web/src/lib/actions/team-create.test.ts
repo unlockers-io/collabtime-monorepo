@@ -47,7 +47,7 @@ describe("createTeam", () => {
   );
   it("stores a trimmed name", async () => {
     await createTeam(TEST_TIMEZONE, "  Platform team  ");
-    expect(storeTeam.mock.calls[0][1].name).toBe("Platform team");
+    expect(storeTeam.mock.calls[0]?.[1].name).toBe("Platform team");
   });
 
   it("requires a session before any write", async () => {
@@ -69,10 +69,10 @@ describe("createTeam", () => {
   it("populates redis cache with creator as first member", async () => {
     await createTeam(TEST_TIMEZONE, "My workspace");
 
-    const storedTeam = storeTeam.mock.calls[0][1];
+    const storedTeam = storeTeam.mock.calls[0]?.[1];
 
-    expect(storedTeam.members).toHaveLength(1);
-    expect(storedTeam.members[0]).toMatchObject({
+    expect(storedTeam?.members).toHaveLength(1);
+    expect(storedTeam?.members[0]).toMatchObject({
       name: "Test User",
       order: 0,
       timezone: TEST_TIMEZONE,

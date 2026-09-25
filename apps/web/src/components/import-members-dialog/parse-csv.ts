@@ -62,11 +62,11 @@ const parseCSVLine = (line: string, sep: string): Array<string> => {
 
 const parseCSV = (text: string): Array<ParsedRow> => {
   const lines = text.split(/\r?\n/v).filter((l) => l.trim());
-  if (lines.length === 0) {
+  const [firstLine] = lines;
+  if (firstLine === undefined) {
     return [];
   }
 
-  const firstLine = lines[0];
   const sep =
     (firstLine.match(/\t/gv)?.length ?? 0) > (firstLine.match(/,/gv)?.length ?? 0) ? "\t" : ",";
 
@@ -85,9 +85,9 @@ const parseCSV = (text: string): Array<ParsedRow> => {
   if (hasHeader) {
     startRow = 1;
     const headerIndices = new Map<string, number>();
-    for (let i = 0; i < firstCells.length; i++) {
-      if (!headerIndices.has(firstCells[i])) {
-        headerIndices.set(firstCells[i], i);
+    for (const [i, cell] of firstCells.entries()) {
+      if (!headerIndices.has(cell)) {
+        headerIndices.set(cell, i);
       }
     }
     nameIdx = findColIndex(headerIndices, "name");
@@ -105,8 +105,8 @@ const parseCSV = (text: string): Array<ParsedRow> => {
 
   const rows: Array<ParsedRow> = [];
 
-  for (let i = startRow; i < lines.length; i++) {
-    const cells: ReadonlyArray<string | undefined> = parseCSVLine(lines[i], sep);
+  for (const [offset, line] of lines.slice(startRow).entries()) {
+    const cells: ReadonlyArray<string | undefined> = parseCSVLine(line, sep);
     if (cells.every((c) => c === "")) {
       continue;
     }
@@ -142,7 +142,7 @@ const parseCSV = (text: string): Array<ParsedRow> => {
 
     rows.push({
       errors,
-      index: i - startRow + 1,
+      index: offset + 1,
       matchedTimezone,
       name,
       rawTimezone,

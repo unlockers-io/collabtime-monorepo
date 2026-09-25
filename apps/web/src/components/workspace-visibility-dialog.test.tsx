@@ -65,7 +65,7 @@ describe("workspace privacy", () => {
       "/api/spaces/space-1",
       expect.objectContaining({ method: "PATCH" }),
     );
-    expect(readBody(fetchMock.mock.calls[0][1]?.body)).toEqual({
+    expect(readBody(fetchMock.mock.calls[0]?.[1]?.body)).toEqual({
       password: "GuestPassword123!",
       visibility: "private",
     });
@@ -79,7 +79,7 @@ describe("workspace privacy", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
     });
-    expect(readBody(fetchMock.mock.calls[0][1]?.body)).toEqual({ visibility: "private" });
+    expect(readBody(fetchMock.mock.calls[0]?.[1]?.body)).toEqual({ visibility: "private" });
   });
 
   it("sends only public visibility when disabling privacy", async () => {
@@ -90,7 +90,7 @@ describe("workspace privacy", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
     });
-    expect(readBody(fetchMock.mock.calls[0][1]?.body)).toEqual({ visibility: "public" });
+    expect(readBody(fetchMock.mock.calls[0]?.[1]?.body)).toEqual({ visibility: "public" });
   });
 
   it("keeps the dialog open after a failed save", async () => {

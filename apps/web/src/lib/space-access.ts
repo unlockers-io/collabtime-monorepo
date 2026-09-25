@@ -97,7 +97,7 @@ const verifySpaceAccessToken = (
       return { reason: "Invalid token format", valid: false };
     }
 
-    const [payloadStr, signature] = parts;
+    const [payloadStr = "", signature = ""] = parts;
 
     if (!payloadStr || !signature) {
       return { reason: "Missing token parts", valid: false };
