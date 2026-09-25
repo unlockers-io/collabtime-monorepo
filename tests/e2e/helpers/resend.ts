@@ -64,7 +64,6 @@ const resendFetch = async (path: string): Promise<Response> => {
   const headers = { Authorization: `Bearer ${requireApiKey()}` };
 
   let attempt = 0;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const response = await fetch(url, { headers });
 

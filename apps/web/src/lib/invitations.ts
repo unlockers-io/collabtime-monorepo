@@ -14,8 +14,8 @@ export const openInvitationWhere = (now: Date) => ({
   status: "PENDING" as const,
 });
 export const maskEmail = (email: string): string => {
-  const [local, domain] = email.split("@");
-  return `${local?.slice(0, 1) ?? ""}***@${domain ?? ""}`;
+  const [local = "", domain = ""] = email.split("@");
+  return `${local.slice(0, 1)}***@${domain}`;
 };
 export const inviteLink = (appUrl: string, teamId: string, invitationId: string): string => {
   const url = new URL(`/${teamId}`, appUrl);

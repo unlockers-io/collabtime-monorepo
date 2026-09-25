@@ -43,7 +43,7 @@ const toRuns = (keys: ReadonlyArray<string | null>): Array<KeyedRun> => {
       return;
     }
     const last = runs.at(-1);
-    if (last !== undefined && last.key === key && last.startSlot + last.lengthSlots === slot) {
+    if (last?.key === key && last.startSlot + last.lengthSlots === slot) {
       last.lengthSlots += 1;
       return;
     }
@@ -54,7 +54,6 @@ const toRuns = (keys: ReadonlyArray<string | null>): Array<KeyedRun> => {
   const last = runs.at(-1);
   if (
     runs.length > 1 &&
-    first !== undefined &&
     last !== undefined &&
     first.startSlot === 0 &&
     last.startSlot + last.lengthSlots === SLOTS_IN_DAY &&

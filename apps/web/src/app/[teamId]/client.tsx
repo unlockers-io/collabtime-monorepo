@@ -99,8 +99,8 @@ const TeamPageClient = ({
     toast.dismiss("team-query-error");
   }, [teamError]);
 
-  const members = teamData?.team?.members ?? [];
-  const groups = teamData?.team?.groups ?? [];
+  const members = teamData?.team.members ?? [];
+  const groups = teamData?.team.groups ?? [];
 
   const {
     currentUserId,
@@ -112,7 +112,7 @@ const TeamPageClient = ({
     teamStatus,
   } = useTeamMembership({ initialStatus, members, teamId, userId });
 
-  const teamName = teamData?.team?.name ?? "";
+  const teamName = teamData?.team.name ?? "";
 
   const {
     displayName,
@@ -126,7 +126,7 @@ const TeamPageClient = ({
   const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members);
   const { excludedMemberIds, setExcludedMemberIds } = useExcludedMembers();
 
-  const orderedMembers = [...members].toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const orderedMembers = [...members].toSorted((a, b) => a.order - b.order);
   const orderedGroups = [...groups].toSorted((a, b) => a.order - b.order);
 
   const { handleDragEnd } = useDragEnd({

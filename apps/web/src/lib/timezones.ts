@@ -90,7 +90,8 @@ const getOffsetMinutes = (timezone: string, at: Date = new Date()): number => {
     getOffsetFormatter(timezone)
       .formatToParts(at)
       .find((part) => part.type === "timeZoneName")?.value ?? "GMT";
-  const groups = OFFSET_PATTERN.exec(name)?.groups;
+  const groups: Partial<Record<"hours" | "minutes" | "sign", string>> | undefined =
+    OFFSET_PATTERN.exec(name)?.groups;
   if (groups === undefined) {
     return 0;
   }

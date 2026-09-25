@@ -123,7 +123,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
     queryFn: async () => {
       const result = await getPendingJoinRequests(teamId);
       if (!result.success) {
-        throw new Error(result.error ?? "Failed to load join requests");
+        throw new Error(result.error);
       }
       return result.data;
     },

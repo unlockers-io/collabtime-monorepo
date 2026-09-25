@@ -204,7 +204,7 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
         spaceId={isSpaceOwner ? space.id : null}
         teamId={teamId}
         teamStatus={teamStatus}
-        userId={session?.user?.id}
+        userId={session?.user.id}
       />
     </QueryProvider>
   );
