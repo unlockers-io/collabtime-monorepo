@@ -1,8 +1,7 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
 import { Pencil } from "lucide-react";
-
-import { cn } from "@/lib/utils";
 
 type TeamTitleProps = {
   isAdmin: boolean;
@@ -34,18 +33,20 @@ const TeamTitle = ({
     }
   };
 
+  const heading = (
+    <h1 className="min-w-0 font-display text-4xl font-semibold tracking-hero text-balance break-words sm:text-6xl">
+      {teamName || "Untitled workspace"}
+    </h1>
+  );
+
   if (!isAdmin) {
-    return (
-      <h1 className="truncate font-display text-4xl font-semibold tracking-hero sm:text-6xl">
-        {teamName || "Team Workspace"}
-      </h1>
-    );
+    return heading;
   }
 
   if (isEditing) {
     return (
       <input
-        aria-label="Team name"
+        aria-label="Workspace name"
         autoFocus
         className="h-14 w-full max-w-xl border border-input bg-background px-3 font-display text-3xl font-semibold tracking-hero text-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none sm:h-18 sm:text-5xl"
         maxLength={100}
@@ -57,7 +58,7 @@ const TeamTitle = ({
           e.currentTarget.select();
         }}
         onKeyDown={handleKeyDown}
-        placeholder="Team name…"
+        placeholder="Workspace name"
         type="text"
         value={teamName}
       />
@@ -65,25 +66,18 @@ const TeamTitle = ({
   }
 
   return (
-    <button
-      aria-label="Edit team name"
-      className="group flex min-w-0 items-center gap-2"
-      onClick={onEdit}
-      type="button"
-    >
-      <h1 className="truncate font-display text-4xl font-semibold tracking-hero sm:text-6xl">
-        {teamName || "Team Workspace"}
-      </h1>
-      <Pencil
-        aria-hidden="true"
-        className={cn(
-          "size-3.5 shrink-0 text-muted-foreground transition-opacity",
-          teamName
-            ? "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
-            : "opacity-100",
-        )}
-      />
-    </button>
+    <div className="flex min-w-0 items-center gap-2">
+      {heading}
+      <Button
+        aria-label="Rename workspace"
+        className="shrink-0"
+        onClick={onEdit}
+        size="icon-sm"
+        variant="ghost"
+      >
+        <Pencil aria-hidden className="size-4" />
+      </Button>
+    </div>
   );
 };
 

@@ -12,7 +12,7 @@ import { createQueryClient } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
 import { canAccessSpace } from "@/lib/space-visibility";
 import { getTeamName } from "@/lib/team-meta";
-import { CuidSchema, normalizeEmail } from "@/lib/validation";
+import { CuidSchema, UUIDSchema, normalizeEmail } from "@/lib/validation";
 import { QueryProvider } from "@/providers/query-provider";
 import { isTeamRole } from "@/types";
 import type { TeamStatus } from "@/types";
@@ -30,11 +30,20 @@ type TeamPageProps = {
 export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metadata> => {
   const { teamId } = await params;
   const teamName = await getTeamName(teamId);
+  const robots = { follow: false, googleBot: { follow: false, index: false }, index: false };
+
+  // A null name is either an unnamed workspace or a dead link; only the latter 404s.
+  if (teamName === null && UUIDSchema.safeParse(teamId).success) {
+    const space = await prisma.space.findUnique({ select: { id: true }, where: { teamId } });
+    if (!space) {
+      return { robots, title: "Workspace not found" };
+    }
+  }
 
   return {
     description: `Working hours and overlap view for ${teamName ?? "your team"}.`,
-    robots: { follow: false, googleBot: { follow: false, index: false }, index: false },
-    title: teamName ?? "Team Workspace",
+    robots,
+    title: teamName ?? "Untitled workspace",
   };
 };
 

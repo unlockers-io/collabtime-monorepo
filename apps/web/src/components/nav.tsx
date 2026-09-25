@@ -3,7 +3,7 @@
 import { Badge } from "@repo/ui/components/badge";
 import { Button, buttonVariants } from "@repo/ui/components/button";
 import { cn } from "@repo/ui/lib/utils";
-import { Archive, Lock, LogIn, Menu, X } from "lucide-react";
+import { Archive, Globe, Lock, LogIn, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -53,9 +53,12 @@ const TeamNav = (props: Extract<NavViewProps, { variant: "team" }>) => {
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      // Invitation hints stay out of shared links; a counted-people view stays in.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("invite");
+      await navigator.clipboard.writeText(url.toString());
       setHasCopied(true);
-      toast.success("Link copied to clipboard");
+      toast.success("Link copied");
       setTimeout(() => {
         setHasCopied(false);
       }, 2000);
@@ -131,7 +134,7 @@ const TeamNav = (props: Extract<NavViewProps, { variant: "team" }>) => {
         </div>
       </div>
 
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
         <TeamTitle
           isAdmin={isAdmin}
           isEditing={isEditingName}
@@ -141,10 +144,15 @@ const TeamNav = (props: Extract<NavViewProps, { variant: "team" }>) => {
           onSave={onSaveName}
           teamName={teamName}
         />
-        {isPrivate && (
+        {isPrivate ? (
           <Badge variant="secondary">
             <Lock aria-hidden />
             Private
+          </Badge>
+        ) : (
+          <Badge title="Anyone with the link can view" variant="outline">
+            <Globe aria-hidden />
+            Public
           </Badge>
         )}
         {isArchived && (

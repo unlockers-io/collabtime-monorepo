@@ -59,9 +59,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
         toast.error(result.error);
       }
     },
-    validators: {
-      onSubmit: formSchema,
-    },
+    validators: { onBlur: formSchema, onChange: formSchema, onSubmit: formSchema },
   });
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -83,7 +81,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
     >
       <DialogTrigger render={<Button size="sm" type="button" />}>
         <Users className="size-4" />
-        Add Group
+        Add group
       </DialogTrigger>
       <DialogContent>
         <form
@@ -95,13 +93,10 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
           }}
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-primary">
-                <Users className="size-5 text-primary-foreground" />
-              </div>
-              Add Group
-            </DialogTitle>
-            <DialogDescription>Create a new group to organize your team members.</DialogDescription>
+            <DialogTitle>Add group</DialogTitle>
+            <DialogDescription>
+              Organize members into sub-teams, like Engineering or Design.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="py-4">
@@ -110,7 +105,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor="group-name">Group Name</FieldLabel>
+                    <FieldLabel htmlFor="group-name">Group name</FieldLabel>
                     <Input
                       aria-describedby={isInvalid ? "group-name-error" : undefined}
                       aria-invalid={isInvalid}
@@ -119,7 +114,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
                       onChange={(e) => {
                         field.handleChange(e.target.value);
                       }}
-                      placeholder="e.g., Engineering, Design, Marketing..."
+                      placeholder="e.g. Engineering"
                       value={field.state.value}
                     />
                     {isInvalid && (
@@ -156,7 +151,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
                       Creating…
                     </span>
                   ) : (
-                    "Create Group"
+                    "Create group"
                   )}
                 </Button>
               )}

@@ -1,15 +1,7 @@
 "use client";
 
-import { ScrollArea } from "@repo/ui/components/scroll-area";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@repo/ui/components/tooltip";
-import { StatusBadge as StatusPill } from "@repo/ui/compositions/status-badge";
-import { cn } from "@repo/ui/lib/utils";
-import { Circle, Clock, Sunrise, Users } from "lucide-react";
+import { Users } from "lucide-react";
+import type { ReactNode } from "react";
 
 import {
   SectionCard,
@@ -17,13 +9,20 @@ import {
   SectionCardHeader,
   SectionCardTitle,
 } from "@/components/section-card";
-import { HOURS_IN_DAY, useClientValue } from "@/components/timezone-visualizer/helpers";
-import { getHourFormatter } from "@/lib/hour-formatter";
-import { getUserTimezone, isCurrentlyWorking, convertHourToTimezone } from "@/lib/timezones";
+import { useClientValue } from "@/components/timezone-visualizer/helpers";
+import {
+  formatDuration,
+  formatMinuteOfDay,
+  getMinutesUntilAvailable,
+  getMinutesUntilDayEnds,
+  getViewerTimezone,
+  getWorkingInterval,
+  isCurrentlyWorking,
+} from "@/lib/timezones";
 import { useHalfMinuteTick } from "@/lib/use-tick";
 import type { TeamGroup, TeamMember } from "@/types";
 
-const SOON_THRESHOLD_HOURS = 2;
+const SOON_THRESHOLD_MINUTES = 2 * 60;
 const EMPTY_GROUPS: Array<TeamGroup> = [];
 
 type TeamInsightsProps = {
@@ -31,193 +30,127 @@ type TeamInsightsProps = {
   members: Array<TeamMember>;
 };
 
-type WorkingMember = { hoursUntilEnd: number; member: TeamMember };
-type OffDutyMember = { hoursUntilStart: number; member: TeamMember };
+type StatusEntry = {
+  detail: string;
+  member: TeamMember;
+  minutes: number;
+};
 
-type StatusTone = "info" | "success" | "warning";
-
-type StatusGroupProps = {
-  children: React.ReactNode;
-  className?: string;
-  count: number;
+type StatusColumnProps = {
   emptyLabel: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  iconClassName?: string;
+  entries: ReadonlyArray<StatusEntry>;
+  groupNameById: ReadonlyMap<string, string>;
   label: string;
-  tone: StatusTone;
 };
 
-type ToneTextContract = Record<StatusTone, string>;
+const StatusColumn = ({ emptyLabel, entries, groupNameById, label }: StatusColumnProps) => (
+  <div className="flex min-w-0 flex-col gap-2">
+    <h3 className="flex items-baseline gap-2 text-xs font-medium text-muted-foreground">
+      {label}
+      <span className="font-mono text-foreground tabular-nums">{entries.length}</span>
+    </h3>
+    {entries.length === 0 ? (
+      <p className="border-t border-border pt-2 text-xs text-muted-foreground">{emptyLabel}</p>
+    ) : (
+      <ul className="border-t border-border">
+        {entries.map(({ detail, member }) => {
+          const groupName = groupNameById.get(member.groupId ?? "");
+          return (
+            <li
+              className="flex items-baseline justify-between gap-3 border-b border-border/50 py-1.5 text-sm"
+              key={member.id}
+            >
+              <span className="min-w-0 truncate">
+                <span className="text-foreground">{member.name}</span>
+                {groupName !== undefined && (
+                  <span className="text-muted-foreground"> · {groupName}</span>
+                )}
+              </span>
+              <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
+                {detail}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </div>
+);
 
-const TONE_TEXT = {
-  info: "text-info",
-  success: "text-success",
-  warning: "text-warning",
-} satisfies ToneTextContract;
+const byMinutes = (a: StatusEntry, b: StatusEntry) => a.minutes - b.minutes;
 
-const StatusGroup = ({
-  children,
-  className,
-  count,
-  emptyLabel,
-  icon: Icon,
-  iconClassName,
-  label,
-  tone,
-}: StatusGroupProps) => {
-  return (
-    <div className={cn("flex flex-col gap-2.5", className)}>
-      <div className="flex items-center gap-2">
-        <Icon className={cn("size-4 shrink-0", iconClassName ?? TONE_TEXT[tone])} />
-        <h3 className="text-xs font-medium text-muted-foreground">{label}</h3>
-        <StatusPill className="ml-auto" numeric tone={tone}>
-          {count}
-        </StatusPill>
-      </div>
-      {count > 0 ? (
-        <ScrollArea className="h-30">
-          <TooltipProvider>
-            <div className="flex flex-wrap gap-1.5 px-1 py-0.5">{children}</div>
-          </TooltipProvider>
-        </ScrollArea>
-      ) : (
-        <p className="text-xs text-muted-foreground">{emptyLabel}</p>
-      )}
-    </div>
-  );
-};
+const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): ReactNode => {
+  const viewerTimezone = useClientValue(getViewerTimezone, "");
+  const tick = useHalfMinuteTick();
 
-type StatusBadgeProps = {
-  children: React.ReactNode;
-  groupName: string | null;
-  tone: StatusTone;
-};
-
-const StatusBadge = ({ children, groupName, tone }: StatusBadgeProps) => {
-  const hasGroup = groupName !== null && groupName !== "";
-  const badge = (
-    <StatusPill className={cn(hasGroup && "cursor-help")} tone={tone}>
-      {children}
-    </StatusPill>
-  );
-
-  if (!hasGroup) {
-    return badge;
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger render={<span />}>{badge}</TooltipTrigger>
-      <TooltipContent>
-        <p>{groupName}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
-
-const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps) => {
-  const viewerTimezone = useClientValue(() => getUserTimezone(), "");
-  useHalfMinuteTick();
-
-  if (members.length === 0 || !viewerTimezone) {
+  if (members.length === 0 || !viewerTimezone || tick === 0) {
     return null;
   }
 
-  const now = new Date();
-  const hourFormatter = getHourFormatter(viewerTimezone);
-  const hourPart = hourFormatter.formatToParts(now).find((p) => p.type === "hour");
-  const currentHourInViewer = hourPart ? Math.trunc(Number(hourPart.value)) : 0;
-  const hoursUntil = (hourInViewer: number) =>
-    (hourInViewer - currentHourInViewer + HOURS_IN_DAY) % HOURS_IN_DAY;
-
-  const working: Array<WorkingMember> = [];
-  const offDuty: Array<OffDutyMember> = [];
+  const now = new Date(tick);
+  const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
+  const working: Array<StatusEntry> = [];
+  const startingSoon: Array<StatusEntry> = [];
+  const wrappingUp: Array<StatusEntry> = [];
 
   for (const member of members) {
-    const boundaryInViewer = (hour: number) =>
-      hoursUntil(convertHourToTimezone(hour, member.timezone, viewerTimezone));
+    const { timezone, workingHoursEnd, workingHoursStart } = member;
+    const interval = getWorkingInterval(member, viewerTimezone, now);
 
-    if (isCurrentlyWorking(member.timezone, member.workingHoursStart, member.workingHoursEnd)) {
-      working.push({ hoursUntilEnd: boundaryInViewer(member.workingHoursEnd), member });
-    } else {
-      offDuty.push({ hoursUntilStart: boundaryInViewer(member.workingHoursStart), member });
+    if (isCurrentlyWorking(timezone, workingHoursStart, workingHoursEnd, now)) {
+      const minutesLeft = getMinutesUntilDayEnds(timezone, workingHoursEnd, now);
+      const endsAt = formatMinuteOfDay(interval.startMinute + interval.lengthMinutes);
+      working.push({ detail: `until ${endsAt}`, member, minutes: minutesLeft });
+      if (minutesLeft <= SOON_THRESHOLD_MINUTES) {
+        wrappingUp.push({
+          detail: `${formatDuration(minutesLeft)} left`,
+          member,
+          minutes: minutesLeft,
+        });
+      }
+      continue;
+    }
+
+    const minutesUntil = getMinutesUntilAvailable(
+      timezone,
+      workingHoursStart,
+      workingHoursEnd,
+      now,
+    );
+    if (minutesUntil <= SOON_THRESHOLD_MINUTES) {
+      startingSoon.push({
+        detail: `in ${formatDuration(minutesUntil)}`,
+        member,
+        minutes: minutesUntil,
+      });
     }
   }
-
-  const onlineMembers = working;
-
-  const comingSoonMembers = offDuty
-    .filter((s) => s.hoursUntilStart <= SOON_THRESHOLD_HOURS)
-    .toSorted((a, b) => a.hoursUntilStart - b.hoursUntilStart);
-
-  const leavingSoonMembers = working
-    .filter((s) => s.hoursUntilEnd <= SOON_THRESHOLD_HOURS)
-    .toSorted((a, b) => a.hoursUntilEnd - b.hoursUntilEnd);
-
-  const getGroupName = (groupId?: string) => {
-    if (groupId === undefined || groupId === "") {
-      return null;
-    }
-    return groups.find((g) => g.id === groupId)?.name ?? null;
-  };
 
   return (
     <SectionCard>
       <SectionCardHeader>
-        <SectionCardTitle icon={Users}>Team Status</SectionCardTitle>
+        <SectionCardTitle icon={Users}>Team status</SectionCardTitle>
       </SectionCardHeader>
       <SectionCardContent>
-        <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-          <StatusGroup
-            count={onlineMembers.length}
-            emptyLabel="No one is currently working"
-            icon={Circle}
-            iconClassName="size-3 fill-success text-success"
-            label="Online Now"
-            tone="success"
-          >
-            {onlineMembers.map(({ member }) => (
-              <StatusBadge groupName={getGroupName(member.groupId)} key={member.id} tone="success">
-                <span className="size-1.5 rounded-full bg-success" />
-                {member.name}
-              </StatusBadge>
-            ))}
-          </StatusGroup>
-
-          <StatusGroup
-            count={comingSoonMembers.length}
-            emptyLabel={`No one starting in the next ${SOON_THRESHOLD_HOURS} hours`}
-            icon={Sunrise}
-            label="Starting Soon"
-            tone="warning"
-          >
-            {comingSoonMembers.map(({ hoursUntilStart, member }) => (
-              <StatusBadge groupName={getGroupName(member.groupId)} key={member.id} tone="warning">
-                {member.name}
-                <span className="font-mono text-xs tabular-nums opacity-80">
-                  in {hoursUntilStart}h
-                </span>
-              </StatusBadge>
-            ))}
-          </StatusGroup>
-
-          <StatusGroup
-            className="sm:col-span-2 lg:col-span-1"
-            count={leavingSoonMembers.length}
-            emptyLabel={`No one ending in the next ${SOON_THRESHOLD_HOURS} hours`}
-            icon={Clock}
-            label="Wrapping Up"
-            tone="info"
-          >
-            {leavingSoonMembers.map(({ hoursUntilEnd, member }) => (
-              <StatusBadge groupName={getGroupName(member.groupId)} key={member.id} tone="info">
-                {member.name}
-                <span className="font-mono text-xs tabular-nums opacity-80">
-                  {hoursUntilEnd}h left
-                </span>
-              </StatusBadge>
-            ))}
-          </StatusGroup>
+        <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+          <StatusColumn
+            emptyLabel="No one is working right now."
+            entries={working.toSorted(byMinutes).toReversed()}
+            groupNameById={groupNameById}
+            label="Working now"
+          />
+          <StatusColumn
+            emptyLabel="No one starts in the next 2 hours."
+            entries={startingSoon.toSorted(byMinutes)}
+            groupNameById={groupNameById}
+            label="Starting soon"
+          />
+          <StatusColumn
+            emptyLabel="No one finishes in the next 2 hours."
+            entries={wrappingUp.toSorted(byMinutes)}
+            groupNameById={groupNameById}
+            label="Wrapping up"
+          />
         </div>
       </SectionCardContent>
     </SectionCard>

@@ -10,7 +10,7 @@ const STEPS = [
     title: "Add your team",
   },
   {
-    body: "Select the people you need and read the shaded window where they all overlap.",
+    body: "Read the best time to meet, written out in your time. Leave out anyone you don't need.",
     title: "Find the hour",
   },
 ];

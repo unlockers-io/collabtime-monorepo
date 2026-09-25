@@ -6,13 +6,14 @@ import {
   KeyboardSensor,
   PointerSensor,
   closestCenter,
-  defaultAnnouncements,
   defaultDropAnimationSideEffects,
   useSensor,
   useSensors,
+  type Announcements,
   type DragEndEvent,
   type DragStartEvent,
   type DropAnimation,
+  type UniqueIdentifier,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -73,6 +74,39 @@ const DndWrapper = ({
     }
   };
 
+  const nameOf = (id: UniqueIdentifier): string => {
+    const key = String(id);
+    const member = members.find((m) => m.id === key);
+    if (member) {
+      return member.name;
+    }
+    const group = groups.find((g) => g.id === key);
+    return group ? `the ${group.name} group` : "this item";
+  };
+
+  const describeTarget = (activeId: UniqueIdentifier, overId: UniqueIdentifier): string => {
+    const isMemberOverGroup =
+      members.some((m) => m.id === String(activeId)) && groups.some((g) => g.id === String(overId));
+    return isMemberOverGroup ? `into ${nameOf(overId)}` : `to the place of ${nameOf(overId)}`;
+  };
+
+  const announcements: Announcements = {
+    onDragCancel: ({ active }) => `Moving ${nameOf(active.id)} was cancelled.`,
+    onDragEnd: ({ active, over }) =>
+      over
+        ? `${nameOf(active.id)} was dropped ${describeTarget(active.id, over.id)}.`
+        : `${nameOf(active.id)} was dropped.`,
+    onDragOver: ({ active, over }) =>
+      over ? `${nameOf(active.id)} is over ${nameOf(over.id)}.` : undefined,
+    onDragStart: ({ active }) => `Picked up ${nameOf(active.id)}.`,
+  };
+
+  const handleDragCancel = () => {
+    droppedOnGroupRef.current = false;
+    setActiveDrag(null);
+    onDragTypeChange?.(null);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const currentDragType = activeDrag?.kind ?? null;
     droppedOnGroupRef.current =
@@ -116,13 +150,14 @@ const DndWrapper = ({
   return (
     <DndContext
       accessibility={{
-        announcements: defaultAnnouncements,
+        announcements,
         screenReaderInstructions: {
           draggable:
-            "To pick up a draggable item, press Space or Enter. To move the item, use the arrow keys. To drop the item, press Space or Enter again. To cancel, press Escape.",
+            "Press Space or Enter to pick up. Use the arrow keys to move, Space or Enter to drop, and Escape to cancel.",
         },
       }}
       collisionDetection={closestCenter}
+      onDragCancel={handleDragCancel}
       onDragEnd={handleDragEnd}
       onDragStart={handleDragStart}
       sensors={sensors}

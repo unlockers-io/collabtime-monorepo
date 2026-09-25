@@ -96,6 +96,26 @@ describe("HomeLists", () => {
     expect(screen.queryByText("No workspaces yet")).not.toBeInTheDocument();
   });
 
+  it("links each row to its workspace and labels the admin role in text", () => {
+    renderLists((client) => {
+      client.setQueryData(queryKeys.myTeams, [
+        team,
+        { ...team, role: "MEMBER", spaceId: "space-2", teamId: "team-2", teamName: "Ops" },
+      ]);
+      client.setQueryData(queryKeys.invitations, []);
+    });
+
+    const admin = screen.getByRole("link", { name: "Design" });
+    expect(admin).toHaveAttribute("href", "/team-1");
+    expect(admin).toHaveAccessibleDescription("3 members · Admin");
+
+    const member = screen.getByRole("link", { name: "Ops" });
+    expect(member).toHaveAttribute("href", "/team-2");
+    expect(member).toHaveAccessibleDescription("3 members");
+
+    expect(screen.getByRole("button", { name: "More actions for Design" })).toBeInTheDocument();
+  });
+
   it("shows a retryable error row when the teams request fails", async () => {
     respondWith((url) =>
       url.endsWith("/api/invitations")

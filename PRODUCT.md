@@ -26,7 +26,7 @@ The mechanism is the horizontal per-member day strip with a computed overlap: ev
 ## Capabilities and Constraints
 
 - Core surfaces: landing page (logged out `/`), home dashboard (logged in `/`), team timezone view (`/[teamId]`), auth screens, settings.
-- Timezone visualizer capabilities: time axis in viewer-local hours, per-member 24h strips, current-time indicator, group collapse, compare panel ("Find a meeting time") that computes overlap for a selection, legend.
+- Timezone visualizer capabilities: time axis in viewer-local hours, per-member 24h strips at 15-minute precision (half-hour zones such as India are exact), current-time indicator, a best-time-to-meet sentence above the timeline (window in your time, who is free, when it starts or ends, hours every group is covered), per-person count toggles kept in the URL (`?without=`), group collapse (collapsed groups are not counted), legend.
 - Team insights summarize the roster (spread, overlap stats).
 - Stack is fixed: Next.js 16 App Router, React 19, Tailwind v4, Base UI, Motion, TanStack Query/Form, Better Auth, Prisma/Postgres, Redis.
 - Terminology: "workspace"/"space" (the shareable container), "team" (the roster), "members" (people with timezone + working hours), "groups" (sub-teams), "overlap" (shared awake/working window).

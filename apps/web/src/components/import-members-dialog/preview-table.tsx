@@ -10,6 +10,7 @@ import {
 import { CheckCircle, XCircle } from "lucide-react";
 
 import { formatTimezoneLabel } from "@/lib/timezones";
+import { formatHour } from "@/lib/utils";
 
 import type { ParsedRow } from "./parse-csv";
 
@@ -36,12 +37,12 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
       )}
     </div>
 
-    <div className="overflow-hidden rounded-lg border border-border">
+    <div className="overflow-hidden border border-border">
       <ScrollArea className="h-80">
         <TooltipProvider delay={200}>
           <table className="w-full text-sm">
             <caption className="sr-only">Imported team members preview</caption>
-            <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
+            <thead className="sticky top-0 bg-popover">
               <tr className="border-b border-border">
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">#</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
@@ -90,8 +91,8 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
                     <td className="px-3 py-2 text-muted-foreground">
                       {row.title || <span className="opacity-40">–</span>}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-muted-foreground tabular-nums">
-                      {row.workingHoursStart}:00–{row.workingHoursEnd}:00
+                    <td className="px-3 py-2 font-mono whitespace-nowrap text-muted-foreground tabular-nums">
+                      {formatHour(row.workingHoursStart)}–{formatHour(row.workingHoursEnd)}
                     </td>
                     <td className="px-3 py-2">
                       {isValid ? (

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { Nav } from "@/components/nav";
+import { PageMain } from "@/components/page-layout";
 import { getSession } from "@/lib/auth-server";
 import { QueryProvider } from "@/providers/query-provider";
 
@@ -32,9 +33,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => (
         <DashboardGate />
       </Suspense>
       <Nav isAuthenticated />
-      <main className="flex-1" id="main">
-        {children}
-      </main>
+      <PageMain>{children}</PageMain>
     </div>
   </QueryProvider>
 );

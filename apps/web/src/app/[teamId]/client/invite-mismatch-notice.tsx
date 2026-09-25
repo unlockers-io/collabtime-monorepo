@@ -13,7 +13,7 @@ export const InviteMismatchNoticeView = ({
   onSwitchAccount: () => void;
   pending: boolean;
 }) => (
-  <div className="flex flex-col gap-3 border-y border-border py-4">
+  <div className="flex flex-col gap-3">
     <p className="text-sm text-muted-foreground">
       This invitation was sent to {invitedEmailMasked}. Sign in with that address, or request to
       join with your current account.

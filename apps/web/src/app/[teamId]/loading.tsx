@@ -26,6 +26,10 @@ const SectionHeadingSkeleton = ({ description = false }: { description?: boolean
 
 const TimelineSkeleton = () => (
   <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-2">
+      <Skeleton className="h-7 w-80 max-w-full rounded-none" />
+      <Skeleton className="h-4 w-96 max-w-full rounded-none" />
+    </div>
     <div className="flex gap-2 sm:gap-3">
       <div className="w-28 shrink-0 sm:w-40" />
       <div className="flex flex-1 justify-between">
@@ -38,7 +42,7 @@ const TimelineSkeleton = () => (
       </div>
     </div>
 
-    <div className="flex max-h-80 flex-col">
+    <div className="flex flex-col">
       {TIMELINE_SECTIONS.map((section, sectionIndex) => (
         <div
           className="flex flex-col gap-3 border-b border-border/50 py-4 first:pt-0 last:border-b-0 last:pb-0"
@@ -79,10 +83,7 @@ const TimelineSkeleton = () => (
       ))}
     </div>
 
-    <div className="flex h-14 items-center justify-center border-y border-dashed border-border">
-      <Skeleton className="h-4 w-44 rounded-none" />
-    </div>
-    <div className="flex flex-wrap justify-center gap-4">
+    <div className="flex flex-wrap gap-4">
       <Skeleton className="h-3 w-20 rounded-none" />
       <Skeleton className="h-3 w-24 rounded-none" />
       <Skeleton className="h-3 w-16 rounded-none" />
@@ -91,21 +92,13 @@ const TimelineSkeleton = () => (
 );
 
 const RosterRowSkeleton = ({ group = false }: { group?: boolean }) => (
-  <div className="flex min-h-35 flex-col gap-3 py-4">
-    <div className="flex items-start justify-between">
-      <Skeleton className="size-10 rounded-none" />
-      <Skeleton className="size-8" />
-    </div>
-    <div className="flex flex-1 flex-col gap-2">
+  <div className="flex items-center gap-3 py-2.5">
+    {!group && <Skeleton className="size-8 shrink-0 rounded-none" />}
+    <div className="flex flex-1 flex-col gap-1.5">
       <Skeleton className={`h-4 rounded-none ${group ? "w-24" : "w-32"}`} />
-      {!group && (
-        <>
-          <Skeleton className="h-3 w-20 rounded-none" />
-          <Skeleton className="mt-auto h-3 w-36 rounded-none" />
-        </>
-      )}
-      <Skeleton className="h-5 w-24 rounded-full" />
+      <Skeleton className="h-3 w-44 max-w-full rounded-none" />
     </div>
+    {!group && <Skeleton className="h-8 w-28 shrink-0 rounded-none" />}
   </div>
 );
 
@@ -143,22 +136,13 @@ const Loading = () => {
           <SectionCardHeader>
             <SectionHeadingSkeleton />
           </SectionCardHeader>
-          <SectionCardContent className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-            {STATUS_GROUPS.map((group, index) => (
-              <div
-                className={`flex flex-col gap-2.5 ${
-                  index === 2 ? "sm:col-span-2 lg:col-span-1" : ""
-                }`}
-                key={group}
-              >
-                <div className="flex items-center gap-2">
-                  <Skeleton className="size-4 rounded-none" />
-                  <Skeleton className="h-3 w-20 rounded-none" />
-                  <Skeleton className="ml-auto h-5 w-7 rounded-full" />
-                </div>
-                <div className="flex flex-wrap gap-1.5 px-1 py-0.5">
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                  <Skeleton className="h-5 w-20 rounded-full" />
+          <SectionCardContent className="grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+            {STATUS_GROUPS.map((group) => (
+              <div className="flex flex-col gap-2" key={group}>
+                <Skeleton className="h-3 w-24 rounded-none" />
+                <div className="flex flex-col gap-2 border-t border-border pt-2">
+                  <Skeleton className="h-4 w-full rounded-none" />
+                  <Skeleton className="h-4 w-3/4 rounded-none" />
                 </div>
               </div>
             ))}
@@ -171,7 +155,7 @@ const Loading = () => {
               <SectionHeadingSkeleton />
               <Skeleton className="h-5 w-7 rounded-full" />
             </SectionCardHeader>
-            <SectionCardContent className="grid grid-cols-1 divide-y divide-border pr-4">
+            <SectionCardContent className="flex flex-col divide-y divide-border border-y border-border">
               {["member-1", "member-2", "member-3"].map((member) => (
                 <RosterRowSkeleton key={member} />
               ))}
@@ -187,7 +171,7 @@ const Loading = () => {
               <SectionHeadingSkeleton />
               <Skeleton className="h-5 w-7 rounded-full" />
             </SectionCardHeader>
-            <SectionCardContent className="grid grid-cols-1 divide-y divide-border pr-4">
+            <SectionCardContent className="flex flex-col divide-y divide-border border-y border-border">
               {["group-1", "group-2"].map((group) => (
                 <RosterRowSkeleton group key={group} />
               ))}

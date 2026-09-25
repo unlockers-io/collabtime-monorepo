@@ -87,17 +87,17 @@ const PrivateSpaceGate = ({
   });
 
   return (
-    <main className="flex w-full flex-1 items-center justify-center px-4 py-12" id="main">
-      <div className="w-full max-w-sm rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
-        <div className="mb-5 flex flex-col items-center gap-2 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted">
-            <Lock aria-hidden className="size-5 text-muted-foreground" />
-          </span>
-          <h1 className="font-display text-base font-semibold tracking-tight">Private team</h1>
+    <main className="flex w-full flex-1 items-start justify-center px-4 py-16 sm:py-24" id="main">
+      <div className="w-full max-w-sm">
+        <div className="mb-6 flex flex-col gap-2">
+          <h1 className="flex items-center gap-2 font-display text-3xl font-semibold tracking-hero">
+            <Lock aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+            Private workspace
+          </h1>
           <p className="text-sm text-muted-foreground">
             {accepted
-              ? "Password accepted. Sign up or log in to join this team so it stays in your list."
-              : "Enter the team password to continue."}
+              ? "Password accepted. Create an account or sign in to join, so this workspace stays in your list."
+              : "Enter the password you were given to see this team's hours."}
           </p>
         </div>
 
@@ -107,17 +107,17 @@ const PrivateSpaceGate = ({
           <div className="flex flex-col gap-2">
             <Link className={cn(buttonVariants())} href={withRedirect("/register")}>
               <UserPlus aria-hidden className="mr-2 size-4" />
-              Sign up to join
+              Create account to join
             </Link>
             <Link
               className={cn(buttonVariants({ variant: "outline" }))}
               href={withRedirect("/login")}
             >
               <LogIn aria-hidden className="mr-2 size-4" />
-              Log in to join
+              Sign in to join
             </Link>
             <button
-              className="mt-1 text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              className="mt-1 text-left text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
               onClick={() => {
                 refresh();
               }}

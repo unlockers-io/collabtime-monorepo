@@ -1,25 +1,23 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@repo/ui/components/card";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import LoginForm from "@/app/(auth)/login/form";
 
 import { AuthGate } from "../auth-gate";
+import { AuthPage } from "../auth-shell";
+
+import { LoginNotice } from "./login-notice";
 
 const metadata: Metadata = {
-  description: "Sign in to your account to continue",
+  description: "Sign in to get back to your team's timeline",
   robots: { follow: false, index: false },
   title: "Welcome back",
 };
 
+type SearchParams = Promise<{ message?: string | Array<string>; redirect?: string }>;
+
 type Props = {
-  searchParams: Promise<{ redirect?: string }>;
+  searchParams: SearchParams;
 };
 
 const Page = ({ searchParams }: Props) => (
@@ -27,17 +25,17 @@ const Page = ({ searchParams }: Props) => (
     <Suspense fallback={null}>
       <AuthGate searchParams={searchParams} />
     </Suspense>
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle>
-          <h2 className="font-display text-xl">Welcome back</h2>
-        </CardTitle>
-        <CardDescription>Sign in to your account to continue</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <LoginForm searchParams={searchParams} />
-      </CardContent>
-    </Card>
+    <AuthPage
+      description="Sign in to get back to your team's timeline."
+      notice={
+        <Suspense fallback={null}>
+          <LoginNotice searchParams={searchParams} />
+        </Suspense>
+      }
+      title="Welcome back"
+    >
+      <LoginForm searchParams={searchParams} />
+    </AuthPage>
   </>
 );
 

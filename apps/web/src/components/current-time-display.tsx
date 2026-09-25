@@ -1,49 +1,42 @@
 "use client";
 
 import { Clock } from "lucide-react";
-import { useSyncExternalStore } from "react";
 
-import { getUserTimezone, formatTimezoneAbbreviation } from "@/lib/timezones";
+import { useClientValue } from "@/components/timezone-visualizer/helpers";
+import {
+  formatMinuteOfDay,
+  formatTimezoneCity,
+  formatUtcOffset,
+  getMinuteOfDay,
+  getViewerTimezone,
+} from "@/lib/timezones";
 import { useSecondTick } from "@/lib/use-tick";
 
-const emptySubscribe = () => () => {};
-
-const useClientValue = <T,>(clientValue: () => T, serverValue: T): T =>
-  useSyncExternalStore(emptySubscribe, clientValue, () => serverValue);
-
-const formatTime = (timestamp: number, timezone: string): string => {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    hour12: true,
-    minute: "2-digit",
-    second: "2-digit",
-    timeZone: timezone,
-  });
-};
+const CLOCK_CLASS =
+  "flex h-9 items-center gap-2 rounded-lg border bg-card px-3 py-2 font-medium text-card-foreground shadow-xs";
 
 const CurrentTimeDisplay = () => {
-  const viewerTimezone = useClientValue(() => getUserTimezone(), "");
-
+  const viewerTimezone = useClientValue(getViewerTimezone, "");
   const tick = useSecondTick();
 
-  if (!viewerTimezone) {
+  if (!viewerTimezone || tick === 0) {
     return (
-      <div className="flex h-9 items-center gap-2 rounded-lg border bg-card px-3 py-2 font-medium text-card-foreground shadow-xs">
+      <div className={CLOCK_CLASS}>
         <Clock className="size-4 shrink-0 text-muted-foreground" />
-        <span className="font-mono tabular-nums">--:--:-- --</span>
+        <span className="font-mono text-sm tabular-nums">--:--</span>
       </div>
     );
   }
 
-  const currentTime = formatTime(tick, viewerTimezone);
-  const timezoneAbbr = formatTimezoneAbbreviation(viewerTimezone);
+  const time = formatMinuteOfDay(getMinuteOfDay(viewerTimezone, new Date(tick)));
+  const offset = formatUtcOffset(viewerTimezone);
 
   return (
-    <div className="flex h-9 items-center gap-2 rounded-lg border bg-card px-3 py-2 font-medium text-card-foreground shadow-xs">
+    <div className={CLOCK_CLASS}>
       <Clock className="size-4 shrink-0 text-muted-foreground" />
-      <span className="font-mono text-sm tabular-nums">{currentTime}</span>
-      <span className="font-mono text-xs text-muted-foreground">{timezoneAbbr}</span>
+      <span className="sr-only">Your time in {formatTimezoneCity(viewerTimezone)}:</span>
+      <time className="font-mono text-sm tabular-nums">{time}</time>
+      <span className="font-mono text-xs text-muted-foreground">{offset}</span>
     </div>
   );
 };

@@ -18,9 +18,9 @@ test("invitation email carries a guest through signup and acceptance", async ({
   const teamId = new URL(page.url()).pathname.slice(1);
   await page.getByRole("button", { name: /add team member/i }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Name *").fill("Invited Friend");
+  await dialog.getByLabel("Full name").fill("Invited Friend");
   await dialog.getByLabel(/Email/).fill(email);
-  await dialog.getByRole("button", { exact: true, name: "Add Member" }).click();
+  await dialog.getByRole("button", { exact: true, name: "Add member" }).click();
   await expect(page.getByText("Invited", { exact: true })).toBeVisible();
   const mail = await waitForEmail({ sinceMs, subject: /invited you to join/i, to: email });
   const link = extractLink(mail, /\?invite=/);

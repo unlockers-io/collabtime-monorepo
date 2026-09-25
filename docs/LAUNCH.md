@@ -10,7 +10,7 @@ Drafts for the maintainer to review and publish. Live app: https://www.collabtim
 
 I built Collabtime to make one question easier: when are the people I need actually working?
 
-Add your teammates, their timezones, and working hours. Collabtime draws everyone on a shared timeline in your timezone and highlights the overlap. You can compare a selection of people or groups, import a roster from CSV, and share a public workspace without asking viewers to sign up. Private workspaces support password access and invitations.
+Add your teammates, their timezones, and working hours. Collabtime draws everyone on a shared timeline in your timezone and highlights the overlap. It writes out the best time to meet in your time and who is free then; leave anyone out with one click, import a roster from CSV, and share a public workspace without asking viewers to sign up. Private workspaces support password access and invitations.
 
 The landing page has an interactive demo, so you can try the timeline before creating an account. The app is free and MIT licensed. There is no billing or paid tier.
 
@@ -25,7 +25,7 @@ Source: https://github.com/unlockers-io/collabtime-monorepo
 
 **Tagline:** Find the hour everyone is awake
 
-**Description:** See your team's working hours on one timeline, compare overlap, and find a time to meet. Add people or import a CSV, organize groups, and share a public or password-protected workspace. Free and open source.
+**Description:** See your team's working hours on one timeline and get the best time to meet, written out in your timezone. Add people or import a CSV, organize groups, and share a public or password-protected workspace. Free and open source.
 
 **First maker comment:**
 

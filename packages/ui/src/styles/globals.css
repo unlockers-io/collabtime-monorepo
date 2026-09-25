@@ -325,10 +325,6 @@
   transition: var(--sortable-member-card-transition);
 }
 
-@utility comparison-label-alignment {
-  align-items: var(--compare-panel-align-items);
-}
-
 @utility current-time-position {
   left: var(--current-time-indicator-left);
 }

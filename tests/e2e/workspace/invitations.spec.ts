@@ -42,9 +42,9 @@ for (const isPrivate of [false, true]) {
       const teamId = new URL(page.url()).pathname.slice(1);
       createdTeamIds.push(teamId);
       await page.getByRole("button", { name: /add team member/i }).click();
-      await page.getByLabel("Name *").fill("Invited Friend");
+      await page.getByLabel("Full name").fill("Invited Friend");
       await page.getByLabel("Email (optional)").fill(email);
-      await page.getByRole("button", { exact: true, name: "Add Member" }).click();
+      await page.getByRole("button", { exact: true, name: "Add member" }).click();
       await expect(page.getByText("Invited", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: /Pending invitations/ }).click();
       await expect(
@@ -54,9 +54,9 @@ for (const isPrivate of [false, true]) {
       await page.getByRole("button", { name: `Revoke invitation to ${email}` }).click();
       await expect(page.getByText("Invited", { exact: true })).toHaveCount(0);
       await page.getByRole("button", { exact: true, name: "Edit Invited Friend" }).click();
-      await page.getByLabel("Invite User").fill(email);
+      await page.getByLabel("Invite by email").fill(email);
       await page.getByRole("button", { name: "Send invitation" }).click();
-      await expect(page.getByText(`Invited: ${email}`, { exact: true })).toBeVisible();
+      await expect(page.getByText(`Invited ${email}`, { exact: true })).toBeVisible();
       await page.getByRole("button", { exact: true, name: "Cancel" }).click();
       const invitation = await prisma.invitation.findUniqueOrThrow({
         where: { email_teamId: { email, teamId } },
@@ -97,7 +97,11 @@ for (const isPrivate of [false, true]) {
       expect(accepted.status).toBe("ACCEPTED");
       await page.reload();
       await expect(page.getByText("Invited", { exact: true })).toHaveCount(0);
-      await page.getByRole("button", { exact: true, name: "Remove Invited Friend" }).click();
+      await page
+        .getByRole("button", { exact: true, name: "More actions for Invited Friend" })
+        .click();
+      await page.getByRole("menuitem", { name: "Remove from workspace" }).click();
+      await page.getByRole("button", { exact: true, name: "Remove member" }).click();
       await expect.poll(() => prisma.membership.count({ where: { teamId, userId } })).toBe(0);
       await friend.reload();
       await expect(friend.getByRole("button", { name: "Add your profile" })).toHaveCount(0);

@@ -15,6 +15,10 @@ const PREVIEW_TICKS = ["midnight", "morning", "noon", "evening", "night"];
 
 const PreviewSkeleton = () => (
   <div aria-hidden className="flex flex-col gap-6">
+    <div className="flex flex-col gap-2">
+      <Skeleton className="h-7 w-80 max-w-full rounded-none" />
+      <Skeleton className="h-4 w-96 max-w-full rounded-none" />
+    </div>
     <div className="flex gap-2 sm:gap-3">
       <div className="w-28 shrink-0 sm:w-40" />
       <div className="flex flex-1 justify-between">
@@ -66,10 +70,7 @@ const PreviewSkeleton = () => (
       </div>
     ))}
 
-    <div className="flex h-14 items-center justify-center border-y border-dashed border-border">
-      <Skeleton className="h-4 w-44 rounded-none" />
-    </div>
-    <div className="flex flex-wrap justify-center gap-4">
+    <div className="flex flex-wrap gap-4">
       <Skeleton className="h-3 w-20 rounded-none" />
       <Skeleton className="h-3 w-24 rounded-none" />
       <Skeleton className="h-3 w-16 rounded-none" />

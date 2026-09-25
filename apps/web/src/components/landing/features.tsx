@@ -3,12 +3,12 @@ import { Section } from "./section";
 const FEATURES = [
   {
     description:
-      "Every member's working hours sit on a shared 24-hour axis, drawn in your timezone. A live marker tracks the current hour.",
+      "Every member's working hours sit on a shared 24-hour axis, drawn in your timezone to the quarter hour, so half-hour zones like India line up exactly. A live line marks the current time.",
     title: "One timeline, every timezone",
   },
   {
     description:
-      "Select any mix of people or groups and the overlap is shaded in: full overlap, partial, and the hours where each team has someone free.",
+      "The best time to meet is written out in your time, with who is free and who is not. Leave anyone out with one click, and see the hours when every group has someone working.",
     title: "Overlap you can see",
   },
   {

@@ -37,6 +37,11 @@ This document records the defaults used across the collabtime monorepo. New code
 - No `as unknown as X` casts to fake framework types in test files. Use shared typed helpers.
 - Mocks should be the minimum needed for the test. If a test only needs two properties, the helper should only expose those.
 
+## Time display
+
+- Times are always 24-hour `HH:MM`. There is no 12-hour mode and no preference for one.
+- Format through `formatMinuteOfDay` / `formatMinuteRange` in `apps/web/src/lib/timezones.ts` or `formatHour` in `lib/utils.ts`. Never hand a time to `toLocaleTimeString` or an `Intl.DateTimeFormat` without `hourCycle: "h23"`: the locale default can be 12-hour.
+
 ## Forms
 
 - `@tanstack/react-form`, never `react-hook-form`.
