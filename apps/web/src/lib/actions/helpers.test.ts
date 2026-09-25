@@ -28,7 +28,7 @@ describe("sanitizeTeam", () => {
     });
 
     const result = sanitizeTeam(team, "user-123");
-    expect(result.members[0].userId).toBe("user-123");
+    expect(result.members[0]?.userId).toBe("user-123");
   });
 
   it("replaces other users' userIds with 'claimed'", () => {
@@ -37,7 +37,7 @@ describe("sanitizeTeam", () => {
     });
 
     const result = sanitizeTeam(team, "user-123");
-    expect(result.members[0].userId).toBe("claimed");
+    expect(result.members[0]?.userId).toBe("claimed");
   });
 
   it("omits userId for unclaimed members", () => {

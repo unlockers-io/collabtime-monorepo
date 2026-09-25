@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMemberActions } from "./member-actions-core";
 import {
@@ -194,8 +194,8 @@ describe("updateMember", () => {
     await updateMember(VALID_UUID, VALID_UUID_3, { name: "Charlie" });
 
     const saved = persistedTeam();
-    expect(saved.members[0].name).toBe("Alice");
-    expect(saved.members[1].name).toBe("Charlie");
+    expect(saved.members[0]?.name).toBe("Alice");
+    expect(saved.members[1]?.name).toBe("Charlie");
   });
 });
 
@@ -258,8 +258,8 @@ describe("importMembers", () => {
 
     expect(result.success).toBe(true);
     const saved = persistedTeam();
-    expect(saved.members[1].order).toBe(1);
-    expect(saved.members[2].order).toBe(2);
+    expect(saved.members[1]?.order).toBe(1);
+    expect(saved.members[2]?.order).toBe(2);
   });
 
   it("returns error when team not found", async () => {
@@ -324,7 +324,7 @@ describe("updateOwnMember", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(persistedTeam().members[0].name).toBe("New Name");
+    expect(persistedTeam().members[0]?.name).toBe("New Name");
   });
 
   it("claims unclaimed record by setting userId", async () => {
@@ -339,7 +339,7 @@ describe("updateOwnMember", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(persistedTeam().members[0].userId).toBe("user-123");
+    expect(persistedTeam().members[0]?.userId).toBe("user-123");
   });
 });
 
@@ -385,10 +385,10 @@ describe("reorderMembers", () => {
 
     expect(result.success).toBe(true);
     const saved = persistedTeam();
-    expect(saved.members[0].id).toBe(VALID_UUID_3);
-    expect(saved.members[0].order).toBe(0);
-    expect(saved.members[1].id).toBe(VALID_UUID_2);
-    expect(saved.members[1].order).toBe(1);
+    expect(saved.members[0]?.id).toBe(VALID_UUID_3);
+    expect(saved.members[0]?.order).toBe(0);
+    expect(saved.members[1]?.id).toBe(VALID_UUID_2);
+    expect(saved.members[1]?.order).toBe(1);
   });
 
   it("persists reordered members", async () => {
@@ -401,8 +401,8 @@ describe("reorderMembers", () => {
     await reorderMembers(VALID_UUID, [VALID_UUID_3, VALID_UUID_2]);
 
     const saved = persistedTeam();
-    expect(saved.members[0].id).toBe(VALID_UUID_3);
-    expect(saved.members[1].id).toBe(VALID_UUID_2);
+    expect(saved.members[0]?.id).toBe(VALID_UUID_3);
+    expect(saved.members[1]?.id).toBe(VALID_UUID_2);
   });
 });
 
@@ -470,11 +470,13 @@ describe("removal cleanup and self repair", () => {
       createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2, userId: "other" })] }),
     );
     removeMembershipForSlot.mockImplementationOnce(() => {
-      persistedTeam().members[0].userId = "new-owner";
+      const [member] = persistedTeam().members;
+      assert(member, "expected a persisted member");
+      member.userId = "new-owner";
       return Promise.resolve();
     });
     expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: false });
-    expect(persistedTeam().members[0].userId).toBe("new-owner");
+    expect(persistedTeam().members[0]?.userId).toBe("new-owner");
   });
   it("does not delete the caller membership", async () => {
     seedTeam(

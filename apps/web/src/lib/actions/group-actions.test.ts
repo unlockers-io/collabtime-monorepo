@@ -96,7 +96,7 @@ describe("createGroup", () => {
 
     const saved = persistedTeam();
     expect(saved.groups).toHaveLength(1);
-    expect(saved.groups[0].name).toBe("Design");
+    expect(saved.groups[0]?.name).toBe("Design");
   });
 });
 
@@ -133,7 +133,7 @@ describe("updateGroup", () => {
     const result = await updateGroup(VALID_UUID, VALID_UUID_2, { name: "Product" });
 
     expect(result.success).toBe(true);
-    expect(persistedTeam().groups[0].name).toBe("Product");
+    expect(persistedTeam().groups[0]?.name).toBe("Product");
   });
 });
 
