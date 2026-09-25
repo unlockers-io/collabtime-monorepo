@@ -36,7 +36,10 @@ test.describe("Change email (two-stage confirmation + verification)", () => {
     const setCookie = signIn.headers()["set-cookie"] ?? "";
     const cookieHeader = setCookie
       .split(/,(?=\s*[\w-]+=)/u)
-      .map((c) => c.split(";")[0].trim())
+      .map((c) => {
+        const [nameValue = ""] = c.split(";");
+        return nameValue.trim();
+      })
       .filter(Boolean)
       .join("; ");
 

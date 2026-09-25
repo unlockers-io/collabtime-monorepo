@@ -63,10 +63,11 @@ const createGroupActions = (deps: GroupActionDeps) => {
       errorContext: "update group",
       mutate: (team, parsed) => {
         const groupIndex = team.groups.findIndex((group) => group.id === groupId);
-        if (groupIndex === -1) {
+        const group = team.groups[groupIndex];
+        if (group === undefined) {
           return { error: "Group not found", ok: false };
         }
-        team.groups[groupIndex] = { ...team.groups[groupIndex], ...parsed };
+        team.groups[groupIndex] = { ...group, ...parsed };
         return { ok: true, value: sanitizeTeam(team) };
       },
       prelude: () => {

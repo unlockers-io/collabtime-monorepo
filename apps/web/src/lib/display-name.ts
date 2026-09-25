@@ -3,6 +3,6 @@ export const displayName = (name: string | null, email: string): string => {
   if (trimmed !== undefined && trimmed !== "") {
     return trimmed;
   }
-  const localPart = email.split("@")[0];
+  const [localPart = ""] = email.split("@");
   return localPart === "" ? "Someone" : localPart;
 };

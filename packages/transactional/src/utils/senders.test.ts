@@ -30,7 +30,7 @@ describe("sendTransactionalEmail", () => {
     );
 
     expect(sendEmailMock).toHaveBeenCalledOnce();
-    expect(sendEmailMock.mock.calls[0][0]).toMatchObject({
+    expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
       apiKey: "re_test",
       defaultReplyTo: "support@collabtime.io",
       from: "Custom <c@collabtime.io>",
@@ -54,7 +54,7 @@ describe("sendTransactionalEmail", () => {
       { apiKey: "re_test" },
     );
 
-    expect(sendEmailMock.mock.calls[0][0]).toMatchObject({
+    expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
       from: "Collabtime <noreply@email.collabtime.io>",
     });
   });
@@ -71,7 +71,7 @@ describe("sendTransactionalEmail", () => {
       { apiKey: "re_test" },
     );
 
-    expect(sendEmailMock.mock.calls[0][0]).toMatchObject({
+    expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
       to: "old@example.com",
     });
   });
@@ -89,7 +89,7 @@ describe("sendTransactionalEmail", () => {
       { apiKey: "re_test" },
     );
 
-    expect(sendEmailMock.mock.calls[0][0]).toMatchObject({
+    expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
       subject: "Ada invited you to join Design on Collabtime",
       tags: [
         { name: "type", value: "invitation" },
@@ -137,7 +137,7 @@ it.each<TransactionalEmail>([
 ])("renders $type with a workspace fallback and team tags", async (email) => {
   sendEmailMock.mockClear();
   await sendTransactionalEmail(email, { apiKey: "test" });
-  expect(sendEmailMock.mock.calls[0][0]).toMatchObject({
+  expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
     subject: expect.stringContaining("a workspace"),
     tags: [
       { name: "type", value: email.type },

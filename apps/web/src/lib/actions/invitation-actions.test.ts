@@ -135,9 +135,7 @@ describe("invitation decisions", () => {
     deps.claimOrCreateSlot.mockResolvedValue({ created: true, memberId: "replacement", ok: true });
     expect(await acceptInvitation(INVITATION_ID)).toMatchObject({ success: true });
     expect(deps.commitAcceptance).toHaveBeenCalledWith(invitation, "replacement", "user-123");
-    expect(deps.claimOrCreateSlot.mock.invocationCallOrder[0]).toBeLessThan(
-      deps.commitAcceptance.mock.invocationCallOrder[0],
-    );
+    expect(deps.claimOrCreateSlot).toHaveBeenCalledBefore(deps.commitAcceptance);
     expect(deps.notifyInviter).toHaveBeenCalledWith(
       invitation,
       expect.objectContaining({ id: "user-123" }),

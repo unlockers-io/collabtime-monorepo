@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTeamEventAdmission, type AdmissionDeps } from "./team-event-admission";
 
@@ -77,7 +77,9 @@ describe("team event admission", () => {
     await vi.advanceTimersByTimeAsync(1001);
     expect(await result).toEqual({ allowed: false, status: 503 });
     expect(state.afterResponse).toHaveLength(1);
-    const cleanup = state.afterResponse[0]();
+    const [respond] = state.afterResponse;
+    assert(respond, "expected an after-response callback");
+    const cleanup = respond();
     acquiring.resolve(true);
     await cleanup;
     expect(state.deps.release).toHaveBeenCalledExactlyOnceWith(
@@ -97,7 +99,9 @@ describe("team event admission", () => {
     }
     expect(state.afterResponse).toHaveLength(1);
     const fromStream = result.release();
-    const afterResponse = state.afterResponse[0]();
+    const [respond] = state.afterResponse;
+    assert(respond, "expected an after-response callback");
+    const afterResponse = respond();
     expect(afterResponse).toBe(fromStream);
     const finished = vi.fn<() => void>();
     const observeCleanup = async () => {
@@ -117,7 +121,9 @@ describe("team event admission", () => {
     const state = setup();
     await state.admit("principal", true);
     expect(state.deps.release).not.toHaveBeenCalled();
-    await state.afterResponse[0]();
+    const [respond] = state.afterResponse;
+    assert(respond, "expected an after-response callback");
+    await respond();
     expect(state.deps.release).toHaveBeenCalledTimes(1);
   });
 });
