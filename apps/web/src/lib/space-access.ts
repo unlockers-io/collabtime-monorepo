@@ -97,7 +97,7 @@ const verifySpaceAccessToken = (
       return { reason: "Invalid token format", valid: false };
     }
 
-    const [payloadStr, signature] = parts;
+    const [payloadStr = "", signature = ""] = parts;
 
     if (!payloadStr || !signature) {
       return { reason: "Missing token parts", valid: false };
@@ -109,10 +109,6 @@ const verifySpaceAccessToken = (
 
     const payloadJson = Buffer.from(payloadStr, "base64url").toString("utf8");
     const payload = tokenPayloadSchema.parse(JSON.parse(payloadJson));
-
-    if (payload.version !== TOKEN_VERSION) {
-      return { reason: "Token version mismatch", valid: false };
-    }
 
     if (payload.spaceId !== expectedSpaceId) {
       return { reason: "Space ID mismatch", valid: false };

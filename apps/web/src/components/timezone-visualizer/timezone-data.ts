@@ -43,14 +43,14 @@ const toRuns = (keys: ReadonlyArray<string | null>): Array<KeyedRun> => {
       return;
     }
     const last = runs.at(-1);
-    if (last !== undefined && last.key === key && last.startSlot + last.lengthSlots === slot) {
+    if (last?.key === key && last.startSlot + last.lengthSlots === slot) {
       last.lengthSlots += 1;
       return;
     }
     runs.push({ key, lengthSlots: 1, startSlot: slot });
   });
 
-  const first = runs[0];
+  const [first] = runs;
   const last = runs.at(-1);
   if (
     runs.length > 1 &&
@@ -119,7 +119,7 @@ const readGroupCoverage = (
 
   const groupRows = [...rowsByGroup.values()];
   const keys = Array.from({ length: SLOTS_IN_DAY }, (_, slot) =>
-    groupRows.every((rows) => rows.some((row) => row.slots[slot])) ? "covered" : null,
+    groupRows.every((rows) => rows.some((row) => row.slots[slot] === true)) ? "covered" : null,
   );
 
   return pickUpcoming(toRuns(keys), nowMinute);
@@ -149,7 +149,7 @@ const readSharedWindow = (
 
   const counts = Array.from(
     { length: SLOTS_IN_DAY },
-    (_, slot) => counted.filter((row) => row.slots[slot]).length,
+    (_, slot) => counted.filter((row) => row.slots[slot] === true).length,
   );
   const peak = Math.max(...counts);
   const groupCoverage = readGroupCoverage(counted, nowMinute);
@@ -160,7 +160,9 @@ const readSharedWindow = (
 
   const bestSlots = counts.map((count) => count === peak);
   const keys = bestSlots.map((isBest, slot) =>
-    isBest ? counted.flatMap((row) => (row.slots[slot] ? [row.member.id] : [])).join(",") : null,
+    isBest
+      ? counted.flatMap((row) => (row.slots[slot] === true ? [row.member.id] : [])).join(",")
+      : null,
   );
   const windows: Array<SharedWindow> = toRuns(keys).map(({ key, lengthSlots, startSlot }) => ({
     availableMemberIds: key.split(","),

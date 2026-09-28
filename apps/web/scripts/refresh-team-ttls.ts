@@ -23,19 +23,16 @@ const main = async () => {
       cursor = nextCursor;
       scanned += keys.length;
 
-      const ttls = await Promise.all(keys.map((key) => redis.ttl(key)));
+      const entries = await Promise.all(
+        keys.map(async (key) => ({ key, ttl: await redis.ttl(key) })),
+      );
 
-      for (const [index, ttl] of ttls.entries()) {
-        const key = keys[index];
-        if (key === undefined) {
-          continue;
-        }
+      for (const { key, ttl } of entries) {
         if (ttl < 0 || ttl >= TEAM_ACTIVE_TTL_SECONDS) {
           continue;
         }
         shortest = Math.min(shortest, ttl);
         if (!dryRun) {
-          // oxlint-disable-next-line react-doctor/async-await-in-loop -- bound maintenance writes to one in flight against the live Redis instance.
           await redis.expire(key, TEAM_ACTIVE_TTL_SECONDS);
         }
         refreshed += 1;

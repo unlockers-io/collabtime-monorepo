@@ -4,7 +4,7 @@ import { Pool } from "pg";
 import { PrismaClient } from "./generated/client";
 
 // SAFETY: Prisma owns this process-wide slot, and every assignment stores PrismaClient.
-// oxlint-disable-next-line no-unsafe-type-assertion, anti-slop/no-chained-type-assertions
+// oxlint-disable-next-line no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- globalThis has no typed prisma slot to narrow to
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };

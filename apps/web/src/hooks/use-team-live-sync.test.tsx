@@ -1,8 +1,7 @@
-/* oxlint-disable node/no-sync -- useTeamLiveSync is a React hook, not synchronous I/O. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook } from "@testing-library/react";
 import type { PropsWithChildren } from "react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, assert, expect, it, vi } from "vitest";
 
 import { useTeamLiveSync } from "./use-team-live-sync";
 
@@ -36,7 +35,8 @@ it("connects two consumers to one source and refreshes the route on revoked", ()
     wrapper: Wrapper,
   });
   expect(FakeEventSource.instances).toHaveLength(1);
-  const source = FakeEventSource.instances[0];
+  const [source] = FakeEventSource.instances;
+  assert(source, "expected one EventSource");
   act(() => {
     source.dispatchEvent(new Event("ready"));
   });

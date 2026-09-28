@@ -62,20 +62,20 @@ const parseCSVLine = (line: string, sep: string): Array<string> => {
 
 const parseCSV = (text: string): Array<ParsedRow> => {
   const lines = text.split(/\r?\n/v).filter((l) => l.trim());
-  if (lines.length === 0) {
+  const [firstLine] = lines;
+  if (firstLine === undefined) {
     return [];
   }
 
-  const firstLine = lines[0];
   const sep =
     (firstLine.match(/\t/gv)?.length ?? 0) > (firstLine.match(/,/gv)?.length ?? 0) ? "\t" : ",";
 
   let startRow = 0;
-  let nameIdx: number | null = 0;
-  let tzIdx: number | null = 1;
-  let titleIdx: number | null = 2;
-  let startIdx: number | null = 3;
-  let endIdx: number | null = 4;
+  let nameIdx = 0;
+  let tzIdx = 1;
+  let titleIdx = 2;
+  let startIdx = 3;
+  let endIdx = 4;
 
   const firstCells = parseCSVLine(firstLine, sep).map(normalizeHeader);
 
@@ -85,9 +85,9 @@ const parseCSV = (text: string): Array<ParsedRow> => {
   if (hasHeader) {
     startRow = 1;
     const headerIndices = new Map<string, number>();
-    for (let i = 0; i < firstCells.length; i++) {
-      if (!headerIndices.has(firstCells[i])) {
-        headerIndices.set(firstCells[i], i);
+    for (const [i, cell] of firstCells.entries()) {
+      if (!headerIndices.has(cell)) {
+        headerIndices.set(cell, i);
       }
     }
     nameIdx = findColIndex(headerIndices, "name");
@@ -105,17 +105,17 @@ const parseCSV = (text: string): Array<ParsedRow> => {
 
   const rows: Array<ParsedRow> = [];
 
-  for (let i = startRow; i < lines.length; i++) {
-    const cells = parseCSVLine(lines[i], sep);
-    if (cells.every((c) => !c)) {
+  for (const [offset, line] of lines.slice(startRow).entries()) {
+    const cells: ReadonlyArray<string | undefined> = parseCSVLine(line, sep);
+    if (cells.every((c) => c === "")) {
       continue;
     }
 
-    const name = (nameIdx === null ? "" : (cells[nameIdx] ?? "")).trim();
-    const rawTimezone = (tzIdx === null ? "" : (cells[tzIdx] ?? "")).trim();
-    const title = (titleIdx === null ? "" : (cells[titleIdx] ?? "")).trim();
-    const workStartRaw = (startIdx === null ? "9" : (cells[startIdx] ?? "9")).trim();
-    const workEndRaw = (endIdx === null ? "17" : (cells[endIdx] ?? "17")).trim();
+    const name = (cells[nameIdx] ?? "").trim();
+    const rawTimezone = (cells[tzIdx] ?? "").trim();
+    const title = (cells[titleIdx] ?? "").trim();
+    const workStartRaw = (cells[startIdx] ?? "9").trim();
+    const workEndRaw = (cells[endIdx] ?? "17").trim();
 
     const matchedTimezone = rawTimezone ? fuzzyMatchTimezone(rawTimezone) : null;
     const workStart = workStartRaw ? Math.trunc(Number(workStartRaw)) : Number.NaN;
@@ -142,7 +142,7 @@ const parseCSV = (text: string): Array<ParsedRow> => {
 
     rows.push({
       errors,
-      index: i - startRow + 1,
+      index: offset + 1,
       matchedTimezone,
       name,
       rawTimezone,

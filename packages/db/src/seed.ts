@@ -110,11 +110,16 @@ try {
     createdAt: seeded.createdAt.toISOString(),
     groups: seeded.groups.map(({ id, name, order }) => ({ id, name, order })),
     id: TEAM_ID,
-    members: seeded.members.map(({ groupId, teamId: _teamId, userId, ...rest }) => ({
-      ...rest,
-      ...(groupId === null ? {} : { groupId }),
-      ...(userId === null ? {} : { userId }),
-    })),
+    members: seeded.members.map(({ groupId, teamId: _teamId, userId, ...rest }) => {
+      const seededMember: typeof rest & { groupId?: string; userId?: string } = { ...rest };
+      if (groupId !== null) {
+        seededMember.groupId = groupId;
+      }
+      if (userId !== null) {
+        seededMember.userId = userId;
+      }
+      return seededMember;
+    }),
     name: seeded.name,
   };
   await redis.set(`team:${TEAM_ID}`, JSON.stringify(team), "EX", 60 * 60 * 24 * 60);

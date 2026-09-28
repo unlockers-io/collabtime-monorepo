@@ -35,7 +35,7 @@ const getRedis = (): Redis | null => {
 };
 
 // SAFETY: The proxy forwards every configured call to an ioredis instance.
-// oxlint-disable-next-line no-unsafe-type-assertion
+// oxlint-disable-next-line no-unsafe-type-assertion -- an empty Proxy target cannot be typed as the Redis it forwards to
 const redis = new Proxy({} as Redis, {
   get(_, prop) {
     const instance = getRedis();
@@ -49,11 +49,11 @@ const redis = new Proxy({} as Redis, {
       return undefined;
     }
     // SAFETY: Proxy property keys are the same keys used to access the Redis instance.
-    // oxlint-disable-next-line no-unsafe-type-assertion
+    // oxlint-disable-next-line no-unsafe-type-assertion -- Proxy traps receive string | symbol keys, not keyof Redis
     const value = instance[prop as keyof Redis];
     if (typeof value === "function") {
       // SAFETY: ioredis methods require their owning Redis instance as this.
-      // oxlint-disable-next-line no-unsafe-type-assertion
+      // oxlint-disable-next-line no-unsafe-type-assertion -- typeof narrows to Function, which has no callable signature to bind
       return (value as (...args: Array<never>) => void).bind(instance);
     }
     return value;
