@@ -120,12 +120,13 @@ const createTestAccess = (teamId = VALID_UUID): TeamAccess => ({
   user: createMockSession().user,
 });
 
+const grant = (teamId: string) =>
+  Promise.resolve({ data: createTestAccess(teamId), success: true as const });
+
 const createTestGuards = () => {
   const authenticateCaller = vi.fn<typeof authenticate>();
   const authorizeAdmin = vi.fn<typeof authorizeTeamAdmin>();
   const authorizeMember = vi.fn<typeof authorizeTeamMember>();
-  const grant = (teamId: string) =>
-    Promise.resolve({ data: createTestAccess(teamId), success: true as const });
 
   const reset = () => {
     authenticateCaller.mockReset();

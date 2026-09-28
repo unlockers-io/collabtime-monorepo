@@ -164,6 +164,10 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
     void flush();
   };
 
+  const abort = () => {
+    close("abort");
+  };
+
   const body = new ReadableStream<Uint8Array>(
     {
       cancel: () => {
@@ -171,9 +175,6 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
       },
       start: (streamController) => {
         controller = streamController;
-        const abort = () => {
-          close("abort");
-        };
         deps.signal.addEventListener("abort", abort, { once: true });
         removeAbortListener = () => {
           deps.signal.removeEventListener("abort", abort);
