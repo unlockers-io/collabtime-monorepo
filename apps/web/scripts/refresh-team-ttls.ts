@@ -23,10 +23,11 @@ const main = async () => {
       cursor = nextCursor;
       scanned += keys.length;
 
-      const ttls = await Promise.all(keys.map((key) => redis.ttl(key)));
+      const entries = await Promise.all(
+        keys.map(async (key) => ({ key, ttl: await redis.ttl(key) })),
+      );
 
-      for (const [index, ttl] of ttls.entries()) {
-        const key = keys[index];
+      for (const { key, ttl } of entries) {
         if (ttl < 0 || ttl >= TEAM_ACTIVE_TTL_SECONDS) {
           continue;
         }

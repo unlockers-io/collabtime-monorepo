@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createTestMember,
@@ -111,7 +111,7 @@ describe("readTeamRecord", () => {
     readTeamJsonMock.mockResolvedValue(JSON.stringify(team));
 
     const result = await readTeamRecord(VALID_UUID);
-    expect(result?.members[0].order).toBe(0);
+    expect(result?.members[0]?.order).toBe(0);
   });
 
   it("returns null on redis error", async () => {
@@ -320,7 +320,9 @@ describe("applyTeamContents", () => {
     });
 
     expect(result).toEqual({ ok: true, value: "written" });
-    const written = JSON.parse(setMock.mock.calls[0][1]) as {
+    const [firstCall] = setMock.mock.calls;
+    assert(firstCall, "expected a Redis write");
+    const written = JSON.parse(firstCall[1]) as {
       members: Array<unknown>;
     };
     expect(written.members).toHaveLength(1);

@@ -17,10 +17,12 @@ const cleanup = async () => {
       const [nextCursor, keys] = await redis.scan(cursor, "MATCH", "team:*", "COUNT", 100);
       cursor = nextCursor;
 
-      const values = await Promise.all(keys.map((key) => redis.get(key)));
-      for (const [index, value] of values.entries()) {
+      const entries = await Promise.all(
+        keys.map(async (key) => ({ key, value: await redis.get(key) })),
+      );
+      for (const { key, value } of entries) {
         if (value?.includes("e2e-test@collabtime")) {
-          keysToDelete.push(keys[index]);
+          keysToDelete.push(key);
         }
       }
     } while (cursor !== "0");
