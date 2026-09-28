@@ -18,13 +18,10 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { HourSelectField } from "@/components/hour-select-field";
-import {
-  MemberGroupField,
-  MemberTextField,
-  TITLE_PLACEHOLDER,
-  WorkingHoursFieldset,
-} from "@/components/member-form-fields";
+import { MemberGroupField } from "@/components/member-group-field";
+import { MemberTextField, TITLE_PLACEHOLDER } from "@/components/member-text-field";
 import { TimezoneField } from "@/components/timezone-field";
+import { WorkingHoursFieldset } from "@/components/working-hours-fieldset";
 import { teamQueryKeys } from "@/hooks/use-team-query";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
 import { DEFAULT_MEMBER_TIMEZONE, fuzzyMatchTimezone, isCommonTimezone } from "@/lib/timezones";

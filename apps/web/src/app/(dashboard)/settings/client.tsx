@@ -11,7 +11,7 @@ import { useId } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { PageHeader } from "@/components/page-layout";
+import { PageHeader } from "@/components/page-header";
 import { SectionCard, SectionCardHeader, SectionCardTitle } from "@/components/section-card";
 import type { ActionResult } from "@/lib/actions/types";
 import { authClient } from "@/lib/auth-client";

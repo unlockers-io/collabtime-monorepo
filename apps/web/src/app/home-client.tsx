@@ -2,7 +2,8 @@
 
 import { CreateWorkspaceDialog } from "@/components/create-workspace-dialog";
 import { Nav } from "@/components/nav";
-import { PageHeader, PageMain } from "@/components/page-layout";
+import { PageHeader } from "@/components/page-header";
+import { PageMain } from "@/components/page-main";
 
 type HomeShellProps = {
   children: React.ReactNode;

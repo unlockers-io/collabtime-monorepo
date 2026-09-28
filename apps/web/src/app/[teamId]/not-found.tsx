@@ -3,7 +3,8 @@ import { cn } from "@repo/ui/lib/utils";
 import Link from "next/link";
 
 import { Logo } from "@/components/nav/logo";
-import { PageHeader, PageMain } from "@/components/page-layout";
+import { PageHeader } from "@/components/page-header";
+import { PageMain } from "@/components/page-main";
 
 const WorkspaceNotFound = () => (
   <div className="flex flex-1 flex-col">

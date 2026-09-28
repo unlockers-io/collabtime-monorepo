@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { Nav } from "@/components/nav";
-import { PageMain } from "@/components/page-layout";
+import { PageMain } from "@/components/page-main";
 import { getSession } from "@/lib/auth-server";
 import { QueryProvider } from "@/providers/query-provider";
 
