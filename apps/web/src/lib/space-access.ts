@@ -110,10 +110,6 @@ const verifySpaceAccessToken = (
     const payloadJson = Buffer.from(payloadStr, "base64url").toString("utf8");
     const payload = tokenPayloadSchema.parse(JSON.parse(payloadJson));
 
-    if (payload.version !== TOKEN_VERSION) {
-      return { reason: "Token version mismatch", valid: false };
-    }
-
     if (payload.spaceId !== expectedSpaceId) {
       return { reason: "Space ID mismatch", valid: false };
     }

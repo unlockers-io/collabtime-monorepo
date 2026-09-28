@@ -1,4 +1,3 @@
-/* oxlint-disable node/no-sync -- useTeamLiveSync is a React hook, not synchronous I/O. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook } from "@testing-library/react";
 import type { PropsWithChildren } from "react";

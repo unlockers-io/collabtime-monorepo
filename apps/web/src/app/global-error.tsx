@@ -23,7 +23,7 @@ const GlobalError = ({ error, reset }: GlobalErrorProps) => {
   return (
     <html className={styles.document} lang="en" suppressHydrationWarning>
       <head>
-        {/* oxlint-disable-next-line react-doctor/nextjs-no-native-script, react/no-danger -- blocking the parser is the point (the scheme must settle before first paint) and next/script's beforeInteractive is ignored outside the root layout; the body is a literal, no user data */}
+        {/* oxlint-disable-next-line react/no-danger -- blocking the parser is the point (the scheme must settle before first paint) and next/script's beforeInteractive is ignored outside the root layout; the body is a literal, no user data */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className={styles.body}>

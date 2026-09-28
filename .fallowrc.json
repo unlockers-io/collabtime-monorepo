@@ -30,7 +30,8 @@
     "@react-email/preview-server",
     "react-email",
     "@types/react-dom",
-    "react-dom"
+    "react-dom",
+    "@shadcn/lint"
   ],
   "rules": {
     "unused-dependencies": "warn",

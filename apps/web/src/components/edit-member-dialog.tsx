@@ -90,7 +90,7 @@ const EditMemberForm = ({
     groupId: member.groupId ?? "",
     name: member.name,
     timezone: fuzzyMatchTimezone(member.timezone) ?? DEFAULT_MEMBER_TIMEZONE,
-    title: member.title ?? "",
+    title: member.title,
     workingHoursEnd: member.workingHoursEnd,
     workingHoursStart: member.workingHoursStart,
   };

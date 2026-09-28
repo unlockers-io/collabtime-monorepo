@@ -26,6 +26,11 @@ const senderAddressSchema = z.string().refine(
 
 const recipientSchema = z.union([z.email(), z.array(z.email())]);
 
+const resendErrorSchema = z.object({
+  message: z.string().optional(),
+  name: z.string().optional(),
+});
+
 const tagSchema = z.object({
   name: z.string().transform(sanitizeTagSegment),
   value: z.string().transform(sanitizeTagSegment),
@@ -95,8 +100,9 @@ const createSendEmail =
       });
 
       if (result.error) {
+        const error = resendErrorSchema.safeParse(result.error).data;
         throw new Error(
-          `Resend failed to queue email: ${result.error.name ?? "unknown_error"} - ${result.error.message ?? "No message"}`,
+          `Resend failed to queue email: ${error?.name ?? "unknown_error"} - ${error?.message ?? "No message"}`,
         );
       }
 
@@ -179,8 +185,9 @@ const sendBatchEmails = async (
     const result = await resend.batch.send(batchData);
 
     if (result.error) {
+      const error = resendErrorSchema.safeParse(result.error).data;
       throw new Error(
-        `Resend failed to queue batch: ${result.error.name ?? "unknown_error"} - ${result.error.message ?? "No message"}`,
+        `Resend failed to queue batch: ${error?.name ?? "unknown_error"} - ${error?.message ?? "No message"}`,
       );
     }
 

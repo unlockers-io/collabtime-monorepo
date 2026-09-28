@@ -48,7 +48,7 @@ const getAuthConfig = (): AuthConfig => {
       },
       get: async (key: string) => {
         const value = await redis.get(key);
-        if (value === null || value === undefined) {
+        if (value === null) {
           return null;
         }
         if (typeof value === "string") {
@@ -82,7 +82,12 @@ const getAuth = (): Auth => {
   return cachedAuth;
 };
 
-const getSession = cache(async () => {
+type AuthSession = NonNullable<Awaited<ReturnType<Auth["api"]["getSession"]>>>;
+type Session = Omit<AuthSession, "user"> & {
+  user: Omit<AuthSession["user"], "name"> & { name: string | null };
+};
+
+const getSession = cache(async (): Promise<Session | null> => {
   const headersList = await headers();
 
   try {
