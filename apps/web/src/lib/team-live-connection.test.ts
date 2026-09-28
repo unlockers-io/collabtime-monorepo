@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createTeamLiveRegistry,
@@ -42,13 +42,26 @@ const setup = () => {
     },
     random: () => 0.5,
   });
+  const sourceAt = (index: number) => {
+    const source = sources[index];
+    assert(source, `expected EventSource ${index}`);
+    return source;
+  };
   const visibility = (next: boolean) => {
     visible = next;
     for (const listener of visibilityListeners) {
       listener();
     }
   };
-  return { checkAccess, createSource, registry, sources, visibility, visibilityListeners };
+  return {
+    checkAccess,
+    createSource,
+    registry,
+    sourceAt,
+    sources,
+    visibility,
+    visibilityListeners,
+  };
 };
 
 beforeEach(() => {
@@ -66,16 +79,16 @@ describe("team live connection", () => {
     const releaseFirst = state.registry.subscribe("team-1", first);
     const releaseSecond = state.registry.subscribe("team-1", second);
     expect(state.createSource).toHaveBeenCalledExactlyOnceWith("/api/teams/team-1/events");
-    state.sources[0].emit("open");
+    state.sourceAt(0).emit("open");
     expect(state.registry.getStatus("team-1")).toBe("connecting");
-    state.sources[0].emit("ready");
+    state.sourceAt(0).emit("ready");
     expect(state.registry.getStatus("team-1")).toBe("live");
     expect(first.change).toHaveBeenCalledTimes(1);
     expect(second.change).toHaveBeenCalledTimes(1);
     releaseFirst();
-    expect(state.sources[0].close).not.toHaveBeenCalled();
+    expect(state.sourceAt(0).close).not.toHaveBeenCalled();
     releaseSecond();
-    expect(state.sources[0].close).toHaveBeenCalledTimes(1);
+    expect(state.sourceAt(0).close).toHaveBeenCalledTimes(1);
     expect(state.visibilityListeners.size).toBe(0);
   });
 
@@ -83,14 +96,14 @@ describe("team live connection", () => {
     const state = setup();
     const listener = observer();
     const release = state.registry.subscribe("team-1", listener);
-    state.sources[0].emit("ready");
-    state.sources[0].emit("reconnect");
-    state.sources[0].emit("error");
-    expect(state.sources[0].close).toHaveBeenCalledTimes(1);
+    state.sourceAt(0).emit("ready");
+    state.sourceAt(0).emit("reconnect");
+    state.sourceAt(0).emit("error");
+    expect(state.sourceAt(0).close).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(2249);
     expect(state.sources).toHaveLength(1);
     await vi.advanceTimersByTimeAsync(1);
-    state.sources[1].emit("ready");
+    state.sourceAt(1).emit("ready");
     expect(listener.change).toHaveBeenCalledTimes(2);
     release();
   });
@@ -98,15 +111,15 @@ describe("team live connection", () => {
   it("owns retries for every browser error and resets backoff after recovery", async () => {
     const state = setup();
     const release = state.registry.subscribe("team-1", observer());
-    state.sources[0].emit("error");
+    state.sourceAt(0).emit("error");
     expect(state.registry.getStatus("team-1")).toBe("offline");
     await vi.advanceTimersByTimeAsync(30_000);
-    state.sources[1].emit("error");
+    state.sourceAt(1).emit("error");
     await vi.advanceTimersByTimeAsync(59_999);
     expect(state.sources).toHaveLength(2);
     await vi.advanceTimersByTimeAsync(1);
-    state.sources[2].emit("ready");
-    state.sources[2].emit("error");
+    state.sourceAt(2).emit("ready");
+    state.sourceAt(2).emit("error");
     await vi.advanceTimersByTimeAsync(30_000);
     expect(state.sources).toHaveLength(4);
     release();
@@ -116,19 +129,19 @@ describe("team live connection", () => {
   it("gives hidden tabs a grace period and cancels hidden retries", async () => {
     const state = setup();
     const release = state.registry.subscribe("team-1", observer());
-    state.sources[0].emit("ready");
+    state.sourceAt(0).emit("ready");
     state.visibility(false);
     await vi.advanceTimersByTimeAsync(9999);
-    expect(state.sources[0].close).not.toHaveBeenCalled();
+    expect(state.sourceAt(0).close).not.toHaveBeenCalled();
     state.visibility(true);
     await vi.advanceTimersByTimeAsync(1);
     expect(state.sources).toHaveLength(1);
     state.visibility(false);
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(state.sources[0].close).toHaveBeenCalledTimes(1);
+    expect(state.sourceAt(0).close).toHaveBeenCalledTimes(1);
     state.visibility(true);
     expect(state.sources).toHaveLength(2);
-    state.sources[1].emit("error");
+    state.sourceAt(1).emit("error");
     state.visibility(false);
     await vi.advanceTimersByTimeAsync(600_000);
     expect(state.sources).toHaveLength(2);
@@ -141,10 +154,10 @@ describe("team live connection", () => {
     const state = setup();
     const listener = observer();
     const release = state.registry.subscribe("team-1", listener);
-    state.sources[0].emit("space");
+    state.sourceAt(0).emit("space");
     expect(listener.space).toHaveBeenCalledTimes(1);
-    state.sources[0].emit(event);
-    state.sources[0].emit("error");
+    state.sourceAt(0).emit(event);
+    state.sourceAt(0).emit("error");
     state.visibility(false);
     state.visibility(true);
     await vi.advanceTimersByTimeAsync(600_000);
@@ -166,7 +179,7 @@ describe("team live connection", () => {
   it("keeps the retry timer when another consumer joins during backoff", async () => {
     const state = setup();
     const first = state.registry.subscribe("team-1", observer());
-    state.sources[0].emit("error");
+    state.sourceAt(0).emit("error");
     const second = state.registry.subscribe("team-1", observer());
     expect(state.sources).toHaveLength(1);
     await vi.advanceTimersByTimeAsync(30_000);
@@ -182,12 +195,12 @@ describe("team live connection", () => {
       const state = setup();
       const listener = observer();
       const release = state.registry.subscribe("team-1", listener);
-      state.sources[0].emit("ready");
+      state.sourceAt(0).emit("ready");
       state.visibility(false);
       await vi.advanceTimersByTimeAsync(10_000);
       state.checkAccess.mockResolvedValue(status);
       state.visibility(true);
-      state.sources[1].emit("error");
+      state.sourceAt(1).emit("error");
       await vi.advanceTimersByTimeAsync(0);
       expect(state.checkAccess).toHaveBeenCalledExactlyOnceWith(
         "/api/teams/team-1/events",
@@ -208,9 +221,9 @@ describe("team live connection", () => {
     state.checkAccess
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValue(503);
-    state.sources[0].emit("error");
+    state.sourceAt(0).emit("error");
     await vi.advanceTimersByTimeAsync(30_000);
-    state.sources[1].emit("error");
+    state.sourceAt(1).emit("error");
     await vi.advanceTimersByTimeAsync(60_000);
     expect(state.sources).toHaveLength(3);
     expect(listener.terminal).not.toHaveBeenCalled();
@@ -223,8 +236,10 @@ describe("team live connection", () => {
     const pending = Promise.withResolvers<number>();
     state.checkAccess.mockReturnValue(pending.promise);
     const release = state.registry.subscribe("team-1", listener);
-    state.sources[0].emit("error");
-    const signal = state.checkAccess.mock.calls[0][1];
+    state.sourceAt(0).emit("error");
+    const [firstCall] = state.checkAccess.mock.calls;
+    assert(firstCall, "expected an access probe");
+    const [, signal] = firstCall;
     release();
     expect(signal.aborted).toBe(true);
     pending.resolve(403);
@@ -238,8 +253,10 @@ describe("team live connection", () => {
     const pending = Promise.withResolvers<number>();
     state.checkAccess.mockReturnValue(pending.promise);
     const release = state.registry.subscribe("team-1", observer());
-    state.sources[0].emit("error");
-    const signal = state.checkAccess.mock.calls[0][1];
+    state.sourceAt(0).emit("error");
+    const [firstCall] = state.checkAccess.mock.calls;
+    assert(firstCall, "expected an access probe");
+    const [, signal] = firstCall;
     await vi.advanceTimersByTimeAsync(5000);
     expect(signal.aborted).toBe(true);
     await vi.advanceTimersByTimeAsync(25_000);

@@ -178,9 +178,7 @@ describe("approveJoinRequest", () => {
     await approveJoinRequest(VALID_UUID, "jr-1");
 
     expect(ensureMemberSlot).toHaveBeenCalledWith(VALID_UUID, "user-456", "Bob");
-    expect(ensureMemberSlot.mock.invocationCallOrder[0]).toBeLessThan(
-      approveMembership.mock.invocationCallOrder[0],
-    );
+    expect(ensureMemberSlot).toHaveBeenCalledBefore(approveMembership);
     expect(notifyRequester).toHaveBeenCalledWith(pendingRequest, "approved");
   });
 
