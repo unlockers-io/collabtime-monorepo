@@ -16,6 +16,7 @@ packages:
 
 peerDependencyRules:
   allowedVersions:
+    "@typescript-eslint/parser>typescript": "7"
     "@typescript-eslint/project-service>typescript": "7"
     "@typescript-eslint/tsconfig-utils>typescript": "7"
     "@typescript-eslint/typescript-estree>typescript": "7"
