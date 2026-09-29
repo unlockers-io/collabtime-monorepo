@@ -18,6 +18,7 @@ type Params = {
   params: Promise<{ spaceId: string }>;
 };
 
+// public-route: guests unlock a private space with its password; attempts are rate limited per space and IP
 export const POST = withEvlog(async (request: Request, { params }: Params) => {
   try {
     const { spaceId } = await params;
