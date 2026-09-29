@@ -149,15 +149,7 @@ Spaces link to teams via a unique `teamId` and support private access through `i
 
 ## CI (GitHub Actions)
 
-- `test.yml`: `pnpm test`
-- `lint.yml`: `pnpm oxlint --format=github .`
-- `e2e.yml`: Playwright
-- `typecheck.yml`: `pnpm typecheck`
-- `secret-scan.yml`: gitleaks
-- `react-doctor.yml`: React Doctor scan
-- Workflows use `permissions: { contents: read }`, except `react-doctor.yml`, which also needs `issues`, `pull-requests` and `statuses` write to post its comment and commit status
-
-- All workflows pin `actions/checkout` by SHA to v7.0.1.
+Three workflows are checked in: `check.yml` (one job running the secret scan, formatting, dead-code analysis, lint, typecheck and unit tests), `e2e.yml`, and `react-doctor.yml` (pull requests only). Validation runs on pull requests, a weekly schedule and manual dispatch, never on pushes to `main`. `orchestrator standards --for .github/workflows/check.yml` prints the rules they follow.
 
 ## References
 
