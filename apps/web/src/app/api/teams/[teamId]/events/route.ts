@@ -36,6 +36,7 @@ const handleEvents = createTeamEventsHandler({
 
 export const maxDuration = 300;
 
+// public-route: a space's live updates; canAccessSpace admits anyone to a public space, members or password holders to a private one
 export const GET = withEvlog(
   async (
     request: Request,
