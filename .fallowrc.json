@@ -25,7 +25,6 @@
     "shadcn",
     "@testing-library/user-event",
     "@vitest/coverage-v8",
-    "babel-plugin-react-compiler",
     "@react-email/ui",
     "@react-email/preview-server",
     "react-email",
