@@ -24,7 +24,7 @@ import { MemberGroupField } from "@/components/member-group-field";
 import { MemberTextField, TITLE_PLACEHOLDER } from "@/components/member-text-field";
 import { TimezoneField } from "@/components/timezone-field";
 import { WorkingHoursFieldset } from "@/components/working-hours-fieldset";
-import { teamQueryKeys } from "@/hooks/use-team-query";
+import { useTeamWrite } from "@/hooks/use-team-cache";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { addMember } from "@/lib/actions/member-actions";
 import { queryKeys } from "@/lib/query-keys";
@@ -63,6 +63,7 @@ type AddMemberFormProps = {
 
 const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMemberFormProps) => {
   const queryClient = useQueryClient();
+  const writeTeam = useTeamWrite(teamId);
 
   const [defaultValues] = useState<FormValues>(() => ({
     email: "",
@@ -78,15 +79,17 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
     defaultValues,
     onSubmit: async ({ value }) => {
       const { email: emailValue, ...memberData } = value;
-      const result = await addMember(teamId, {
-        ...memberData,
-        groupId: memberData.groupId || undefined,
-        title: memberData.title || "",
+      const result = await writeTeam({
+        submit: () =>
+          addMember(teamId, {
+            ...memberData,
+            groupId: memberData.groupId || undefined,
+            title: memberData.title || "",
+          }),
       });
 
       if (result.success) {
         onOpenChange(false);
-        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
         toast.success(`${value.name} added to team`);
 
         if (emailValue) {

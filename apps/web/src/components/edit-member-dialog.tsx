@@ -12,7 +12,6 @@ import {
 import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -22,7 +21,7 @@ import { MemberGroupField } from "@/components/member-group-field";
 import { MemberTextField, TITLE_PLACEHOLDER } from "@/components/member-text-field";
 import { TimezoneField } from "@/components/timezone-field";
 import { WorkingHoursFieldset } from "@/components/working-hours-fieldset";
-import { teamQueryKeys } from "@/hooks/use-team-query";
+import { useTeamWrite } from "@/hooks/use-team-cache";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
 import { DEFAULT_MEMBER_TIMEZONE, fuzzyMatchTimezone, isCommonTimezone } from "@/lib/timezones";
 import type { PendingTeamInvitation, TeamGroup, TeamMember } from "@/types";
@@ -80,7 +79,7 @@ const EditMemberForm = ({
   pendingInvite,
   teamId,
 }: EditMemberFormProps) => {
-  const queryClient = useQueryClient();
+  const writeTeam = useTeamWrite(teamId);
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
   const defaultValues: FormValues = {
@@ -99,20 +98,22 @@ const EditMemberForm = ({
         const { groupId: _stripped, ...claimSafeData } = value;
         const safeGroupId = value.groupId || undefined;
         const safeTitle = value.title || "";
-        const result = isClaim
-          ? await updateOwnMember(teamId, member.id, { ...claimSafeData, title: safeTitle })
-          : await updateMember(teamId, member.id, {
-              ...value,
-              groupId: safeGroupId,
-              title: safeTitle,
-            });
+        const result = await writeTeam({
+          submit: () =>
+            isClaim
+              ? updateOwnMember(teamId, member.id, { ...claimSafeData, title: safeTitle })
+              : updateMember(teamId, member.id, {
+                  ...value,
+                  groupId: safeGroupId,
+                  title: safeTitle,
+                }),
+        });
         if (!result.success) {
           toast.error(result.error);
           return;
         }
         toast.success(isClaim ? "Profile claimed" : "Member updated");
         onOpenChange(false);
-        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
       });
     },
     validators: { onBlur: formSchema, onChange: formSchema, onSubmit: formSchema },

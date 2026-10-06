@@ -11,12 +11,11 @@ import {
   DialogTrigger,
 } from "@repo/ui/components/dialog";
 import { Spinner } from "@repo/ui/components/spinner";
-import { useQueryClient } from "@tanstack/react-query";
 import { Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { teamQueryKeys } from "@/hooks/use-team-query";
+import { useTeamWrite } from "@/hooks/use-team-cache";
 import { importMembers } from "@/lib/actions/member-actions";
 
 import type { ParsedRow } from "./import-members-dialog/parse-csv";
@@ -34,7 +33,7 @@ type ImportState =
   | { rows: Array<ParsedRow>; step: "importing" };
 
 const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
-  const queryClient = useQueryClient();
+  const writeTeam = useTeamWrite(teamId);
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [state, setState] = useState<ImportState>({ step: "upload" });
@@ -82,10 +81,9 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
     }
 
     setState({ rows, step: "importing" });
-    const result = await importMembers(teamId, valid);
+    const result = await writeTeam({ submit: () => importMembers(teamId, valid) });
 
     if (result.success) {
-      void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
       toast.success(
         `${result.data.imported} member${result.data.imported === 1 ? "" : "s"} imported`,
       );

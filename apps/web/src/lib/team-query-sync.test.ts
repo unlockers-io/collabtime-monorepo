@@ -2,7 +2,7 @@ import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { queryKeys } from "./query-keys";
-import { createTeamQueryInvalidator, teamMutationKey } from "./team-query-sync";
+import { createTeamQueryInvalidator } from "./team-query-sync";
 
 const setup = () => {
   const queryClient = new QueryClient({
@@ -40,37 +40,6 @@ describe("live query invalidation", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(state.queryFn).toHaveBeenCalledTimes(1);
     expect(state.queryClient.getQueryData(state.queryKey)).toBe("latest");
-    state.dispose();
-  });
-
-  it("keeps optimistic data until every pending team mutation settles", async () => {
-    const state = setup();
-    const first = Promise.withResolvers<undefined>();
-    const second = Promise.withResolvers<undefined>();
-    const makeMutation = (pending: Promise<undefined>) =>
-      state.queryClient
-        .getMutationCache()
-        .build(state.queryClient, {
-          mutationFn: () => pending,
-          mutationKey: teamMutationKey("team-1"),
-        })
-        .execute(undefined);
-    const mutatingFirst = makeMutation(first.promise);
-    const mutatingSecond = makeMutation(second.promise);
-    state.queryClient.setQueryData(state.queryKey, "optimistic");
-    state.invalidator.notify();
-    await vi.advanceTimersByTimeAsync(250);
-    expect(state.queryClient.getQueryData(state.queryKey)).toBe("optimistic");
-    expect(state.queryClient.getQueryState(state.queryKey)?.isInvalidated).toBe(true);
-    expect(state.queryFn).not.toHaveBeenCalled();
-    first.resolve(undefined);
-    await mutatingFirst;
-    await vi.advanceTimersByTimeAsync(0);
-    expect(state.queryFn).not.toHaveBeenCalled();
-    second.resolve(undefined);
-    await mutatingSecond;
-    await vi.advanceTimersByTimeAsync(0);
-    expect(state.queryFn).toHaveBeenCalledTimes(1);
     state.dispose();
   });
 

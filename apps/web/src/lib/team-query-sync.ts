@@ -1,8 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { queryKeys } from "./query-keys";
-
-const teamMutationKey = (teamId: string) => ["team-mutation", teamId] as const;
+import { queryKeys, teamMutationKey } from "./query-keys";
 
 const createTeamQueryInvalidator = (queryClient: QueryClient, teamId: string) => {
   const queryKey = queryKeys.teams.detail(teamId);
@@ -16,10 +14,12 @@ const createTeamQueryInvalidator = (queryClient: QueryClient, teamId: string) =>
     if (disposed || !pending || running || timer !== undefined) {
       return;
     }
-    if (
-      queryClient.isMutating({ mutationKey }) > 0 ||
-      queryClient.isFetching({ exact: true, queryKey }) > 0
-    ) {
+    if (queryClient.isMutating({ mutationKey }) > 0) {
+      // Team writes refetch once the last one settles, which is after this change arrived.
+      pending = false;
+      return;
+    }
+    if (queryClient.isFetching({ exact: true, queryKey }) > 0) {
       return;
     }
     pending = false;
@@ -56,13 +56,10 @@ const createTeamQueryInvalidator = (queryClient: QueryClient, teamId: string) =>
       clearTimeout(timer);
       timer = setTimeout(() => {
         timer = undefined;
-        if (queryClient.isMutating({ mutationKey }) > 0) {
-          void queryClient.invalidateQueries({ exact: true, queryKey, refetchType: "none" });
-        }
         void flush();
       }, 250);
     },
   };
 };
 
-export { createTeamQueryInvalidator, teamMutationKey };
+export { createTeamQueryInvalidator };

@@ -4,9 +4,10 @@ const queryKeys = {
   myTeams: ["my-teams"] as const,
   teamInvitations: (teamId: string) => ["team-invitations", teamId] as const,
   teams: {
-    all: ["teams"] as const,
     detail: (teamId: string) => ["teams", teamId] as const,
   },
 };
 
-export { queryKeys };
+const teamMutationKey = (teamId: string) => ["team-mutation", teamId] as const;
+
+export { queryKeys, teamMutationKey };
