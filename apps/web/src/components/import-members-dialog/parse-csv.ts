@@ -1,10 +1,10 @@
-import type { COMMON_TIMEZONES } from "@/lib/timezones";
 import { fuzzyMatchTimezone } from "@/lib/timezones";
+import type { CommonTimezone } from "@/lib/timezones";
 
 type ParsedRow = {
   errors: Array<string>;
   index: number;
-  matchedTimezone: (typeof COMMON_TIMEZONES)[number] | null;
+  matchedTimezone: CommonTimezone | null;
   name: string;
   rawTimezone: string;
   title: string;

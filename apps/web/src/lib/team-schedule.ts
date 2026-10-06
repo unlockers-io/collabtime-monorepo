@@ -1,21 +1,11 @@
 import {
   MINUTES_IN_DAY,
-  getDayOffset,
-  getWorkingInterval,
-  isMinuteInInterval,
+  getMinuteOfDay,
+  getOffsetMinutes,
+  getWorkingMinutes,
   wrapMinutes,
 } from "@/lib/timezones";
 import type { TeamGroup, TeamMember } from "@/types";
-
-import type {
-  GroupedSection,
-  MemberRow,
-  SharedWindow,
-  SharedWindowReading,
-  SlotRun,
-  TimedRun,
-  WindowTiming,
-} from "./types";
 
 // Every real UTC offset is a multiple of 15 minutes, so slots this size
 // represent any member's hours in any viewer's frame exactly.
@@ -23,13 +13,66 @@ const SLOT_MINUTES = 15;
 const SLOTS_PER_HOUR = 60 / SLOT_MINUTES;
 const SLOTS_IN_DAY = MINUTES_IN_DAY / SLOT_MINUTES;
 
+type WorkingInterval = {
+  lengthMinutes: number;
+  startMinute: number;
+};
+
+type MemberRow = {
+  dayOffset: number;
+  interval: WorkingInterval;
+  isCounted: boolean;
+  member: TeamMember;
+  /** How far the member's clock runs ahead of the viewer's. */
+  shiftMinutes: number;
+  /** Viewer-frame working state for each 15-minute slot of the day. */
+  slots: ReadonlyArray<boolean>;
+};
+
+type GroupedSection = {
+  group: TeamGroup | null;
+  rows: Array<MemberRow>;
+};
+
+type SlotRun = {
+  lengthSlots: number;
+  startSlot: number;
+};
+
+type WindowTiming =
+  | { kind: "now"; minutesLeft: number }
+  | { isTomorrow: boolean; kind: "later"; minutesUntil: number };
+
+type SharedWindow = SlotRun & {
+  availableMemberIds: ReadonlyArray<string>;
+};
+
+type TimedRun<T extends SlotRun> = {
+  run: T;
+  timing: WindowTiming;
+};
+
+type SharedWindowReading = {
+  bestSlots: ReadonlyArray<boolean>;
+  countedCount: number;
+  /** Hours where every counted group has at least one person working. */
+  groupCoverage: TimedRun<SlotRun> | null;
+  primary: TimedRun<SharedWindow> | null;
+  windows: ReadonlyArray<SharedWindow>;
+};
+
+/** A member whose group no longer exists is ungrouped. */
+const isUngrouped = (member: Pick<TeamMember, "groupId">, groupIds: ReadonlySet<string>) =>
+  member.groupId === undefined || !groupIds.has(member.groupId);
+
 const EMPTY_SLOTS: ReadonlyArray<boolean> = Object.freeze(
   Array.from<boolean>({ length: SLOTS_IN_DAY }).fill(false),
 );
 
-const toSlots = (row: Pick<MemberRow, "interval">): Array<boolean> =>
-  Array.from({ length: SLOTS_IN_DAY }, (_, slot) =>
-    isMinuteInInterval(slot * SLOT_MINUTES, row.interval),
+const toSlots = ({ lengthMinutes, startMinute }: WorkingInterval): Array<boolean> =>
+  Array.from(
+    { length: SLOTS_IN_DAY },
+    (_, slot) => wrapMinutes(slot * SLOT_MINUTES - startMinute) < lengthMinutes,
   );
 
 type KeyedRun = SlotRun & { key: string };
@@ -102,22 +145,18 @@ const pickUpcoming = <T extends SlotRun>(
 
 const readGroupCoverage = (
   counted: ReadonlyArray<MemberRow>,
+  groupIds: ReadonlySet<string>,
   nowMinute: number,
 ): TimedRun<SlotRun> | null => {
-  const rowsByGroup = new Map<string, Array<MemberRow>>();
-  for (const row of counted) {
-    const { groupId } = row.member;
-    if (groupId === undefined || groupId === "") {
-      continue;
-    }
-    rowsByGroup.set(groupId, [...(rowsByGroup.get(groupId) ?? []), row]);
-  }
+  const groupRows = [...groupIds].flatMap((groupId) => {
+    const rows = counted.filter((row) => row.member.groupId === groupId);
+    return rows.length > 0 ? [rows] : [];
+  });
 
-  if (rowsByGroup.size < 2) {
+  if (groupRows.length < 2) {
     return null;
   }
 
-  const groupRows = [...rowsByGroup.values()];
   const keys = Array.from({ length: SLOTS_IN_DAY }, (_, slot) =>
     groupRows.every((rows) => rows.some((row) => row.slots[slot] === true)) ? "covered" : null,
   );
@@ -139,6 +178,7 @@ const EMPTY_READING: SharedWindowReading = Object.freeze({
  */
 const readSharedWindow = (
   rows: ReadonlyArray<MemberRow>,
+  groupIds: ReadonlySet<string>,
   nowMinute: number,
 ): SharedWindowReading => {
   const counted = rows.filter((row) => row.isCounted);
@@ -152,7 +192,7 @@ const readSharedWindow = (
     (_, slot) => counted.filter((row) => row.slots[slot] === true).length,
   );
   const peak = Math.max(...counts);
-  const groupCoverage = readGroupCoverage(counted, nowMinute);
+  const groupCoverage = readGroupCoverage(counted, groupIds, nowMinute);
 
   if (peak < 2) {
     return { ...EMPTY_READING, countedCount: counted.length, groupCoverage };
@@ -179,18 +219,15 @@ const readSharedWindow = (
   };
 };
 
-const isGrouped = (member: TeamMember, groupIds: ReadonlySet<string>): boolean =>
-  member.groupId !== undefined && member.groupId !== "" && groupIds.has(member.groupId);
-
 const toGroupedSections = (
   groups: ReadonlyArray<TeamGroup>,
+  groupIds: ReadonlySet<string>,
   rows: ReadonlyArray<MemberRow>,
 ): Array<GroupedSection> => {
   if (groups.length === 0) {
     return [{ group: null, rows: [...rows] }];
   }
 
-  const groupIds = new Set(groups.map((group) => group.id));
   const sections: Array<GroupedSection> = [...groups]
     .toSorted((a, b) => a.order - b.order)
     .flatMap((group) => {
@@ -198,7 +235,7 @@ const toGroupedSections = (
       return groupRows.length > 0 ? [{ group, rows: groupRows }] : [];
     });
 
-  const ungrouped = rows.filter((row) => !isGrouped(row.member, groupIds));
+  const ungrouped = rows.filter((row) => isUngrouped(row.member, groupIds));
   if (ungrouped.length > 0) {
     sections.push({ group: null, rows: ungrouped });
   }
@@ -206,45 +243,58 @@ const toGroupedSections = (
   return sections;
 };
 
-type TimezoneDataArgs = {
+type TeamScheduleArgs = {
   collapsedGroupIds: ReadonlySet<string>;
   excludedMemberIds: ReadonlySet<string>;
   groups: ReadonlyArray<TeamGroup>;
   members: ReadonlyArray<TeamMember>;
   now: Date;
-  nowMinute: number;
   viewerTimezone: string;
 };
 
-const getTimezoneData = ({
+/**
+ * Places every member's working hours on the viewer's day at `now`. Hours are
+ * stored as whole hours in the member's own zone, so a half-hour offset such
+ * as Asia/Kolkata lands on :30 in the viewer's frame.
+ */
+const getTeamSchedule = ({
   collapsedGroupIds,
   excludedMemberIds,
   groups,
   members,
   now,
-  nowMinute,
   viewerTimezone,
-}: TimezoneDataArgs) => {
+}: TeamScheduleArgs) => {
   const groupIds = new Set(groups.map((group) => group.id));
+  const nowMinute = getMinuteOfDay(viewerTimezone, now);
+  const viewerOffset = getOffsetMinutes(viewerTimezone, now);
 
   const rows: Array<MemberRow> = members.map((member) => {
-    const interval = getWorkingInterval(member, viewerTimezone, now);
+    const shiftMinutes = getOffsetMinutes(member.timezone, now) - viewerOffset;
+    const interval = {
+      lengthMinutes: getWorkingMinutes(member),
+      startMinute: wrapMinutes(member.workingHoursStart * 60 - shiftMinutes),
+    };
     const isInCollapsedGroup =
-      isGrouped(member, groupIds) && collapsedGroupIds.has(member.groupId ?? "");
+      !isUngrouped(member, groupIds) && collapsedGroupIds.has(member.groupId ?? "");
     return {
-      dayOffset: getDayOffset(member.timezone, viewerTimezone),
+      dayOffset: Math.floor((nowMinute + shiftMinutes) / MINUTES_IN_DAY),
       interval,
       isCounted: !excludedMemberIds.has(member.id) && !isInCollapsedGroup,
       member,
-      slots: toSlots({ interval }),
+      shiftMinutes,
+      slots: toSlots(interval),
     };
   });
 
   return {
-    groupedSections: toGroupedSections(groups, rows),
-    reading: readSharedWindow(rows, nowMinute),
+    groupedSections: toGroupedSections(groups, groupIds, rows),
+    nowMinute,
+    reading: readSharedWindow(rows, groupIds, nowMinute),
     rows,
   };
 };
 
-export { SLOTS_IN_DAY, SLOTS_PER_HOUR, SLOT_MINUTES, getTimezoneData, toRuns };
+export { SLOTS_PER_HOUR, SLOT_MINUTES, getTeamSchedule, isUngrouped };
+
+export type { MemberRow, SharedWindowReading, SlotRun, WindowTiming };

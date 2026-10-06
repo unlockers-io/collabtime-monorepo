@@ -2,21 +2,20 @@
 
 import { Clock } from "lucide-react";
 
-import { useClientValue } from "@/components/timezone-visualizer/helpers";
 import {
   formatMinuteOfDay,
   formatTimezoneCity,
   formatUtcOffset,
   getMinuteOfDay,
-  getViewerTimezone,
 } from "@/lib/timezones";
 import { useSecondTick } from "@/lib/use-tick";
+import { useViewerTimezone } from "@/lib/use-viewer-timezone";
 
 const CLOCK_CLASS =
   "flex h-9 items-center gap-2 rounded-lg border bg-card px-3 py-2 font-medium text-card-foreground shadow-xs";
 
 const CurrentTimeDisplay = () => {
-  const viewerTimezone = useClientValue(getViewerTimezone, "");
+  const viewerTimezone = useViewerTimezone();
   const tick = useSecondTick();
 
   if (!viewerTimezone || tick === 0) {
@@ -28,8 +27,9 @@ const CurrentTimeDisplay = () => {
     );
   }
 
-  const time = formatMinuteOfDay(getMinuteOfDay(viewerTimezone, new Date(tick)));
-  const offset = formatUtcOffset(viewerTimezone);
+  const now = new Date(tick);
+  const time = formatMinuteOfDay(getMinuteOfDay(viewerTimezone, now));
+  const offset = formatUtcOffset(viewerTimezone, now);
 
   return (
     <div className={CLOCK_CLASS}>

@@ -1,23 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   COMMON_TIMEZONES,
   formatMinuteOfDay,
   formatMinuteRange,
-  formatTimeUntilAvailable,
+  formatTimezoneLabel,
   formatUtcOffset,
   fuzzyMatchTimezone,
+  getMemberStatus,
   getMinuteOfDay,
-  getMinutesUntilAvailable,
-  getMinutesUntilDayEnds,
   getOffsetMinutes,
-  getWorkingInterval,
-  isCurrentlyWorking,
-  isMinuteInInterval,
+  getWorkingMinutes,
 } from "./timezones";
 
 // A January date keeps these free of daylight-saving shifts in every zone used.
 const AT = new Date("2026-01-15T14:20:00Z");
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("getOffsetMinutes", () => {
   it("reads whole, half, and quarter hour offsets", () => {
@@ -28,48 +29,39 @@ describe("getOffsetMinutes", () => {
   });
 });
 
-describe("getWorkingInterval", () => {
-  it("keeps a half-hour offset on the half hour instead of rounding it", () => {
-    const interval = getWorkingInterval(
-      { timezone: "Asia/Kolkata", workingHoursEnd: 19, workingHoursStart: 10 },
-      "America/Sao_Paulo",
-      AT,
-    );
-    expect(interval).toEqual({ lengthMinutes: 9 * 60, startMinute: 90 });
-    expect(
-      formatMinuteRange(interval.startMinute, interval.startMinute + interval.lengthMinutes),
-    ).toBe("01:30 – 10:30");
-  });
-
-  it("wraps hours that cross the viewer's midnight", () => {
-    const interval = getWorkingInterval(
-      { timezone: "Asia/Tokyo", workingHoursEnd: 18, workingHoursStart: 10 },
-      "America/Sao_Paulo",
-      AT,
-    );
-    expect(interval.startMinute).toBe(22 * 60);
-    expect(isMinuteInInterval(23 * 60, interval)).toBe(true);
-    expect(isMinuteInInterval(5 * 60 + 59, interval)).toBe(true);
-    expect(isMinuteInInterval(6 * 60, interval)).toBe(false);
-  });
-
-  it("treats an overnight shift in the member's own zone as one block", () => {
-    const interval = getWorkingInterval(
-      { timezone: "UTC", workingHoursEnd: 6, workingHoursStart: 22 },
-      "UTC",
-      AT,
-    );
-    expect(interval).toEqual({ lengthMinutes: 8 * 60, startMinute: 22 * 60 });
+describe("getWorkingMinutes", () => {
+  it("runs an end hour earlier than the start past midnight", () => {
+    expect(getWorkingMinutes({ workingHoursEnd: 17, workingHoursStart: 9 })).toBe(8 * 60);
+    expect(getWorkingMinutes({ workingHoursEnd: 6, workingHoursStart: 22 })).toBe(8 * 60);
   });
 });
 
-describe("member clock", () => {
+const kolkata = (workingHoursStart: number, workingHoursEnd: number) => ({
+  timezone: "Asia/Kolkata",
+  workingHoursEnd,
+  workingHoursStart,
+});
+
+describe("getMemberStatus", () => {
+  // 14:20 UTC is 19:50 in Kolkata.
   it("counts the minutes left in a half-hour zone exactly", () => {
-    // 14:20 UTC is 19:50 in Kolkata.
     expect(getMinuteOfDay("Asia/Kolkata", AT)).toBe(19 * 60 + 50);
-    expect(isCurrentlyWorking("Asia/Kolkata", 10, 20, AT)).toBe(true);
-    expect(getMinutesUntilDayEnds("Asia/Kolkata", 20, AT)).toBe(10);
-    expect(getMinutesUntilAvailable("Asia/Kolkata", 21, 23, AT)).toBe(70);
+    expect(getMemberStatus(kolkata(10, 20), AT)).toEqual({ kind: "working", minutesLeft: 10 });
+  });
+
+  it("counts the minutes until an off member starts", () => {
+    expect(getMemberStatus(kolkata(21, 23), AT)).toEqual({ kind: "off", minutesUntilStart: 70 });
+    expect(getMemberStatus(kolkata(9, 17), AT)).toEqual({
+      kind: "off",
+      minutesUntilStart: 13 * 60 + 10,
+    });
+  });
+
+  it("keeps an overnight shift working past midnight", () => {
+    expect(getMemberStatus(kolkata(19, 3), AT)).toEqual({
+      kind: "working",
+      minutesLeft: 7 * 60 + 10,
+    });
   });
 });
 
@@ -78,26 +70,9 @@ describe("formatting", () => {
     expect(formatUtcOffset("Asia/Kolkata", AT)).toBe("UTC+5:30");
     expect(formatUtcOffset("America/Sao_Paulo", AT)).toBe("UTC-3");
     expect(formatUtcOffset("UTC", AT)).toBe("UTC");
+    expect(formatTimezoneLabel("America/Sao_Paulo", AT)).toBe("Sao Paulo (UTC-3)");
     expect(formatMinuteRange(22 * 60, 24 * 60)).toBe("22:00 – 24:00");
     expect(formatMinuteOfDay(-30)).toBe("23:30");
-  });
-});
-
-describe("formatTimeUntilAvailable", () => {
-  it("returns 'Available now' for 0 minutes", () => {
-    expect(formatTimeUntilAvailable(0)).toBe("Available now");
-  });
-
-  it("formats minutes only", () => {
-    expect(formatTimeUntilAvailable(30)).toBe("in 30m");
-  });
-
-  it("formats hours only", () => {
-    expect(formatTimeUntilAvailable(120)).toBe("in 2h");
-  });
-
-  it("formats hours and minutes", () => {
-    expect(formatTimeUntilAvailable(90)).toBe("in 1h 30m");
   });
 });
 
@@ -110,6 +85,14 @@ describe("fuzzyMatchTimezone", () => {
     const result = fuzzyMatchTimezone("America/Detroit");
     expect(result).not.toBeNull();
     expect(COMMON_TIMEZONES).toContain(result);
+  });
+
+  it("matches by offsets on both sides of daylight saving, whatever the date", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    for (const date of ["2026-01-15", "2026-07-15"]) {
+      vi.setSystemTime(new Date(`${date}T12:00:00Z`));
+      expect(fuzzyMatchTimezone("Australia/Adelaide")).toBe("Australia/Sydney");
+    }
   });
 
   it("returns null for invalid timezone", () => {

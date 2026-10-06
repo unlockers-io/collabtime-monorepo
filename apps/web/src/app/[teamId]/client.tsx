@@ -123,7 +123,7 @@ const TeamPageClient = ({
     setEditingTeamName,
   } = useTeamNameEdit({ isAdmin, teamId, teamName });
 
-  const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members);
+  const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members, groups);
   const { excludedMemberIds, setExcludedMemberIds } = useExcludedMembers();
 
   const orderedMembers = [...members].toSorted((a, b) => a.order - b.order);

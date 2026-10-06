@@ -7,8 +7,8 @@ import { CheckIcon, ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
 
 import { isCommonTimezone } from "@/lib/timezones";
+import type { CommonTimezone } from "@/lib/timezones";
 
-import type { Timezone } from "./timezone-field-options";
 import { getTimezoneOption, matchesTimezoneQuery, TIMEZONE_ITEMS } from "./timezone-field-options";
 
 type TimezoneFieldProps = {
@@ -16,13 +16,13 @@ type TimezoneFieldProps = {
   id: string;
   isInvalid: boolean;
   onBlur: () => void;
-  onChange: (timezone: Timezone) => void;
+  onChange: (timezone: CommonTimezone) => void;
   value: string;
 };
 
 const EDIT_KEYS: ReadonlySet<string> = new Set(["Backspace", "Delete"]);
 
-const getLabel = (timezone: Timezone) => getTimezoneOption(timezone).label;
+const getLabel = (timezone: CommonTimezone) => getTimezoneOption(timezone).label;
 
 const TimezoneField = ({ errors, id, isInvalid, onBlur, onChange, value }: TimezoneFieldProps) => {
   const errorId = `${id}-error`;
@@ -94,7 +94,7 @@ const TimezoneField = ({ errors, id, isInvalid, onBlur, onChange, value }: Timez
                 </p>
               </Combobox.Empty>
               <Combobox.List className="max-h-72 min-h-0 scroll-py-1 overflow-y-auto overscroll-contain p-1 data-empty:p-0">
-                {(timezone: Timezone) => {
+                {(timezone: CommonTimezone) => {
                   const option = getTimezoneOption(timezone);
                   return (
                     <Combobox.Item
