@@ -1,10 +1,8 @@
 import { captureException } from "@sentry/nextjs";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { requestToJoin } from "@/lib/actions/join-requests";
-import { getTeamMembershipRole } from "@/lib/actions/team-read";
 import type { TeamMember, TeamStatus } from "@/types";
 
 type Options = {
@@ -17,14 +15,7 @@ type Options = {
 const useTeamMembership = ({ initialStatus, members, teamId, userId }: Options) => {
   const [statusOverride, setStatusOverride] = useState<TeamStatus | null>(null);
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
-  const { data: resolvedRole, error: resolvedRoleError } = useQuery({
-    enabled: initialStatus === "none" && Boolean(userId),
-    queryFn: () => getTeamMembershipRole(teamId),
-    queryKey: ["membership-role", teamId, userId],
-  });
-  const serverStatus: TeamStatus =
-    initialStatus === "none" ? (resolvedRole ?? "none") : initialStatus;
-  const teamStatus = statusOverride ?? serverStatus;
+  const teamStatus = statusOverride ?? initialStatus;
   const isAdmin = teamStatus === "ADMIN";
   const isMember = isAdmin || teamStatus === "MEMBER";
   const currentUserId = isMember ? userId : undefined;
@@ -32,12 +23,6 @@ const useTeamMembership = ({ initialStatus, members, teamId, userId }: Options) 
     currentUserId !== undefined &&
     currentUserId !== "" &&
     members.some((member) => member.userId === currentUserId);
-
-  useEffect(() => {
-    if (resolvedRoleError) {
-      captureException(resolvedRoleError);
-    }
-  }, [resolvedRoleError]);
 
   const handleRequestJoin = async () => {
     setIsRequestingJoin(true);

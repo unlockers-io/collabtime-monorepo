@@ -6,21 +6,15 @@ import { notFound } from "next/navigation";
 import { AcceptWorkspaceInvitation } from "@/components/accept-workspace-invitation";
 import { getPublicTeam } from "@/lib/actions/team-read";
 import { getSession } from "@/lib/auth-server";
-import { displayName } from "@/lib/display-name";
-import { isInvitationOpen, maskEmail } from "@/lib/invitations";
 import { createQueryClient } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
-import { canAccessSpace } from "@/lib/space-visibility";
 import { getTeamName } from "@/lib/team-meta";
-import { CuidSchema, UUIDSchema, normalizeEmail } from "@/lib/validation";
+import { CuidSchema, UUIDSchema } from "@/lib/validation";
+import { resolveViewer } from "@/lib/workspace-access";
 import { QueryProvider } from "@/providers/query-provider";
-import { isTeamRole } from "@/types";
-import type { TeamStatus } from "@/types";
 
 import { TeamPageClient } from "./client";
 import { PrivateSpaceGate } from "./private-space-gate";
-
-type Session = NonNullable<Awaited<ReturnType<typeof getSession>>>;
 
 type TeamPageProps = {
   params: Promise<{ teamId: string }>;
@@ -47,85 +41,6 @@ export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metad
   };
 };
 
-type TeamStatusResult = {
-  invitationId?: string;
-  inviterName?: string;
-  isArchived: boolean;
-  status: TeamStatus;
-};
-
-const GUEST_STATUS: TeamStatusResult = { isArchived: false, status: "none" };
-
-/**
- * Promise.all, not allSettled: folding a rejected membership query into `null`
- * reported a real member as "none", which the client then papered over by
- * re-running the same query.
- */
-const getTeamStatus = async (
-  session: Session | null,
-  teamId: string,
-): Promise<TeamStatusResult> => {
-  if (!session) {
-    return GUEST_STATUS;
-  }
-  const { email, id: userId } = session.user;
-  const [membership, invitation, joinRequest] = await Promise.all([
-    prisma.membership.findUnique({
-      where: { userId_teamId: { teamId, userId } },
-    }),
-    prisma.invitation.findUnique({
-      include: { invitedBy: { select: { email: true, name: true } } },
-      where: { email_teamId: { email: normalizeEmail(email), teamId } },
-    }),
-    prisma.joinRequest.findUnique({
-      where: { userId_teamId: { teamId, userId } },
-    }),
-  ]);
-
-  if (membership && isTeamRole(membership.role)) {
-    return { isArchived: membership.archivedAt !== null, status: membership.role };
-  }
-
-  if (invitation && isInvitationOpen(invitation, new Date())) {
-    return {
-      invitationId: invitation.id,
-      inviterName: displayName(invitation.invitedBy.name, invitation.invitedBy.email),
-      isArchived: false,
-      status: "INVITED",
-    };
-  }
-
-  if (joinRequest?.status === "PENDING") {
-    return { isArchived: false, status: "PENDING" };
-  }
-
-  return { isArchived: false, status: "none" };
-};
-
-const findInviteMismatch = async (
-  session: Session | null,
-  teamId: string,
-  teamStatus: TeamStatus,
-  invitationId: string | undefined,
-): Promise<{ invitedEmailMasked: string } | undefined> => {
-  if (
-    !session ||
-    invitationId === undefined ||
-    (teamStatus !== "none" && teamStatus !== "PENDING")
-  ) {
-    return undefined;
-  }
-  const invitation = await prisma.invitation.findUnique({ where: { id: invitationId } });
-  if (
-    invitation?.teamId !== teamId ||
-    !isInvitationOpen(invitation, new Date()) ||
-    normalizeEmail(invitation.email) === normalizeEmail(session.user.email)
-  ) {
-    return undefined;
-  }
-  return { invitedEmailMasked: maskEmail(invitation.email) };
-};
-
 const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
   const { teamId } = await params;
 
@@ -142,17 +57,10 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
     notFound();
   }
 
-  const {
-    invitationId,
-    inviterName,
-    isArchived,
-    status: teamStatus,
-  } = await getTeamStatus(session, teamId);
-
+  const viewer = await resolveViewer({ inviteHint: invite.data, session, space });
   const teamName = (await getTeamName(teamId)) ?? "Untitled workspace";
-  const inviteMismatch = await findInviteMismatch(session, teamId, teamStatus, invite.data);
 
-  if (space.isPrivate && teamStatus === "INVITED" && invitationId !== undefined) {
+  if (space.isPrivate && viewer.invitation !== undefined) {
     return (
       <main
         className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-4 py-20"
@@ -161,8 +69,8 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
         <h1 className="font-display text-2xl font-semibold">Join this workspace</h1>
         <div className="border-y border-border py-6">
           <AcceptWorkspaceInvitation
-            invitationId={invitationId}
-            inviterName={inviterName}
+            invitationId={viewer.invitation.id}
+            inviterName={viewer.invitation.inviterName}
             teamName={teamName}
           />
         </div>
@@ -170,10 +78,10 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
     );
   }
 
-  if (!(await canAccessSpace(space, session?.user.id))) {
+  if (!viewer.canView) {
     return (
       <PrivateSpaceGate
-        inviteMismatch={inviteMismatch}
+        inviteMismatch={viewer.inviteMismatch}
         isAuthenticated={Boolean(session)}
         returnTo={returnTo}
         spaceId={space.id}
@@ -182,7 +90,6 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
     );
   }
 
-  const isSpaceOwner = Boolean(session && space.ownerId === session.user.id);
   const queryClient = createQueryClient();
   const teamResult = await getPublicTeam(teamId);
 
@@ -193,17 +100,17 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
   return (
     <QueryProvider dehydratedState={dehydrate(queryClient)}>
       <TeamPageClient
-        hasPassword={isSpaceOwner ? Boolean(space.accessPassword) : undefined}
-        invitationId={invitationId}
-        inviteMismatch={inviteMismatch}
-        inviterName={inviterName}
-        isArchived={isArchived}
+        hasPassword={viewer.isOwner ? Boolean(space.accessPassword) : undefined}
+        invitationId={viewer.invitation?.id}
+        inviteMismatch={viewer.inviteMismatch}
+        inviterName={viewer.invitation?.inviterName}
+        isArchived={viewer.isArchived}
         isAuthenticated={Boolean(session)}
         isPrivate={space.isPrivate}
         returnTo={returnTo}
-        spaceId={isSpaceOwner ? space.id : null}
+        spaceId={viewer.isOwner ? space.id : null}
         teamId={teamId}
-        teamStatus={teamStatus}
+        teamStatus={viewer.status}
         userId={session?.user.id}
       />
     </QueryProvider>

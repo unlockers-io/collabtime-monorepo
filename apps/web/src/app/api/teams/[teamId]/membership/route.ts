@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
-import { UUIDSchema } from "@/lib/validation";
 
 const patchSchema = z.object({
   archived: z.boolean(),
@@ -18,38 +17,27 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
   try {
     const { teamId } = await params;
 
-    const uuidResult = UUIDSchema.safeParse(teamId);
-    if (!uuidResult.success) {
-      return NextResponse.json({ error: "Invalid team ID" }, { status: 400 });
-    }
-
     const session = await getSession();
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { archived } = patchSchema.parse(body);
+    const { archived } = patchSchema.parse(await request.json());
+    const archivedAt = archived ? new Date() : null;
 
-    const existing = await prisma.membership.findUnique({
-      where: { userId_teamId: { teamId, userId: session.user.id } },
+    // Scoped to the caller's own row, so the write is the membership check.
+    const { count } = await prisma.membership.updateMany({
+      data: { archivedAt },
+      where: { teamId, userId: session.user.id },
     });
 
-    if (!existing) {
+    if (count === 0) {
       return NextResponse.json({ error: "Membership not found" }, { status: 404 });
     }
 
-    const updated = await prisma.membership.update({
-      data: { archivedAt: archived ? new Date() : null },
-      where: { userId_teamId: { teamId, userId: session.user.id } },
-    });
-
     return NextResponse.json({
-      membership: {
-        archivedAt: updated.archivedAt ? updated.archivedAt.toISOString() : null,
-        teamId: updated.teamId,
-      },
+      membership: { archivedAt: archivedAt?.toISOString() ?? null, teamId },
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -6,9 +6,9 @@ import { getSession } from "@/lib/auth-server";
 import { getClientIp } from "@/lib/client-ip";
 import { verifyPassword } from "@/lib/crypto";
 import { log, withEvlog } from "@/lib/observability";
-import { createSpaceAccessToken, SPACE_ACCESS_COOKIE_PREFIX } from "@/lib/space-access";
 import { joinPrivateSpace } from "@/lib/space-join";
 import { checkRateLimit } from "@/lib/space-rate-limit";
+import { issueAccessCookie } from "@/lib/workspace-access";
 
 const verifyPasswordSchema = z.object({
   password: z.string().min(1, "Password is required"),
@@ -79,19 +79,11 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       }
     }
 
-    const accessToken = createSpaceAccessToken(spaceId, accessPassword);
-
     const response = NextResponse.json({
       success: true,
       teamId: space.teamId,
     });
-
-    response.cookies.set(`${SPACE_ACCESS_COOKIE_PREFIX}${spaceId}`, accessToken, {
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7,
-      sameSite: "lax",
-      secure: process.env.WEB_APP_URL?.startsWith("https://") === true,
-    });
+    response.cookies.set(issueAccessCookie(spaceId, accessPassword));
 
     return response;
   } catch (error) {

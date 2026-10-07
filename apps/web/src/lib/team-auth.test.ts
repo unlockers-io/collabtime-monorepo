@@ -13,7 +13,7 @@ type TeamAuthDeps = Parameters<typeof createTeamAuth>[0];
 const mockedGetSession = vi.fn<typeof getSession>();
 const mockedFindMembership = vi.fn<TeamAuthDeps["findMembership"]>();
 const reportError = vi.fn<TeamAuthDeps["reportError"]>();
-const { authenticate, authorizeTeamAdmin, authorizeTeamMember, getTeamRole } = createTeamAuth({
+const { authenticate, authorizeTeamAdmin, authorizeTeamMember } = createTeamAuth({
   findMembership: mockedFindMembership,
   getSession: mockedGetSession,
   reportError,
@@ -23,51 +23,6 @@ describe("module surface", () => {
   it("is not a server-action module", async () => {
     const source = await readFile(path.resolve(process.cwd(), "src/lib/team-auth.ts"), "utf8");
     expect(source).not.toContain('"use server"');
-  });
-});
-
-describe("getTeamRole", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns null when no session exists", async () => {
-    mockedGetSession.mockResolvedValue(null);
-
-    const result = await getTeamRole("team-1");
-    expect(result).toBeNull();
-  });
-
-  it("returns null when no membership found", async () => {
-    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
-    mockedFindMembership.mockResolvedValue(null);
-
-    const result = await getTeamRole("team-1");
-    expect(result).toBeNull();
-  });
-
-  it("returns null when role is not a valid TeamRole", async () => {
-    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
-    mockedFindMembership.mockResolvedValue({ role: "INVALID_ROLE" });
-
-    const result = await getTeamRole("team-1");
-    expect(result).toBeNull();
-  });
-
-  it("returns userId and role for valid ADMIN member", async () => {
-    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
-    mockedFindMembership.mockResolvedValue({ role: "ADMIN" });
-
-    const result = await getTeamRole("team-1");
-    expect(result).toEqual({ role: "ADMIN", userId: "user-1" });
-  });
-
-  it("returns userId and role for valid MEMBER", async () => {
-    mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
-    mockedFindMembership.mockResolvedValue({ role: "MEMBER" });
-
-    const result = await getTeamRole("team-1");
-    expect(result).toEqual({ role: "MEMBER", userId: "user-1" });
   });
 });
 

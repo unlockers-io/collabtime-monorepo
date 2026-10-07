@@ -1,19 +1,23 @@
 import { getClientIp } from "./client-ip";
 import type { log } from "./observability";
-import { canAccessSpace, type SpaceAccess, type SpaceAccessStore } from "./space-visibility";
-import type { acquireTeamEventConnection } from "./team-event-admission";
+import type { Admission, AdmissionViewer } from "./team-event-admission";
 import { createTeamEventStream, type AccessResult } from "./team-event-stream";
-import type { teamEventHub } from "./team-events";
+import type { TeamListener } from "./team-events";
+import { ACCESS_LOSS_STATUS } from "./team-live-protocol";
 import { UUIDSchema } from "./validation";
+import type { AccessCheck, WorkspaceSpace } from "./workspace-access";
 
-type AccessSnapshot = { token: string | undefined; userId: string | undefined };
+type CapturedAccess = { canView: AccessCheck; userId: string | undefined };
 type TeamEventHandlerDeps = {
-  acquire: typeof acquireTeamEventConnection;
-  captureAccess: (spaceId: string) => Promise<AccessSnapshot>;
+  acquire: (viewer: AdmissionViewer) => Promise<Admission>;
+  captureAccess: (spaceId: string) => Promise<CapturedAccess>;
   enabled: () => boolean;
-  findSpace: (teamId: string) => Promise<SpaceAccess | null>;
-  hub: typeof teamEventHub;
-  isMember: SpaceAccessStore["isMember"];
+  findSpace: (teamId: string) => Promise<WorkspaceSpace | null>;
+  hub: {
+    isReady: () => boolean;
+    subscribe: (teamId: string, listener: TeamListener) => () => void;
+    waitUntilReady: () => Promise<boolean>;
+  };
   log: Pick<typeof log, "error" | "info" | "warn">;
 };
 
@@ -38,15 +42,11 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
       }
       const space = await deps.findSpace(teamId);
       if (!space) {
-        return errorResponse("Team not found", 404);
+        return errorResponse("Team not found", ACCESS_LOSS_STATUS.deleted);
       }
-      const snapshot = await deps.captureAccess(space.id);
-      const store: SpaceAccessStore = {
-        getToken: () => Promise.resolve(snapshot.token),
-        isMember: deps.isMember,
-      };
-      if (!(await canAccessSpace(space, snapshot.userId, store))) {
-        return errorResponse("Forbidden", 403);
+      const { canView, userId } = await deps.captureAccess(space.id);
+      if (!(await canView(space))) {
+        return errorResponse("Forbidden", ACCESS_LOSS_STATUS.revoked);
       }
       if (accessOnly) {
         return new Response(null, { headers: { "Cache-Control": "no-store" }, status: 204 });
@@ -55,9 +55,7 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
         deps.log.warn({ ...context, message: "Live sync unavailable", reason: "subscriber" });
         return errorResponse("Live updates unavailable", 503);
       }
-      const authenticated = snapshot.userId !== undefined;
-      const principal = authenticated ? `user:${snapshot.userId}` : `ip:${getClientIp(request)}`;
-      const admission = await deps.acquire(principal, authenticated);
+      const admission = await deps.acquire({ ip: getClientIp(request), userId });
       if (!admission.allowed) {
         deps.log.warn({
           ...context,
@@ -74,14 +72,14 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
         if (!currentSpace || currentSpace.id !== space.id) {
           return "deleted";
         }
-        return (await canAccessSpace(currentSpace, snapshot.userId, store)) ? "allowed" : "revoked";
+        return (await canView(currentSpace)) ? "allowed" : "revoked";
       };
       try {
         return createTeamEventStream({
           checkAccess,
           isReady: deps.hub.isReady,
           log: deps.log,
-          principal: authenticated ? "user" : "guest",
+          principal: userId === undefined ? "guest" : "user",
           release: admission.release,
           signal: request.signal,
           startedAt,
@@ -100,4 +98,4 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
 };
 
 export { createTeamEventsHandler };
-export type { AccessSnapshot, TeamEventHandlerDeps };
+export type { TeamEventHandlerDeps };
