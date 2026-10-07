@@ -2,14 +2,12 @@ import type { authenticate } from "@/lib/team-auth";
 import type { TeamMember, TeamRecord } from "@/types";
 
 import { MAX_TEAMS_PER_USER } from "../limits";
-import { TEAM_INITIAL_TTL_SECONDS } from "../redis";
+import type { TeamContentsFailureReason } from "../team-store";
 import { TeamNameSchema } from "../validation";
 
 import type { ActionErrorEvent, ActionResult } from "./types";
 
-type StoreTeamResult =
-  | { ok: true }
-  | { ok: false; reason: "read-failed" | "rejected" | "unconfigured" | "write-failed" };
+type StoreTeamResult = { ok: true } | { ok: false; reason: TeamContentsFailureReason };
 
 type TeamCreateDeps = {
   authenticate: typeof authenticate;
@@ -20,7 +18,7 @@ type TeamCreateDeps = {
   deleteSpace: (teamId: string) => Promise<void>;
   now: () => Date;
   reportError: (event: ActionErrorEvent) => void;
-  storeTeam: (teamId: string, team: TeamRecord, ttlSeconds: number) => Promise<StoreTeamResult>;
+  storeTeam: (teamId: string, team: TeamRecord) => Promise<StoreTeamResult>;
 };
 
 const createTeamAction = (deps: TeamCreateDeps) => {
@@ -55,7 +53,7 @@ const createTeamAction = (deps: TeamCreateDeps) => {
         members: [deps.createMember({ name: user.name ?? "", timezone, userId: user.id })],
         name: parsed.data,
       };
-      const applied = await deps.storeTeam(teamId, team, TEAM_INITIAL_TTL_SECONDS);
+      const applied = await deps.storeTeam(teamId, team);
 
       if (!applied.ok) {
         deps.reportError({

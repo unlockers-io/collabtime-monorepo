@@ -1,11 +1,11 @@
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMemberActions } from "./member-actions-core";
 import {
   createTestGuards,
   createTestMember,
-  createTestTeamMutator,
   createTestTeamRecord,
+  createTestTeamStore,
   VALID_UUID,
   VALID_UUID_2,
   VALID_UUID_3,
@@ -13,13 +13,11 @@ import {
 
 type MemberActionDeps = Parameters<typeof createMemberActions>[0];
 
-const testMutator = createTestTeamMutator();
+const harness = createTestTeamStore();
 const guards = createTestGuards();
-const claimOrCreateSlot = vi.fn<MemberActionDeps["claimOrCreateSlot"]>();
 const revokeInvitationsForMember = vi.fn<MemberActionDeps["revokeInvitationsForMember"]>();
-const removeMembershipForSlot = vi.fn<MemberActionDeps["removeMembershipForSlot"]>();
+const removeMembership = vi.fn<MemberActionDeps["removeMembership"]>();
 const reportError = vi.fn<MemberActionDeps["reportError"]>();
-const revalidateTeamName = vi.fn<MemberActionDeps["revalidateTeamName"]>();
 const {
   addMember,
   createOwnMemberSlot,
@@ -32,22 +30,16 @@ const {
 } = createMemberActions({
   authorizeTeamAdmin: guards.authorizeTeamAdmin,
   authorizeTeamMember: guards.authorizeTeamMember,
-  claimOrCreateSlot,
-  createId: () => "test-uuid",
-  mutateTeam: testMutator.mutateTeam,
-  readTeam: () => Promise.resolve(testMutator.persistedTeam()),
-  removeMembershipForSlot,
+  mutateTeam: harness.mutateTeam,
+  removeMembership,
   reportError,
-  revalidateTeamName,
   revokeInvitationsForMember,
 });
 
-const seedTeam = (team: ReturnType<typeof createTestTeamRecord>) => {
-  testMutator.seedTeam(team);
-};
+const { seedTeam } = harness;
 
-const persistedTeam = () => {
-  const team = testMutator.persistedTeam();
+const persistedTeam = async () => {
+  const team = await harness.readTeam();
   if (!team) {
     throw new Error("team was not persisted");
   }
@@ -63,13 +55,11 @@ const validMemberInput = {
 };
 
 beforeEach(() => {
-  testMutator.reset();
+  harness.reset();
   guards.reset();
-  claimOrCreateSlot.mockReset();
   revokeInvitationsForMember.mockReset();
-  removeMembershipForSlot.mockReset();
+  removeMembership.mockReset();
   reportError.mockReset();
-  revalidateTeamName.mockReset();
 });
 
 describe("authorization", () => {
@@ -84,21 +74,23 @@ describe("authorization", () => {
     const team = createTestTeamRecord({
       members: [createTestMember({ id: VALID_UUID_2, userId: "other" })],
     });
-    seedTeam(team);
+    await seedTeam(team);
     guards.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
 
     expect(await run()).toEqual({ error: "Admin access required", success: false });
     expect(guards.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
     expect(revokeInvitationsForMember).not.toHaveBeenCalled();
-    expect(removeMembershipForSlot).not.toHaveBeenCalled();
-    expect(revalidateTeamName).not.toHaveBeenCalled();
-    expect(testMutator.persistedTeam()).toEqual(team);
+    expect(removeMembership).not.toHaveBeenCalled();
+    expect(harness.invalidateTeamName).not.toHaveBeenCalled();
+    expect(await harness.readTeam()).toEqual(team);
   });
 
   it.each([
     ["updateOwnMember", () => updateOwnMember(VALID_UUID, VALID_UUID_2, { name: "" })],
     ["createOwnMemberSlot", () => createOwnMemberSlot(VALID_UUID)],
   ])("%s refuses a non-member before touching the team", async (_name, run) => {
+    const team = createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2 })] });
+    await seedTeam(team);
     guards.authorizeTeamMember.mockResolvedValue({
       error: "You are not a member of this team",
       success: false,
@@ -106,14 +98,12 @@ describe("authorization", () => {
 
     expect(await run()).toEqual({ error: "You are not a member of this team", success: false });
     expect(guards.authorizeTeamMember).toHaveBeenCalledWith(VALID_UUID);
-    expect(claimOrCreateSlot).not.toHaveBeenCalled();
+    expect(await harness.readTeam()).toEqual(team);
   });
 });
 
 describe("addMember", () => {
   it("returns error when team not found", async () => {
-    testMutator.seedTeam(null);
-
     const result = await addMember(VALID_UUID, validMemberInput);
 
     expect(result).toEqual({ error: "Team not found", success: false });
@@ -121,7 +111,7 @@ describe("addMember", () => {
 
   it("assigns order equal to team.members.length", async () => {
     const existingMember = createTestMember({ id: VALID_UUID_2, order: 0 });
-    seedTeam(createTestTeamRecord({ members: [existingMember] }));
+    await seedTeam(createTestTeamRecord({ members: [existingMember] }));
 
     const result = await addMember(VALID_UUID, validMemberInput);
 
@@ -133,11 +123,12 @@ describe("addMember", () => {
   });
 
   it("pushes member to team and persists", async () => {
-    seedTeam(createTestTeamRecord({ members: [] }));
+    await seedTeam(createTestTeamRecord({ members: [] }));
 
     await addMember(VALID_UUID, validMemberInput);
 
-    expect(persistedTeam().members).toHaveLength(1);
+    const persisted = await persistedTeam();
+    expect(persisted.members).toHaveLength(1);
   });
 });
 
@@ -149,15 +140,13 @@ describe("removeMember", () => {
   });
 
   it("returns error when team not found", async () => {
-    testMutator.seedTeam(null);
-
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
     expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("returns error when member not found", async () => {
-    seedTeam(createTestTeamRecord({ members: [createTestMember()] }));
+    await seedTeam(createTestTeamRecord({ members: [createTestMember()] }));
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
@@ -166,18 +155,19 @@ describe("removeMember", () => {
 
   it("filters out member and persists", async () => {
     const member = createTestMember({ id: VALID_UUID_2 });
-    seedTeam(createTestTeamRecord({ members: [member] }));
+    await seedTeam(createTestTeamRecord({ members: [member] }));
 
     const result = await removeMember(VALID_UUID, VALID_UUID_2);
 
     expect(result.success).toBe(true);
-    expect(persistedTeam().members).toHaveLength(0);
+    const persisted = await persistedTeam();
+    expect(persisted.members).toHaveLength(0);
   });
 });
 
 describe("updateMember", () => {
   it("returns error when member not found", async () => {
-    seedTeam(createTestTeamRecord({ members: [] }));
+    await seedTeam(createTestTeamRecord({ members: [] }));
 
     const result = await updateMember(VALID_UUID, VALID_UUID_2, {
       name: "Bob",
@@ -189,11 +179,11 @@ describe("updateMember", () => {
   it("updates member at correct index", async () => {
     const member1 = createTestMember({ id: VALID_UUID_2, name: "Alice" });
     const member2 = createTestMember({ id: VALID_UUID_3, name: "Bob" });
-    seedTeam(createTestTeamRecord({ members: [member1, member2] }));
+    await seedTeam(createTestTeamRecord({ members: [member1, member2] }));
 
     await updateMember(VALID_UUID, VALID_UUID_3, { name: "Charlie" });
 
-    const saved = persistedTeam();
+    const saved = await persistedTeam();
     expect(saved.members[0]?.name).toBe("Alice");
     expect(saved.members[1]?.name).toBe("Charlie");
   });
@@ -201,28 +191,30 @@ describe("updateMember", () => {
 
 describe("updateTeamName", () => {
   it("trims name and revalidates the cached name", async () => {
-    seedTeam(createTestTeamRecord());
+    await seedTeam(createTestTeamRecord());
 
     await updateTeamName(VALID_UUID, "  My Team  ");
 
-    expect(persistedTeam().name).toBe("My Team");
-    expect(revalidateTeamName).toHaveBeenCalledWith(VALID_UUID);
+    const persisted = await persistedTeam();
+    expect(persisted.name).toBe("My Team");
+    expect(harness.invalidateTeamName).toHaveBeenCalledExactlyOnceWith(VALID_UUID);
   });
 
   it("rejects empty name after trimming", async () => {
     const result = await updateTeamName(VALID_UUID, "   ");
 
     expect(result).toEqual({ error: "Workspace name is required", success: false });
-    expect(revalidateTeamName).not.toHaveBeenCalled();
+    expect(harness.invalidateTeamName).not.toHaveBeenCalled();
   });
 
   it("rejects names longer than 100 characters", async () => {
-    seedTeam(createTestTeamRecord());
+    await seedTeam(createTestTeamRecord());
     const longName = "A".repeat(150);
 
     const result = await updateTeamName(VALID_UUID, longName);
     expect(result.success).toBe(false);
-    expect(persistedTeam().name).toBe("Test Team");
+    const persisted = await persistedTeam();
+    expect(persisted.name).toBe("Test Team");
   });
 });
 
@@ -249,7 +241,7 @@ describe("importMembers", () => {
 
   it("assigns orders starting from existing member count", async () => {
     const existing = createTestMember({ id: VALID_UUID_2, order: 0 });
-    seedTeam(createTestTeamRecord({ members: [existing] }));
+    await seedTeam(createTestTeamRecord({ members: [existing] }));
 
     const result = await importMembers(VALID_UUID, [
       validMemberInput,
@@ -257,14 +249,12 @@ describe("importMembers", () => {
     ]);
 
     expect(result.success).toBe(true);
-    const saved = persistedTeam();
+    const saved = await persistedTeam();
     expect(saved.members[1]?.order).toBe(1);
     expect(saved.members[2]?.order).toBe(2);
   });
 
   it("returns error when team not found", async () => {
-    testMutator.seedTeam(null);
-
     const result = await importMembers(VALID_UUID, [validMemberInput]);
 
     expect(result).toEqual({ error: "Team not found", success: false });
@@ -273,7 +263,7 @@ describe("importMembers", () => {
 
 describe("updateOwnMember", () => {
   it("requires membership rather than admin access", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
       }),
@@ -286,7 +276,7 @@ describe("updateOwnMember", () => {
   });
 
   it("returns error when member not found in team record", async () => {
-    seedTeam(createTestTeamRecord({ members: [] }));
+    await seedTeam(createTestTeamRecord({ members: [] }));
 
     const result = await updateOwnMember(VALID_UUID, VALID_UUID_2, {
       name: "X",
@@ -296,7 +286,7 @@ describe("updateOwnMember", () => {
   });
 
   it("rejects editing another user's member record", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: [createTestMember({ id: VALID_UUID_2, userId: "other-user-id" })],
       }),
@@ -313,7 +303,7 @@ describe("updateOwnMember", () => {
   });
 
   it("allows editing own member record (userId matches)", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
       }),
@@ -324,11 +314,12 @@ describe("updateOwnMember", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(persistedTeam().members[0]?.name).toBe("New Name");
+    const persisted = await persistedTeam();
+    expect(persisted.members[0]?.name).toBe("New Name");
   });
 
   it("claims unclaimed record by setting userId", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: [createTestMember({ id: VALID_UUID_2, userId: undefined })],
       }),
@@ -339,21 +330,20 @@ describe("updateOwnMember", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(persistedTeam().members[0]?.userId).toBe("user-123");
+    const persisted = await persistedTeam();
+    expect(persisted.members[0]?.userId).toBe("user-123");
   });
 });
 
 describe("reorderMembers", () => {
   it("returns error when team not found", async () => {
-    testMutator.seedTeam(null);
-
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_2]);
 
     expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("rejects when member IDs do not match existing members", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
       }),
@@ -365,7 +355,7 @@ describe("reorderMembers", () => {
   });
 
   it("rejects when member count does not match", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
       }),
@@ -379,12 +369,12 @@ describe("reorderMembers", () => {
   it("updates order values based on new positions", async () => {
     const member1 = createTestMember({ id: VALID_UUID_2, name: "A", order: 0 });
     const member2 = createTestMember({ id: VALID_UUID_3, name: "B", order: 1 });
-    seedTeam(createTestTeamRecord({ members: [member1, member2] }));
+    await seedTeam(createTestTeamRecord({ members: [member1, member2] }));
 
     const result = await reorderMembers(VALID_UUID, [VALID_UUID_3, VALID_UUID_2]);
 
     expect(result.success).toBe(true);
-    const saved = persistedTeam();
+    const saved = await persistedTeam();
     expect(saved.members[0]?.id).toBe(VALID_UUID_3);
     expect(saved.members[0]?.order).toBe(0);
     expect(saved.members[1]?.id).toBe(VALID_UUID_2);
@@ -392,7 +382,7 @@ describe("reorderMembers", () => {
   });
 
   it("persists reordered members", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: [createTestMember({ id: VALID_UUID_2 }), createTestMember({ id: VALID_UUID_3 })],
       }),
@@ -400,7 +390,7 @@ describe("reorderMembers", () => {
 
     await reorderMembers(VALID_UUID, [VALID_UUID_3, VALID_UUID_2]);
 
-    const saved = persistedTeam();
+    const saved = await persistedTeam();
     expect(saved.members[0]?.id).toBe(VALID_UUID_3);
     expect(saved.members[1]?.id).toBe(VALID_UUID_2);
   });
@@ -408,7 +398,7 @@ describe("reorderMembers", () => {
 
 describe("member limits", () => {
   it("allows the 200th member and rejects the next", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: Array.from({ length: 199 }, (_, index) =>
           createTestMember({ id: `member-${index}` }),
@@ -419,11 +409,12 @@ describe("member limits", () => {
     expect(result1.success).toBe(true);
     const result2 = await addMember(VALID_UUID, validMemberInput);
     expect(result2.success).toBe(false);
-    expect(persistedTeam().members).toHaveLength(200);
+    const persisted = await persistedTeam();
+    expect(persisted.members).toHaveLength(200);
   });
 
   it("rejects an oversized total import without partial writes", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: Array.from({ length: 199 }, (_, index) =>
           createTestMember({ id: `member-${index}` }),
@@ -434,64 +425,95 @@ describe("member limits", () => {
       error: "A workspace can have up to 200 members",
       success: false,
     });
-    expect(persistedTeam().members).toHaveLength(199);
+    const refused = await persistedTeam();
+    expect(refused.members).toHaveLength(199);
     const result3 = await importMembers(VALID_UUID, [validMemberInput]);
     expect(result3.success).toBe(true);
-    expect(persistedTeam().members).toHaveLength(200);
+    const filled = await persistedTeam();
+    expect(filled.members).toHaveLength(200);
   });
 });
 
-describe("removal cleanup and self repair", () => {
-  it("keeps the slot when revocation fails and can retry", async () => {
-    seedTeam(
+describe("removal cleanup", () => {
+  it("revokes access only after the slot is gone", async () => {
+    await seedTeam(
+      createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2, userId: "other" })] }),
+    );
+    revokeInvitationsForMember.mockImplementationOnce(async () => {
+      const persisted = await persistedTeam();
+      expect(persisted.members).toHaveLength(0);
+    });
+
+    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: true });
+    expect(revokeInvitationsForMember).toHaveBeenCalledWith(VALID_UUID, VALID_UUID_2);
+    expect(removeMembership).toHaveBeenCalledWith(VALID_UUID, "other");
+  });
+
+  it("reports a failure when access cleanup fails after the removal committed", async () => {
+    await seedTeam(
       createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2, userId: "other" })] }),
     );
     revokeInvitationsForMember.mockRejectedValueOnce(new Error("Database unavailable"));
-    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: false });
-    expect(persistedTeam().members).toHaveLength(1);
-    expect(removeMembershipForSlot).not.toHaveBeenCalled();
-    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: true });
-    expect(removeMembershipForSlot).toHaveBeenCalledWith(VALID_UUID, "other", "user-123");
-  });
-  it("retains the slot until membership cleanup succeeds", async () => {
-    seedTeam(
-      createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2, userId: "other" })] }),
-    );
-    removeMembershipForSlot.mockImplementationOnce(() => {
-      expect(persistedTeam().members).toHaveLength(1);
-      return Promise.reject(new Error("Database unavailable"));
+
+    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toEqual({
+      error: "Failed to remove member",
+      success: false,
     });
-    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: false });
-    expect(persistedTeam().members).toHaveLength(1);
-    expect(revokeInvitationsForMember).toHaveBeenCalledWith(VALID_UUID, VALID_UUID_2);
-  });
-  it("retains a profile claimed by another user during cleanup", async () => {
-    seedTeam(
-      createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2, userId: "other" })] }),
+    const persisted = await persistedTeam();
+    expect(persisted.members).toHaveLength(0);
+    expect(removeMembership).not.toHaveBeenCalled();
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ memberId: VALID_UUID_2, teamId: VALID_UUID, userId: "other" }),
     );
-    removeMembershipForSlot.mockImplementationOnce(() => {
-      const [member] = persistedTeam().members;
-      assert(member, "expected a persisted member");
-      member.userId = "new-owner";
-      return Promise.resolve();
-    });
-    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: false });
-    expect(persistedTeam().members[0]?.userId).toBe("new-owner");
   });
+
+  it("leaves access untouched when the removal is rejected", async () => {
+    await seedTeam(createTestTeamRecord({ members: [createTestMember()] }));
+
+    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: false });
+    expect(revokeInvitationsForMember).not.toHaveBeenCalled();
+    expect(removeMembership).not.toHaveBeenCalled();
+  });
+
   it("does not delete the caller membership", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
       }),
     );
+
     expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: true });
-    expect(removeMembershipForSlot).not.toHaveBeenCalled();
+    expect(removeMembership).not.toHaveBeenCalled();
   });
+});
+
+describe("createOwnMemberSlot", () => {
   it("returns an existing profile without creating another", async () => {
-    claimOrCreateSlot.mockResolvedValue({ created: false, memberId: VALID_UUID_2, ok: true });
+    await seedTeam(
+      createTestTeamRecord({
+        members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
+      }),
+    );
+
     expect(await createOwnMemberSlot(VALID_UUID)).toEqual({
       data: { created: false, memberId: VALID_UUID_2 },
       success: true,
+    });
+    const persisted = await persistedTeam();
+    expect(persisted.members).toHaveLength(1);
+  });
+
+  it("creates a profile owned by the caller", async () => {
+    await seedTeam(createTestTeamRecord());
+
+    expect(await createOwnMemberSlot(VALID_UUID)).toEqual({
+      data: { created: true, memberId: "test-uuid" },
+      success: true,
+    });
+    const persisted = await persistedTeam();
+    expect(persisted.members[0]).toMatchObject({
+      name: "Test User",
+      userId: "user-123",
     });
   });
 });

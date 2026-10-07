@@ -7,7 +7,7 @@ import { getSession } from "@/lib/auth-server";
 import { hashPassword } from "@/lib/crypto";
 import { log, withEvlog } from "@/lib/observability";
 import { publishTeamEvent } from "@/lib/team-events";
-import { teamNameTag } from "@/lib/team-meta";
+import { teamNameTag } from "@/lib/team-store";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
 const updateSpaceSchema = z.discriminatedUnion("visibility", [

@@ -1,7 +1,7 @@
 import type { authenticate, authorizeTeamAdmin } from "@/lib/team-auth";
 
 import { displayName } from "../display-name";
-import type { SlotClaimResult } from "../team-slots";
+import type { SlotClaimResult } from "../team-store";
 import { UUIDSchema } from "../validation";
 
 import type { ActionErrorEvent, ActionResult } from "./types";

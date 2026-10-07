@@ -4,7 +4,7 @@ import type { TeamRecord } from "@/types";
 
 import type { checkRateLimit } from "../space-rate-limit";
 import type { authenticate, authorizeTeamAdmin } from "../team-auth";
-import type { claimOrCreateMemberSlot } from "../team-slots";
+import type { claimOrCreateMemberSlot } from "../team-store";
 
 import type { ActionErrorEvent } from "./types";
 

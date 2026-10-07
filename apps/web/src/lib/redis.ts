@@ -1,7 +1,5 @@
 import { Redis, type RedisOptions } from "ioredis";
 
-import { log } from "@/lib/observability";
-
 let cachedRedis: Redis | null = null;
 
 const isRedisConfigured = (): boolean => {
@@ -60,53 +58,4 @@ const redis = new Proxy({} as Redis, {
   },
 });
 
-const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60;
-
-const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2;
-
-const teamKey = (teamId: string): string => `team:${teamId}`;
-type ErrorEvent = Parameters<typeof log.error>[0];
-
-type TeamJsonReaderDeps = {
-  expire: (key: string, seconds: number) => Promise<void>;
-  get: (key: string) => Promise<string | null>;
-  reportError: (event: ErrorEvent) => void;
-};
-
-const createTeamJsonReader = (deps: TeamJsonReaderDeps) => {
-  return async (teamId: string): Promise<string | null> => {
-    const key = teamKey(teamId);
-    const data = await deps.get(key);
-
-    if (data === null || data === "") {
-      return null;
-    }
-
-    try {
-      await deps.expire(key, TEAM_ACTIVE_TTL_SECONDS);
-    } catch (error) {
-      deps.reportError({ error, message: "Failed to refresh team TTL", route: "lib/redis" });
-    }
-
-    return data;
-  };
-};
-
-const readTeamJson = createTeamJsonReader({
-  expire: async (key, seconds) => {
-    await redis.expire(key, seconds);
-  },
-  get: (key) => redis.get(key),
-  reportError: log.error,
-});
-
-export {
-  createRedisClient,
-  createTeamJsonReader,
-  isRedisConfigured,
-  readTeamJson,
-  redis,
-  teamKey,
-  TEAM_INITIAL_TTL_SECONDS,
-  TEAM_ACTIVE_TTL_SECONDS,
-};
+export { createRedisClient, isRedisConfigured, redis };

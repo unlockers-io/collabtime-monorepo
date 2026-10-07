@@ -10,8 +10,7 @@ import { log } from "../observability";
 import { checkRateLimit } from "../space-rate-limit";
 import { authenticate, authorizeTeamAdmin } from "../team-auth";
 import { teamNotifier } from "../team-notifier";
-import { claimOrCreateMemberSlot } from "../team-slots";
-import { readTeamRecord } from "../team-store";
+import { claimOrCreateMemberSlot, readTeamRecord } from "../team-store";
 
 import { createInvitationActions } from "./invitation-actions-core";
 import type { InvitationDeps, InvitationRecord } from "./invitation-deps";

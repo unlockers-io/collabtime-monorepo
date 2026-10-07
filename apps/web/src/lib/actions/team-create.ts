@@ -6,7 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 import { log } from "@/lib/observability";
 import { authenticate } from "@/lib/team-auth";
 
-import { applyTeamContents, newTeamMember } from "../team-store";
+import { newTeamMember } from "../team-commands";
+import { createTeamContents } from "../team-store";
 
 import { createTeamAction } from "./team-create-core";
 
@@ -14,7 +15,7 @@ const createTeam = createTeamAction({
   authenticate,
   countAdminTeams: (userId) => prisma.membership.count({ where: { role: "ADMIN", userId } }),
   createId: uuidv4,
-  createMember: newTeamMember,
+  createMember: (overrides) => newTeamMember(uuidv4(), overrides),
   createTeamRecords: async (userId, teamId) => {
     await prisma.$transaction([
       prisma.space.create({ data: { isPrivate: false, ownerId: userId, teamId } }),
@@ -26,14 +27,7 @@ const createTeam = createTeamAction({
   },
   now: () => new Date(),
   reportError: log.error,
-  storeTeam: async (teamId, team, ttlSeconds) => {
-    const result = await applyTeamContents(
-      teamId,
-      () => ({ ok: true, team, value: undefined }),
-      ttlSeconds,
-    );
-    return result.ok ? { ok: true } : { ok: false, reason: result.reason };
-  },
+  storeTeam: createTeamContents,
 });
 
 export { createTeam };

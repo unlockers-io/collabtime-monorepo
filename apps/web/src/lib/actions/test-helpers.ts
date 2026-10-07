@@ -8,8 +8,10 @@ import type {
 } from "@/lib/team-auth";
 import type { TeamGroup, TeamMember, TeamRecord } from "@/types";
 
+import { createMemoryTeamStorage } from "../team-memory-storage";
+import { createTeamStore, type TeamStoreDeps } from "../team-store";
+
 import { createTeamMutator } from "./helpers";
-import type { TeamMutatorDeps } from "./helpers";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 const VALID_UUID_2 = "660e8400-e29b-41d4-a716-446655440001";
@@ -62,55 +64,33 @@ const createMockSession = (overrides?: { email?: string; name?: string; userId?:
   },
 });
 
-const createTestTeamMutator = () => {
-  let team: TeamRecord | null = null;
-  let readFailure = false;
-  let writeFailure = false;
-
-  const applyTeamContents: TeamMutatorDeps["applyTeamContents"] = (_teamId, mutate) => {
-    if (readFailure) {
-      return Promise.resolve({
-        error: "Could not read the team",
-        ok: false,
-        reason: "read-failed",
-      });
-    }
-    const outcome = mutate(team);
-    if (!outcome.ok) {
-      return Promise.resolve({ error: outcome.error, ok: false, reason: "rejected" });
-    }
-    if (writeFailure) {
-      return Promise.resolve({
-        error: "Failed to save the team",
-        ok: false,
-        reason: "write-failed",
-      });
-    }
-    team = outcome.team;
-    return Promise.resolve({ ok: true, value: outcome.value });
-  };
-
-  const reportError = vi.fn<TeamMutatorDeps["reportError"]>();
-  const mutateTeam = createTeamMutator({ applyTeamContents, reportError });
+const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
+  const invalidateTeamName = vi.fn<TeamStoreDeps["invalidateTeamName"]>();
+  const reportError = vi.fn<TeamStoreDeps["reportError"]>();
+  const build = () =>
+    createTeamStore({
+      createId,
+      invalidateTeamName,
+      reportError,
+      storage: createMemoryTeamStorage(),
+    });
+  let store = build();
 
   return {
-    mutateTeam,
-    persistedTeam: () => team,
+    invalidateTeamName,
+    mutateTeam: createTeamMutator({
+      applyTeamCommand: (teamId, command) => store.applyTeamCommand(teamId, command),
+      reportError,
+    }),
+    readTeam: () => store.readTeamRecord(VALID_UUID),
     reportError,
     reset: () => {
-      team = null;
-      readFailure = false;
-      writeFailure = false;
+      store = build();
+      invalidateTeamName.mockReset();
       reportError.mockReset();
     },
-    seedTeam: (nextTeam: TeamRecord | null) => {
-      team = nextTeam;
-    },
-    setReadFailure: (value: boolean) => {
-      readFailure = value;
-    },
-    setWriteFailure: (value: boolean) => {
-      writeFailure = value;
+    seedTeam: async (team: TeamRecord) => {
+      await store.createTeamContents(team.id, team);
     },
   };
 };
@@ -153,7 +133,7 @@ export {
   createTestGroup,
   createTestMember,
   createTestTeamRecord,
-  createTestTeamMutator,
+  createTestTeamStore,
   VALID_UUID,
   VALID_UUID_2,
   VALID_UUID_3,
