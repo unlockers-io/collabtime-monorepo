@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -102,7 +104,7 @@ const respond = (response: ServerResponse, status: number, payload: StubResponse
 
 const handle = async (request: IncomingMessage, response: ServerResponse) => {
   const url = new URL(request.url ?? "/", `http://localhost:${PORT}`);
-  const emailId = /^\/emails\/(?<id>[^\/]+)$/v.exec(url.pathname)?.groups?.id;
+  const emailId = /^\/emails\/(?<id>[^/]+)$/u.exec(url.pathname)?.groups?.id;
 
   if (request.method === "POST" && url.pathname === "/emails") {
     const sendRequest = sendRequestSchema.parse(JSON.parse(await readBody(request)));
