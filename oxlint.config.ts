@@ -62,10 +62,7 @@ export default defineConfig({
     },
     {
       // These server exports delegate authorization to their tested action cores.
-      files: [
-        "apps/web/src/lib/actions/join-requests.ts",
-        "apps/web/src/lib/actions/invitation-actions.ts",
-      ],
+      files: ["apps/web/src/lib/actions/join-requests.ts"],
       rules: {
         "react-doctor/server-auth-actions": "off",
       },

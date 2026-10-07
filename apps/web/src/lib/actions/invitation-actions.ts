@@ -1,90 +1,53 @@
 "use server";
 
-import { prisma } from "@repo/db";
-import { after } from "next/server";
+import type { PendingTeamInvitation } from "@/types";
 
-import { getAppUrl } from "../app-url";
-import { inviteLink, openInvitationWhere } from "../invitations";
-import { sendAppEmail } from "../mailer";
-import { grantMembership, membershipUpsert } from "../membership";
-import { log } from "../observability";
-import { checkRateLimit } from "../space-rate-limit";
+import { invitations } from "../invitations";
 import { authenticate, authorizeTeamAdmin } from "../team-auth";
-import { teamNotifier } from "../team-notifier";
-import { readTeamRecord } from "../team-store";
 
-import { createInvitationActions } from "./invitation-actions-core";
-import type { InvitationDeps, InvitationRecord } from "./invitation-deps";
-import { createInvitationManagementActions } from "./invitation-management-core";
+import type { ActionResult } from "./types";
 
-const pendingVersion = (invitation: InvitationRecord) => ({
-  id: invitation.id,
-  status: "PENDING" as const,
-  updatedAt: invitation.updatedAt,
-});
-const include = { invitedBy: { select: { email: true, name: true } } };
-const deps: InvitationDeps = {
-  authenticate,
-  authorizeTeamAdmin,
-  checkRateLimit,
-  commitAcceptance: async (invitation, membership, memberId) => {
-    const open = openInvitationWhere(new Date());
-    await prisma.$transaction([
-      prisma.invitation.update({
-        data: { memberId, status: "ACCEPTED" },
-        where: { ...pendingVersion(invitation), ...open },
-      }),
-      prisma.membership.upsert(membershipUpsert(membership)),
-    ]);
-  },
-  findInvitation: (id) => prisma.invitation.findUnique({ include, where: { id } }),
-  grantMembership,
-  inviteLink: (teamId, id) => inviteLink(getAppUrl(), teamId, id),
-  listPendingForTeam: (teamId) =>
-    prisma.invitation.findMany({
-      include,
-      orderBy: { createdAt: "desc" },
-      where: { status: "PENDING", teamId },
-    }),
-  loadInviteContext: async (teamId, email) => {
-    const [team, membership] = await Promise.all([
-      readTeamRecord(teamId),
-      prisma.membership.findFirst({ where: { teamId, user: { email } } }),
-    ]);
-    return { existingMembership: membership !== null, team };
-  },
-  markDeclined: async (invitation) => {
-    await prisma.invitation.update({
-      data: { status: "DECLINED" },
-      where: { ...pendingVersion(invitation), ...openInvitationWhere(new Date()) },
-    });
-  },
-  markRevoked: async (invitation) => {
-    await prisma.invitation.update({
-      data: { status: "REVOKED" },
-      where: pendingVersion(invitation),
-    });
-  },
-  notifyInviter: (invitation, user, decision) => {
-    after(() => teamNotifier.notifyInviterOfDecision(invitation, user, decision));
-  },
-  now: () => new Date(),
-  refreshExpiry: async (invitation, expiresAt) => {
-    await prisma.invitation.update({ data: { expiresAt }, where: pendingVersion(invitation) });
-  },
-  reportError: log.error,
-  sendEmail: sendAppEmail,
-  upsertInvitation: (input) =>
-    prisma.invitation.upsert({
-      create: input,
-      include,
-      update: { ...input, status: "PENDING" },
-      where: { email_teamId: { email: input.email, teamId: input.teamId } },
-    }),
+const inviteMember = async (
+  teamId: string,
+  memberId: string,
+  email: string,
+): Promise<ActionResult<{ emailSent: boolean; invitationId: string }>> => {
+  const access = await authorizeTeamAdmin(teamId);
+  return access.success ? invitations.invite(access.data, { email, memberId }) : access;
 };
-const { acceptInvitation, declineInvitation, inviteMember } = createInvitationActions(deps);
-const { getPendingTeamInvitations, resendInvitation, revokeInvitation } =
-  createInvitationManagementActions(deps);
+
+const getPendingTeamInvitations = async (
+  teamId: string,
+): Promise<ActionResult<Array<PendingTeamInvitation>>> => {
+  const access = await authorizeTeamAdmin(teamId);
+  return access.success ? invitations.listForTeam(access.data) : access;
+};
+
+const resendInvitation = async (
+  teamId: string,
+  id: string,
+): Promise<ActionResult<{ emailSent: boolean }>> => {
+  const access = await authorizeTeamAdmin(teamId);
+  return access.success ? invitations.resend(access.data, id) : access;
+};
+
+const revokeInvitation = async (teamId: string, id: string): Promise<ActionResult<void>> => {
+  const access = await authorizeTeamAdmin(teamId);
+  return access.success ? invitations.revoke(access.data, id) : access;
+};
+
+const acceptInvitation = async (
+  invitationId: string,
+): Promise<ActionResult<{ teamId: string }>> => {
+  const auth = await authenticate();
+  return auth.success ? invitations.accept(auth.data, invitationId) : auth;
+};
+
+const declineInvitation = async (invitationId: string): Promise<ActionResult<void>> => {
+  const auth = await authenticate();
+  return auth.success ? invitations.decline(auth.data, invitationId) : auth;
+};
+
 export {
   acceptInvitation,
   declineInvitation,
