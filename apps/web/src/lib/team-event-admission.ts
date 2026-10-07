@@ -23,6 +23,7 @@ const ACQUIRE_LEASE = `
 type Admission =
   | { allowed: true; release: () => Promise<void> }
   | { allowed: false; status: 429 | 503 };
+type AdmissionViewer = { ip: string; userId: string | undefined };
 type AdmissionDeps = {
   acquire: (key: string, id: string, limit: number) => Promise<boolean>;
   after: (callback: () => Promise<void>) => void;
@@ -33,7 +34,8 @@ type AdmissionDeps = {
 };
 
 const createTeamEventAdmission = (deps: AdmissionDeps) => {
-  return async (principal: string, authenticated: boolean): Promise<Admission> => {
+  return async ({ ip, userId }: AdmissionViewer): Promise<Admission> => {
+    const principal = userId === undefined ? `ip:${ip}` : `user:${userId}`;
     const id = deps.createId();
     const key = `live-connections:${principal}`;
     let releasePromise: Promise<void> | undefined;
@@ -59,7 +61,7 @@ const createTeamEventAdmission = (deps: AdmissionDeps) => {
       if (!attempt.allowed) {
         return { allowed: false, status: 429 };
       }
-      const acquiring = deps.acquire(key, id, authenticated ? 10 : 40);
+      const acquiring = deps.acquire(key, id, userId === undefined ? 40 : 10);
       let acquired: boolean;
       try {
         acquired = await withTimeout(acquiring, 1000);
@@ -117,4 +119,4 @@ const acquireTeamEventConnection = createTeamEventAdmission({
 });
 
 export { ACQUIRE_LEASE, acquireTeamEventConnection, createTeamEventAdmission, LEASE_SECONDS };
-export type { AdmissionDeps };
+export type { Admission, AdmissionDeps, AdmissionViewer };

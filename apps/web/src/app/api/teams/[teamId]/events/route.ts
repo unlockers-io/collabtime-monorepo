@@ -1,12 +1,10 @@
 import { prisma } from "@repo/db";
 
 import { getSession } from "@/lib/auth-server";
-import { getEnv } from "@/lib/env";
 import { log, withEvlog } from "@/lib/observability";
-import { isRedisConfigured } from "@/lib/redis";
 import { acquireTeamEventConnection } from "@/lib/team-event-admission";
 import { createTeamEventsHandler } from "@/lib/team-event-handler";
-import { teamEventHub } from "@/lib/team-events";
+import { isLiveSyncEnabled, teamEventHub } from "@/lib/team-events";
 import { captureAccessCheck } from "@/lib/workspace-access";
 
 const handleEvents = createTeamEventsHandler({
@@ -16,7 +14,7 @@ const handleEvents = createTeamEventsHandler({
     const userId = session?.user.id;
     return { canView: await captureAccessCheck(spaceId, userId), userId };
   },
-  enabled: () => isRedisConfigured() && getEnv("LIVE_SYNC_ENABLED") !== "false",
+  enabled: isLiveSyncEnabled,
   findSpace: (teamId) =>
     prisma.space.findUnique({
       select: { accessPassword: true, id: true, isPrivate: true, teamId: true },

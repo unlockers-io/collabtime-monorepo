@@ -20,6 +20,8 @@ const setup = () => {
   return { admit: createTeamEventAdmission(deps), afterResponse, deps };
 };
 
+const member = { ip: "192.0.2.1", userId: "user-1" };
+
 beforeEach(() => {
   vi.useFakeTimers();
 });
@@ -29,32 +31,35 @@ afterEach(() => {
 
 describe("team event admission", () => {
   it.each([
-    [true, 10],
-    [false, 40],
-  ] as const)("caps authenticated=%s at %s and releases once", async (authenticated, limit) => {
-    const state = setup();
-    const result = await state.admit("principal", authenticated);
-    expect(state.deps.checkRateLimit).toHaveBeenCalledWith("live-open:principal", 30, 60);
-    expect(state.deps.acquire).toHaveBeenCalledWith(
-      "live-connections:principal",
-      "connection-1",
-      limit,
-    );
-    expect(result.allowed).toBe(true);
-    if (result.allowed) {
-      await result.release();
-      await result.release();
-    }
-    expect(state.deps.release).toHaveBeenCalledExactlyOnceWith(
-      "live-connections:principal",
-      "connection-1",
-    );
-  });
+    ["user-1", "user:user-1", 10],
+    [undefined, "ip:192.0.2.1", 40],
+  ] as const)(
+    "keys user %s as %s, caps it at %s and releases once",
+    async (userId, principal, limit) => {
+      const state = setup();
+      const result = await state.admit({ ip: "192.0.2.1", userId });
+      expect(state.deps.checkRateLimit).toHaveBeenCalledWith(`live-open:${principal}`, 30, 60);
+      expect(state.deps.acquire).toHaveBeenCalledWith(
+        `live-connections:${principal}`,
+        "connection-1",
+        limit,
+      );
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        await result.release();
+        await result.release();
+      }
+      expect(state.deps.release).toHaveBeenCalledExactlyOnceWith(
+        `live-connections:${principal}`,
+        "connection-1",
+      );
+    },
+  );
 
   it("rejects excessive attempts before acquiring a lease", async () => {
     const state = setup();
     vi.mocked(state.deps.checkRateLimit).mockResolvedValue({ allowed: false, remaining: 0 });
-    expect(await state.admit("principal", true)).toEqual({ allowed: false, status: 429 });
+    expect(await state.admit(member)).toEqual({ allowed: false, status: 429 });
     expect(state.deps.acquire).not.toHaveBeenCalled();
     expect(state.afterResponse).toHaveLength(0);
   });
@@ -64,8 +69,8 @@ describe("team event admission", () => {
     vi.mocked(state.deps.acquire)
       .mockResolvedValueOnce(false)
       .mockRejectedValue(new Error("redis down"));
-    expect(await state.admit("principal", true)).toEqual({ allowed: false, status: 429 });
-    expect(await state.admit("principal", true)).toEqual({ allowed: false, status: 503 });
+    expect(await state.admit(member)).toEqual({ allowed: false, status: 429 });
+    expect(await state.admit(member)).toEqual({ allowed: false, status: 503 });
     expect(state.deps.reportError).toHaveBeenCalledTimes(1);
   });
 
@@ -73,7 +78,7 @@ describe("team event admission", () => {
     const state = setup();
     const acquiring = Promise.withResolvers<boolean>();
     vi.mocked(state.deps.acquire).mockReturnValue(acquiring.promise);
-    const result = state.admit("principal", true);
+    const result = state.admit(member);
     await vi.advanceTimersByTimeAsync(1001);
     expect(await result).toEqual({ allowed: false, status: 503 });
     expect(state.afterResponse).toHaveLength(1);
@@ -83,7 +88,7 @@ describe("team event admission", () => {
     acquiring.resolve(true);
     await cleanup;
     expect(state.deps.release).toHaveBeenCalledExactlyOnceWith(
-      "live-connections:principal",
+      "live-connections:user:user-1",
       "connection-1",
     );
   });
@@ -92,7 +97,7 @@ describe("team event admission", () => {
     const state = setup();
     const releasing = Promise.withResolvers<number>();
     vi.mocked(state.deps.release).mockReturnValue(releasing.promise);
-    const result = await state.admit("principal", true);
+    const result = await state.admit(member);
     expect(result.allowed).toBe(true);
     if (!result.allowed) {
       throw new Error("Expected admission");
@@ -119,7 +124,7 @@ describe("team event admission", () => {
 
   it("releases after response completion even if stream cleanup was not called", async () => {
     const state = setup();
-    await state.admit("principal", true);
+    await state.admit(member);
     expect(state.deps.release).not.toHaveBeenCalled();
     const [respond] = state.afterResponse;
     assert(respond, "expected an after-response callback");

@@ -127,7 +127,7 @@ describe("team events handler", () => {
     const response = await state.handle(state.request, VALID_UUID);
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toContain("text/event-stream");
-    expect(state.acquire).toHaveBeenCalledWith("ip:192.0.2.1", false);
+    expect(state.acquire).toHaveBeenCalledWith({ ip: "192.0.2.1", userId: undefined });
     await response.body!.cancel();
     expect(state.release).toHaveBeenCalledTimes(1);
   });
@@ -140,7 +140,7 @@ describe("team events handler", () => {
     state.access.addMembership(VALID_UUID, "user-1");
     const response = await state.handle(state.request, VALID_UUID);
     expect(response.status).toBe(200);
-    expect(state.acquire).toHaveBeenCalledWith("user:user-1", true);
+    expect(state.acquire).toHaveBeenCalledWith({ ip: "192.0.2.1", userId: "user-1" });
     await response.body!.cancel();
   });
 

@@ -1,18 +1,23 @@
 import { getClientIp } from "./client-ip";
 import type { log } from "./observability";
-import type { acquireTeamEventConnection } from "./team-event-admission";
+import type { Admission, AdmissionViewer } from "./team-event-admission";
 import { createTeamEventStream, type AccessResult } from "./team-event-stream";
-import type { teamEventHub } from "./team-events";
+import type { TeamListener } from "./team-events";
+import { ACCESS_LOSS_STATUS } from "./team-live-protocol";
 import { UUIDSchema } from "./validation";
 import type { AccessCheck, WorkspaceSpace } from "./workspace-access";
 
 type CapturedAccess = { canView: AccessCheck; userId: string | undefined };
 type TeamEventHandlerDeps = {
-  acquire: typeof acquireTeamEventConnection;
+  acquire: (viewer: AdmissionViewer) => Promise<Admission>;
   captureAccess: (spaceId: string) => Promise<CapturedAccess>;
   enabled: () => boolean;
   findSpace: (teamId: string) => Promise<WorkspaceSpace | null>;
-  hub: typeof teamEventHub;
+  hub: {
+    isReady: () => boolean;
+    subscribe: (teamId: string, listener: TeamListener) => () => void;
+    waitUntilReady: () => Promise<boolean>;
+  };
   log: Pick<typeof log, "error" | "info" | "warn">;
 };
 
@@ -37,11 +42,11 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
       }
       const space = await deps.findSpace(teamId);
       if (!space) {
-        return errorResponse("Team not found", 404);
+        return errorResponse("Team not found", ACCESS_LOSS_STATUS.deleted);
       }
       const { canView, userId } = await deps.captureAccess(space.id);
       if (!(await canView(space))) {
-        return errorResponse("Forbidden", 403);
+        return errorResponse("Forbidden", ACCESS_LOSS_STATUS.revoked);
       }
       if (accessOnly) {
         return new Response(null, { headers: { "Cache-Control": "no-store" }, status: 204 });
@@ -50,9 +55,7 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
         deps.log.warn({ ...context, message: "Live sync unavailable", reason: "subscriber" });
         return errorResponse("Live updates unavailable", 503);
       }
-      const authenticated = userId !== undefined;
-      const principal = authenticated ? `user:${userId}` : `ip:${getClientIp(request)}`;
-      const admission = await deps.acquire(principal, authenticated);
+      const admission = await deps.acquire({ ip: getClientIp(request), userId });
       if (!admission.allowed) {
         deps.log.warn({
           ...context,
@@ -76,7 +79,7 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
           checkAccess,
           isReady: deps.hub.isReady,
           log: deps.log,
-          principal: authenticated ? "user" : "guest",
+          principal: userId === undefined ? "guest" : "user",
           release: admission.release,
           signal: request.signal,
           startedAt,

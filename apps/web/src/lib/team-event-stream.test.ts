@@ -8,11 +8,11 @@ import {
   type AccessResult,
   type TeamEventStreamDeps,
 } from "./team-event-stream";
-import type { TeamNotification } from "./team-events";
+import type { TeamListener } from "./team-events";
 
 const setup = (overrides: Partial<TeamEventStreamDeps> = {}) => {
   const abort = new AbortController();
-  const listeners = new Set<(event: TeamNotification) => void>();
+  const listeners = new Set<TeamListener>();
   const checkAccess = vi.fn<() => Promise<AccessResult>>().mockResolvedValue("allowed");
   const release = vi.fn<() => Promise<void>>().mockResolvedValue();
   const log = { error: vi.fn<() => void>(), info: vi.fn<() => void>() };
