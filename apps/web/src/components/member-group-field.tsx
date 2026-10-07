@@ -1,11 +1,17 @@
 "use client";
 
 import { Field, FieldLabel } from "@repo/ui/components/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/components/select";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 
+import { NO_GROUP } from "@/lib/member-input";
 import type { TeamGroup } from "@/types";
-
-import { GroupSelector } from "./group-selector";
 
 type MemberGroupFieldProps = {
   errors: Array<unknown>;
@@ -18,6 +24,9 @@ type MemberGroupFieldProps = {
   value: string;
 };
 
+// Base UI renders an empty value as the placeholder, so "No group" needs a real item value.
+const NO_GROUP_ITEM = "__no_group__";
+
 const MemberGroupField = ({
   errors,
   groups,
@@ -29,22 +38,38 @@ const MemberGroupField = ({
   value,
 }: MemberGroupFieldProps) => {
   const errorId = `${id}-error`;
+  const selectedName =
+    value === NO_GROUP ? "No group" : groups.find((group) => group.id === value)?.name;
 
   return (
     <Field data-invalid={isInvalid || undefined}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <GroupSelector
-        aria-describedby={isInvalid ? errorId : undefined}
-        aria-invalid={isInvalid}
-        groups={groups}
-        id={id}
-        onValueChange={(groupId) => {
-          onChange(groupId ?? "");
+      <Select
+        onValueChange={(item) => {
+          if (item === null) {
+            return;
+          }
+          onChange(item === NO_GROUP_ITEM ? NO_GROUP : item);
           onBlur();
         }}
-        placeholder="No group"
-        value={value || undefined}
-      />
+        value={value === NO_GROUP ? NO_GROUP_ITEM : value}
+      >
+        <SelectTrigger
+          aria-describedby={isInvalid ? errorId : undefined}
+          aria-invalid={isInvalid}
+          id={id}
+        >
+          <SelectValue placeholder="No group">{selectedName}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NO_GROUP_ITEM}>No group</SelectItem>
+          {groups.map((group) => (
+            <SelectItem key={group.id} value={group.id}>
+              {group.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {isInvalid && <FormFieldError errors={errors} id={errorId} />}
     </Field>
   );

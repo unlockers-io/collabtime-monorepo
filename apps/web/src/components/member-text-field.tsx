@@ -4,8 +4,6 @@ import { Field, FieldDescription, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 
-const TITLE_PLACEHOLDER = "e.g. Product designer";
-
 type MemberTextFieldProps = {
   autoComplete?: string;
   description?: string;
@@ -68,4 +66,4 @@ const MemberTextField = ({
   );
 };
 
-export { MemberTextField, TITLE_PLACEHOLDER };
+export { MemberTextField };

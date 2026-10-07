@@ -63,19 +63,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   };
 
   const handleImport = async (rows: Array<ParsedRow>) => {
-    const valid = rows.flatMap((r) =>
-      r.errors.length === 0 && r.matchedTimezone !== null
-        ? [
-            {
-              name: r.name,
-              timezone: r.matchedTimezone,
-              title: r.title,
-              workingHoursEnd: r.workingHoursEnd,
-              workingHoursStart: r.workingHoursStart,
-            },
-          ]
-        : [],
-    );
+    const valid = rows.flatMap((row) => (row.errors.length === 0 ? [row.member] : []));
     if (valid.length === 0) {
       return;
     }
