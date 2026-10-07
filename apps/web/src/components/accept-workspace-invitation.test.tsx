@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AcceptWorkspaceInvitation } from "./accept-workspace-invitation";
@@ -21,6 +22,20 @@ beforeEach(() => {
 });
 
 describe("invitation acceptance", () => {
+  it("keeps server-rendered decisions disabled until their handlers are ready", () => {
+    const html = renderToString(<AcceptWorkspaceInvitation invitationId="invite-1" />);
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    const buttons = container.querySelectorAll("button");
+    expect(buttons).toHaveLength(2);
+    for (const button of buttons) {
+      expect(button).toBeDisabled();
+    }
+    render(<AcceptWorkspaceInvitation invitationId="invite-1" />);
+    expect(screen.getByRole("button", { name: "Accept invitation" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Decline" })).toBeEnabled();
+  });
+
   it("refreshes membership and workspace data after acceptance", async () => {
     mocks.acceptInvitation.mockResolvedValue({ data: { teamId: "team-1" }, success: true });
     render(<AcceptWorkspaceInvitation invitationId="invite-1" />);

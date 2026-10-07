@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures/workspace.fixture";
 
 test.describe("Group Management", () => {
   test.beforeEach(async ({ homePage, page }) => {

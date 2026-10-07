@@ -8,7 +8,7 @@ import { webUrl } from "../../../playwright.config";
 
 import { expect, test as base } from "./auth.fixture";
 
-const PASSWORD = "RealtimeTestPassword123!";
+const PASSWORD = "WorkspaceTestPassword123!";
 
 const test = base.extend<{ createdTeamIds: Array<string> }>({
   createdTeamIds: async ({}, use) => {
@@ -17,10 +17,10 @@ const test = base.extend<{ createdTeamIds: Array<string> }>({
   storageState: async ({ createdTeamIds, playwright }, use) => {
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl) {
-      throw new Error("REDIS_URL is required for realtime tests");
+      throw new Error("REDIS_URL is required for workspace tests");
     }
     const id = randomUUID();
-    const email = `e2e-sync-${id}@collabtime.localhost`;
+    const email = `e2e-workspace-${id}@collabtime.localhost`;
     const password = await hashPassword(PASSWORD);
     await prisma.user.create({
       data: {
@@ -30,7 +30,7 @@ const test = base.extend<{ createdTeamIds: Array<string> }>({
         email,
         emailVerified: true,
         id,
-        name: "Realtime Test User",
+        name: "Workspace Test User",
       },
     });
     const api = await playwright.request.newContext({
@@ -46,7 +46,7 @@ const test = base.extend<{ createdTeamIds: Array<string> }>({
       await use(await api.storageState());
     } finally {
       try {
-        await api.post("/api/auth/sign-out");
+        await api.post("/api/auth/sign-out", { data: {} });
         const spaces = await prisma.space.findMany({
           select: { teamId: true },
           where: { ownerId: id },

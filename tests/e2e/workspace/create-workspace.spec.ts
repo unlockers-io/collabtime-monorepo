@@ -1,6 +1,6 @@
 import { instant } from "@next/playwright";
 
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures/workspace.fixture";
 
 test.describe("Create Workspace", () => {
   test("creates a new workspace and navigates to it", async ({ homePage, page }) => {
@@ -41,9 +41,16 @@ test.describe("Create Workspace", () => {
     const teamMembersHeading = page.getByRole("heading", { name: /team members/i });
 
     await instant(page, async () => {
-      await homePage.getTeamLink(teamId).click();
-      await page.waitForURL(`/${teamId}`);
-      await expect(teamMembersHeading).toBeHidden();
+      try {
+        await homePage.getTeamLink(teamId).click();
+        await page.waitForURL(`/${teamId}`);
+        await expect(teamMembersHeading).toBeHidden();
+      } finally {
+        await page.evaluate(() => {
+          // oxlint-disable-next-line unicorn/no-document-cookie -- WebKit needs an in-page deletion to notify Next's test lock.
+          document.cookie = "next-instant-navigation-testing=; path=/; max-age=0";
+        });
+      }
     });
 
     await expect(teamMembersHeading).toBeVisible({ timeout: 10_000 });

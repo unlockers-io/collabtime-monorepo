@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@repo/db";
 import { hashPassword } from "better-auth/crypto";
 
-import { expect, test } from "../fixtures/realtime.fixture";
+import { expect, test } from "../fixtures/workspace.fixture";
 import { makeTestEmail } from "../helpers/test-email";
 
 const PASSWORD = "InvitationTestPassword123!";
