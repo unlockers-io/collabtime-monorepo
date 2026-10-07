@@ -3,33 +3,26 @@ import { prisma } from "@repo/db";
 import { log } from "@/lib/observability";
 import { parseAccessCookies, verifyAccessToken } from "@/lib/workspace-access";
 
+import { type GrantMembership, grantMembership } from "./membership";
+
 // Capped before the query: an unauthenticated caller controls how many access cookies they send.
 const MAX_CANDIDATE_SPACES = 20;
 
 type PrivateSpace = { accessPassword: string | null; id: string; teamId: string };
 
-type MembershipUpsert = {
-  create: { role: "MEMBER"; teamId: string; userId: string };
-  update: { archivedAt: null };
-  where: { userId_teamId: { teamId: string; userId: string } };
-};
 type ErrorEvent = Parameters<typeof log.error>[0];
 
 type SpaceJoinDeps = {
   findPrivateSpaces: (spaceIds: Array<string>) => Promise<Array<PrivateSpace>>;
+  grantMembership: GrantMembership;
   reportError: (event: ErrorEvent) => void;
-  upsertMembership: (input: MembershipUpsert) => Promise<void>;
   verifyAccessToken: (token: string, spaceId: string, accessPassword: string | null) => boolean;
 };
 
 const createSpaceJoiner = (deps: SpaceJoinDeps) => {
-  const joinPrivateSpace = (userId: string, teamId: string) => {
-    return deps.upsertMembership({
-      create: { role: "MEMBER", teamId, userId },
-      update: { archivedAt: null },
-      where: { userId_teamId: { teamId, userId } },
-    });
-  };
+  const joinPrivateSpace = (userId: string, teamId: string) =>
+    // Password viewers stay off the roster until they add their own profile.
+    deps.grantMembership({ role: "MEMBER", slot: null, teamId, userId });
 
   const joinPrivateSpacesFromCookies = async (
     userId: string,
@@ -85,10 +78,8 @@ const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
       select: { accessPassword: true, id: true, teamId: true },
       where: { id: { in: spaceIds }, isPrivate: true },
     }),
+  grantMembership,
   reportError: log.error,
-  upsertMembership: async (input) => {
-    await prisma.membership.upsert(input);
-  },
   verifyAccessToken,
 });
 

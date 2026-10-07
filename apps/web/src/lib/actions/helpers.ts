@@ -1,11 +1,16 @@
+import type { z } from "zod";
+
 import { log } from "@/lib/observability";
 import type { TeamAccess } from "@/lib/team-auth";
 import type { Team, TeamRecord } from "@/types";
 
-import { applyTeamContents } from "../team-store";
+import type { TeamCommand } from "../team-commands";
+import { applyTeamCommand } from "../team-store";
 import { UUIDSchema } from "../validation";
 
 import type { ActionResult } from "./types";
+
+type ActionFailure = Extract<ActionResult<never>, { success: false }>;
 
 const sanitizeMemberUserId = (
   userId: string | undefined,
@@ -30,42 +35,26 @@ const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
   };
 };
 
-type MutationOutcome<TResult> = { error: string; ok: false } | { ok: true; value: TResult };
 type ErrorEvent = Parameters<typeof log.error>[0];
+type Mutation<TValue> = { team: TeamRecord; value: TValue };
 
-type MutateTeamArgs<TPrelude, TResult> = {
+type MutateTeamArgs<TValue> = {
   access: TeamAccess;
+  command: TeamCommand<TValue>;
   errorContext: string;
-  mutate: (team: TeamRecord, prelude: TPrelude) => MutationOutcome<TResult>;
-  prelude: () => MutationOutcome<TPrelude> | Promise<MutationOutcome<TPrelude>>;
 };
 
 type TeamMutatorDeps = {
-  applyTeamContents: typeof applyTeamContents;
+  applyTeamCommand: typeof applyTeamCommand;
   reportError: (event: ErrorEvent) => void;
 };
 
-type MutateTeam = <TPrelude, TResult>(
-  args: MutateTeamArgs<TPrelude, TResult>,
-) => Promise<ActionResult<TResult>>;
+type MutateTeam = <TValue>(args: MutateTeamArgs<TValue>) => Promise<ActionResult<Mutation<TValue>>>;
 
 const createTeamMutator = (deps: TeamMutatorDeps): MutateTeam =>
-  async function mutateTeam<TPrelude, TResult>(args: MutateTeamArgs<TPrelude, TResult>) {
-    const { access, errorContext, mutate, prelude } = args;
+  async function mutateTeam<TValue>({ access, command, errorContext }: MutateTeamArgs<TValue>) {
     try {
-      const preludeOutcome = await prelude();
-      if (!preludeOutcome.ok) {
-        return { error: preludeOutcome.error, success: false };
-      }
-
-      const applied = await deps.applyTeamContents(access.teamId, (team) => {
-        if (team === null) {
-          return { error: "Team not found", ok: false };
-        }
-
-        const outcome = mutate(team, preludeOutcome.value);
-        return outcome.ok ? { ok: true, team, value: outcome.value } : outcome;
-      });
+      const applied = await deps.applyTeamCommand(access.teamId, command);
 
       if (!applied.ok) {
         return {
@@ -74,22 +63,31 @@ const createTeamMutator = (deps: TeamMutatorDeps): MutateTeam =>
         };
       }
 
-      return { data: applied.value, success: true };
+      return { data: { team: applied.team, value: applied.value }, success: true };
     } catch (error) {
       deps.reportError({ error, message: `Failed to ${errorContext}`, route: "actions/helpers" });
       return { error: `Failed to ${errorContext}`, success: false };
     }
   };
 
-const mutateTeam = createTeamMutator({ applyTeamContents, reportError: log.error });
+const mutateTeam = createTeamMutator({ applyTeamCommand, reportError: log.error });
 
-const checkUuid = (value: string, label: string): MutationOutcome<void> => {
-  const result = UUIDSchema.safeParse(value);
-  if (!result.success) {
-    return { error: `Invalid ${label}`, ok: false };
-  }
-  return { ok: true, value: undefined };
-};
+const sanitizedTeam = (
+  result: ActionResult<Mutation<unknown>>,
+  currentUserId?: string,
+): ActionResult<Team> =>
+  result.success ? { data: sanitizeTeam(result.data.team, currentUserId), success: true } : result;
 
-export { checkUuid, createTeamMutator, mutateTeam, sanitizeTeam };
+const parsedInput = <TOutput>(
+  result: z.ZodSafeParseResult<TOutput>,
+  fallback: string,
+): ActionResult<TOutput> =>
+  result.success
+    ? { data: result.data, success: true }
+    : { error: result.error.issues[0]?.message ?? fallback, success: false };
+
+const invalidUuid = (value: string, label: string): ActionFailure | null =>
+  UUIDSchema.safeParse(value).success ? null : { error: `Invalid ${label}`, success: false };
+
+export { createTeamMutator, invalidUuid, mutateTeam, parsedInput, sanitizedTeam, sanitizeTeam };
 export type { MutateTeam, TeamMutatorDeps };

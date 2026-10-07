@@ -2,28 +2,69 @@ import type { authenticate } from "@/lib/team-auth";
 import type { TeamMember, TeamRecord } from "@/types";
 
 import { MAX_TEAMS_PER_USER } from "../limits";
-import { TEAM_INITIAL_TTL_SECONDS } from "../redis";
+import type { GrantMembership } from "../membership";
+import type { TeamContentsFailureReason } from "../team-store";
 import { TeamNameSchema } from "../validation";
 
 import type { ActionErrorEvent, ActionResult } from "./types";
 
-type StoreTeamResult =
-  | { ok: true }
-  | { ok: false; reason: "read-failed" | "rejected" | "unconfigured" | "write-failed" };
+type StoreTeamResult = { ok: true } | { ok: false; reason: TeamContentsFailureReason };
+type PopulateFailure = Omit<ActionErrorEvent, "route" | "teamId">;
 
 type TeamCreateDeps = {
   authenticate: typeof authenticate;
   countAdminTeams: (userId: string) => Promise<number>;
   createId: () => string;
   createMember: (overrides: Partial<TeamMember>) => TeamMember;
-  createTeamRecords: (userId: string, teamId: string) => Promise<void>;
+  createSpace: (userId: string, teamId: string) => Promise<void>;
   deleteSpace: (teamId: string) => Promise<void>;
+  grantMembership: GrantMembership;
   now: () => Date;
   reportError: (event: ActionErrorEvent) => void;
-  storeTeam: (teamId: string, team: TeamRecord, ttlSeconds: number) => Promise<StoreTeamResult>;
+  storeTeam: (teamId: string, team: TeamRecord) => Promise<StoreTeamResult>;
 };
 
+const ROUTE = "actions/team-create";
+
 const createTeamAction = (deps: TeamCreateDeps) => {
+  const populateTeam = async (
+    team: TeamRecord,
+    creator: TeamMember,
+    userId: string,
+  ): Promise<PopulateFailure | null> => {
+    try {
+      const stored = await deps.storeTeam(team.id, team);
+      if (!stored.ok) {
+        return { message: "The new team's contents were not stored", reason: stored.reason };
+      }
+
+      const granted = await deps.grantMembership({
+        role: "ADMIN",
+        slot: { memberId: creator.id, name: creator.name },
+        teamId: team.id,
+        userId,
+      });
+      return granted.ok
+        ? null
+        : { message: "The creator's admin slot was not claimed", reason: granted.reason };
+    } catch (error) {
+      return { error, message: "Failed to populate the new team" };
+    }
+  };
+
+  const rollBackSpace = async (teamId: string) => {
+    try {
+      await deps.deleteSpace(teamId);
+    } catch (rollbackError) {
+      deps.reportError({
+        error: rollbackError,
+        message: "Failed to roll back the Space row of an unfinished team",
+        route: ROUTE,
+        teamId,
+      });
+    }
+  };
+
   return async (timezone: string, name: string): Promise<ActionResult<string>> => {
     const auth = await deps.authenticate();
     if (!auth.success) {
@@ -46,42 +87,30 @@ const createTeamAction = (deps: TeamCreateDeps) => {
       }
       const teamId = deps.createId();
 
-      await deps.createTeamRecords(user.id, teamId);
+      await deps.createSpace(user.id, teamId);
 
-      const team: TeamRecord = {
-        createdAt: deps.now().toISOString(),
-        groups: [],
-        id: teamId,
-        members: [deps.createMember({ name: user.name ?? "", timezone, userId: user.id })],
-        name: parsed.data,
-      };
-      const applied = await deps.storeTeam(teamId, team, TEAM_INITIAL_TTL_SECONDS);
+      const creator = deps.createMember({ name: user.name ?? "", timezone, userId: user.id });
+      const failure = await populateTeam(
+        {
+          createdAt: deps.now().toISOString(),
+          groups: [],
+          id: teamId,
+          members: [creator],
+          name: parsed.data,
+        },
+        creator,
+        user.id,
+      );
 
-      if (!applied.ok) {
-        deps.reportError({
-          message: "Space and membership committed but the team contents were not stored",
-          reason: applied.reason,
-          route: "actions/team-create",
-          teamId,
-        });
-
-        try {
-          await deps.deleteSpace(teamId);
-        } catch (rollbackError) {
-          deps.reportError({
-            error: rollbackError,
-            message: "Failed to roll back the Space row for a team with no contents",
-            route: "actions/team-create",
-            teamId,
-          });
-        }
-
+      if (failure !== null) {
+        deps.reportError({ ...failure, route: ROUTE, teamId });
+        await rollBackSpace(teamId);
         return { error: "Failed to create team", success: false };
       }
 
       return { data: teamId, success: true };
     } catch (error) {
-      deps.reportError({ error, message: "Failed to create team", route: "actions/team-create" });
+      deps.reportError({ error, message: "Failed to create team", route: ROUTE });
       return { error: "Failed to create team", success: false };
     }
   };

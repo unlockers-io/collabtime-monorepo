@@ -1,17 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  createTestMember,
+  createTestTeamRecord,
+  createTestTeamStore,
+  VALID_UUID,
+  VALID_UUID_2,
+} from "./actions/test-helpers";
 import { createSpaceJoiner } from "./space-join";
 
 type SpaceJoinDeps = Parameters<typeof createSpaceJoiner>[0];
 
+const harness = createTestTeamStore();
 const findPrivateSpaces = vi.fn<SpaceJoinDeps["findPrivateSpaces"]>();
 const reportError = vi.fn<SpaceJoinDeps["reportError"]>();
-const upsertMembership = vi.fn<SpaceJoinDeps["upsertMembership"]>();
 const verifyAccessToken = vi.fn<SpaceJoinDeps["verifyAccessToken"]>();
 const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
   findPrivateSpaces,
+  grantMembership: harness.grantMembership,
   reportError,
-  upsertMembership,
   verifyAccessToken,
 });
 
@@ -24,8 +31,8 @@ const space = (id: string, teamId: string) => ({ accessPassword: "hash", id, tea
 describe("joinPrivateSpacesFromCookies", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    harness.reset();
     findPrivateSpaces.mockResolvedValue([]);
-    upsertMembership.mockResolvedValue();
   });
 
   it("does nothing for an empty cookie header", async () => {
@@ -33,7 +40,7 @@ describe("joinPrivateSpacesFromCookies", () => {
     await joinPrivateSpacesFromCookies("user-1", "");
 
     expect(findPrivateSpaces).not.toHaveBeenCalled();
-    expect(upsertMembership).not.toHaveBeenCalled();
+    expect(harness.membershipStore.grant).not.toHaveBeenCalled();
   });
 
   it("ignores non space-access cookies", async () => {
@@ -48,7 +55,7 @@ describe("joinPrivateSpacesFromCookies", () => {
 
     await joinPrivateSpacesFromCookies("user-1", "space-access-space1=forged");
 
-    expect(upsertMembership).not.toHaveBeenCalled();
+    expect(harness.membershipStore.grant).not.toHaveBeenCalled();
   });
 
   it("queries candidate spaceIds and only private spaces", async () => {
@@ -83,43 +90,60 @@ describe("joinPrivateSpacesFromCookies", () => {
     expect(findPrivateSpaces.mock.calls[0]?.[0]).toHaveLength(20);
   });
 
-  it("upserts a MEMBER membership and re-activates archived ones", async () => {
-    validFor("good");
-    findPrivateSpaces.mockResolvedValue([space("space1", "team-1")]);
+  it("grants a MEMBER membership and re-activates archived ones", async () => {
+    validFor("good", "other");
+    findPrivateSpaces.mockResolvedValue([
+      space("space1", VALID_UUID),
+      space("space2", VALID_UUID_2),
+    ]);
+    harness.seedMembership("user-1", "MEMBER", new Date());
 
-    await joinPrivateSpacesFromCookies("user-1", "space-access-space1=good");
+    await joinPrivateSpacesFromCookies(
+      "user-1",
+      "space-access-space1=good; space-access-space2=other",
+    );
 
-    expect(upsertMembership).toHaveBeenCalledWith({
-      create: { role: "MEMBER", teamId: "team-1", userId: "user-1" },
-      update: { archivedAt: null },
-      where: { userId_teamId: { teamId: "team-1", userId: "user-1" } },
+    expect(harness.findMembership("user-1")).toEqual({ archivedAt: null, role: "MEMBER" });
+    expect(harness.findMembership("user-1", VALID_UUID_2)).toEqual({
+      archivedAt: null,
+      role: "MEMBER",
     });
   });
 
-  it("does not throw when the upsert rejects (best-effort)", async () => {
+  it("does not throw when the grant rejects (best-effort)", async () => {
     validFor("good");
-    findPrivateSpaces.mockResolvedValue([space("space1", "team-1")]);
-    upsertMembership.mockRejectedValue(new Error("db down"));
+    findPrivateSpaces.mockResolvedValue([space("space1", VALID_UUID)]);
+    harness.membershipStore.grant.mockRejectedValue(new Error("db down"));
 
     await expect(
       joinPrivateSpacesFromCookies("user-1", "space-access-space1=good"),
     ).resolves.toBeUndefined();
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Failed to materialize private-space membership" }),
+    );
   });
 });
 
 describe("joinPrivateSpace", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    upsertMembership.mockResolvedValue();
+    harness.reset();
   });
 
-  it("upserts MEMBER, never demoting an existing role", async () => {
-    await joinPrivateSpace("user-9", "team-9");
+  it("grants access without adding the viewer to the roster", async () => {
+    const team = createTestTeamRecord({ members: [createTestMember()] });
+    await harness.seedTeam(team);
 
-    expect(upsertMembership).toHaveBeenCalledWith({
-      create: { role: "MEMBER", teamId: "team-9", userId: "user-9" },
-      update: { archivedAt: null },
-      where: { userId_teamId: { teamId: "team-9", userId: "user-9" } },
-    });
+    await joinPrivateSpace("user-9", VALID_UUID);
+
+    expect(harness.findMembership("user-9")).toEqual({ archivedAt: null, role: "MEMBER" });
+    expect(await harness.readTeam()).toEqual(team);
+  });
+
+  it("never demotes an existing role", async () => {
+    harness.seedMembership("user-9", "ADMIN");
+
+    await joinPrivateSpace("user-9", VALID_UUID);
+
+    expect(harness.findMembership("user-9")).toEqual({ archivedAt: null, role: "ADMIN" });
   });
 });

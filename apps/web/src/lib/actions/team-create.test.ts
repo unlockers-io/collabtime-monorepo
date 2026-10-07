@@ -1,53 +1,66 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTeamAction } from "./team-create-core";
-import { createTestGuards, createTestMember } from "./test-helpers";
+import { createTestGuards, createTestMember, createTestTeamStore } from "./test-helpers";
 
 type TeamCreateDeps = Parameters<typeof createTeamAction>[0];
 
-let uuidCounter = 0;
+const TEAM_ID = "770e8400-e29b-41d4-a716-446655440002";
+const TEST_TIMEZONE = "America/New_York";
+
+const harness = createTestTeamStore();
+const guards = createTestGuards();
 const countAdminTeams = vi.fn<TeamCreateDeps["countAdminTeams"]>();
-const createTeamRecords = vi.fn<TeamCreateDeps["createTeamRecords"]>();
+const createSpace = vi.fn<TeamCreateDeps["createSpace"]>();
 const deleteSpace = vi.fn<TeamCreateDeps["deleteSpace"]>();
 const reportError = vi.fn<TeamCreateDeps["reportError"]>();
-const guards = createTestGuards();
 const storeTeam = vi.fn<TeamCreateDeps["storeTeam"]>();
 const createTeam = createTeamAction({
   authenticate: guards.authenticate,
   countAdminTeams,
-  createId: () => `test-uuid-${uuidCounter++}`,
+  createId: () => TEAM_ID,
   createMember: (overrides) => createTestMember({ id: "member-id", ...overrides }),
-  createTeamRecords,
+  createSpace,
   deleteSpace,
+  grantMembership: harness.grantMembership,
   now: () => new Date("2026-01-01T00:00:00.000Z"),
   reportError,
   storeTeam,
 });
 
-const TEST_TIMEZONE = "America/New_York";
+const createdTeam = async () => {
+  const team = await harness.readTeam(TEAM_ID);
+  if (!team) {
+    throw new Error("team contents were not stored");
+  }
+  return team;
+};
 
 describe("createTeam", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    uuidCounter = 0;
-    countAdminTeams.mockResolvedValue(0);
-    createTeamRecords.mockResolvedValue();
-    deleteSpace.mockResolvedValue();
+    harness.reset();
     guards.reset();
-    storeTeam.mockResolvedValue({ ok: true });
+    countAdminTeams.mockResolvedValue(0);
+    createSpace.mockResolvedValue();
+    deleteSpace.mockResolvedValue();
+    storeTeam.mockImplementation(harness.createTeamContents);
   });
 
   it.each(["", "   ", "a".repeat(101)])(
     "rejects invalid workspace names without writes: %s",
     async (name) => {
       expect(await createTeam(TEST_TIMEZONE, name)).toMatchObject({ success: false });
-      expect(createTeamRecords).not.toHaveBeenCalled();
+      expect(createSpace).not.toHaveBeenCalled();
       expect(storeTeam).not.toHaveBeenCalled();
     },
   );
+
   it("stores a trimmed name", async () => {
     await createTeam(TEST_TIMEZONE, "  Platform team  ");
-    expect(storeTeam.mock.calls[0]?.[1].name).toBe("Platform team");
+
+    const team = await createdTeam();
+    expect(team.name).toBe("Platform team");
   });
 
   it("requires a session before any write", async () => {
@@ -57,52 +70,62 @@ describe("createTeam", () => {
 
     expect(result).toEqual({ error: "Authentication required", success: false });
     expect(countAdminTeams).not.toHaveBeenCalled();
-    expect(createTeamRecords).not.toHaveBeenCalled();
+    expect(createSpace).not.toHaveBeenCalled();
   });
 
-  it("creates space and membership in a transaction", async () => {
-    await createTeam(TEST_TIMEZONE, "My workspace");
-
-    expect(createTeamRecords).toHaveBeenCalledWith("user-123", "test-uuid-0");
-  });
-
-  it("populates redis cache with creator as first member", async () => {
-    await createTeam(TEST_TIMEZONE, "My workspace");
-
-    const storedTeam = storeTeam.mock.calls[0]?.[1];
-
-    expect(storedTeam?.members).toHaveLength(1);
-    expect(storedTeam?.members[0]).toMatchObject({
-      name: "Test User",
-      order: 0,
-      timezone: TEST_TIMEZONE,
-      userId: "user-123",
-      workingHoursEnd: 17,
-      workingHoursStart: 9,
+  it("creates the space, the creator's slot and their admin membership", async () => {
+    expect(await createTeam(TEST_TIMEZONE, "My workspace")).toEqual({
+      data: TEAM_ID,
+      success: true,
     });
+
+    expect(createSpace).toHaveBeenCalledWith("user-123", TEAM_ID);
+    const team = await createdTeam();
+    expect(team.members).toEqual([
+      createTestMember({
+        id: "member-id",
+        name: "Test User",
+        timezone: TEST_TIMEZONE,
+        userId: "user-123",
+      }),
+    ]);
+    expect(harness.findMembership("user-123", TEAM_ID)).toEqual({
+      archivedAt: null,
+      role: "ADMIN",
+    });
+    expect(deleteSpace).not.toHaveBeenCalled();
   });
 
-  it("does not report success when the team-contents write fails", async () => {
+  it("rolls the Space back without a membership when the contents write fails", async () => {
     storeTeam.mockResolvedValue({ ok: false, reason: "write-failed" });
 
-    const result = await createTeam(TEST_TIMEZONE, "My workspace");
-
-    expect(result).toEqual({ error: "Failed to create team", success: false });
+    expect(await createTeam(TEST_TIMEZONE, "My workspace")).toEqual({
+      error: "Failed to create team",
+      success: false,
+    });
+    expect(deleteSpace).toHaveBeenCalledWith(TEAM_ID);
+    expect(harness.findMembership("user-123", TEAM_ID)).toBeNull();
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Space and membership committed but the team contents were not stored",
+        message: "The new team's contents were not stored",
         reason: "write-failed",
         route: "actions/team-create",
+        teamId: TEAM_ID,
       }),
     );
   });
 
-  it("rolls back the Space row when the team-contents write fails", async () => {
-    storeTeam.mockResolvedValue({ ok: false, reason: "write-failed" });
+  it("rolls the Space back when the admin membership write fails", async () => {
+    harness.membershipStore.grant.mockRejectedValue(new Error("Postgres down"));
 
-    await createTeam(TEST_TIMEZONE, "My workspace");
-
-    expect(deleteSpace).toHaveBeenCalledWith("test-uuid-0");
+    expect(await createTeam(TEST_TIMEZONE, "My workspace")).toEqual({
+      error: "Failed to create team",
+      success: false,
+    });
+    expect(deleteSpace).toHaveBeenCalledWith(TEAM_ID);
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Failed to populate the new team", teamId: TEAM_ID }),
+    );
   });
 
   it("reports the original failure when the rollback also fails", async () => {
@@ -114,22 +137,10 @@ describe("createTeam", () => {
     expect(result).toEqual({ error: "Failed to create team", success: false });
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Failed to roll back the Space row for a team with no contents",
+        message: "Failed to roll back the Space row of an unfinished team",
         route: "actions/team-create",
       }),
     );
-  });
-
-  it("keeps the Space row when the team is created", async () => {
-    await createTeam(TEST_TIMEZONE, "My workspace");
-
-    expect(deleteSpace).not.toHaveBeenCalled();
-  });
-
-  it("returns the generated teamId on success", async () => {
-    const result = await createTeam(TEST_TIMEZONE, "My workspace");
-
-    expect(result).toEqual({ data: "test-uuid-0", success: true });
   });
 
   it("allows the 50th administered workspace", async () => {
@@ -143,7 +154,7 @@ describe("createTeam", () => {
     countAdminTeams.mockResolvedValue(50);
     const result = await createTeam(TEST_TIMEZONE, "My workspace");
     expect(result).toEqual({ error: "You can administer up to 50 workspaces", success: false });
-    expect(createTeamRecords).not.toHaveBeenCalled();
+    expect(createSpace).not.toHaveBeenCalled();
     expect(storeTeam).not.toHaveBeenCalled();
   });
 });

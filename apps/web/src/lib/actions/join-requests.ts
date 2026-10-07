@@ -6,24 +6,20 @@ import { after } from "next/server";
 import { log } from "@/lib/observability";
 import { authenticate, authorizeTeamAdmin } from "@/lib/team-auth";
 
+import { grantMembership, membershipUpsert } from "../membership";
 import { teamNotifier } from "../team-notifier";
-import { claimOrCreateMemberSlot } from "../team-slots";
 import { readTeamRecord } from "../team-store";
 
 import { createJoinRequestActions } from "./join-requests-core";
 
 const joinRequestActions = createJoinRequestActions({
-  approveMembership: async (requestId, teamId, userId) => {
+  approveMembership: async (requestId, membership) => {
     await prisma.$transaction([
       prisma.joinRequest.update({
         data: { status: "APPROVED" },
         where: { id: requestId, status: "PENDING" },
       }),
-      prisma.membership.upsert({
-        create: { role: "MEMBER", teamId, userId },
-        update: { archivedAt: null },
-        where: { userId_teamId: { teamId, userId } },
-      }),
+      prisma.membership.upsert(membershipUpsert(membership)),
     ]);
   },
   authenticate,
@@ -34,12 +30,12 @@ const joinRequestActions = createJoinRequestActions({
       where: { id: requestId, status: "PENDING" },
     });
   },
-  ensureMemberSlot: (teamId, userId, name) => claimOrCreateMemberSlot(teamId, { name, userId }),
   findRequest: (requestId) =>
     prisma.joinRequest.findUnique({
       include: { user: true },
       where: { id: requestId, status: "PENDING" },
     }),
+  grantMembership,
   listPending: async (teamId) => {
     const [requests, memberships] = await Promise.all([
       prisma.joinRequest.findMany({
