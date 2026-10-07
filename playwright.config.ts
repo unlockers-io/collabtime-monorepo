@@ -85,6 +85,10 @@ export default defineConfig({
   webServer: process.env.CI
     ? [
         {
+          command: "node tests/e2e/support/resend-stub.ts",
+          url: `${process.env.RESEND_BASE_URL}/emails`,
+        },
+        {
           command: "pnpm --filter @repo/web start",
           env: { PGAPPNAME: "collabtime:ci:web" },
           timeout: 120_000,
