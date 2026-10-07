@@ -40,11 +40,11 @@ test.describe("Private space password self-join", () => {
     await owner.close();
 
     await page.goto(`${webUrl}/${teamId}`);
-    await expect(page.getByRole("heading", { name: /private team/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /private workspace/i })).toBeVisible();
     await page.getByLabel("Password").fill(SPACE_PASSWORD);
     await page.getByRole("button", { name: /^continue$/i }).click();
 
-    const signUpToJoin = page.getByRole("link", { name: /sign up to join/i });
+    const signUpToJoin = page.getByRole("link", { name: /create account to join/i });
     await expect(signUpToJoin).toBeVisible();
     await expect(signUpToJoin).toHaveAttribute(
       "href",

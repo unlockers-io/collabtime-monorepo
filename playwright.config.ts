@@ -86,8 +86,6 @@ export default defineConfig({
     ? [
         {
           command: "node tests/e2e/support/resend-stub.ts",
-          stderr: "pipe",
-          stdout: "pipe",
           url: `${process.env.RESEND_BASE_URL}/emails`,
         },
         {
