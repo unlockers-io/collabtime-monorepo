@@ -1,19 +1,18 @@
 import { getClientIp } from "./client-ip";
 import type { log } from "./observability";
-import { canAccessSpace, type SpaceAccess, type SpaceAccessStore } from "./space-visibility";
 import type { acquireTeamEventConnection } from "./team-event-admission";
 import { createTeamEventStream, type AccessResult } from "./team-event-stream";
 import type { teamEventHub } from "./team-events";
 import { UUIDSchema } from "./validation";
+import type { AccessCheck, WorkspaceSpace } from "./workspace-access";
 
-type AccessSnapshot = { token: string | undefined; userId: string | undefined };
+type CapturedAccess = { canView: AccessCheck; userId: string | undefined };
 type TeamEventHandlerDeps = {
   acquire: typeof acquireTeamEventConnection;
-  captureAccess: (spaceId: string) => Promise<AccessSnapshot>;
+  captureAccess: (spaceId: string) => Promise<CapturedAccess>;
   enabled: () => boolean;
-  findSpace: (teamId: string) => Promise<SpaceAccess | null>;
+  findSpace: (teamId: string) => Promise<WorkspaceSpace | null>;
   hub: typeof teamEventHub;
-  isMember: SpaceAccessStore["isMember"];
   log: Pick<typeof log, "error" | "info" | "warn">;
 };
 
@@ -40,12 +39,8 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
       if (!space) {
         return errorResponse("Team not found", 404);
       }
-      const snapshot = await deps.captureAccess(space.id);
-      const store: SpaceAccessStore = {
-        getToken: () => Promise.resolve(snapshot.token),
-        isMember: deps.isMember,
-      };
-      if (!(await canAccessSpace(space, snapshot.userId, store))) {
+      const { canView, userId } = await deps.captureAccess(space.id);
+      if (!(await canView(space))) {
         return errorResponse("Forbidden", 403);
       }
       if (accessOnly) {
@@ -55,8 +50,8 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
         deps.log.warn({ ...context, message: "Live sync unavailable", reason: "subscriber" });
         return errorResponse("Live updates unavailable", 503);
       }
-      const authenticated = snapshot.userId !== undefined;
-      const principal = authenticated ? `user:${snapshot.userId}` : `ip:${getClientIp(request)}`;
+      const authenticated = userId !== undefined;
+      const principal = authenticated ? `user:${userId}` : `ip:${getClientIp(request)}`;
       const admission = await deps.acquire(principal, authenticated);
       if (!admission.allowed) {
         deps.log.warn({
@@ -74,7 +69,7 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
         if (!currentSpace || currentSpace.id !== space.id) {
           return "deleted";
         }
-        return (await canAccessSpace(currentSpace, snapshot.userId, store)) ? "allowed" : "revoked";
+        return (await canView(currentSpace)) ? "allowed" : "revoked";
       };
       try {
         return createTeamEventStream({
@@ -100,4 +95,4 @@ const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
 };
 
 export { createTeamEventsHandler };
-export type { AccessSnapshot, TeamEventHandlerDeps };
+export type { TeamEventHandlerDeps };

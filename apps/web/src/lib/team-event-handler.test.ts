@@ -2,32 +2,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { VALID_UUID } from "./actions/test-helpers";
-import { createSpaceAccessToken } from "./space-access";
-import type { SpaceAccess } from "./space-visibility";
-import {
-  createTeamEventsHandler,
-  type AccessSnapshot,
-  type TeamEventHandlerDeps,
-} from "./team-event-handler";
+import { createTeamEventsHandler, type TeamEventHandlerDeps } from "./team-event-handler";
 import type { TeamListener } from "./team-events";
+import { captureAccessCheck, issueAccessCookie, type WorkspaceSpace } from "./workspace-access";
+import { createTestAccessStore } from "./workspace-access-test-store";
 
 const setup = () => {
-  const space: SpaceAccess = {
+  const space: WorkspaceSpace = {
     accessPassword: "password-hash",
     id: "space-1",
     isPrivate: false,
     teamId: VALID_UUID,
   };
   const findSpace = vi.fn<TeamEventHandlerDeps["findSpace"]>().mockResolvedValue(space);
-  const captureAccess = vi
-    .fn<() => Promise<AccessSnapshot>>()
-    .mockResolvedValue({ token: undefined, userId: undefined });
+  const access = createTestAccessStore();
+  const viewer: { userId?: string } = {};
+  const captureAccess = vi.fn<TeamEventHandlerDeps["captureAccess"]>(async (spaceId) => ({
+    canView: await captureAccessCheck(spaceId, viewer.userId, access.store),
+    userId: viewer.userId,
+  }));
   const listeners = new Set<TeamListener>();
   const release = vi.fn<() => Promise<void>>().mockResolvedValue();
   const acquire = vi
     .fn<TeamEventHandlerDeps["acquire"]>()
     .mockResolvedValue({ allowed: true, release });
-  const isMember = vi.fn<TeamEventHandlerDeps["isMember"]>().mockResolvedValue(false);
   const enabled = vi.fn(() => true);
   const hub = {
     isReady: () => true,
@@ -45,24 +43,24 @@ const setup = () => {
     enabled,
     findSpace,
     hub,
-    isMember,
     log: { error: vi.fn<() => void>(), info: vi.fn<() => void>(), warn: vi.fn<() => void>() },
   });
   const request = new Request(`http://localhost/api/teams/${VALID_UUID}/events`, {
     headers: { "x-forwarded-for": "192.0.2.1, 192.0.2.2" },
   });
   return {
+    access,
     acquire,
     captureAccess,
     enabled,
     findSpace,
     handle,
     hub,
-    isMember,
     listeners,
     release,
     request,
     space,
+    viewer,
   };
 };
 
@@ -112,15 +110,14 @@ describe("team events handler", () => {
     const state = setup();
     const request = new Request(state.request, { method: "HEAD" });
     state.space.isPrivate = true;
-    const token = createSpaceAccessToken(state.space.id, "password-hash");
-    state.captureAccess.mockResolvedValue({ token, userId: undefined });
+    state.access.setToken(state.space.id, issueAccessCookie(state.space.id, "password-hash").value);
     await expect(state.handle(request, VALID_UUID)).resolves.toHaveProperty("status", 204);
     state.space.accessPassword = "rotated-password-hash";
     await expect(state.handle(request, VALID_UUID)).resolves.toHaveProperty("status", 403);
-    state.captureAccess.mockResolvedValue({ token: undefined, userId: "member-1" });
-    state.isMember.mockResolvedValue(true);
+    state.viewer.userId = "member-1";
+    state.access.addMembership(VALID_UUID, "member-1");
     await expect(state.handle(request, VALID_UUID)).resolves.toHaveProperty("status", 204);
-    state.isMember.mockResolvedValue(false);
+    state.access.removeMembership(VALID_UUID, "member-1");
     await expect(state.handle(request, VALID_UUID)).resolves.toHaveProperty("status", 403);
     expect(state.acquire).not.toHaveBeenCalled();
   });
@@ -138,9 +135,9 @@ describe("team events handler", () => {
   it("allows private members and denies signed-in nonmembers", async () => {
     const state = setup();
     state.space.isPrivate = true;
-    state.captureAccess.mockResolvedValue({ token: undefined, userId: "user-1" });
+    state.viewer.userId = "user-1";
     await expect(state.handle(state.request, VALID_UUID)).resolves.toHaveProperty("status", 403);
-    state.isMember.mockResolvedValue(true);
+    state.access.addMembership(VALID_UUID, "user-1");
     const response = await state.handle(state.request, VALID_UUID);
     expect(response.status).toBe(200);
     expect(state.acquire).toHaveBeenCalledWith("user:user-1", true);
@@ -150,8 +147,7 @@ describe("team events handler", () => {
   it("rechecks password rotation using only the captured cookie", async () => {
     const state = setup();
     state.space.isPrivate = true;
-    const token = createSpaceAccessToken(state.space.id, "password-hash");
-    state.captureAccess.mockResolvedValue({ token, userId: undefined });
+    state.access.setToken(state.space.id, issueAccessCookie(state.space.id, "password-hash").value);
     const response = await state.handle(state.request, VALID_UUID);
     const reader = response.body!.getReader();
     const readyFrame = await reader.read();
@@ -163,7 +159,7 @@ describe("team events handler", () => {
     const revokedFrame = await reader.read();
     expect(new TextDecoder().decode(revokedFrame.value)).toContain("event: revoked");
     await expect(reader.read()).resolves.toHaveProperty("done", true);
-    expect(state.captureAccess).toHaveBeenCalledTimes(1);
+    expect(state.access.store.getToken).toHaveBeenCalledTimes(1);
     expect(state.release).toHaveBeenCalledTimes(1);
   });
 

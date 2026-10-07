@@ -1,129 +1,89 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { issueAccessCookie } from "../workspace-access";
+import { createTestAccessStore } from "../workspace-access-test-store";
 
 import { createTeamReadActions } from "./team-read-core";
 import { createMockSession, createTestTeamRecord, VALID_UUID } from "./test-helpers";
 
 type TeamReadDeps = Parameters<typeof createTeamReadActions>[0];
 
-const findSpace = vi.fn<TeamReadDeps["findSpace"]>();
-const getAccessToken = vi.fn<TeamReadDeps["getAccessToken"]>();
-const getSession = vi.fn<TeamReadDeps["getSession"]>();
-const getTeamRole = vi.fn<TeamReadDeps["getTeamRole"]>();
-const readTeamRecord = vi.fn<TeamReadDeps["readTeamRecord"]>();
-const reportError = vi.fn<TeamReadDeps["reportError"]>();
-const verifyAccessToken = vi.fn<TeamReadDeps["verifyAccessToken"]>();
-const { getPublicTeam, getTeamMembershipRole } = createTeamReadActions({
-  findSpace,
-  getAccessToken,
-  getSession,
-  getTeamRole,
-  readTeamRecord,
-  reportError,
-  verifyAccessToken,
+const space = { accessPassword: "hash", id: "space-1", isPrivate: true, teamId: VALID_UUID };
+const team = createTestTeamRecord();
+
+const setup = () => {
+  const access = createTestAccessStore();
+  const findSpace = vi.fn<TeamReadDeps["findSpace"]>().mockResolvedValue(space);
+  const getSession = vi.fn<TeamReadDeps["getSession"]>().mockResolvedValue(null);
+  const { getPublicTeam } = createTeamReadActions({
+    accessStore: access.store,
+    findSpace,
+    getSession,
+    readTeamRecord: vi.fn<TeamReadDeps["readTeamRecord"]>().mockResolvedValue(team),
+    reportError: vi.fn<TeamReadDeps["reportError"]>(),
+  });
+  return { access, findSpace, getPublicTeam, getSession };
+};
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("getPublicTeam", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    getSession.mockResolvedValue(null);
-    getTeamRole.mockResolvedValue(null);
-    getAccessToken.mockResolvedValue(undefined);
-  });
-
   it("returns error when space not found", async () => {
-    findSpace.mockResolvedValue(null);
+    const state = setup();
+    state.findSpace.mockResolvedValue(null);
 
-    const result = await getPublicTeam(VALID_UUID);
-
-    expect(result).toEqual({ error: "Team not found", success: false });
+    expect(await state.getPublicTeam(VALID_UUID)).toEqual({
+      error: "Team not found",
+      success: false,
+    });
   });
 
   it("blocks private team access for guests without an access cookie", async () => {
-    findSpace.mockResolvedValue({
-      accessPassword: null,
-      id: "space-1",
-      isPrivate: true,
+    const state = setup();
+    expect(await state.getPublicTeam(VALID_UUID)).toEqual({
+      error: "This team is private",
+      success: false,
     });
+  });
 
-    const result = await getPublicTeam(VALID_UUID);
+  it("allows a guest holding the private team's access cookie", async () => {
+    vi.stubEnv("SPACE_ACCESS_SECRET", "test-space-secret-at-least-32-characters");
+    const state = setup();
+    state.access.setToken(space.id, issueAccessCookie(space.id, "hash").value);
 
-    expect(result).toEqual({ error: "This team is private", success: false });
+    expect(await state.getPublicTeam(VALID_UUID)).toEqual({ data: { team }, success: true });
+  });
+
+  it("blocks signed-in non-members of a private team", async () => {
+    const state = setup();
+    state.getSession.mockResolvedValue(createMockSession());
+
+    expect(await state.getPublicTeam(VALID_UUID)).toEqual({
+      error: "This team is private",
+      success: false,
+    });
   });
 
   it("allows private team access for members via their membership", async () => {
-    const team = createTestTeamRecord();
-    findSpace.mockResolvedValue({
-      accessPassword: null,
-      id: "space-1",
-      isPrivate: true,
-    });
-    getSession.mockResolvedValue(createMockSession());
-    getTeamRole.mockResolvedValue({ role: "MEMBER", userId: "user-123" });
-    readTeamRecord.mockResolvedValue(team);
+    const state = setup();
+    state.getSession.mockResolvedValue(createMockSession());
+    state.access.addMembership(VALID_UUID, "user-123");
 
-    const result = await getPublicTeam(VALID_UUID);
+    expect(await state.getPublicTeam(VALID_UUID)).toEqual({ data: { team }, success: true });
+    expect(state.access.store.findMembership).toHaveBeenCalledOnce();
+  });
+
+  it("returns a public team without a role field and without a membership lookup", async () => {
+    const state = setup();
+    state.findSpace.mockResolvedValue({ ...space, isPrivate: false });
+    state.getSession.mockResolvedValue(createMockSession());
+
+    const result = await state.getPublicTeam(VALID_UUID);
 
     expect(result).toEqual({ data: { team }, success: true });
-  });
-
-  it("returns team without a role field for authenticated users", async () => {
-    const team = createTestTeamRecord();
-    findSpace.mockResolvedValue({ accessPassword: null, id: "space-1", isPrivate: false });
-    readTeamRecord.mockResolvedValue(team);
-    getSession.mockResolvedValue(createMockSession());
-
-    const result = await getPublicTeam(VALID_UUID);
-
-    expect(result).toEqual({ data: { team }, success: true });
-    if (result.success) {
-      expect(result.data).not.toHaveProperty("role");
-    }
-  });
-
-  it("skips the membership lookup for public teams", async () => {
-    const team = createTestTeamRecord();
-    findSpace.mockResolvedValue({ accessPassword: null, id: "space-1", isPrivate: false });
-    readTeamRecord.mockResolvedValue(team);
-    getSession.mockResolvedValue(createMockSession());
-
-    await getPublicTeam(VALID_UUID);
-
-    expect(getTeamRole).not.toHaveBeenCalled();
-  });
-});
-
-describe("getTeamMembershipRole", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    getTeamRole.mockResolvedValue(null);
-  });
-
-  it("returns role from membership", async () => {
-    getTeamRole.mockResolvedValue({ role: "ADMIN", userId: "user-123" });
-
-    const result = await getTeamMembershipRole(VALID_UUID);
-
-    expect(result).toBe("ADMIN");
-  });
-
-  it("returns null when no membership exists", async () => {
-    const result = await getTeamMembershipRole(VALID_UUID);
-
-    expect(result).toBeNull();
-  });
-
-  it("looks up membership by team ID", async () => {
-    getTeamRole.mockResolvedValue({ role: "ADMIN", userId: "user-123" });
-
-    await getTeamMembershipRole(VALID_UUID);
-
-    expect(getTeamRole).toHaveBeenCalledWith(VALID_UUID);
-  });
-
-  it("returns null for an anonymous caller without querying", async () => {
-    const result = await getTeamMembershipRole(VALID_UUID);
-
-    expect(result).toBeNull();
-    expect(getTeamRole).toHaveBeenCalledWith(VALID_UUID);
+    expect(result.success && result.data).not.toHaveProperty("role");
+    expect(state.access.store.findMembership).not.toHaveBeenCalled();
   });
 });
