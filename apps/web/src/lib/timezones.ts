@@ -44,12 +44,12 @@ const COMMON_TIMEZONES = [
   "Pacific/Auckland",
 ] as const;
 
+type CommonTimezone = (typeof COMMON_TIMEZONES)[number];
+
 const DEFAULT_MEMBER_TIMEZONE = "America/New_York";
 const DEFAULT_WORKING_HOURS_START = 9;
 const DEFAULT_WORKING_HOURS_END = 17;
 const COMMON_TIMEZONE_SET: ReadonlySet<string> = new Set(COMMON_TIMEZONES);
-
-type CommonTimezone = (typeof COMMON_TIMEZONES)[number];
 
 const MINUTES_IN_DAY = 24 * 60;
 
@@ -85,7 +85,7 @@ const getClockFormatter = (timezone: string): Intl.DateTimeFormat => {
 const OFFSET_PATTERN = /^GMT(?<sign>[+\-\u2212])(?<hours>\d{1,2})(?::(?<minutes>\d{2}))?$/v;
 
 /** UTC offset in minutes at `at`, e.g. 330 for Asia/Kolkata. */
-const getOffsetMinutes = (timezone: string, at: Date = new Date()): number => {
+const getOffsetMinutes = (timezone: string, at: Date): number => {
   const name =
     getOffsetFormatter(timezone)
       .formatToParts(at)
@@ -100,7 +100,7 @@ const getOffsetMinutes = (timezone: string, at: Date = new Date()): number => {
 };
 
 /** Minutes since local midnight in `timezone`, 0 to 1439. */
-const getMinuteOfDay = (timezone: string, at: Date = new Date()): number => {
+const getMinuteOfDay = (timezone: string, at: Date): number => {
   const parts = getClockFormatter(timezone).formatToParts(at);
   const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
   const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
@@ -123,7 +123,7 @@ const formatMinuteRange = (startMinute: number, endMinute: number): string => {
   return `${formatMinuteOfDay(startMinute)} – ${end}`;
 };
 
-const formatUtcOffset = (timezone: string, at: Date = new Date()): string => {
+const formatUtcOffset = (timezone: string, at: Date): string => {
   const offset = getOffsetMinutes(timezone, at);
   if (offset === 0) {
     return "UTC";
@@ -139,76 +139,34 @@ const formatUtcOffset = (timezone: string, at: Date = new Date()): string => {
 const formatTimezoneCity = (timezone: string): string =>
   timezone.split("/").pop()?.replaceAll("_", " ") ?? timezone;
 
-const formatTimezoneLabel = (timezone: string, includeCurrentTime = false): string => {
-  const base = `${formatTimezoneCity(timezone)} (${formatUtcOffset(timezone)})`;
-  return includeCurrentTime ? `${base} · ${formatMinuteOfDay(getMinuteOfDay(timezone))}` : base;
+const formatTimezoneLabel = (timezone: string, at: Date): string =>
+  `${formatTimezoneCity(timezone)} (${formatUtcOffset(timezone, at)})`;
+
+type WorkingHours = {
+  timezone: string;
+  workingHoursEnd: number;
+  workingHoursStart: number;
 };
 
-type WorkingInterval = {
-  lengthMinutes: number;
-  startMinute: number;
-};
+/** An end hour earlier than the start hour runs past midnight. */
+const getWorkingMinutes = ({
+  workingHoursEnd,
+  workingHoursStart,
+}: Omit<WorkingHours, "timezone">): number =>
+  ((workingHoursEnd - workingHoursStart + 24) % 24) * 60;
 
-/**
- * A member's working hours placed on the viewer's day, to the minute. Hours
- * are stored as whole hours in the member's own zone, so a half-hour offset
- * such as Asia/Kolkata lands on :30 in the viewer's frame.
- */
-const getWorkingInterval = (
-  member: { timezone: string; workingHoursEnd: number; workingHoursStart: number },
-  viewerTimezone: string,
-  at: Date = new Date(),
-): WorkingInterval => {
-  const shift = getOffsetMinutes(viewerTimezone, at) - getOffsetMinutes(member.timezone, at);
-  const lengthHours = (member.workingHoursEnd - member.workingHoursStart + 24) % 24;
-  return {
-    lengthMinutes: lengthHours * 60,
-    startMinute: wrapMinutes(member.workingHoursStart * 60 + shift),
-  };
-};
+type MemberStatus =
+  | { kind: "off"; minutesUntilStart: number }
+  | { kind: "working"; minutesLeft: number };
 
-const isMinuteInInterval = (minute: number, { lengthMinutes, startMinute }: WorkingInterval) =>
-  wrapMinutes(minute - startMinute) < lengthMinutes;
-
-const isCurrentlyWorking = (
-  timezone: string,
-  workingHoursStart: number,
-  workingHoursEnd: number,
-  at: Date = new Date(),
-): boolean =>
-  isMinuteInInterval(getMinuteOfDay(timezone, at), {
-    lengthMinutes: ((workingHoursEnd - workingHoursStart + 24) % 24) * 60,
-    startMinute: workingHoursStart * 60,
-  });
-
-const getMinutesUntilAvailable = (
-  timezone: string,
-  workingHoursStart: number,
-  workingHoursEnd: number,
-  at: Date = new Date(),
-): number => {
-  if (isCurrentlyWorking(timezone, workingHoursStart, workingHoursEnd, at)) {
-    return 0;
-  }
-  return wrapMinutes(workingHoursStart * 60 - getMinuteOfDay(timezone, at));
-};
-
-const getMinutesUntilDayEnds = (
-  timezone: string,
-  workingHoursEnd: number,
-  at: Date = new Date(),
-): number => wrapMinutes(workingHoursEnd * 60 - getMinuteOfDay(timezone, at));
-
-const getDayOffset = (memberTimezone: string, viewerTimezone: string): number => {
-  const now = new Date();
-
-  const viewerDate = now.toLocaleDateString("en-CA", { timeZone: viewerTimezone });
-  const memberDate = now.toLocaleDateString("en-CA", { timeZone: memberTimezone });
-
-  const diffTime = new Date(memberDate).getTime() - new Date(viewerDate).getTime();
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-  return diffDays;
+const getMemberStatus = (member: WorkingHours, at: Date): MemberStatus => {
+  const sinceStart = wrapMinutes(
+    getMinuteOfDay(member.timezone, at) - member.workingHoursStart * 60,
+  );
+  const lengthMinutes = getWorkingMinutes(member);
+  return sinceStart < lengthMinutes
+    ? { kind: "working", minutesLeft: lengthMinutes - sinceStart }
+    : { kind: "off", minutesUntilStart: wrapMinutes(-sinceStart) };
 };
 
 const formatDuration = (minutes: number): string => {
@@ -224,9 +182,6 @@ const formatDuration = (minutes: number): string => {
   return `${hours}h ${mins}m`;
 };
 
-const formatTimeUntilAvailable = (minutes: number): string =>
-  minutes === 0 ? "Available now" : `in ${formatDuration(minutes)}`;
-
 const isCommonTimezone = (value: string): value is CommonTimezone => COMMON_TIMEZONE_SET.has(value);
 
 const isValidTimezone = (value: string): boolean => {
@@ -237,6 +192,15 @@ const isValidTimezone = (value: string): boolean => {
     return false;
   }
 };
+
+// January and July cover both sides of daylight saving in either hemisphere.
+const DST_REFERENCE_INSTANTS = [new Date("2026-01-15T12:00:00Z"), new Date("2026-07-15T12:00:00Z")];
+
+const getOffsetDistance = (a: string, b: string): number =>
+  DST_REFERENCE_INSTANTS.reduce(
+    (sum, at) => sum + Math.abs(getOffsetMinutes(a, at) - getOffsetMinutes(b, at)),
+    0,
+  );
 
 const fuzzyMatchTimezone = (input: string): CommonTimezone | null => {
   const trimmed = input.trim();
@@ -251,13 +215,11 @@ const fuzzyMatchTimezone = (input: string): CommonTimezone | null => {
   if (!isValidTimezone(trimmed)) {
     return null;
   }
-  const inputOffset = getOffsetMinutes(trimmed);
-
   let best: CommonTimezone | null = null;
   let bestDiff = Infinity;
 
   for (const tz of COMMON_TIMEZONES) {
-    const diff = Math.abs(getOffsetMinutes(tz) - inputOffset);
+    const diff = getOffsetDistance(tz, trimmed);
     if (diff < bestDiff) {
       bestDiff = diff;
       best = tz;
@@ -296,23 +258,18 @@ export {
   formatDuration,
   formatMinuteOfDay,
   formatMinuteRange,
-  formatTimeUntilAvailable,
   formatTimezoneCity,
   formatTimezoneLabel,
   formatUtcOffset,
   fuzzyMatchTimezone,
-  getDayOffset,
+  getMemberStatus,
   getMinuteOfDay,
-  getMinutesUntilAvailable,
-  getMinutesUntilDayEnds,
   getOffsetMinutes,
   getUserTimezone,
   getViewerTimezone,
-  getWorkingInterval,
+  getWorkingMinutes,
   isCommonTimezone,
-  isCurrentlyWorking,
-  isMinuteInInterval,
   wrapMinutes,
 };
 
-export type { CommonTimezone, WorkingInterval };
+export type { CommonTimezone, MemberStatus };

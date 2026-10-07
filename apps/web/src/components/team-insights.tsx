@@ -9,17 +9,14 @@ import {
   SectionCardHeader,
   SectionCardTitle,
 } from "@/components/section-card";
-import { useClientValue } from "@/components/timezone-visualizer/helpers";
 import {
   formatDuration,
   formatMinuteOfDay,
-  getMinutesUntilAvailable,
-  getMinutesUntilDayEnds,
-  getViewerTimezone,
-  getWorkingInterval,
-  isCurrentlyWorking,
+  getMemberStatus,
+  getMinuteOfDay,
 } from "@/lib/timezones";
 import { useHalfMinuteTick } from "@/lib/use-tick";
+import { useViewerTimezone } from "@/lib/use-viewer-timezone";
 import type { TeamGroup, TeamMember } from "@/types";
 
 const SOON_THRESHOLD_MINUTES = 2 * 60;
@@ -80,7 +77,7 @@ const StatusColumn = ({ emptyLabel, entries, groupNameById, label }: StatusColum
 const byMinutes = (a: StatusEntry, b: StatusEntry) => a.minutes - b.minutes;
 
 const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): ReactNode => {
-  const viewerTimezone = useClientValue(getViewerTimezone, "");
+  const viewerTimezone = useViewerTimezone();
   const tick = useHalfMinuteTick();
 
   if (members.length === 0 || !viewerTimezone || tick === 0) {
@@ -88,18 +85,18 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): Re
   }
 
   const now = new Date(tick);
+  const nowMinute = getMinuteOfDay(viewerTimezone, now);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const working: Array<StatusEntry> = [];
   const startingSoon: Array<StatusEntry> = [];
   const wrappingUp: Array<StatusEntry> = [];
 
   for (const member of members) {
-    const { timezone, workingHoursEnd, workingHoursStart } = member;
-    const interval = getWorkingInterval(member, viewerTimezone, now);
+    const status = getMemberStatus(member, now);
 
-    if (isCurrentlyWorking(timezone, workingHoursStart, workingHoursEnd, now)) {
-      const minutesLeft = getMinutesUntilDayEnds(timezone, workingHoursEnd, now);
-      const endsAt = formatMinuteOfDay(interval.startMinute + interval.lengthMinutes);
+    if (status.kind === "working") {
+      const { minutesLeft } = status;
+      const endsAt = formatMinuteOfDay(nowMinute + minutesLeft);
       working.push({ detail: `until ${endsAt}`, member, minutes: minutesLeft });
       if (minutesLeft <= SOON_THRESHOLD_MINUTES) {
         wrappingUp.push({
@@ -111,17 +108,12 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): Re
       continue;
     }
 
-    const minutesUntil = getMinutesUntilAvailable(
-      timezone,
-      workingHoursStart,
-      workingHoursEnd,
-      now,
-    );
-    if (minutesUntil <= SOON_THRESHOLD_MINUTES) {
+    const { minutesUntilStart } = status;
+    if (minutesUntilStart <= SOON_THRESHOLD_MINUTES) {
       startingSoon.push({
-        detail: `in ${formatDuration(minutesUntil)}`,
+        detail: `in ${formatDuration(minutesUntilStart)}`,
         member,
-        minutes: minutesUntil,
+        minutes: minutesUntilStart,
       });
     }
   }

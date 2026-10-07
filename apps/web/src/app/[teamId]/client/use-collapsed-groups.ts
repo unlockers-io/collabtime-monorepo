@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { z } from "zod";
 
-import type { TeamMember } from "@/types";
+import { isUngrouped } from "@/lib/team-schedule";
+import type { TeamGroup, TeamMember } from "@/types";
 
 const COLLAPSED_GROUPS_KEY = "collabtime-collapsed-groups:v1";
 const collapsedGroupsSchema = z.array(z.string());
 
-const useCollapsedGroups = (members: Array<TeamMember>) => {
+const useCollapsedGroups = (members: Array<TeamMember>, groups: Array<TeamGroup>) => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
       return new Set();
@@ -34,17 +35,11 @@ const useCollapsedGroups = (members: Array<TeamMember>) => {
       next.delete(groupId);
     } else {
       const collapsedAfter = new Set([...collapsedGroups, groupId]);
-      const ungroupedCount = members.filter(
-        (m) => m.groupId === undefined || m.groupId === "",
-      ).length;
-      const visibleGroupedCount = members.filter((m) => {
-        if (m.groupId === undefined || m.groupId === "") {
-          return false;
-        }
-        return !collapsedAfter.has(m.groupId);
-      }).length;
-      const totalVisibleAfter = ungroupedCount + visibleGroupedCount;
-      if (totalVisibleAfter > 0) {
+      const groupIds = new Set(groups.map((group) => group.id));
+      const keepsSomeoneVisible = members.some(
+        (member) => isUngrouped(member, groupIds) || !collapsedAfter.has(member.groupId ?? ""),
+      );
+      if (keepsSomeoneVisible) {
         next.add(groupId);
       }
     }

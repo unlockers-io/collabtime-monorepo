@@ -2,11 +2,11 @@
 
 import { cn } from "@repo/ui/lib/utils";
 
+import { SLOT_MINUTES } from "@/lib/team-schedule";
+import type { MemberRow, SharedWindowReading, SlotRun, WindowTiming } from "@/lib/team-schedule";
 import { formatDuration, formatMinuteRange, formatUtcOffset } from "@/lib/timezones";
 
 import { formatNameList } from "./helpers";
-import { SLOT_MINUTES } from "./timezone-data";
-import type { MemberRow, SharedWindowReading, SlotRun, WindowTiming } from "./types";
 
 const formatRun = ({ lengthSlots, startSlot }: SlotRun): string =>
   formatMinuteRange(startSlot * SLOT_MINUTES, (startSlot + lengthSlots) * SLOT_MINUTES);
@@ -154,6 +154,7 @@ const SummaryNotes = ({ notes, onCountEveryone, showHint }: SummaryNotesProps) =
 type SharedWindowSummaryProps = {
   hasCollapsedGroups: boolean;
   hasExplicitExclusions: boolean;
+  now: Date;
   onCountEveryone: () => void;
   reading: SharedWindowReading;
   rows: ReadonlyArray<MemberRow>;
@@ -163,6 +164,7 @@ type SharedWindowSummaryProps = {
 const SharedWindowSummary = ({
   hasCollapsedGroups,
   hasExplicitExclusions,
+  now,
   onCountEveryone,
   reading,
   rows,
@@ -176,7 +178,7 @@ const SharedWindowSummary = ({
       <span aria-live="polite" className="sr-only">
         {speak(answer)}
       </span>
-      <AnswerHeadline answer={answer} zone={formatUtcOffset(viewerTimezone)} />
+      <AnswerHeadline answer={answer} zone={formatUtcOffset(viewerTimezone, now)} />
       {answer.detail !== null && (
         <p aria-hidden className="text-sm text-pretty text-muted-foreground">
           {answer.detail}

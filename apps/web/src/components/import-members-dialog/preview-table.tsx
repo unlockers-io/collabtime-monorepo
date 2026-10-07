@@ -9,7 +9,8 @@ import {
 } from "@repo/ui/components/tooltip";
 import { CheckCircle, XCircle } from "lucide-react";
 
-import { formatTimezoneLabel, isCommonTimezone } from "@/lib/timezones";
+import { getTimezoneOption } from "@/components/timezone-field-options";
+import { isCommonTimezone } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 
 import type { ParsedRow } from "./parse-csv";
@@ -79,7 +80,7 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
                     <td className="px-3 py-2 text-muted-foreground">
                       {isCommonTimezone(row.member.timezone) ? (
                         <span>
-                          {formatTimezoneLabel(row.member.timezone)}
+                          {getTimezoneOption(row.member.timezone).label}
                           {row.rawTimezone !== row.member.timezone && (
                             <span className="ml-1 text-xs opacity-60">
                               (from {row.rawTimezone})
