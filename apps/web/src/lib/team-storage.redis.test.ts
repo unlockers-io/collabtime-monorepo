@@ -2,10 +2,12 @@
 import { randomUUID } from "node:crypto";
 
 import { Redis } from "ioredis";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { createTestMember, createTestTeamRecord } from "./actions/test-helpers";
 import { redis } from "./redis";
-import { COMPARE_AND_SET, redisTeamStorage, SETTLE_MIRROR } from "./team-storage";
+import { COMPARE_AND_SET, redisTeamStorage } from "./team-storage";
+import { createTeamStore } from "./team-store";
 
 const url = process.env.REDIS_URL;
 
@@ -17,17 +19,8 @@ describe.skipIf(url === undefined || url === "")("team storage against Redis", (
     keys.push(value);
     return value;
   };
-  const compareAndSet = async (
-    [contents, marker]: [string, string],
-    expected: string,
-    next: string,
-    revision: string,
-  ) =>
-    Number(
-      await client.eval(COMPARE_AND_SET, 2, contents, marker, expected, next, 600, revision, 900),
-    );
-  const settle = async (marker: string, revision: string) =>
-    Number(await client.eval(SETTLE_MIRROR, 1, marker, revision, 900));
+  const compareAndSet = async (contents: string, expected: string, next: string) =>
+    Number(await client.eval(COMPARE_AND_SET, 1, contents, expected, next, 600));
 
   beforeAll(() => {
     client = new Redis(url ?? "", { maxRetriesPerRequest: 1 });
@@ -40,64 +33,95 @@ describe.skipIf(url === undefined || url === "")("team storage against Redis", (
     await redis.quit();
   });
 
-  it("writes only over the contents it read, and marks that revision unmirrored", async () => {
-    const team: [string, string] = [key(), key()];
+  it("writes only over the contents it read", async () => {
+    const team = key();
 
-    expect(await compareAndSet(team, "", "v1", "r1")).toBe(1);
-    expect(await compareAndSet(team, "", "v2", "r2")).toBe(0);
-    expect(await compareAndSet(team, "v1", "v2", "r2")).toBe(1);
+    expect(await compareAndSet(team, "", "v1")).toBe(1);
+    expect(await compareAndSet(team, "", "v2")).toBe(0);
+    expect(await compareAndSet(team, "v1", "v2")).toBe(1);
 
-    expect(await client.get(team[0])).toBe("v2");
-    expect(await client.get(team[1])).toBe("r2");
-    expect(await client.ttl(team[0])).toBeGreaterThan(500);
-    expect(await client.ttl(team[1])).toBeGreaterThan(800);
+    expect(await client.get(team)).toBe("v2");
+    expect(await client.ttl(team)).toBeGreaterThan(500);
   });
 
   it("treats empty contents as absent", async () => {
-    const team: [string, string] = [key(), key()];
-    await client.set(team[0], "");
+    const team = key();
+    await client.set(team, "");
 
-    expect(await compareAndSet(team, "", "v1", "r1")).toBe(1);
+    expect(await compareAndSet(team, "", "v1")).toBe(1);
   });
 
   it("lets exactly one of many writers holding the same read commit", async () => {
-    const team: [string, string] = [key(), key()];
-    await client.set(team[0], "base");
+    const team = key();
+    await client.set(team, "base");
 
     const results = await Promise.all(
-      Array.from({ length: 20 }, (_, index) =>
-        compareAndSet(team, "base", `v${index}`, `r${index}`),
-      ),
+      Array.from({ length: 20 }, (_, index) => compareAndSet(team, "base", `v${index}`)),
     );
 
     const winner = results.indexOf(1);
     expect(results.filter((result) => result === 1)).toHaveLength(1);
-    expect(await client.get(team[0])).toBe(`v${winner}`);
-    expect(await client.get(team[1])).toBe(`r${winner}`);
+    expect(await client.get(team)).toBe(`v${winner}`);
   });
 
-  it("settles its own revision and turns any other marker stale", async () => {
-    const marker = key();
-    await client.set(marker, "r2");
+  it("batch-reads canonical contents in request order, refreshing only present teams", async () => {
+    const first = randomUUID();
+    const second = randomUUID();
+    const empty = randomUUID();
+    const missing = randomUUID();
+    keys.push(...[first, second, empty, missing].map((id) => `team:${id}`));
+    await client.mset(`team:${first}`, "first", `team:${second}`, "second", `team:${empty}`, "");
 
-    expect(await settle(marker, "r1")).toBe(0);
-    expect(await client.get(marker)).toBe("stale");
-    expect(await settle(marker, "r2")).toBe(0);
-    expect(await client.get(marker)).toBe("stale");
+    expect(await redisTeamStorage.readContentsBatch([second, missing, first, empty])).toEqual([
+      "second",
+      null,
+      "first",
+      null,
+    ]);
+    expect(await client.ttl(`team:${first}`)).toBeGreaterThan(60 * 60 * 24 * 365);
+    expect(await client.ttl(`team:${second}`)).toBeGreaterThan(60 * 60 * 24 * 365);
+    expect(await client.ttl(`team:${empty}`)).toBe(-1);
+    expect(await client.exists(`team:${missing}`)).toBe(0);
+    expect(await redisTeamStorage.readContentsBatch([])).toEqual([]);
+  });
 
-    await client.set(marker, "r3");
-    expect(await settle(marker, "r3")).toBe(1);
-    expect(await client.exists(marker)).toBe(0);
+  it("serves batched summaries from canonical Redis without Postgres or mirror markers", async () => {
+    const first = randomUUID();
+    const second = randomUUID();
+    keys.push(`team:${first}`, `team:${second}`, `team-mirror:${first}`);
+    const team = createTestTeamRecord({
+      id: first,
+      members: [createTestMember()],
+      name: "Current",
+    });
+    await client.mset(
+      `team:${first}`,
+      JSON.stringify(team),
+      `team:${second}`,
+      JSON.stringify(createTestTeamRecord({ id: second, name: "Other" })),
+      `team-mirror:${first}`,
+      "stale",
+    );
+    const store = createTeamStore({
+      createId: randomUUID,
+      invalidateTeamName: vi.fn<() => void>(),
+      reportError: vi.fn<() => void>(),
+      storage: redisTeamStorage,
+    });
 
-    expect(await settle(marker, "r1")).toBe(0);
-    expect(await client.get(marker)).toBe("stale");
+    expect(await store.readTeamSummaries([first, second, first])).toEqual(
+      new Map([
+        [first, { memberCount: 1, name: "Current" }],
+        [second, { memberCount: 0, name: "Other" }],
+      ]),
+    );
   });
 
   it("creates contents with the initial TTL and extends it on every read", async () => {
     const teamId = randomUUID();
-    keys.push(`team:${teamId}`, `team-mirror:${teamId}`);
+    keys.push(`team:${teamId}`);
 
-    expect(await redisTeamStorage.compareAndSet(teamId, null, "v1", "r1")).toBe(true);
+    expect(await redisTeamStorage.compareAndSet(teamId, null, "v1")).toBe(true);
     expect(await client.ttl(`team:${teamId}`)).toBeLessThanOrEqual(60 * 60 * 24 * 60);
 
     expect(await redisTeamStorage.readContents(teamId)).toBe("v1");

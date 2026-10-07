@@ -13,14 +13,12 @@ import { readTeamRecord } from "../team-store";
 import { createJoinRequestActions } from "./join-requests-core";
 
 const joinRequestActions = createJoinRequestActions({
-  approveMembership: async (requestId, membership) => {
-    await prisma.$transaction([
-      prisma.joinRequest.update({
-        data: { status: "APPROVED" },
-        where: { id: requestId, status: "PENDING" },
-      }),
-      prisma.membership.upsert(membershipUpsert(membership)),
-    ]);
+  approveMembership: async (requestId, membership, transaction) => {
+    await transaction.joinRequest.update({
+      data: { status: "APPROVED" },
+      where: { id: requestId, status: "PENDING" },
+    });
+    await transaction.membership.upsert(membershipUpsert(membership));
   },
   authenticate,
   authorizeTeamAdmin,

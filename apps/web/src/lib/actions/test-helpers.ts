@@ -69,9 +69,13 @@ const createMockSession = (overrides?: { email?: string; name?: string; userId?:
 const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
   const invalidateTeamName = vi.fn<TeamStoreDeps["invalidateTeamName"]>();
   const reportError = vi.fn<TeamStoreDeps["reportError"]>();
+  let memberships = createMemoryMembershipStore();
+  const lock: MembershipStore<undefined>["lock"] = (teamId, run) => memberships.lock(teamId, run);
   const membershipStore = {
-    grant: vi.fn<MembershipStore["grant"]>(),
-    revoke: vi.fn<MembershipStore["revoke"]>(),
+    find: vi.fn<MembershipStore<undefined>["find"]>(),
+    grant: vi.fn<MembershipStore<undefined>["grant"]>(),
+    lock,
+    revoke: vi.fn<MembershipStore<undefined>["revoke"]>(),
   };
   const build = () =>
     createTeamStore({
@@ -81,13 +85,19 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
       storage: createMemoryTeamStorage(),
     });
   let store = build();
-  let memberships = createMemoryMembershipStore();
   const wireMemberships = () => {
     memberships = createMemoryMembershipStore();
-    membershipStore.grant.mockReset().mockImplementation((grant) => memberships.grant(grant));
+    membershipStore.find
+      .mockReset()
+      .mockImplementation((teamId, userId, transaction) =>
+        memberships.find(teamId, userId, transaction),
+      );
+    membershipStore.grant
+      .mockReset()
+      .mockImplementation((grant) => memberships.grant(grant, undefined));
     membershipStore.revoke
       .mockReset()
-      .mockImplementation((revocation) => memberships.revoke(revocation));
+      .mockImplementation((revocation) => memberships.revoke(revocation, undefined));
   };
   wireMemberships();
 

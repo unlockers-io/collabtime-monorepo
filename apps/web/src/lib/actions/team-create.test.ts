@@ -81,7 +81,7 @@ describe("createTeam", () => {
 
     expect(createSpace).toHaveBeenCalledWith("user-123", TEAM_ID);
     const team = await createdTeam();
-    expect(team.members).toEqual([
+    expect(team.members).toMatchObject([
       createTestMember({
         id: "member-id",
         name: "Test User",

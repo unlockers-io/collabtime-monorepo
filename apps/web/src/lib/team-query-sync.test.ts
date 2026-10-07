@@ -66,4 +66,17 @@ describe("live query invalidation", () => {
     await vi.advanceTimersByTimeAsync(250);
     expect(state.queryFn).not.toHaveBeenCalled();
   });
+
+  it("shares a burst across consumers and preserves it when one unmounts", async () => {
+    const state = setup();
+    const second = createTeamQueryInvalidator(state.queryClient, "team-1");
+    state.invalidator.notify();
+    second.notify();
+    second.dispose();
+    second.dispose();
+    await vi.advanceTimersByTimeAsync(250);
+    expect(state.queryFn).toHaveBeenCalledTimes(1);
+    expect(state.queryClient.getQueryData(state.queryKey)).toBe("latest");
+    state.dispose();
+  });
 });

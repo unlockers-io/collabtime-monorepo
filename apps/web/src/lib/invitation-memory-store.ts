@@ -7,10 +7,26 @@ const newestFirst = (left: StoredInvitation, right: StoredInvitation): number =>
 const sameVersion = (left: StoredInvitation, right: StoredInvitation): boolean =>
   left.status === right.status && left.updatedAt.getTime() === right.updatedAt.getTime();
 
-const createMemoryInvitationStore = (grantMembership: MembershipStore["grant"]) => {
+const createMemoryInvitationStore = (
+  grantMembership: MembershipStore<undefined>["grant"],
+  now: () => Date = () => new Date(),
+) => {
   const invitations = new Map<string, StoredInvitation>();
   let created = 0;
   let clock = 0;
+  let pending = Promise.resolve<undefined>(undefined);
+
+  const write = async <T>(run: () => Promise<T>): Promise<T> => {
+    const previous = pending;
+    const gate = Promise.withResolvers<undefined>();
+    pending = gate.promise;
+    await previous;
+    try {
+      return await run();
+    } finally {
+      gate.resolve(undefined);
+    }
+  };
 
   // Every write moves `updatedAt` forward, even within one millisecond, so versions never repeat.
   const stamp = (): Date => {
@@ -21,45 +37,55 @@ const createMemoryInvitationStore = (grantMembership: MembershipStore["grant"]) 
   const list = (keep: (invitation: StoredInvitation) => boolean) =>
     Promise.resolve([...invitations.values()].filter(keep).toSorted(newestFirst));
 
-  const store: InvitationStore = {
+  const store: InvitationStore<undefined> = {
     find: (id) => Promise.resolve(invitations.get(id) ?? null),
-    listOpenForEmail: (email, now) =>
-      list((invitation) => invitation.email === email && isInvitationOpen(invitation, now)),
+    listOpenForEmail: (email, at) =>
+      list((invitation) => invitation.email === email && isInvitationOpen(invitation, at)),
     listPendingForTeam: (teamId) =>
       list((invitation) => invitation.teamId === teamId && invitation.status === "PENDING"),
-    putPending: ({ invitedBy, ...draft }) => {
-      const earlier = [...invitations.values()].find(
-        (invitation) => invitation.email === draft.email && invitation.teamId === draft.teamId,
-      );
-      created += 1;
-      const at = stamp();
-      const invitation: StoredInvitation = {
-        ...draft,
-        createdAt: earlier?.createdAt ?? at,
-        id: earlier?.id ?? `c${String(created).padStart(24, "0")}`,
-        invitedBy: { email: invitedBy.email, name: invitedBy.name },
-        status: "PENDING",
-        updatedAt: at,
-      };
-      invitations.set(invitation.id, invitation);
-      return Promise.resolve(invitation);
-    },
-    transition: async (expected, change, membership) => {
-      const current = invitations.get(expected.id);
-      if (current === undefined || !sameVersion(current, expected)) {
-        return false;
-      }
-      invitations.set(current.id, { ...current, ...change, updatedAt: stamp() });
-      if (membership !== undefined) {
-        try {
-          await grantMembership(membership);
-        } catch (error) {
-          invitations.set(current.id, current);
-          throw error;
+    putPending: ({ invitedBy, ...draft }) =>
+      write(() => {
+        const earlier = [...invitations.values()].find(
+          (invitation) => invitation.email === draft.email && invitation.teamId === draft.teamId,
+        );
+        created += 1;
+        const at = stamp();
+        const invitation: StoredInvitation = {
+          ...draft,
+          createdAt: earlier?.createdAt ?? at,
+          id: earlier?.id ?? `c${String(created).padStart(24, "0")}`,
+          invitedBy: { email: invitedBy.email, name: invitedBy.name },
+          status: "PENDING",
+          updatedAt: at,
+        };
+        invitations.set(invitation.id, invitation);
+        return Promise.resolve(invitation);
+      }),
+    transition: (expected, change) =>
+      write(async () => {
+        const current = invitations.get(expected.id);
+        if (current === undefined || !sameVersion(current, expected)) {
+          return false;
         }
-      }
-      return true;
-    },
+        if (
+          (change.status === "ACCEPTED" || change.status === "DECLINED") &&
+          !isInvitationOpen(current, now())
+        ) {
+          return false;
+        }
+        if (change.status === "ACCEPTED") {
+          await grantMembership(change.membership, undefined);
+          invitations.set(current.id, {
+            ...current,
+            memberId: change.memberId,
+            status: change.status,
+            updatedAt: stamp(),
+          });
+        } else {
+          invitations.set(current.id, { ...current, ...change, updatedAt: stamp() });
+        }
+        return true;
+      }),
   };
 
   return {

@@ -10,6 +10,7 @@ import {
 import { getPublicTeam } from "@/lib/actions/team-read";
 import type { ActionResult } from "@/lib/actions/types";
 import { queryKeys, teamMutationKey } from "@/lib/query-keys";
+import { beginTeamWrite } from "@/lib/team-query-sync";
 import type { Team } from "@/types";
 
 type TeamQueryData = {
@@ -47,7 +48,6 @@ const writeTeam = async <T>(
 ): Promise<ActionResult<T>> => {
   const queryKey = queryKeys.teams.detail(teamId);
   const mutationKey = teamMutationKey(teamId);
-  let refetch: Promise<void> | undefined;
   const observer = new MutationObserver<
     ActionResult<T>,
     Error,
@@ -78,17 +78,16 @@ const writeTeam = async <T>(
       if (failed && snapshot && queryClient.getQueryData(queryKey) === snapshot.written) {
         queryClient.setQueryData(queryKey, snapshot.previous);
       }
-      if (queryClient.isMutating({ mutationKey }) === 1) {
-        refetch = queryClient.invalidateQueries({ queryKey });
-      }
     },
   });
 
+  const finishWrite = beginTeamWrite(queryClient, teamId);
   try {
     return await observer.mutate();
   } finally {
     observer.reset();
-    await refetch;
+    // Mutation callbacks keep the mutation pending until they return.
+    await finishWrite();
   }
 };
 

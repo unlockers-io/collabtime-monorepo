@@ -1,4 +1,4 @@
-import type { TeamGroup, TeamMember, TeamRecord } from "@/types";
+import type { TeamGroup, TeamMember, TeamMemberRecord, TeamRecord } from "@/types";
 
 import { MAX_GROUPS_PER_TEAM, MAX_MEMBERS_PER_TEAM } from "./limits";
 import {
@@ -18,7 +18,7 @@ type TeamCommand<TValue> = (
 type MemberInput = Omit<TeamMember, "id" | "order" | "userId">;
 type MemberUpdate = Partial<MemberInput>;
 type SlotClaim = { memberId?: string; name: string; userId: string };
-type ClaimedSlot = { claimed: boolean; created: boolean; memberId: string };
+type ClaimedSlot = { claimed: boolean; created: boolean; memberId: string; revision: string };
 
 const GROUP_NOT_FOUND = "Group not found";
 const MEMBER_NOT_FOUND = "Member not found";
@@ -42,13 +42,13 @@ const isClaimed = (member: TeamMember): boolean =>
 const isGroupReference = (team: TeamRecord, groupId: string | undefined): boolean =>
   groupId === undefined || team.groups.some((group) => group.id === groupId);
 
-const findMember = (team: TeamRecord, memberId: string): TeamMember | undefined =>
+const findMember = (team: TeamRecord, memberId: string): TeamMemberRecord | undefined =>
   team.members.find((member) => member.id === memberId);
 
-const ownedSlot = (team: TeamRecord, userId: string): TeamMember | undefined =>
+const ownedSlot = (team: TeamRecord, userId: string): TeamMemberRecord | undefined =>
   team.members.find((member) => member.userId === userId);
 
-const withMember = (team: TeamRecord, member: TeamMember): TeamRecord => ({
+const withMember = (team: TeamRecord, member: TeamMemberRecord): TeamRecord => ({
   ...team,
   members: team.members.map((current) => (current.id === member.id ? member : current)),
 });
@@ -72,7 +72,7 @@ const reorderById = <TItem extends { id: string; order: number }>(
 
 const appendMembers = (
   team: TeamRecord,
-  added: Array<TeamMember>,
+  added: Array<TeamMemberRecord>,
 ): TeamCommandOutcome<Array<TeamMember>> => {
   if (team.members.length + added.length > MAX_MEMBERS_PER_TEAM) {
     return reject(`A workspace can have up to ${MAX_MEMBERS_PER_TEAM} members`);
@@ -143,20 +143,20 @@ const updateOwnMember =
   };
 
 const readMember =
-  (memberId: string): TeamCommand<TeamMember> =>
+  (memberId: string): TeamCommand<TeamMemberRecord> =>
   (team) => {
     const member = findMember(team, memberId);
     return member === undefined ? reject(MEMBER_NOT_FOUND) : { ok: true, team, value: member };
   };
 
 const removeMember =
-  (memberId: string, userId: string | undefined): TeamCommand<TeamMember> =>
+  (memberId: string, userId: string | undefined, revision?: string): TeamCommand<TeamMember> =>
   (team) => {
     const member = findMember(team, memberId);
     if (member === undefined) {
       return reject(MEMBER_NOT_FOUND);
     }
-    if (member.userId !== userId) {
+    if (member.userId !== userId || member.membershipRevision !== revision) {
       return reject("This member changed while saving. Try again.");
     }
 
@@ -177,18 +177,23 @@ const reorderMembers =
 const claimMemberSlot =
   (claim: SlotClaim): TeamCommand<ClaimedSlot> =>
   (team, { createId }) => {
+    const revision = createId();
     const owned = ownedSlot(team, claim.userId);
     if (owned) {
-      return { ok: true, team, value: { claimed: false, created: false, memberId: owned.id } };
+      return {
+        ok: true,
+        team: withMember(team, { ...owned, membershipRevision: revision }),
+        value: { claimed: false, created: false, memberId: owned.id, revision },
+      };
     }
 
     const target = claim.memberId === undefined ? undefined : findMember(team, claim.memberId);
     if (target && !isClaimed(target)) {
-      const claimed = { ...target, userId: claim.userId };
+      const claimed = { ...target, membershipRevision: revision, userId: claim.userId };
       return {
         ok: true,
         team: withMember(team, claimed),
-        value: { claimed: true, created: false, memberId: target.id },
+        value: { claimed: true, created: false, memberId: target.id, revision },
       };
     }
 
@@ -197,22 +202,22 @@ const claimMemberSlot =
       order: team.members.length,
       userId: claim.userId,
     });
-    const outcome = appendMembers(team, [member]);
+    const outcome = appendMembers(team, [{ ...member, membershipRevision: revision }]);
 
     return outcome.ok
-      ? { ...outcome, value: { claimed: true, created: true, memberId: member.id } }
+      ? { ...outcome, value: { claimed: true, created: true, memberId: member.id, revision } }
       : outcome;
   };
 
 const releaseMemberSlot =
-  ({ created, memberId }: ClaimedSlot, userId: string): TeamCommand<void> =>
+  ({ created, memberId, revision }: ClaimedSlot, userId: string): TeamCommand<void> =>
   (team) => {
-    const member = findMember(team, memberId);
-    if (member?.userId !== userId) {
+    const member: TeamMemberRecord | undefined = findMember(team, memberId);
+    if (member?.userId !== userId || member.membershipRevision !== revision) {
       return { ok: true, team, value: undefined };
     }
 
-    const { userId: _released, ...unclaimed } = member;
+    const { membershipRevision: _revision, userId: _released, ...unclaimed } = member;
     const members = created
       ? team.members.filter((current) => current.id !== memberId)
       : team.members.map((current) => (current.id === memberId ? unclaimed : current));

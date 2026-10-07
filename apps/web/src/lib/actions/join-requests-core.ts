@@ -24,13 +24,17 @@ type PendingJoinRequestView = {
   userName: string;
 };
 
-type JoinRequestDeps = {
-  approveMembership: (requestId: string, membership: MembershipGrant) => Promise<void>;
+type JoinRequestDeps<TTransaction> = {
+  approveMembership: (
+    requestId: string,
+    membership: MembershipGrant,
+    transaction: TTransaction,
+  ) => Promise<void>;
   authenticate: typeof authenticate;
   authorizeTeamAdmin: typeof authorizeTeamAdmin;
   denyRequest: (requestId: string) => Promise<void>;
   findRequest: (requestId: string) => Promise<JoinRequestRecord | null>;
-  grantMembership: GrantMembership;
+  grantMembership: GrantMembership<TTransaction>;
   listPending: (
     teamId: string,
   ) => Promise<{ memberUserIds: Array<string>; requests: Array<PendingJoinRequest> }>;
@@ -48,7 +52,7 @@ type JoinRequestDeps = {
   upsertRequest: (teamId: string, userId: string) => Promise<{ id: string }>;
 };
 
-const createJoinRequestActions = (deps: JoinRequestDeps) => {
+const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransaction>) => {
   const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: string }>> => {
     const auth = await deps.authenticate();
     if (!auth.success) {
@@ -115,7 +119,8 @@ const createJoinRequestActions = (deps: JoinRequestDeps) => {
       const joinRequest = found.data;
 
       const granted = await deps.grantMembership({
-        commit: (membership) => deps.approveMembership(requestId, membership),
+        commit: (membership, _memberId, transaction) =>
+          deps.approveMembership(requestId, membership, transaction),
         role: "MEMBER",
         slot: { name: displayName(joinRequest.user.name, joinRequest.user.email) },
         teamId: joinRequest.teamId,

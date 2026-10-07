@@ -1,4 +1,4 @@
-import { type InvitationStatus, prisma } from "@repo/db";
+import { type InvitationStatus, type Prisma, prisma } from "@repo/db";
 import type { TransactionalEmail } from "@repo/transactional";
 import { after } from "next/server";
 
@@ -37,52 +37,53 @@ type StoredInvitation = {
   updatedAt: Date;
 };
 
-type PendingDraft = {
-  email: string;
+type PendingDraft = Pick<StoredInvitation, "email" | "memberId" | "teamId"> & {
   expiresAt: Date;
   invitedBy: Person & { id: string };
-  memberId: string;
-  teamId: string;
 };
 
-type InvitationChange =
+type InvitationChange<TTransaction> =
   | { expiresAt: Date; status: "PENDING" }
-  | { memberId: string; status: "ACCEPTED" }
-  | { status: "DECLINED" | "REVOKED" };
+  | {
+      memberId: string;
+      membership: MembershipGrant;
+      status: "ACCEPTED";
+      transaction: TTransaction;
+    }
+  | { status: "DECLINED" }
+  | { status: "REVOKED" };
 
-type InvitationStore = {
+type InvitationStore<TTransaction> = {
   find: (id: string) => Promise<StoredInvitation | null>;
   listOpenForEmail: (email: string, now: Date) => Promise<Array<StoredInvitation>>;
   listPendingForTeam: (teamId: string) => Promise<Array<StoredInvitation>>;
   /** Makes the address's invitation to the team pending again, replacing any earlier one in any state. */
   putPending: (draft: PendingDraft) => Promise<StoredInvitation>;
   /**
-   * Applies `change` only while the invitation keeps `expected`'s status and `updatedAt`, and grants
-   * `membership` in the same transaction. Resolves false when the invitation moved on.
+   * Compares status and version; recipient decisions also require an unexpired invitation at the write.
+   * Acceptance grants membership in the supplied transaction. Admin changes may renew/revoke expired rows.
    */
   transition: (
     expected: StoredInvitation,
-    change: InvitationChange,
-    membership?: MembershipGrant,
+    change: InvitationChange<TTransaction>,
   ) => Promise<boolean>;
 };
 
-type InvitationDeps = {
+type InvitationDeps<TTransaction> = {
   appUrl: () => string;
   checkRateLimit: typeof checkRateLimit;
-  grantMembership: GrantMembership;
+  grantMembership: GrantMembership<TTransaction>;
   isMember: (teamId: string, email: string) => Promise<boolean>;
   notifyInviter: (invitation: StoredInvitation, user: Person, decision: Decision) => void;
   now: () => Date;
   readTeamRecord: (teamId: string) => Promise<TeamRecord | null>;
   reportError: (event: ActionErrorEvent) => void;
   sendEmail: (email: TransactionalEmail) => Promise<{ sent: boolean }>;
-  store: InvitationStore;
+  store: InvitationStore<TTransaction>;
 };
 
 type Failure = Extract<ActionResult<never>, { success: false }>;
 
-const ROUTE = "lib/invitations";
 const HOUR_SECONDS = 3600;
 const DAY_SECONDS = 24 * HOUR_SECONDS;
 const INVITATION_EXPIRED_ERROR = "This invitation has expired. Ask a workspace admin to resend it.";
@@ -131,10 +132,6 @@ const recipientRefusal = (invitation: StoredInvitation, email: string, now: Date
   return isInvitationExpired(invitation, now) ? INVITATION_EXPIRED_ERROR : null;
 };
 
-/** Admins revoke or renew a pending invitation even after it expires. */
-const adminRefusal = (invitation: StoredInvitation) =>
-  invitation.status === "PENDING" ? null : NOT_PENDING_ERROR;
-
 const toTeamView = (invitation: StoredInvitation): PendingTeamInvitation => ({
   createdAt: invitation.createdAt.toISOString(),
   email: invitation.email,
@@ -143,7 +140,7 @@ const toTeamView = (invitation: StoredInvitation): PendingTeamInvitation => ({
   memberId: invitation.memberId,
 });
 
-const createInvitations = (deps: InvitationDeps) => {
+const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => {
   const guarded = async <TValue>(
     event: { invitationId?: string; message: string },
     fallback: string,
@@ -152,17 +149,13 @@ const createInvitations = (deps: InvitationDeps) => {
     try {
       return await run();
     } catch (error) {
-      deps.reportError({ ...event, error, route: ROUTE });
+      deps.reportError({ ...event, error, route: "lib/invitations" });
       return failure(fallback);
     }
   };
 
-  const move = async (
-    invitation: StoredInvitation,
-    change: InvitationChange,
-    membership?: MembershipGrant,
-  ): Promise<void> => {
-    if (!(await deps.store.transition(invitation, change, membership))) {
+  const move = async (expected: StoredInvitation, change: InvitationChange<TTransaction>) => {
+    if (!(await deps.store.transition(expected, change))) {
       throw new Error("The invitation changed after it was read");
     }
   };
@@ -222,8 +215,10 @@ const createInvitations = (deps: InvitationDeps) => {
     if (invitation?.teamId !== access.teamId) {
       return failure("Invitation not found");
     }
-    const refusal = adminRefusal(invitation);
-    return refusal === null ? { data: invitation, success: true } : failure(refusal);
+    // Admins may revoke or renew pending invitations even after they expire.
+    return invitation.status === "PENDING"
+      ? { data: invitation, success: true }
+      : failure(NOT_PENDING_ERROR);
   };
 
   const invite = (access: TeamAccess, request: { email: string; memberId: string }) =>
@@ -279,8 +274,8 @@ const createInvitations = (deps: InvitationDeps) => {
         }
         const invitation = found.data;
         const granted = await deps.grantMembership({
-          commit: (membership, memberId) =>
-            move(invitation, { memberId, status: "ACCEPTED" }, membership),
+          commit: (membership, memberId, transaction) =>
+            move(invitation, { memberId, membership, status: "ACCEPTED", transaction }),
           role: "MEMBER",
           slot: { memberId: invitation.memberId, name: displayName(user.name, user.email) },
           teamId: invitation.teamId,
@@ -362,7 +357,31 @@ const createInvitations = (deps: InvitationDeps) => {
 const include = { invitedBy: { select: { email: true, name: true } } };
 const newestFirst = { createdAt: "desc" as const };
 
-const prismaInvitationStore: InvitationStore = {
+const commitRecipientDecision = async (
+  transaction: Prisma.TransactionClient,
+  { id, memberId, status, updatedAt }: StoredInvitation,
+  change: Extract<InvitationChange<Prisma.TransactionClient>, { status: "ACCEPTED" | "DECLINED" }>,
+): Promise<boolean> => {
+  if (status !== "PENDING") {
+    return false;
+  }
+  // Take the row lock before checking the clock: UPDATE predicates can run before a lock wait.
+  await transaction.$executeRaw`SELECT "id" FROM "Invitation" WHERE "id" = ${id} FOR UPDATE`;
+  const count = await transaction.$executeRaw`
+      UPDATE "Invitation"
+      SET "status" = ${change.status}::"InvitationStatus",
+          "memberId" = ${change.status === "ACCEPTED" ? change.memberId : memberId},
+          "updatedAt" = GREATEST(date_trunc('milliseconds', clock_timestamp()), "updatedAt" + interval '1 millisecond')
+      WHERE "id" = ${id} AND "status" = ${status}::"InvitationStatus" AND "updatedAt" = ${updatedAt}
+        AND ("expiresAt" IS NULL OR "expiresAt" > clock_timestamp())
+    `;
+  if (count === 1 && change.status === "ACCEPTED") {
+    await transaction.membership.upsert(membershipUpsert(change.membership));
+  }
+  return count === 1;
+};
+
+const prismaInvitationStore: InvitationStore<Prisma.TransactionClient> = {
   find: (id) => prisma.invitation.findUnique({ include, where: { id } }),
   listOpenForEmail: (email, now) =>
     prisma.invitation.findMany({
@@ -383,20 +402,21 @@ const prismaInvitationStore: InvitationStore = {
       update: { ...draft, invitedById: invitedBy.id, status: "PENDING" },
       where: { email_teamId: { email: draft.email, teamId: draft.teamId } },
     }),
-  transition: async ({ id, status, updatedAt }, change, membership) => {
-    const where = { id, status, updatedAt };
-    if (membership === undefined) {
-      const { count } = await prisma.invitation.updateMany({ data: change, where });
+  transition: async (expected, change) => {
+    const { id, status, updatedAt } = expected;
+    if (change.status === "PENDING" || change.status === "REVOKED") {
+      const nextVersion = new Date(Math.max(Date.now(), updatedAt.getTime() + 1));
+      const { count } = await prisma.invitation.updateMany({
+        data: { ...change, updatedAt: nextVersion },
+        where: { id, status, updatedAt },
+      });
       return count === 1;
     }
-    return prisma.$transaction(async (tx) => {
-      const { count } = await tx.invitation.updateMany({ data: change, where });
-      if (count === 0) {
-        return false;
-      }
-      await tx.membership.upsert(membershipUpsert(membership));
-      return true;
-    });
+    return change.status === "ACCEPTED"
+      ? commitRecipientDecision(change.transaction, expected, change)
+      : prisma.$transaction((transaction) =>
+          commitRecipientDecision(transaction, expected, change),
+        );
   },
 };
 
@@ -423,5 +443,6 @@ export {
   isInvitationOpen,
   maskEmail,
   openInvitationWhere,
+  prismaInvitationStore,
 };
 export type { InvitationDeps, InvitationStore, StoredInvitation };

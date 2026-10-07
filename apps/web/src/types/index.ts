@@ -26,8 +26,11 @@ type Team = {
   name: string;
 };
 
-type TeamRecord = Team & {
+type TeamMemberRecord = TeamMember & { membershipRevision?: string };
+
+type TeamRecord = Omit<Team, "members"> & {
   adminPasswordHash?: string;
+  members: Array<TeamMemberRecord>;
 };
 
 const teamRoleSchema = z.enum(["ADMIN", "MEMBER"]);
@@ -49,7 +52,16 @@ type PendingInvitation = {
   teamName: string;
 };
 
-export type { PendingInvitation, Team, TeamGroup, TeamMember, TeamRecord, TeamRole, TeamStatus };
+export type {
+  PendingInvitation,
+  Team,
+  TeamGroup,
+  TeamMember,
+  TeamMemberRecord,
+  TeamRecord,
+  TeamRole,
+  TeamStatus,
+};
 export { isTeamRole };
 
 export type PendingTeamInvitation = {

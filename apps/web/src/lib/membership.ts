@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db";
+import { type Prisma, prisma } from "@repo/db";
 
 import { log } from "@/lib/observability";
 import type { TeamAccess } from "@/lib/team-auth";
@@ -10,22 +10,28 @@ import { applyTeamCommand, type TeamContentsFailure, type TeamContentsResult } f
 type MembershipGrant = { role: TeamRole; teamId: string; userId: string };
 type MembershipRevocation = { memberId: string; teamId: string; userId: string | undefined };
 
-type MembershipStore = {
-  /** Creates the membership with `role`, or un-archives an existing one and keeps its role. */
-  grant: (grant: MembershipGrant) => Promise<void>;
-  /** Revokes the slot's pending invitations and deletes `userId`'s membership unless it is an admin's. */
-  revoke: (revocation: MembershipRevocation) => Promise<void>;
+type MembershipStore<TTransaction> = {
+  find: (
+    teamId: string,
+    userId: string,
+    transaction: TTransaction,
+  ) => Promise<{ role: TeamRole } | null>;
+  /** Creates access or un-archives it, preserving the existing role. */
+  grant: (grant: MembershipGrant, transaction: TTransaction) => Promise<void>;
+  /** Serializes team membership operations across servers; all database writes use this transaction. */
+  lock: <T>(teamId: string, run: (transaction: TTransaction) => Promise<T>) => Promise<T>;
+  revoke: (revocation: MembershipRevocation, transaction: TTransaction) => Promise<void>;
 };
 
-type MembershipDeps = {
+type MembershipDeps<TTransaction> = {
   applyTeamCommand: typeof applyTeamCommand;
   reportError: (event: Parameters<typeof log.error>[0]) => void;
-  store: MembershipStore;
+  store: MembershipStore<TTransaction>;
 };
 
-type RosterGrant = MembershipGrant & {
-  /** Persists `grant` in the caller's own transaction, through `membershipUpsert`. */
-  commit?: (grant: MembershipGrant, memberId: string) => Promise<void>;
+type RosterGrant<TTransaction> = MembershipGrant & {
+  /** Persists the status change and membership in the supplied transaction. */
+  commit?: (grant: MembershipGrant, memberId: string, transaction: TTransaction) => Promise<void>;
   slot: Omit<SlotClaim, "userId">;
 };
 type ViewerGrant = MembershipGrant & { slot: null };
@@ -33,6 +39,11 @@ type RosterGranted = TeamContentsFailure | { memberId: string; ok: true };
 type Revocation = { access: TeamAccess; memberId: string };
 
 const ROUTE = "lib/membership";
+const changed = (): TeamContentsFailure => ({
+  error: "This member changed while saving. Try again.",
+  ok: false,
+  reason: "conflict",
+});
 
 const membershipUpsert = ({ role, teamId, userId }: MembershipGrant) => ({
   create: { role, teamId, userId },
@@ -40,57 +51,65 @@ const membershipUpsert = ({ role, teamId, userId }: MembershipGrant) => ({
   where: { userId_teamId: { teamId, userId } },
 });
 
-const createMembershipLifecycle = (deps: MembershipDeps) => {
+const createMembershipLifecycle = <TTransaction>(deps: MembershipDeps<TTransaction>) => {
   const releaseSlot = async (grant: MembershipGrant, slot: ClaimedSlot): Promise<void> => {
     const event = { memberId: slot.memberId, route: ROUTE, teamId: grant.teamId };
     try {
-      const released = await deps.applyTeamCommand(
-        grant.teamId,
-        teamCommands.releaseMemberSlot(slot, grant.userId),
-      );
-      if (!released.ok) {
-        deps.reportError({
-          ...event,
-          message: "Failed to release a member slot",
-          reason: released.reason,
-        });
-      }
+      // A failed/uncertain commit must not undo access committed by this or another operation.
+      await deps.store.lock(grant.teamId, async (transaction) => {
+        if (await deps.store.find(grant.teamId, grant.userId, transaction)) {
+          return;
+        }
+        const released = await deps.applyTeamCommand(
+          grant.teamId,
+          teamCommands.releaseMemberSlot(slot, grant.userId),
+        );
+        if (!released.ok) {
+          deps.reportError({
+            ...event,
+            message: "Failed to release a member slot",
+            reason: released.reason,
+          });
+        }
+      });
     } catch (error) {
       deps.reportError({ ...event, error, message: "Failed to release a member slot" });
     }
   };
 
-  function grantMembership(request: RosterGrant): Promise<RosterGranted>;
+  function grantMembership(request: RosterGrant<TTransaction>): Promise<RosterGranted>;
   function grantMembership(request: ViewerGrant): Promise<undefined>;
   async function grantMembership(
-    request: RosterGrant | ViewerGrant,
+    request: RosterGrant<TTransaction> | ViewerGrant,
   ): Promise<RosterGranted | undefined> {
     const grant = { role: request.role, teamId: request.teamId, userId: request.userId };
-    if (request.slot === null) {
-      await deps.store.grant(grant);
-      return undefined;
-    }
-
-    // The slot lands before access, so no member is ever missing from the admin's roster.
-    const claimed = await deps.applyTeamCommand(
-      grant.teamId,
-      teamCommands.claimMemberSlot({ ...request.slot, userId: grant.userId }),
-    );
-    if (!claimed.ok) {
-      return claimed;
-    }
-
-    const slot = claimed.value;
+    let claimed: ClaimedSlot | undefined;
     try {
-      await (request.commit ? request.commit(grant, slot.memberId) : deps.store.grant(grant));
+      return await deps.store.lock(grant.teamId, async (transaction) => {
+        if (request.slot === null) {
+          await deps.store.grant(grant, transaction);
+          return undefined;
+        }
+        // Claim before granting access; a crash can leave a visible slot, never invisible access.
+        const result = await deps.applyTeamCommand(
+          grant.teamId,
+          teamCommands.claimMemberSlot({ ...request.slot, userId: grant.userId }),
+        );
+        if (!result.ok) {
+          return result;
+        }
+        claimed = result.value;
+        await (request.commit
+          ? request.commit(grant, claimed.memberId, transaction)
+          : deps.store.grant(grant, transaction));
+        return { memberId: claimed.memberId, ok: true };
+      });
     } catch (error) {
-      if (slot.claimed) {
-        await releaseSlot(grant, slot);
+      if (claimed?.claimed === true) {
+        await releaseSlot(grant, claimed);
       }
       throw error;
     }
-
-    return { memberId: slot.memberId, ok: true };
   }
 
   const revokeMembership = async ({
@@ -98,38 +117,64 @@ const createMembershipLifecycle = (deps: MembershipDeps) => {
     memberId,
   }: Revocation): Promise<TeamContentsResult<TeamMember>> => {
     const { teamId } = access;
-    const found = await deps.applyTeamCommand(teamId, teamCommands.readMember(memberId));
-    if (!found.ok) {
+    const revoked = await deps.store.lock(teamId, async (transaction) => {
+      const found = await deps.applyTeamCommand(teamId, teamCommands.readMember(memberId));
+      if (!found.ok) {
+        return found;
+      }
+      const { userId } = found.value;
+      await deps.store.revoke(
+        { memberId, teamId, userId: userId === access.user.id ? undefined : userId },
+        transaction,
+      );
       return found;
+    });
+    if (!revoked.ok) {
+      return revoked;
     }
 
-    const { userId } = found.value;
-    const revokesAccess = userId !== undefined && userId !== "" && userId !== access.user.id;
-    // Access goes before the slot, so a failure in between leaves the slot visible to remove again.
-    await deps.store.revoke({ memberId, teamId, userId: revokesAccess ? userId : undefined });
-
-    return deps.applyTeamCommand(teamId, teamCommands.removeMember(memberId, userId));
+    // Access deletion must commit before removal, so a transaction rollback keeps the roster visible.
+    return deps.store.lock(teamId, async (transaction) => {
+      const member = revoked.value;
+      if (member.userId !== undefined && member.userId !== "" && member.userId !== access.user.id) {
+        const membership = await deps.store.find(teamId, member.userId, transaction);
+        if (membership?.role === "MEMBER") {
+          return changed();
+        }
+      }
+      return deps.applyTeamCommand(
+        teamId,
+        teamCommands.removeMember(memberId, member.userId, member.membershipRevision),
+      );
+    });
   };
 
   return { grantMembership, revokeMembership };
 };
 
-const prismaMembershipStore: MembershipStore = {
-  grant: async (grant) => {
-    await prisma.membership.upsert(membershipUpsert(grant));
+const prismaMembershipStore: MembershipStore<Prisma.TransactionClient> = {
+  find: (teamId, userId, transaction) =>
+    transaction.membership.findUnique({
+      select: { role: true },
+      where: { userId_teamId: { teamId, userId } },
+    }),
+  grant: async (grant, transaction) => {
+    await transaction.membership.upsert(membershipUpsert(grant));
   },
-  revoke: async ({ memberId, teamId, userId }) => {
-    const invitations = prisma.invitation.updateMany({
+  lock: (teamId, run) =>
+    prisma.$transaction(async (transaction) => {
+      // The database holds this lock until commit/rollback, including on another server or process death.
+      await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`membership:${teamId}`}, 0))`;
+      return run(transaction);
+    }),
+  revoke: async ({ memberId, teamId, userId }, transaction) => {
+    await transaction.invitation.updateMany({
       data: { status: "REVOKED" },
       where: { memberId, status: "PENDING", teamId },
     });
-
-    await (userId === undefined
-      ? invitations
-      : prisma.$transaction([
-          invitations,
-          prisma.membership.deleteMany({ where: { role: "MEMBER", teamId, userId } }),
-        ]));
+    if (userId !== undefined) {
+      await transaction.membership.deleteMany({ where: { role: "MEMBER", teamId, userId } });
+    }
   },
 };
 
@@ -139,8 +184,16 @@ const { grantMembership, revokeMembership } = createMembershipLifecycle({
   store: prismaMembershipStore,
 });
 
-type GrantMembership = typeof grantMembership;
+type GrantMembership<TTransaction = unknown> = ReturnType<
+  typeof createMembershipLifecycle<TTransaction>
+>["grantMembership"];
 type RevokeMembership = typeof revokeMembership;
 
-export { createMembershipLifecycle, grantMembership, membershipUpsert, revokeMembership };
+export {
+  createMembershipLifecycle,
+  grantMembership,
+  membershipUpsert,
+  prismaMembershipStore,
+  revokeMembership,
+};
 export type { GrantMembership, MembershipGrant, MembershipStore, RevokeMembership };

@@ -52,7 +52,7 @@ beforeEach(async () => {
   harness.reset();
   await harness.seedTeam(createTestTeamRecord());
   approveMembership.mockImplementation((_requestId, membership) =>
-    harness.membershipStore.grant(membership),
+    harness.membershipStore.grant(membership, undefined),
   );
   denyRequest.mockResolvedValue();
   findRequest.mockResolvedValue(pendingRequest);
@@ -184,11 +184,15 @@ describe("approveJoinRequest", () => {
     expect(team?.members).toEqual([
       expect.objectContaining({ id: "test-uuid", name: "Bob", userId: "user-456" }),
     ]);
-    expect(approveMembership).toHaveBeenCalledWith("jr-1", {
-      role: "MEMBER",
-      teamId: VALID_UUID,
-      userId: "user-456",
-    });
+    expect(approveMembership).toHaveBeenCalledWith(
+      "jr-1",
+      {
+        role: "MEMBER",
+        teamId: VALID_UUID,
+        userId: "user-456",
+      },
+      undefined,
+    );
     expect(harness.findMembership("user-456")).toEqual({ archivedAt: null, role: "MEMBER" });
     expect(notifyRequester).toHaveBeenCalledWith(pendingRequest, "approved");
   });

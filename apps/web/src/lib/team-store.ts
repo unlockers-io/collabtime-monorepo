@@ -12,7 +12,6 @@ import {
 import type { TeamRecord } from "@/types";
 
 import type { TeamCommand } from "./team-commands";
-import type { TeamSummary } from "./team-postgres-repository";
 import { redisTeamStorage, type TeamStorage } from "./team-storage";
 import { UUIDSchema } from "./validation";
 
@@ -25,6 +24,7 @@ const StoredGroupSchema = z.looseObject({
 const StoredMemberSchema = z.looseObject({
   groupId: z.string().optional(),
   id: z.string(),
+  membershipRevision: z.string().optional(),
   name: z.string(),
   order: z.number().optional(),
   timezone: z.string(),
@@ -72,6 +72,7 @@ type TeamStoreDeps = {
 };
 
 type TeamContentsFailureReason = "conflict" | "read-failed" | "rejected" | "write-failed";
+type TeamSummary = { memberCount: number; name: string };
 type TeamContentsFailure = { error: string; ok: false; reason: TeamContentsFailureReason };
 type TeamContentsResult<TValue> =
   | TeamContentsFailure
@@ -194,11 +195,9 @@ const createTeamStore = (deps: TeamStoreDeps) => {
     expected: string | null,
     team: TeamRecord,
   ): Promise<TeamContentsFailure | boolean> => {
-    const revision = deps.createId();
-
     try {
       const stored = JSON.stringify(team);
-      if (!(await deps.storage.compareAndSet(teamId, expected, stored, revision))) {
+      if (!(await deps.storage.compareAndSet(teamId, expected, stored))) {
         return false;
       }
     } catch (error) {
@@ -209,7 +208,7 @@ const createTeamStore = (deps: TeamStoreDeps) => {
     await deps.storage.publish(teamId);
 
     try {
-      await deps.storage.mirror(teamId, team, revision);
+      await deps.storage.mirror(teamId, team);
     } catch (error) {
       deps.reportError({
         error,
@@ -287,16 +286,7 @@ const createTeamStore = (deps: TeamStoreDeps) => {
     return read.ok ? (read.snapshot?.team ?? null) : null;
   };
 
-  const summaryFromContents = async (teamId: string): Promise<TeamSummary | null> => {
-    const team = await readTeamRecord(teamId);
-    return team === null ? null : { memberCount: team.members.length, name: team.name };
-  };
-
-  /**
-   * One query for every team the caller needs, keyed by teamId. A teamId with no
-   * resolvable summary is absent from the map rather than defaulted, so a caller
-   * cannot render a fabricated zero count.
-   */
+  // Unreadable teams are omitted so callers cannot render a fabricated zero count.
   const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, TeamSummary>> => {
     const wanted = [...new Set(teamIds)].filter(isUuid);
 
@@ -304,18 +294,20 @@ const createTeamStore = (deps: TeamStoreDeps) => {
       return new Map<string, TeamSummary>();
     }
 
-    const summaries = await deps.storage.readMirroredSummaries(wanted);
-    const unresolved = wanted.filter((id) => {
-      const summary = summaries.get(id);
-      return summary === undefined || (summary.memberCount === 0 && summary.name === "");
-    });
-    const reconciled = await Promise.all(
-      unresolved.map(async (id) => [id, await summaryFromContents(id)] as const),
-    );
-
-    for (const [id, summary] of reconciled) {
-      if (summary !== null) {
-        summaries.set(id, summary);
+    const contents = await deps.storage.readContentsBatch(wanted);
+    const summaries = new Map<string, TeamSummary>();
+    for (const [index, teamId] of wanted.entries()) {
+      const stored = contents[index];
+      if (stored === null || stored === undefined) {
+        continue;
+      }
+      try {
+        const team = decodeTeam(teamId, stored, deps.reportError);
+        if (team !== null) {
+          summaries.set(teamId, { memberCount: team.members.length, name: team.name });
+        }
+      } catch (error) {
+        deps.reportError({ error, message: "Failed to read team summary", route: ROUTE, teamId });
       }
     }
 

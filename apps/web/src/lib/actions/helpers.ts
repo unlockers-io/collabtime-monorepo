@@ -29,7 +29,7 @@ const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
   const { adminPasswordHash: _, ...publicTeam } = team;
   return {
     ...publicTeam,
-    members: publicTeam.members.map(({ userId, ...member }) =>
+    members: publicTeam.members.map(({ membershipRevision: _revision, userId, ...member }) =>
       Object.assign(member, sanitizeMemberUserId(userId, currentUserId)),
     ),
   };

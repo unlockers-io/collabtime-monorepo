@@ -39,7 +39,7 @@ describe("grantMembership", () => {
     expect(
       await harness.grantMembership({ ...bob, slot: { memberId: VALID_UUID_2, name: "Bob" } }),
     ).toEqual({ memberId: VALID_UUID_2, ok: true });
-    expect(await roster()).toEqual([bobsSlot]);
+    expect(await roster()).toMatchObject([bobsSlot]);
     expect(harness.findMembership("bob")).toEqual({ archivedAt: null, role: "MEMBER" });
   });
 
@@ -70,7 +70,7 @@ describe("grantMembership", () => {
     await expect(
       harness.grantMembership({ ...bob, commit, slot: { memberId: VALID_UUID_2, name: "Bob" } }),
     ).rejects.toThrow("Invitation is no longer pending");
-    expect(commit).toHaveBeenCalledWith(bob, VALID_UUID_2);
+    expect(commit).toHaveBeenCalledWith(bob, VALID_UUID_2, undefined);
     expect(await roster()).toEqual([invitedSlot]);
     expect(harness.findMembership("bob")).toBeNull();
   });
@@ -82,7 +82,7 @@ describe("grantMembership", () => {
     await expect(harness.grantMembership({ ...bob, slot: { name: "Bob" } })).rejects.toThrow(
       "Database unavailable",
     );
-    expect(await roster()).toEqual([bobsSlot]);
+    expect(await roster()).toMatchObject([bobsSlot]);
   });
 
   it("grants a password viewer access without a roster slot", async () => {
@@ -137,7 +137,7 @@ describe("revokeMembership", () => {
     await expect(harness.revokeMembership({ access, memberId: VALID_UUID_2 })).rejects.toThrow(
       "Database unavailable",
     );
-    expect(await roster()).toEqual([bobsSlot]);
+    expect(await roster()).toMatchObject([bobsSlot]);
   });
 
   it("keeps the remover's own membership", async () => {
@@ -164,6 +164,6 @@ describe("revokeMembership", () => {
       ok: false,
       reason: "rejected",
     });
-    expect(await roster()).toEqual([bobsSlot]);
+    expect(await roster()).toMatchObject([bobsSlot]);
   });
 });

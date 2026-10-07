@@ -36,19 +36,21 @@ const invitee = createMockSession({ email: EMAIL, name: "Ivy", userId: "invitee"
 const invitedTeam = createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2 })] });
 const request = { email: EMAIL, memberId: VALID_UUID_2 };
 
-type Overrides = Partial<Pick<InvitationDeps, "checkRateLimit" | "isMember" | "sendEmail">>;
+type Overrides = Partial<
+  Pick<InvitationDeps<undefined>, "checkRateLimit" | "isMember" | "sendEmail">
+>;
 
 const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides = {}) => {
   const harness = createTestTeamStore();
   if (team !== null) {
     await harness.seedTeam(team);
   }
-  const store = createMemoryInvitationStore(harness.membershipStore.grant);
+  const clock = { now: NOW };
+  const store = createMemoryInvitationStore(harness.membershipStore.grant, () => clock.now);
   const hits = new Map<string, number>();
   const outbox: Array<TransactionalEmail> = [];
-  const clock = { now: NOW };
   const race: { next?: () => Promise<void> } = {};
-  const notifyInviter = vi.fn<InvitationDeps["notifyInviter"]>();
+  const notifyInviter = vi.fn<InvitationDeps<undefined>["notifyInviter"]>();
   const invitations = createInvitations({
     appUrl: () => "https://app.example.com",
     checkRateLimit: createRateLimiter({
@@ -63,7 +65,7 @@ const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides
     notifyInviter,
     now: () => clock.now,
     readTeamRecord: (teamId) => harness.readTeam(teamId),
-    reportError: vi.fn<InvitationDeps["reportError"]>(),
+    reportError: vi.fn<InvitationDeps<undefined>["reportError"]>(),
     sendEmail: (email) => {
       outbox.push(email);
       return Promise.resolve({ sent: true });

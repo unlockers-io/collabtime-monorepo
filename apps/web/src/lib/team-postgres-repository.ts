@@ -2,11 +2,6 @@ import { prisma } from "@repo/db";
 
 import type { TeamRecord } from "../types";
 
-type TeamSummary = {
-  memberCount: number;
-  name: string;
-};
-
 const writeTeamMirror = async (teamId: string, team: TeamRecord): Promise<void> => {
   await prisma.$transaction(async (tx) => {
     await tx.space.update({
@@ -50,18 +45,4 @@ const writeTeamMirror = async (teamId: string, team: TeamRecord): Promise<void> 
   });
 };
 
-const readTeamSummariesFromPostgres = async (
-  teamIds: Array<string>,
-): Promise<Map<string, TeamSummary>> => {
-  const spaces = await prisma.space.findMany({
-    select: { _count: { select: { members: true } }, name: true, teamId: true },
-    where: { teamId: { in: teamIds } },
-  });
-
-  return new Map(
-    spaces.map((space) => [space.teamId, { memberCount: space._count.members, name: space.name }]),
-  );
-};
-
-export { readTeamSummariesFromPostgres, writeTeamMirror };
-export type { TeamSummary };
+export { writeTeamMirror };

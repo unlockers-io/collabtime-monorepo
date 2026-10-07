@@ -24,6 +24,16 @@ describe("sanitizeTeam", () => {
     expect(result).not.toHaveProperty("adminPasswordHash");
   });
 
+  it("strips membership revisions from every public member", () => {
+    const team = createTestTeamRecord({
+      members: [
+        { ...createTestMember({ userId: "user-123" }), membershipRevision: "private-revision" },
+      ],
+    });
+    expect(sanitizeTeam(team, "user-123").members[0]).not.toHaveProperty("membershipRevision");
+    expect(sanitizeTeam(team).members[0]).not.toHaveProperty("membershipRevision");
+  });
+
   it("preserves userId when it matches currentUserId", () => {
     const team = createTestTeamRecord({
       members: [createTestMember({ userId: "user-123" })],
@@ -141,9 +151,9 @@ describe("mutateTeam", () => {
       reportError: vi.fn<() => void>(),
       storage: {
         ...storage,
-        compareAndSet: (teamId, expected, next, revision) =>
+        compareAndSet: (teamId, expected, next) =>
           expected === null
-            ? storage.compareAndSet(teamId, expected, next, revision)
+            ? storage.compareAndSet(teamId, expected, next)
             : Promise.reject(new Error("Redis unavailable")),
       },
     });
