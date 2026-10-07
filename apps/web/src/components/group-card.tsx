@@ -3,13 +3,12 @@
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { cn } from "@repo/ui/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "lucide-react";
 import { type ReactNode, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { ConfirmRemoveDialog } from "@/components/confirm-remove-dialog";
-import { teamQueryKeys } from "@/hooks/use-team-query";
+import { useTeamWrite } from "@/hooks/use-team-cache";
 import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
 import type { TeamGroup } from "@/types";
 
@@ -31,7 +30,7 @@ const GroupCard = ({
   memberCount,
   teamId,
 }: GroupCardProps) => {
-  const queryClient = useQueryClient();
+  const writeTeam = useTeamWrite(teamId);
   const [isPending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState("");
@@ -54,12 +53,14 @@ const GroupCard = ({
 
     setIsEditing(false);
     startTransition(async () => {
-      const result = await updateGroup(teamId, group.id, {
-        name: trimmedName,
+      const result = await writeTeam({
+        optimistic: (team) => ({
+          ...team,
+          groups: team.groups.map((g) => (g.id === group.id ? { ...g, name: trimmedName } : g)),
+        }),
+        submit: () => updateGroup(teamId, group.id, { name: trimmedName }),
       });
-      if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
-      } else {
+      if (!result.success) {
         toast.error(result.error);
       }
     });
@@ -81,10 +82,18 @@ const GroupCard = ({
       return;
     }
     startTransition(async () => {
-      const result = await removeGroup(teamId, group.id);
+      const result = await writeTeam({
+        optimistic: (team) => ({
+          ...team,
+          groups: team.groups.filter((g) => g.id !== group.id),
+          members: team.members.map((m) =>
+            m.groupId === group.id ? { ...m, groupId: undefined } : m,
+          ),
+        }),
+        submit: () => removeGroup(teamId, group.id),
+      });
       if (result.success) {
         setIsRemoveOpen(false);
-        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
         toast.success(`${group.name} removed`);
       } else {
         toast.error(result.error);

@@ -22,7 +22,7 @@ import { toast } from "sonner";
 
 import { ConfirmRemoveDialog } from "@/components/confirm-remove-dialog";
 import { EditMemberDialog } from "@/components/edit-member-dialog";
-import { teamQueryKeys } from "@/hooks/use-team-query";
+import { useTeamWrite } from "@/hooks/use-team-cache";
 import { removeMember } from "@/lib/actions/member-actions";
 import { formatExpiresIn } from "@/lib/invitation-expiry";
 import { queryKeys } from "@/lib/query-keys";
@@ -190,20 +190,26 @@ const MemberAdminControls = ({
   teamId,
 }: MemberAdminControlsProps) => {
   const queryClient = useQueryClient();
+  const writeTeam = useTeamWrite(teamId);
   const [isPending, startTransition] = useTransition();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
 
   const handleRemove = () => {
     startTransition(async () => {
-      const result = await removeMember(teamId, member.id);
+      const result = await writeTeam({
+        optimistic: (team) => ({
+          ...team,
+          members: team.members.filter((m) => m.id !== member.id),
+        }),
+        submit: () => removeMember(teamId, member.id),
+      });
       if (!result.success) {
         toast.error(result.error);
         return;
       }
       setIsRemoveOpen(false);
       toast.success(`${member.name} removed`);
-      void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
     });
   };

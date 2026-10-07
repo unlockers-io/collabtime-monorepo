@@ -5,6 +5,9 @@ import { COMMON_TIMEZONES } from "./timezones";
 
 const UUIDSchema = z.uuid("Invalid ID format");
 
+const workingHourSchema = (message: string) =>
+  z.number({ error: message }).int(message).min(0, message).max(23, message);
+
 const TeamMemberInputSchema = z.object({
   groupId: UUIDSchema.optional(),
   name: z
@@ -16,16 +19,8 @@ const TeamMemberInputSchema = z.object({
     message: "Invalid timezone",
   }),
   title: z.string().max(100, "Title must be 100 characters or less").trim(),
-  workingHoursEnd: z
-    .number()
-    .int()
-    .min(0, "Working hours end must be 0-23")
-    .max(23, "Working hours end must be 0-23"),
-  workingHoursStart: z
-    .number()
-    .int()
-    .min(0, "Working hours start must be 0-23")
-    .max(23, "Working hours start must be 0-23"),
+  workingHoursEnd: workingHourSchema("Working hours end must be a whole hour from 0 to 23"),
+  workingHoursStart: workingHourSchema("Working hours start must be a whole hour from 0 to 23"),
 });
 
 const TeamMemberUpdateSchema = TeamMemberInputSchema.partial();

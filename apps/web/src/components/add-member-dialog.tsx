@@ -12,27 +12,23 @@ import {
 } from "@repo/ui/components/dialog";
 import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
-import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 
-import { HourSelectField } from "@/components/hour-select-field";
-import { MemberGroupField } from "@/components/member-group-field";
-import { MemberTextField, TITLE_PLACEHOLDER } from "@/components/member-text-field";
-import { TimezoneField } from "@/components/timezone-field";
-import { WorkingHoursFieldset } from "@/components/working-hours-fieldset";
-import { teamQueryKeys } from "@/hooks/use-team-query";
+import { bindField, MEMBER_FIELDS, MemberFields, useMemberForm } from "@/components/member-fields";
+import { MemberTextField } from "@/components/member-text-field";
+import { useTeamWrite } from "@/hooks/use-team-cache";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { addMember } from "@/lib/actions/member-actions";
+import { addMemberFormSchema, NO_GROUP, toMemberInput } from "@/lib/member-input";
+import type { AddMemberFormValues } from "@/lib/member-input";
 import { queryKeys } from "@/lib/query-keys";
 import {
   DEFAULT_WORKING_HOURS_END,
   DEFAULT_WORKING_HOURS_START,
   getUserTimezone,
-  isCommonTimezone,
 } from "@/lib/timezones";
 import type { TeamGroup } from "@/types";
 
@@ -41,18 +37,6 @@ type AddMemberDialogProps = {
   isFirstMember: boolean;
   teamId: string;
 };
-
-const formSchema = z.object({
-  email: z.email("Invalid email address").or(z.literal("")),
-  groupId: z.string(),
-  name: z.string().min(1, "Name is required"),
-  timezone: z.string().refine(isCommonTimezone, { message: "Invalid timezone" }),
-  title: z.string(),
-  workingHoursEnd: z.number().min(0).max(23),
-  workingHoursStart: z.number().min(0).max(23),
-});
-
-type FormValues = z.input<typeof formSchema>;
 
 type AddMemberFormProps = {
   groups: Array<TeamGroup>;
@@ -63,10 +47,11 @@ type AddMemberFormProps = {
 
 const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMemberFormProps) => {
   const queryClient = useQueryClient();
+  const writeTeam = useTeamWrite(teamId);
 
-  const [defaultValues] = useState<FormValues>(() => ({
+  const [defaultValues] = useState<AddMemberFormValues>(() => ({
     email: "",
-    groupId: "",
+    groupId: NO_GROUP,
     name: "",
     timezone: getUserTimezone(),
     title: "",
@@ -74,29 +59,24 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
     workingHoursStart: DEFAULT_WORKING_HOURS_START,
   }));
 
-  const form = useForm({
+  const form = useMemberForm({
     defaultValues,
     onSubmit: async ({ value }) => {
-      const { email: emailValue, ...memberData } = value;
-      const result = await addMember(teamId, {
-        ...memberData,
-        groupId: memberData.groupId || undefined,
-        title: memberData.title || "",
-      });
+      const { email } = value;
+      const result = await writeTeam({ submit: () => addMember(teamId, toMemberInput(value)) });
 
       if (result.success) {
         onOpenChange(false);
-        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
         toast.success(`${value.name} added to team`);
 
-        if (emailValue) {
-          const inviteResult = await inviteMember(teamId, result.data.member.id, emailValue);
+        if (email) {
+          const inviteResult = await inviteMember(teamId, result.data.member.id, email);
           if (inviteResult.success) {
             void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
             if (inviteResult.data.emailSent) {
-              toast.success(`Invitation sent to ${emailValue}`);
+              toast.success(`Invitation sent to ${email}`);
             } else {
-              toast.success(`Invitation created for ${emailValue} (email was not delivered)`);
+              toast.success(`Invitation created for ${email} (email was not delivered)`);
             }
           } else {
             toast.error(inviteResult.error);
@@ -106,7 +86,11 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
         toast.error(result.error);
       }
     },
-    validators: { onBlur: formSchema, onChange: formSchema, onSubmit: formSchema },
+    validators: {
+      onBlur: addMemberFormSchema,
+      onChange: addMemberFormSchema,
+      onSubmit: addMemberFormSchema,
+    },
   });
 
   return (
@@ -126,124 +110,20 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
       </DialogHeader>
 
       <div className="flex flex-col gap-5 py-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <form.Field name="name">
-            {(field) => (
-              <MemberTextField
-                errors={field.state.meta.errors}
-                id="member-name"
-                isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                label="Full name"
-                onBlur={field.handleBlur}
-                onChange={field.handleChange}
-                placeholder="Jane Doe"
-                required
-                value={field.state.value}
-              />
-            )}
-          </form.Field>
-
-          <form.Field name="title">
-            {(field) => (
-              <MemberTextField
-                errors={field.state.meta.errors}
-                id="member-title"
-                isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                label="Title (optional)"
-                onBlur={field.handleBlur}
-                onChange={field.handleChange}
-                placeholder={TITLE_PLACEHOLDER}
-                value={field.state.value}
-              />
-            )}
-          </form.Field>
-        </div>
-
-        <FieldSeparator />
-
-        <form.Field name="timezone">
-          {(field) => (
-            <TimezoneField
-              errors={field.state.meta.errors}
-              id="member-timezone"
-              isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
-              onBlur={field.handleBlur}
-              onChange={field.handleChange}
-              value={field.state.value}
-            />
-          )}
-        </form.Field>
-
-        <form.Subscribe selector={(state) => state.values.timezone}>
-          {(timezone) => (
-            <WorkingHoursFieldset timezone={timezone}>
-              <form.Field name="workingHoursStart">
-                {(field) => (
-                  <HourSelectField
-                    errors={field.state.meta.errors}
-                    id="member-work-start"
-                    isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                    label="Starts"
-                    onBlur={field.handleBlur}
-                    onChange={field.handleChange}
-                    value={field.state.value}
-                  />
-                )}
-              </form.Field>
-
-              <form.Field name="workingHoursEnd">
-                {(field) => (
-                  <HourSelectField
-                    errors={field.state.meta.errors}
-                    id="member-work-end"
-                    isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                    label="Ends"
-                    onBlur={field.handleBlur}
-                    onChange={field.handleChange}
-                    value={field.state.value}
-                  />
-                )}
-              </form.Field>
-            </WorkingHoursFieldset>
-          )}
-        </form.Subscribe>
-
-        {groups.length > 0 && (
-          <>
-            <FieldSeparator />
-            <form.Field name="groupId">
-              {(field) => (
-                <MemberGroupField
-                  errors={field.state.meta.errors}
-                  groups={groups}
-                  id="member-group"
-                  isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                  label="Group (optional)"
-                  onBlur={field.handleBlur}
-                  onChange={field.handleChange}
-                  value={field.state.value}
-                />
-              )}
-            </form.Field>
-          </>
-        )}
+        <MemberFields fields={MEMBER_FIELDS} form={form} groups={groups} idPrefix="member" />
 
         <FieldSeparator />
 
         <form.Field name="email">
           {(field) => (
             <MemberTextField
+              {...bindField(field)}
               autoComplete="off"
               description="We'll email a link so they can claim this profile."
-              errors={field.state.meta.errors}
               id="member-email"
-              isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
               label="Invite by email (optional)"
-              onBlur={field.handleBlur}
-              onChange={field.handleChange}
               placeholder="name@company.com"
               type="email"
-              value={field.state.value}
             />
           )}
         </form.Field>
