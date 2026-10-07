@@ -1,4 +1,4 @@
-const RESEND_API = "https://api.resend.com";
+const RESEND_API = process.env.RESEND_BASE_URL ?? "https://api.resend.com";
 
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => {

@@ -63,6 +63,9 @@ importers:
       turbo:
         specifier: ^2.11.3
         version: 2.11.3
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
       zod-compiler:
         specifier: ^2.0.7
         version: 2.0.7(esbuild@0.28.2)(rolldown@1.2.7)(rollup@4.63.1)(vite@8.2.2(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.15)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2))(zod@4.6.5)
