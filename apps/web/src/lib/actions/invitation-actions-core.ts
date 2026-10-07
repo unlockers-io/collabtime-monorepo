@@ -88,15 +88,16 @@ export const createInvitationActions = (deps: InvitationDeps) => {
         return { error, success: false };
       }
       if (decision === "accepted") {
-        const result = await deps.claimOrCreateSlot(invitation.teamId, {
-          memberId: invitation.memberId,
-          name: displayName(user.name, user.email),
+        const granted = await deps.grantMembership({
+          commit: (membership, memberId) => deps.commitAcceptance(invitation, membership, memberId),
+          role: "MEMBER",
+          slot: { memberId: invitation.memberId, name: displayName(user.name, user.email) },
+          teamId: invitation.teamId,
           userId: user.id,
         });
-        if (!result.ok) {
-          return { error: result.error, success: false };
+        if (!granted.ok) {
+          return { error: granted.error, success: false };
         }
-        await deps.commitAcceptance(invitation, result.memberId, user.id);
       } else {
         await deps.markDeclined(invitation);
       }

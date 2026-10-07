@@ -1,9 +1,9 @@
 "use server";
 
-import { prisma } from "@repo/db";
-
 import { log } from "@/lib/observability";
 import { authorizeTeamAdmin, authorizeTeamMember } from "@/lib/team-auth";
+
+import { revokeMembership } from "../membership";
 
 import { mutateTeam } from "./helpers";
 import { createMemberActions } from "./member-actions-core";
@@ -21,16 +21,8 @@ const {
   authorizeTeamAdmin,
   authorizeTeamMember,
   mutateTeam,
-  removeMembership: async (teamId, userId) => {
-    await prisma.membership.deleteMany({ where: { role: "MEMBER", teamId, userId } });
-  },
   reportError: log.error,
-  revokeInvitationsForMember: async (teamId, memberId) => {
-    await prisma.invitation.updateMany({
-      data: { status: "REVOKED" },
-      where: { memberId, status: "PENDING", teamId },
-    });
-  },
+  revokeMembership,
 });
 
 export {

@@ -6,11 +6,12 @@ import { after } from "next/server";
 import { getAppUrl } from "../app-url";
 import { inviteLink, openInvitationWhere } from "../invitations";
 import { sendAppEmail } from "../mailer";
+import { grantMembership, membershipUpsert } from "../membership";
 import { log } from "../observability";
 import { checkRateLimit } from "../space-rate-limit";
 import { authenticate, authorizeTeamAdmin } from "../team-auth";
 import { teamNotifier } from "../team-notifier";
-import { claimOrCreateMemberSlot, readTeamRecord } from "../team-store";
+import { readTeamRecord } from "../team-store";
 
 import { createInvitationActions } from "./invitation-actions-core";
 import type { InvitationDeps, InvitationRecord } from "./invitation-deps";
@@ -26,22 +27,18 @@ const deps: InvitationDeps = {
   authenticate,
   authorizeTeamAdmin,
   checkRateLimit,
-  claimOrCreateSlot: claimOrCreateMemberSlot,
-  commitAcceptance: async (invitation, memberId, userId) => {
+  commitAcceptance: async (invitation, membership, memberId) => {
     const open = openInvitationWhere(new Date());
     await prisma.$transaction([
       prisma.invitation.update({
         data: { memberId, status: "ACCEPTED" },
         where: { ...pendingVersion(invitation), ...open },
       }),
-      prisma.membership.upsert({
-        create: { role: "MEMBER", teamId: invitation.teamId, userId },
-        update: { archivedAt: null },
-        where: { userId_teamId: { teamId: invitation.teamId, userId } },
-      }),
+      prisma.membership.upsert(membershipUpsert(membership)),
     ]);
   },
   findInvitation: (id) => prisma.invitation.findUnique({ include, where: { id } }),
+  grantMembership,
   inviteLink: (teamId, id) => inviteLink(getAppUrl(), teamId, id),
   listPendingForTeam: (teamId) =>
     prisma.invitation.findMany({

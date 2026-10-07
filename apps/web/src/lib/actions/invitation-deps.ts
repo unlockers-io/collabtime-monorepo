@@ -2,9 +2,9 @@ import type { TransactionalEmail } from "@repo/transactional";
 
 import type { TeamRecord } from "@/types";
 
+import type { GrantMembership, MembershipGrant } from "../membership";
 import type { checkRateLimit } from "../space-rate-limit";
 import type { authenticate, authorizeTeamAdmin } from "../team-auth";
-import type { claimOrCreateMemberSlot } from "../team-store";
 
 import type { ActionErrorEvent } from "./types";
 
@@ -23,13 +23,13 @@ export type InvitationDeps = {
   authenticate: typeof authenticate;
   authorizeTeamAdmin: typeof authorizeTeamAdmin;
   checkRateLimit: typeof checkRateLimit;
-  claimOrCreateSlot: typeof claimOrCreateMemberSlot;
   commitAcceptance: (
     invitation: InvitationRecord,
+    membership: MembershipGrant,
     memberId: string,
-    userId: string,
   ) => Promise<void>;
   findInvitation: (id: string) => Promise<InvitationRecord | null>;
+  grantMembership: GrantMembership;
   inviteLink: (teamId: string, invitationId: string) => string;
   listPendingForTeam: (teamId: string) => Promise<Array<InvitationRecord>>;
   loadInviteContext: (

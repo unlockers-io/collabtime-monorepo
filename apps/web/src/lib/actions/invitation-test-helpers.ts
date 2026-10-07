@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 
+import type { TeamRecord } from "@/types";
+
 import { createInvitationActions } from "./invitation-actions-core";
 import type { InvitationDeps, InvitationRecord } from "./invitation-deps";
 import { createInvitationManagementActions } from "./invitation-management-core";
@@ -7,6 +9,7 @@ import {
   createTestGuards,
   createTestMember,
   createTestTeamRecord,
+  createTestTeamStore,
   VALID_UUID,
   VALID_UUID_2,
 } from "./test-helpers";
@@ -24,26 +27,33 @@ export const invitation: InvitationRecord = {
   teamId: VALID_UUID,
   updatedAt: NOW,
 };
-export const setupInvitations = () => {
+export const invitedTeam = createTestTeamRecord({
+  members: [createTestMember({ id: VALID_UUID_2 })],
+});
+export const setupInvitations = async (team: TeamRecord | null = invitedTeam) => {
   const guards = createTestGuards();
+  const harness = createTestTeamStore();
+  if (team !== null) {
+    await harness.seedTeam(team);
+  }
   const deps = {
     authenticate: guards.authenticate,
     authorizeTeamAdmin: guards.authorizeTeamAdmin,
     checkRateLimit: vi
       .fn<InvitationDeps["checkRateLimit"]>()
       .mockResolvedValue({ allowed: true, remaining: 49 }),
-    claimOrCreateSlot: vi
-      .fn<InvitationDeps["claimOrCreateSlot"]>()
-      .mockResolvedValue({ created: false, memberId: VALID_UUID_2, ok: true }),
-    commitAcceptance: vi.fn<InvitationDeps["commitAcceptance"]>().mockResolvedValue(),
+    commitAcceptance: vi
+      .fn<InvitationDeps["commitAcceptance"]>()
+      .mockImplementation((_invitation, membership) => harness.membershipStore.grant(membership)),
     findInvitation: vi.fn<InvitationDeps["findInvitation"]>().mockResolvedValue(invitation),
+    grantMembership: harness.grantMembership,
     inviteLink: (teamId: string, id: string) => `https://app.example.com/${teamId}?invite=${id}`,
     listPendingForTeam: vi
       .fn<InvitationDeps["listPendingForTeam"]>()
       .mockResolvedValue([invitation]),
     loadInviteContext: vi.fn<InvitationDeps["loadInviteContext"]>().mockResolvedValue({
       existingMembership: false,
-      team: createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2 })] }),
+      team: invitedTeam,
     }),
     markDeclined: vi.fn<InvitationDeps["markDeclined"]>().mockResolvedValue(),
     markRevoked: vi.fn<InvitationDeps["markRevoked"]>().mockResolvedValue(),
@@ -54,5 +64,10 @@ export const setupInvitations = () => {
     sendEmail: vi.fn<InvitationDeps["sendEmail"]>().mockResolvedValue({ sent: true }),
     upsertInvitation: vi.fn<InvitationDeps["upsertInvitation"]>().mockResolvedValue(invitation),
   } satisfies InvitationDeps;
-  return { ...createInvitationActions(deps), ...createInvitationManagementActions(deps), deps };
+  return {
+    ...createInvitationActions(deps),
+    ...createInvitationManagementActions(deps),
+    deps,
+    harness,
+  };
 };

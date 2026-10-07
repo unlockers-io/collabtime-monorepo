@@ -3,6 +3,8 @@ import { prisma } from "@repo/db";
 import { log } from "@/lib/observability";
 import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
 
+import { type GrantMembership, grantMembership } from "./membership";
+
 // Verification now needs each space's current password hash, so candidates are
 // read from the header first and the query is what proves them. Capped because
 // an unauthenticated caller controls how many space-access-* cookies they send,
@@ -13,17 +15,12 @@ type SpaceAccessCandidate = { spaceId: string; token: string };
 
 type PrivateSpace = { accessPassword: string | null; id: string; teamId: string };
 
-type MembershipUpsert = {
-  create: { role: "MEMBER"; teamId: string; userId: string };
-  update: { archivedAt: null };
-  where: { userId_teamId: { teamId: string; userId: string } };
-};
 type ErrorEvent = Parameters<typeof log.error>[0];
 
 type SpaceJoinDeps = {
   findPrivateSpaces: (spaceIds: Array<string>) => Promise<Array<PrivateSpace>>;
+  grantMembership: GrantMembership;
   reportError: (event: ErrorEvent) => void;
-  upsertMembership: (input: MembershipUpsert) => Promise<void>;
   verifyAccessToken: (token: string, spaceId: string, accessPassword: string | null) => boolean;
 };
 
@@ -59,13 +56,9 @@ const spaceAccessCandidates = (cookieHeader: string | null): Array<SpaceAccessCa
 };
 
 const createSpaceJoiner = (deps: SpaceJoinDeps) => {
-  const joinPrivateSpace = (userId: string, teamId: string) => {
-    return deps.upsertMembership({
-      create: { role: "MEMBER", teamId, userId },
-      update: { archivedAt: null },
-      where: { userId_teamId: { teamId, userId } },
-    });
-  };
+  const joinPrivateSpace = (userId: string, teamId: string) =>
+    // Password viewers stay off the roster until they add their own profile.
+    deps.grantMembership({ role: "MEMBER", slot: null, teamId, userId });
 
   const joinPrivateSpacesFromCookies = async (
     userId: string,
@@ -121,10 +114,8 @@ const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
       select: { accessPassword: true, id: true, teamId: true },
       where: { id: { in: spaceIds }, isPrivate: true },
     }),
+  grantMembership,
   reportError: log.error,
-  upsertMembership: async (input) => {
-    await prisma.membership.upsert(input);
-  },
   verifyAccessToken: (token, spaceId, accessPassword) =>
     verifySpaceAccessToken(token, spaceId, accessPassword).valid,
 });

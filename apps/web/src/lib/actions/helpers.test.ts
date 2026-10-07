@@ -125,7 +125,7 @@ describe("mutateTeam", () => {
 
     const result = await mutateTeam({
       access,
-      command: teamCommands.removeMember("missing"),
+      command: teamCommands.removeMember("missing", undefined),
       errorContext: "do thing",
     });
 

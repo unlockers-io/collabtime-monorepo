@@ -2,6 +2,7 @@ import type { authorizeTeamAdmin, authorizeTeamMember } from "@/lib/team-auth";
 import type { Team, TeamMember } from "@/types";
 
 import { displayName } from "../display-name";
+import type { RevokeMembership } from "../membership";
 import { teamCommands } from "../team-commands";
 import { TeamMemberInputSchema, TeamMemberUpdateSchema, TeamNameSchema } from "../validation";
 
@@ -13,9 +14,8 @@ type MemberActionDeps = {
   authorizeTeamAdmin: typeof authorizeTeamAdmin;
   authorizeTeamMember: typeof authorizeTeamMember;
   mutateTeam: MutateTeam;
-  removeMembership: (teamId: string, userId: string) => Promise<void>;
   reportError: (event: ActionErrorEvent) => void;
-  revokeInvitationsForMember: (teamId: string, memberId: string) => Promise<void>;
+  revokeMembership: RevokeMembership;
 };
 
 const MAX_IMPORT_BATCH = 100;
@@ -52,32 +52,24 @@ const createMemberActions = (deps: MemberActionDeps) => {
     if (invalid) {
       return invalid;
     }
-    const removed = await deps.mutateTeam({
-      access: access.data,
-      command: teamCommands.removeMember(memberId),
-      errorContext: "remove member",
-    });
-    if (!removed.success) {
-      return removed;
-    }
-    const { userId } = removed.data.value;
     try {
-      await deps.revokeInvitationsForMember(teamId, memberId);
-      if (userId !== undefined && userId !== "" && userId !== access.data.user.id) {
-        await deps.removeMembership(teamId, userId);
+      const revoked = await deps.revokeMembership({ access: access.data, memberId });
+      if (!revoked.ok) {
+        const failed =
+          revoked.reason === "write-failed" ? "Failed to remove member" : revoked.error;
+        return { error: failed, success: false };
       }
+      return { data: sanitizeTeam(revoked.team), success: true };
     } catch (error) {
       deps.reportError({
         error,
         memberId,
-        message: "Removed the member but failed to revoke their access",
+        message: "Failed to remove member",
         route: "actions/member",
         teamId,
-        userId,
       });
       return { error: "Failed to remove member", success: false };
     }
-    return sanitizedTeam(removed);
   };
 
   const updateMember = async (
@@ -212,7 +204,11 @@ const createMemberActions = (deps: MemberActionDeps) => {
       }),
       errorContext: "add your profile",
     });
-    return claimed.success ? { data: claimed.data.value, success: true } : claimed;
+    if (!claimed.success) {
+      return claimed;
+    }
+    const { created, memberId } = claimed.data.value;
+    return { data: { created, memberId }, success: true };
   };
 
   const reorderMembers = async (

@@ -18,6 +18,7 @@ type TeamCommand<TValue> = (
 type MemberInput = Omit<TeamMember, "id" | "order" | "userId">;
 type MemberUpdate = Partial<MemberInput>;
 type SlotClaim = { memberId?: string; name: string; userId: string };
+type ClaimedSlot = { claimed: boolean; created: boolean; memberId: string };
 
 const GROUP_NOT_FOUND = "Group not found";
 const MEMBER_NOT_FOUND = "Member not found";
@@ -43,6 +44,9 @@ const isGroupReference = (team: TeamRecord, groupId: string | undefined): boolea
 
 const findMember = (team: TeamRecord, memberId: string): TeamMember | undefined =>
   team.members.find((member) => member.id === memberId);
+
+const ownedSlot = (team: TeamRecord, userId: string): TeamMember | undefined =>
+  team.members.find((member) => member.userId === userId);
 
 const withMember = (team: TeamRecord, member: TeamMember): TeamRecord => ({
   ...team,
@@ -127,20 +131,33 @@ const updateOwnMember =
     if (member === undefined) {
       return reject(MEMBER_NOT_FOUND);
     }
-    if (isClaimed(member) && member.userId !== userId) {
+    if (member.userId !== userId && isClaimed(member)) {
       return reject("You can only edit your own member record");
+    }
+    if (member.userId !== userId && ownedSlot(team, userId) !== undefined) {
+      return reject("You already have a profile on this team");
     }
 
     const updated = { ...member, ...updates, userId };
     return { ok: true, team: withMember(team, updated), value: updated };
   };
 
-const removeMember =
+const readMember =
   (memberId: string): TeamCommand<TeamMember> =>
+  (team) => {
+    const member = findMember(team, memberId);
+    return member === undefined ? reject(MEMBER_NOT_FOUND) : { ok: true, team, value: member };
+  };
+
+const removeMember =
+  (memberId: string, userId: string | undefined): TeamCommand<TeamMember> =>
   (team) => {
     const member = findMember(team, memberId);
     if (member === undefined) {
       return reject(MEMBER_NOT_FOUND);
+    }
+    if (member.userId !== userId) {
+      return reject("This member changed while saving. Try again.");
     }
 
     const members = team.members.filter((current) => current.id !== memberId);
@@ -158,11 +175,11 @@ const reorderMembers =
   };
 
 const claimMemberSlot =
-  (claim: SlotClaim): TeamCommand<{ created: boolean; memberId: string }> =>
+  (claim: SlotClaim): TeamCommand<ClaimedSlot> =>
   (team, { createId }) => {
-    const owned = team.members.find((member) => member.userId === claim.userId);
+    const owned = ownedSlot(team, claim.userId);
     if (owned) {
-      return { ok: true, team, value: { created: false, memberId: owned.id } };
+      return { ok: true, team, value: { claimed: false, created: false, memberId: owned.id } };
     }
 
     const target = claim.memberId === undefined ? undefined : findMember(team, claim.memberId);
@@ -171,7 +188,7 @@ const claimMemberSlot =
       return {
         ok: true,
         team: withMember(team, claimed),
-        value: { created: false, memberId: target.id },
+        value: { claimed: true, created: false, memberId: target.id },
       };
     }
 
@@ -182,7 +199,24 @@ const claimMemberSlot =
     });
     const outcome = appendMembers(team, [member]);
 
-    return outcome.ok ? { ...outcome, value: { created: true, memberId: member.id } } : outcome;
+    return outcome.ok
+      ? { ...outcome, value: { claimed: true, created: true, memberId: member.id } }
+      : outcome;
+  };
+
+const releaseMemberSlot =
+  ({ created, memberId }: ClaimedSlot, userId: string): TeamCommand<void> =>
+  (team) => {
+    const member = findMember(team, memberId);
+    if (member?.userId !== userId) {
+      return { ok: true, team, value: undefined };
+    }
+
+    const { userId: _released, ...unclaimed } = member;
+    const members = created
+      ? team.members.filter((current) => current.id !== memberId)
+      : team.members.map((current) => (current.id === memberId ? unclaimed : current));
+    return { ok: true, team: { ...team, members }, value: undefined };
   };
 
 const addGroup =
@@ -247,6 +281,8 @@ const teamCommands = {
   addMember,
   claimMemberSlot,
   importMembers,
+  readMember,
+  releaseMemberSlot,
   removeGroup,
   removeMember,
   renameTeam,
@@ -258,4 +294,4 @@ const teamCommands = {
 };
 
 export { newTeamMember, teamCommands };
-export type { SlotClaim, TeamCommand };
+export type { ClaimedSlot, SlotClaim, TeamCommand };

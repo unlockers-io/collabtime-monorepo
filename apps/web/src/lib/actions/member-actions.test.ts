@@ -15,8 +15,6 @@ type MemberActionDeps = Parameters<typeof createMemberActions>[0];
 
 const harness = createTestTeamStore();
 const guards = createTestGuards();
-const revokeInvitationsForMember = vi.fn<MemberActionDeps["revokeInvitationsForMember"]>();
-const removeMembership = vi.fn<MemberActionDeps["removeMembership"]>();
 const reportError = vi.fn<MemberActionDeps["reportError"]>();
 const {
   addMember,
@@ -31,9 +29,8 @@ const {
   authorizeTeamAdmin: guards.authorizeTeamAdmin,
   authorizeTeamMember: guards.authorizeTeamMember,
   mutateTeam: harness.mutateTeam,
-  removeMembership,
   reportError,
-  revokeInvitationsForMember,
+  revokeMembership: harness.revokeMembership,
 });
 
 const { seedTeam } = harness;
@@ -57,8 +54,6 @@ const validMemberInput = {
 beforeEach(() => {
   harness.reset();
   guards.reset();
-  revokeInvitationsForMember.mockReset();
-  removeMembership.mockReset();
   reportError.mockReset();
 });
 
@@ -75,12 +70,13 @@ describe("authorization", () => {
       members: [createTestMember({ id: VALID_UUID_2, userId: "other" })],
     });
     await seedTeam(team);
+    harness.seedMembership("other");
     guards.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
 
     expect(await run()).toEqual({ error: "Admin access required", success: false });
     expect(guards.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
-    expect(revokeInvitationsForMember).not.toHaveBeenCalled();
-    expect(removeMembership).not.toHaveBeenCalled();
+    expect(harness.findMembership("other")).not.toBeNull();
+    expect(harness.invitationsRevoked(VALID_UUID_2)).toBe(false);
     expect(harness.invalidateTeamName).not.toHaveBeenCalled();
     expect(await harness.readTeam()).toEqual(team);
   });
@@ -318,6 +314,24 @@ describe("updateOwnMember", () => {
     expect(persisted.members[0]?.name).toBe("New Name");
   });
 
+  it("refuses to claim a second record for a user who already has one", async () => {
+    await seedTeam(
+      createTestTeamRecord({
+        members: [
+          createTestMember({ id: VALID_UUID_2, userId: "user-123" }),
+          createTestMember({ id: VALID_UUID_3 }),
+        ],
+      }),
+    );
+
+    expect(await updateOwnMember(VALID_UUID, VALID_UUID_3, { name: "Claimed" })).toEqual({
+      error: "You already have a profile on this team",
+      success: false,
+    });
+    const persisted = await persistedTeam();
+    expect(persisted.members[1]?.userId).toBeUndefined();
+  });
+
   it("claims unclaimed record by setting userId", async () => {
     await seedTeam(
       createTestTeamRecord({
@@ -435,44 +449,46 @@ describe("member limits", () => {
 });
 
 describe("removal cleanup", () => {
-  it("revokes access only after the slot is gone", async () => {
+  it("revokes the removed member's access and pending invitations", async () => {
     await seedTeam(
       createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2, userId: "other" })] }),
     );
-    revokeInvitationsForMember.mockImplementationOnce(async () => {
-      const persisted = await persistedTeam();
-      expect(persisted.members).toHaveLength(0);
-    });
+    harness.seedMembership("other");
 
-    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: true });
-    expect(revokeInvitationsForMember).toHaveBeenCalledWith(VALID_UUID, VALID_UUID_2);
-    expect(removeMembership).toHaveBeenCalledWith(VALID_UUID, "other");
+    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({
+      data: { members: [] },
+      success: true,
+    });
+    expect(harness.findMembership("other")).toBeNull();
+    expect(harness.invitationsRevoked(VALID_UUID_2)).toBe(true);
   });
 
-  it("reports a failure when access cleanup fails after the removal committed", async () => {
-    await seedTeam(
-      createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2, userId: "other" })] }),
-    );
-    revokeInvitationsForMember.mockRejectedValueOnce(new Error("Database unavailable"));
+  it("keeps the slot to remove again when revoking access fails", async () => {
+    const member = createTestMember({ id: VALID_UUID_2, userId: "other" });
+    await seedTeam(createTestTeamRecord({ members: [member] }));
+    harness.membershipStore.revoke.mockRejectedValueOnce(new Error("Database unavailable"));
 
     expect(await removeMember(VALID_UUID, VALID_UUID_2)).toEqual({
       error: "Failed to remove member",
       success: false,
     });
     const persisted = await persistedTeam();
-    expect(persisted.members).toHaveLength(0);
-    expect(removeMembership).not.toHaveBeenCalled();
+    expect(persisted.members).toEqual([member]);
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ memberId: VALID_UUID_2, teamId: VALID_UUID, userId: "other" }),
+      expect.objectContaining({ memberId: VALID_UUID_2, teamId: VALID_UUID }),
     );
+
+    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: true });
   });
 
   it("leaves access untouched when the removal is rejected", async () => {
     await seedTeam(createTestTeamRecord({ members: [createTestMember()] }));
 
-    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: false });
-    expect(revokeInvitationsForMember).not.toHaveBeenCalled();
-    expect(removeMembership).not.toHaveBeenCalled();
+    expect(await removeMember(VALID_UUID, VALID_UUID_2)).toEqual({
+      error: "Member not found",
+      success: false,
+    });
+    expect(harness.membershipStore.revoke).not.toHaveBeenCalled();
   });
 
   it("does not delete the caller membership", async () => {
@@ -481,9 +497,10 @@ describe("removal cleanup", () => {
         members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
       }),
     );
+    harness.seedMembership("user-123");
 
     expect(await removeMember(VALID_UUID, VALID_UUID_2)).toMatchObject({ success: true });
-    expect(removeMembership).not.toHaveBeenCalled();
+    expect(harness.findMembership("user-123")).not.toBeNull();
   });
 });
 

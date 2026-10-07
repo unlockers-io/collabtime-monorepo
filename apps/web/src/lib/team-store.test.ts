@@ -216,7 +216,9 @@ describe("applyTeamCommand", () => {
     await store.createTeamContents(VALID_UUID, createTestTeamRecord());
     vi.mocked(storage.compareAndSet).mockClear();
 
-    expect(await store.applyTeamCommand(VALID_UUID, teamCommands.removeMember("missing"))).toEqual({
+    expect(
+      await store.applyTeamCommand(VALID_UUID, teamCommands.removeMember("missing", undefined)),
+    ).toEqual({
       error: "Member not found",
       ok: false,
       reason: "rejected",
@@ -353,25 +355,5 @@ describe("createTeamContents", () => {
     ).toEqual({ error: "Team already exists", ok: false, reason: "rejected" });
     const record = await store.readTeamRecord(VALID_UUID);
     expect(record?.name).toBe("First");
-  });
-});
-
-describe("claimOrCreateMemberSlot", () => {
-  it("returns the claimed slot flat and passes failures through", async () => {
-    const { store } = setup();
-    const claim = { name: "Bob", userId: "bob" };
-
-    expect(await store.claimOrCreateMemberSlot(VALID_UUID, claim)).toEqual({
-      error: "Team not found",
-      ok: false,
-      reason: "rejected",
-    });
-
-    await store.createTeamContents(VALID_UUID, createTestTeamRecord());
-    expect(await store.claimOrCreateMemberSlot(VALID_UUID, claim)).toEqual({
-      created: true,
-      memberId: expect.any(String),
-      ok: true,
-    });
   });
 });

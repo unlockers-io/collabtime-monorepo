@@ -11,7 +11,7 @@ import {
 } from "@/lib/timezones";
 import type { TeamRecord } from "@/types";
 
-import { type SlotClaim, type TeamCommand, teamCommands } from "./team-commands";
+import type { TeamCommand } from "./team-commands";
 import type { TeamSummary } from "./team-postgres-repository";
 import { redisTeamStorage, type TeamStorage } from "./team-storage";
 import { UUIDSchema } from "./validation";
@@ -76,7 +76,6 @@ type TeamContentsFailure = { error: string; ok: false; reason: TeamContentsFailu
 type TeamContentsResult<TValue> =
   | TeamContentsFailure
   | { ok: true; team: TeamRecord; value: TValue };
-type SlotClaimResult = TeamContentsFailure | { created: boolean; memberId: string; ok: true };
 type Snapshot = { contents: string; team: TeamRecord } | null;
 
 const ROUTE = "lib/team-store";
@@ -283,14 +282,6 @@ const createTeamStore = (deps: TeamStoreDeps) => {
       : committed;
   };
 
-  const claimOrCreateMemberSlot = async (
-    teamId: string,
-    claim: SlotClaim,
-  ): Promise<SlotClaimResult> => {
-    const result = await applyTeamCommand(teamId, teamCommands.claimMemberSlot(claim));
-    return result.ok ? { ...result.value, ok: true } : result;
-  };
-
   const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
     const read = await load(teamId);
     return read.ok ? (read.snapshot?.team ?? null) : null;
@@ -338,7 +329,6 @@ const createTeamStore = (deps: TeamStoreDeps) => {
 
   return {
     applyTeamCommand,
-    claimOrCreateMemberSlot,
     createTeamContents,
     readTeamRecord,
     readTeamSummaries,
@@ -348,25 +338,18 @@ const createTeamStore = (deps: TeamStoreDeps) => {
 
 const teamNameTag = (teamId: string): string => `team-name:${teamId}`;
 
-const {
-  applyTeamCommand,
-  claimOrCreateMemberSlot,
-  createTeamContents,
-  readTeamRecord,
-  readTeamSummaries,
-  readTeamSummary,
-} = createTeamStore({
-  createId: uuidv4,
-  invalidateTeamName: (teamId) => {
-    updateTag(teamNameTag(teamId));
-  },
-  reportError: log.error,
-  storage: redisTeamStorage,
-});
+const { applyTeamCommand, createTeamContents, readTeamRecord, readTeamSummaries, readTeamSummary } =
+  createTeamStore({
+    createId: uuidv4,
+    invalidateTeamName: (teamId) => {
+      updateTag(teamNameTag(teamId));
+    },
+    reportError: log.error,
+    storage: redisTeamStorage,
+  });
 
 export {
   applyTeamCommand,
-  claimOrCreateMemberSlot,
   createTeamContents,
   createTeamStore,
   readTeamRecord,
@@ -374,4 +357,4 @@ export {
   readTeamSummary,
   teamNameTag,
 };
-export type { SlotClaimResult, TeamContentsFailureReason, TeamStoreDeps };
+export type { TeamContentsFailure, TeamContentsFailureReason, TeamContentsResult, TeamStoreDeps };

@@ -6,8 +6,10 @@ import type {
   authorizeTeamMember,
   TeamAccess,
 } from "@/lib/team-auth";
-import type { TeamGroup, TeamMember, TeamRecord } from "@/types";
+import type { TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
 
+import { createMembershipLifecycle, type MembershipStore } from "../membership";
+import { createMemoryMembershipStore } from "../membership-memory-store";
 import { createMemoryTeamStorage } from "../team-memory-storage";
 import { createTeamStore, type TeamStoreDeps } from "../team-store";
 
@@ -67,6 +69,10 @@ const createMockSession = (overrides?: { email?: string; name?: string; userId?:
 const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
   const invalidateTeamName = vi.fn<TeamStoreDeps["invalidateTeamName"]>();
   const reportError = vi.fn<TeamStoreDeps["reportError"]>();
+  const membershipStore = {
+    grant: vi.fn<MembershipStore["grant"]>(),
+    revoke: vi.fn<MembershipStore["revoke"]>(),
+  };
   const build = () =>
     createTeamStore({
       createId,
@@ -75,19 +81,45 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
       storage: createMemoryTeamStorage(),
     });
   let store = build();
+  let memberships = createMemoryMembershipStore();
+  const wireMemberships = () => {
+    memberships = createMemoryMembershipStore();
+    membershipStore.grant.mockReset().mockImplementation((grant) => memberships.grant(grant));
+    membershipStore.revoke
+      .mockReset()
+      .mockImplementation((revocation) => memberships.revoke(revocation));
+  };
+  wireMemberships();
+
+  const applyTeamCommand: typeof store.applyTeamCommand = (teamId, command) =>
+    store.applyTeamCommand(teamId, command);
+  const { grantMembership, revokeMembership } = createMembershipLifecycle({
+    applyTeamCommand,
+    reportError,
+    store: membershipStore,
+  });
 
   return {
+    applyTeamCommand,
+    createTeamContents: (teamId: string, team: TeamRecord) =>
+      store.createTeamContents(teamId, team),
+    findMembership: (userId: string, teamId = VALID_UUID) => memberships.read(teamId, userId),
+    grantMembership,
     invalidateTeamName,
-    mutateTeam: createTeamMutator({
-      applyTeamCommand: (teamId, command) => store.applyTeamCommand(teamId, command),
-      reportError,
-    }),
-    readTeam: () => store.readTeamRecord(VALID_UUID),
+    invitationsRevoked: (memberId: string) => memberships.invitationsRevoked(VALID_UUID, memberId),
+    membershipStore,
+    mutateTeam: createTeamMutator({ applyTeamCommand, reportError }),
+    readTeam: (teamId = VALID_UUID) => store.readTeamRecord(teamId),
     reportError,
     reset: () => {
       store = build();
+      wireMemberships();
       invalidateTeamName.mockReset();
       reportError.mockReset();
+    },
+    revokeMembership,
+    seedMembership: (userId: string, role: TeamRole = "MEMBER", archivedAt: Date | null = null) => {
+      memberships.seed(VALID_UUID, userId, { archivedAt, role });
     },
     seedTeam: async (team: TeamRecord) => {
       await store.createTeamContents(team.id, team);
