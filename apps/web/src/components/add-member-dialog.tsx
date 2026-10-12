@@ -17,8 +17,9 @@ import { UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { bindField, MEMBER_FIELDS, MemberFields, useMemberForm } from "@/components/member-fields";
+import { MemberFields } from "@/components/member-fields";
 import { MemberTextField } from "@/components/member-text-field";
+import { bindField, MEMBER_FIELDS, useMemberForm } from "@/hooks/use-member-form";
 import { useTeamWrite } from "@/hooks/use-team-cache";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { addMember } from "@/lib/actions/member-actions";

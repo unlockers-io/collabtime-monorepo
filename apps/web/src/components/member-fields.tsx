@@ -1,8 +1,8 @@
 "use client";
 
 import { FieldSeparator } from "@repo/ui/components/field";
-import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 
+import { bindField, withFieldGroup } from "@/hooks/use-member-form";
 import type { MemberFormValues } from "@/lib/member-input";
 import type { TeamGroup } from "@/types";
 
@@ -11,41 +11,6 @@ import { MemberGroupField } from "./member-group-field";
 import { MemberTextField } from "./member-text-field";
 import { TimezoneField } from "./timezone-field";
 import { WorkingHoursFieldset } from "./working-hours-fieldset";
-
-type BindableField<TValue> = {
-  handleBlur: () => void;
-  handleChange: (value: TValue) => void;
-  state: {
-    meta: { errors: Array<unknown>; isTouched: boolean; isValid: boolean };
-    value: TValue;
-  };
-};
-
-const bindField = <TValue,>(field: BindableField<TValue>) => ({
-  errors: field.state.meta.errors,
-  isInvalid: field.state.meta.isTouched && !field.state.meta.isValid,
-  onBlur: field.handleBlur,
-  onChange: field.handleChange,
-  value: field.state.value,
-});
-
-const { fieldContext, formContext } = createFormHookContexts();
-
-const { useAppForm: useMemberForm, withFieldGroup } = createFormHook({
-  fieldComponents: {},
-  fieldContext,
-  formComponents: {},
-  formContext,
-});
-
-const MEMBER_FIELDS = {
-  groupId: "groupId",
-  name: "name",
-  timezone: "timezone",
-  title: "title",
-  workingHoursEnd: "workingHoursEnd",
-  workingHoursStart: "workingHoursStart",
-} as const;
 
 type MemberFieldsProps = {
   groups: Array<TeamGroup>;
@@ -127,4 +92,4 @@ const MemberFields = withFieldGroup<MemberFormValues, unknown, MemberFieldsProps
   ),
 });
 
-export { bindField, MEMBER_FIELDS, MemberFields, useMemberForm };
+export { MemberFields };

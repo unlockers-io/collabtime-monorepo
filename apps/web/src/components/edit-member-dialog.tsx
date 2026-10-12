@@ -14,7 +14,8 @@ import { Spinner } from "@repo/ui/components/spinner";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
-import { MEMBER_FIELDS, MemberFields, useMemberForm } from "@/components/member-fields";
+import { MemberFields } from "@/components/member-fields";
+import { MEMBER_FIELDS, useMemberForm } from "@/hooks/use-member-form";
 import { useTeamWrite } from "@/hooks/use-team-cache";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
 import { memberFormSchema, toMemberFormValues, toMemberInput } from "@/lib/member-input";
