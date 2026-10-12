@@ -9,10 +9,13 @@ import {
 } from "@repo/ui/components/tooltip";
 import { CheckCircle, XCircle } from "lucide-react";
 
-import { formatTimezoneLabel } from "@/lib/timezones";
+import { getTimezoneOption } from "@/components/timezone-field-options";
+import { isCommonTimezone } from "@/lib/timezones";
 import { formatHour } from "@/lib/utils";
 
 import type { ParsedRow } from "./parse-csv";
+
+const formatCsvHour = (hour: number) => (Number.isInteger(hour) ? formatHour(hour) : "--:--");
 
 type PreviewTableProps = {
   invalidCount: number;
@@ -72,13 +75,13 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
                   >
                     <td className="px-3 py-2 text-muted-foreground tabular-nums">{row.index}</td>
                     <td className="px-3 py-2 font-medium">
-                      {row.name || <span className="text-destructive italic">missing</span>}
+                      {row.member.name || <span className="text-destructive italic">missing</span>}
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
-                      {row.matchedTimezone ? (
+                      {isCommonTimezone(row.member.timezone) ? (
                         <span>
-                          {formatTimezoneLabel(row.matchedTimezone)}
-                          {row.rawTimezone !== row.matchedTimezone && (
+                          {getTimezoneOption(row.member.timezone).label}
+                          {row.rawTimezone !== row.member.timezone && (
                             <span className="ml-1 text-xs opacity-60">
                               (from {row.rawTimezone})
                             </span>
@@ -89,10 +92,11 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
                       )}
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
-                      {row.title || <span className="opacity-40">–</span>}
+                      {row.member.title || <span className="opacity-40">–</span>}
                     </td>
                     <td className="px-3 py-2 font-mono whitespace-nowrap text-muted-foreground tabular-nums">
-                      {formatHour(row.workingHoursStart)}–{formatHour(row.workingHoursEnd)}
+                      {formatCsvHour(row.member.workingHoursStart)}–
+                      {formatCsvHour(row.member.workingHoursEnd)}
                     </td>
                     <td className="px-3 py-2">
                       {isValid ? (

@@ -1,10 +1,9 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { teamQueryKeys } from "@/hooks/use-team-query";
+import { useTeamWrite } from "@/hooks/use-team-cache";
 import { updateTeamName } from "@/lib/actions/member-actions";
 
 type UseTeamNameEditArgs = {
@@ -14,7 +13,7 @@ type UseTeamNameEditArgs = {
 };
 
 const useTeamNameEdit = ({ isAdmin, teamId, teamName }: UseTeamNameEditArgs) => {
-  const queryClient = useQueryClient();
+  const writeTeam = useTeamWrite(teamId);
   const [, startTransition] = useTransition();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingTeamName, setEditingTeamName] = useState("");
@@ -37,10 +36,11 @@ const useTeamNameEdit = ({ isAdmin, teamId, teamName }: UseTeamNameEditArgs) => 
     }
 
     startTransition(async () => {
-      const result = await updateTeamName(teamId, trimmedName);
-      if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
-      } else {
+      const result = await writeTeam({
+        optimistic: (team) => ({ ...team, name: trimmedName }),
+        submit: () => updateTeamName(teamId, trimmedName),
+      });
+      if (!result.success) {
         toast.error(result.error);
       }
     });

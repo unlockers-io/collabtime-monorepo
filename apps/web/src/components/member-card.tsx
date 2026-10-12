@@ -22,18 +22,18 @@ import { toast } from "sonner";
 
 import { ConfirmRemoveDialog } from "@/components/confirm-remove-dialog";
 import { EditMemberDialog } from "@/components/edit-member-dialog";
-import { teamQueryKeys } from "@/hooks/use-team-query";
+import { useTeamWrite } from "@/hooks/use-team-cache";
 import { removeMember } from "@/lib/actions/member-actions";
 import { formatExpiresIn } from "@/lib/invitation-expiry";
 import { queryKeys } from "@/lib/query-keys";
 import {
   formatDuration,
   formatMinuteRange,
+  formatTimezoneCity,
   formatTimezoneLabel,
-  getMinutesUntilAvailable,
-  getMinutesUntilDayEnds,
-  isCurrentlyWorking,
+  getMemberStatus,
 } from "@/lib/timezones";
+import type { MemberStatus } from "@/lib/timezones";
 import { useHalfMinuteTick } from "@/lib/use-tick";
 import type { PendingTeamInvitation, TeamGroup, TeamMember } from "@/types";
 
@@ -49,19 +49,10 @@ export type MemberCardProps = {
   teamId: string;
 };
 
-const getStatus = (member: TeamMember) => {
-  const { timezone, workingHoursEnd, workingHoursStart } = member;
-  if (isCurrentlyWorking(timezone, workingHoursStart, workingHoursEnd)) {
-    return {
-      isWorking: true,
-      label: `Working · ${formatDuration(getMinutesUntilDayEnds(timezone, workingHoursEnd))} left`,
-    };
-  }
-  return {
-    isWorking: false,
-    label: `Off · starts in ${formatDuration(getMinutesUntilAvailable(timezone, workingHoursStart, workingHoursEnd))}`,
-  };
-};
+const formatStatus = (status: MemberStatus): string =>
+  status.kind === "working"
+    ? `Working · ${formatDuration(status.minutesLeft)} left`
+    : `Off · starts in ${formatDuration(status.minutesUntilStart)}`;
 
 type MemberActionsProps = {
   memberName: string;
@@ -103,9 +94,7 @@ const MemberActions = ({ memberName, onEdit, onRemove }: MemberActionsProps) => 
 );
 
 const getGroupName = (member: TeamMember, groups: Array<TeamGroup>) =>
-  member.groupId === undefined || member.groupId === ""
-    ? undefined
-    : groups.find((group) => group.id === member.groupId)?.name;
+  groups.find((group) => group.id === member.groupId)?.name;
 
 const hasAccount = (member: TeamMember) => member.userId !== undefined && member.userId !== "";
 
@@ -122,9 +111,16 @@ type MemberIdentityProps = {
   isOwnProfile: boolean;
   liveInvite?: PendingTeamInvitation;
   member: TeamMember;
+  now: Date | null;
 };
 
-const MemberIdentity = ({ groupName, isOwnProfile, liveInvite, member }: MemberIdentityProps) => (
+const MemberIdentity = ({
+  groupName,
+  isOwnProfile,
+  liveInvite,
+  member,
+  now,
+}: MemberIdentityProps) => (
   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
     <p className="flex min-w-0 items-center gap-1.5">
       <span className="truncate font-medium text-foreground">{member.name}</span>
@@ -149,14 +145,21 @@ const MemberIdentity = ({ groupName, isOwnProfile, liveInvite, member }: MemberI
       )}
     </p>
     <p className="truncate text-xs text-muted-foreground">
-      {[member.title, formatTimezoneLabel(member.timezone), groupName].filter(Boolean).join(" · ")}
+      {[
+        member.title,
+        now === null
+          ? formatTimezoneCity(member.timezone)
+          : formatTimezoneLabel(member.timezone, now),
+        groupName,
+      ]
+        .filter(Boolean)
+        .join(" · ")}
     </p>
   </div>
 );
 
-const MemberSchedule = ({ member }: { member: TeamMember }) => {
-  useHalfMinuteTick();
-  const status = getStatus(member);
+const MemberSchedule = ({ member, now }: { member: TeamMember; now: Date | null }) => {
+  const status = now === null ? null : getMemberStatus(member, now);
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs sm:flex-col sm:items-end">
@@ -164,16 +167,18 @@ const MemberSchedule = ({ member }: { member: TeamMember }) => {
         {formatMinuteRange(member.workingHoursStart * 60, member.workingHoursEnd * 60)}
         <span className="font-sans text-muted-foreground"> local</span>
       </span>
-      <span className="flex items-center gap-1.5 text-muted-foreground">
-        <span
-          aria-hidden
-          className={cn(
-            "size-1.5 shrink-0",
-            status.isWorking ? "bg-foreground" : "border border-muted-foreground",
-          )}
-        />
-        <span className="font-mono tabular-nums">{status.label}</span>
-      </span>
+      {status !== null && (
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span
+            aria-hidden
+            className={cn(
+              "size-1.5 shrink-0",
+              status.kind === "working" ? "bg-foreground" : "border border-muted-foreground",
+            )}
+          />
+          <span className="font-mono tabular-nums">{formatStatus(status)}</span>
+        </span>
+      )}
     </div>
   );
 };
@@ -190,20 +195,26 @@ const MemberAdminControls = ({
   teamId,
 }: MemberAdminControlsProps) => {
   const queryClient = useQueryClient();
+  const writeTeam = useTeamWrite(teamId);
   const [isPending, startTransition] = useTransition();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
 
   const handleRemove = () => {
     startTransition(async () => {
-      const result = await removeMember(teamId, member.id);
+      const result = await writeTeam({
+        optimistic: (team) => ({
+          ...team,
+          members: team.members.filter((m) => m.id !== member.id),
+        }),
+        submit: () => removeMember(teamId, member.id),
+      });
       if (!result.success) {
         toast.error(result.error);
         return;
       }
       setIsRemoveOpen(false);
       toast.success(`${member.name} removed`);
-      void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
     });
   };
@@ -284,6 +295,8 @@ const MemberCard = ({
   pendingInvite,
   teamId,
 }: MemberCardProps) => {
+  const tick = useHalfMinuteTick();
+  const now = tick === 0 ? null : new Date(tick);
   const hasCurrentUser = currentUserId !== undefined && currentUserId !== "";
   const canClaim = hasCurrentUser && !hasAccount(member) && !hasClaimedProfile;
 
@@ -300,8 +313,9 @@ const MemberCard = ({
           isOwnProfile={hasCurrentUser && member.userId === currentUserId}
           liveInvite={getLiveInvite(member, pendingInvite)}
           member={member}
+          now={now}
         />
-        <MemberSchedule member={member} />
+        <MemberSchedule member={member} now={now} />
       </div>
 
       {canEdit && (

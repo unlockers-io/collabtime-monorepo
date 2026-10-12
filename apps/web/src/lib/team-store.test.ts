@@ -1,403 +1,420 @@
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
+
+import type { TeamRecord } from "@/types";
 
 import {
   createTestMember,
   createTestTeamRecord,
   VALID_UUID,
   VALID_UUID_2,
+  VALID_UUID_3,
 } from "./actions/test-helpers";
-import {
-  applyTeamContents as applyTeamContentsWithDeps,
-  newTeamMember as newTeamMemberWithDeps,
-  readTeamRecord as readTeamRecordWithDeps,
-  readTeamSummaries as readTeamSummariesWithDeps,
-  readTeamSummary as readTeamSummaryWithDeps,
-  writeTeamRecord as writeTeamRecordWithDeps,
-} from "./team-store";
-import type { TeamStoreDeps } from "./team-store";
+import { teamCommands } from "./team-commands";
+import { createMemoryTeamStorage } from "./team-memory-storage";
+import type { TeamStorage } from "./team-storage";
+import { createTeamStore, teamNameTag, type TeamStoreDeps } from "./team-store";
 
-const createIdMock = vi.fn(() => "test-uuid");
-const isRedisConfiguredMock = vi.fn(() => true);
-const publishTeamEventMock = vi.fn<TeamStoreDeps["publishTeamEvent"]>();
-const readTeamJsonMock = vi.fn<TeamStoreDeps["readTeamJson"]>();
-const readTeamSummariesFromPostgresMock = vi.fn<TeamStoreDeps["readTeamSummariesFromPostgres"]>();
-const reportErrorMock = vi.fn<TeamStoreDeps["reportError"]>();
-const setMock = vi.fn<TeamStoreDeps["set"]>();
-const writeTeamMirrorMock = vi.fn<TeamStoreDeps["writeTeamMirror"]>();
-const deps: TeamStoreDeps = {
-  createId: createIdMock,
-  isRedisConfigured: isRedisConfiguredMock,
-  publishTeamEvent: publishTeamEventMock,
-  readTeamJson: readTeamJsonMock,
-  readTeamSummariesFromPostgres: readTeamSummariesFromPostgresMock,
-  reportError: reportErrorMock,
-  set: setMock,
-  writeTeamMirror: writeTeamMirrorMock,
-};
-const applyTeamContents = <TValue>(
-  teamId: string,
-  mutate: Parameters<typeof applyTeamContentsWithDeps<TValue>>[1],
-) => applyTeamContentsWithDeps(teamId, mutate, 100, deps);
-const newTeamMember = (overrides?: Parameters<typeof newTeamMemberWithDeps>[0]) =>
-  newTeamMemberWithDeps(overrides, deps);
-const readTeamRecord = (teamId: string) => readTeamRecordWithDeps(teamId, deps);
-const readTeamSummaries = (teamIds: Array<string>) => readTeamSummariesWithDeps(teamIds, deps);
-const readTeamSummary = (teamId: string) => readTeamSummaryWithDeps(teamId, deps);
-const writeTeamRecord = (
-  teamId: string,
-  team: Parameters<typeof writeTeamRecordWithDeps>[1],
-  ttl = 100,
-) => writeTeamRecordWithDeps(teamId, team, ttl, deps);
+const setup = (overrides: (memory: TeamStorage) => Partial<TeamStorage> = () => ({})) => {
+  const memory = createMemoryTeamStorage();
+  const storage: TeamStorage = {
+    compareAndSet: vi.fn(memory.compareAndSet),
+    mirror: vi.fn(memory.mirror),
+    publish: vi.fn(memory.publish),
+    readContents: vi.fn(memory.readContents),
+    readContentsBatch: vi.fn(memory.readContentsBatch),
+    ...overrides(memory),
+  };
+  let issued = 0;
+  const invalidateTeamName = vi.fn<TeamStoreDeps["invalidateTeamName"]>();
+  const reportError = vi.fn<TeamStoreDeps["reportError"]>();
+  const store = createTeamStore({
+    createId: () => {
+      issued += 1;
+      return `00000000-0000-4000-8000-${String(issued).padStart(12, "0")}`;
+    },
+    invalidateTeamName,
+    reportError,
+    storage,
+  });
+  const seed = (contents: string) => memory.compareAndSet(VALID_UUID, null, contents);
 
-type MirroredSpace = { members: Array<{ id: string }>; name: string; teamId: string };
-
-const mockMirroredSpaces = (spaces: Array<MirroredSpace>): void => {
-  readTeamSummariesFromPostgresMock.mockResolvedValue(
-    new Map(
-      spaces.map((space) => [
-        space.teamId,
-        { memberCount: space.members.length, name: space.name },
-      ]),
-    ),
-  );
+  return { invalidateTeamName, memory, reportError, seed, storage, store };
 };
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  setMock.mockResolvedValue();
-  publishTeamEventMock.mockResolvedValue();
-  writeTeamMirrorMock.mockResolvedValue();
-  readTeamJsonMock.mockResolvedValue(null);
-  isRedisConfiguredMock.mockReturnValue(true);
-  mockMirroredSpaces([]);
-});
+const memberAdded = (name: string) =>
+  teamCommands.addMember({
+    name,
+    timezone: "Europe/Berlin",
+    title: "",
+    workingHoursEnd: 17,
+    workingHoursStart: 9,
+  });
 
 describe("readTeamRecord", () => {
-  it("returns null for invalid UUID", async () => {
-    const result = await readTeamRecord("not-a-uuid");
+  it("returns null for an invalid UUID without reading storage", async () => {
+    const { storage, store } = setup();
 
-    expect(result).toBeNull();
-    expect(readTeamJsonMock).not.toHaveBeenCalled();
+    expect(await store.readTeamRecord("not-a-uuid")).toBeNull();
+    expect(storage.readContents).not.toHaveBeenCalled();
   });
 
-  it("parses string data from redis", async () => {
-    const team = createTestTeamRecord();
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(team));
+  it("reads a stored team and backfills missing arrays and member order", async () => {
+    const { seed, store } = setup();
+    await seed(
+      JSON.stringify({
+        ...createTestTeamRecord(),
+        groups: undefined,
+        members: [{ ...createTestMember(), order: undefined }],
+      }),
+    );
 
-    const result = await readTeamRecord(VALID_UUID);
-    expect(result).not.toBeNull();
-    expect(result?.id).toBe(team.id);
+    const record = await store.readTeamRecord(VALID_UUID);
+
+    expect(record?.groups).toEqual([]);
+    expect(record?.members[0]?.order).toBe(0);
   });
 
-  it("backfills empty groups array when missing", async () => {
-    const { groups: _, ...teamWithoutGroups } = createTestTeamRecord();
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(teamWithoutGroups));
+  it("reads a member whose group no longer exists as ungrouped", async () => {
+    const { seed, store } = setup();
+    const orphan = createTestMember({ groupId: VALID_UUID_2 });
+    await seed(JSON.stringify(createTestTeamRecord({ members: [orphan] })));
 
-    const result = await readTeamRecord(VALID_UUID);
-    expect(result?.groups).toEqual([]);
+    const record = await store.readTeamRecord(VALID_UUID);
+    expect(record?.members[0]?.groupId).toBeUndefined();
   });
 
-  it("backfills empty members array when missing", async () => {
-    const { members: _, ...teamWithoutMembers } = createTestTeamRecord();
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(teamWithoutMembers));
+  it("returns null and reports when storage cannot be read", async () => {
+    const { reportError, store } = setup(() => ({
+      readContents: () => Promise.reject(new Error("connection failed")),
+    }));
 
-    const result = await readTeamRecord(VALID_UUID);
-    expect(result?.members).toEqual([]);
-  });
-
-  it("backfills missing order on members", async () => {
-    const memberWithoutOrder = { ...createTestMember(), order: undefined };
-    const team = createTestTeamRecord({ members: [memberWithoutOrder as never] });
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(team));
-
-    const result = await readTeamRecord(VALID_UUID);
-    expect(result?.members[0]?.order).toBe(0);
-  });
-
-  it("returns null on redis error", async () => {
-    readTeamJsonMock.mockRejectedValue(new Error("connection failed"));
-
-    expect(await readTeamRecord(VALID_UUID)).toBeNull();
+    expect(await store.readTeamRecord(VALID_UUID)).toBeNull();
+    expect(reportError).toHaveBeenCalledOnce();
   });
 
   it("still reads a legacy blob the schema rejects", async () => {
-    const memberWithoutTitle = { ...createTestMember(), title: undefined };
-    const { createdAt: _, ...legacyTeam } = createTestTeamRecord({
-      members: [memberWithoutTitle as never],
-    });
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(legacyTeam));
+    const { seed, store } = setup();
+    await seed(
+      JSON.stringify({
+        ...createTestTeamRecord(),
+        createdAt: undefined,
+        members: [{ ...createTestMember(), title: undefined }],
+      }),
+    );
 
-    const result = await readTeamRecord(VALID_UUID);
+    const record = await store.readTeamRecord(VALID_UUID);
 
-    expect(result).not.toBeNull();
-    expect(result?.id).toBe(legacyTeam.id);
-    expect(result?.name).toBe(legacyTeam.name);
-    expect(result?.members).toHaveLength(1);
-    expect(result?.members[0]).toMatchObject({ name: "Alice", order: 0 });
+    expect(record?.name).toBe("Test Team");
+    expect(record?.members[0]).toMatchObject({ name: "Alice", order: 0 });
   });
 
   it("keeps unrecognised keys on a rescued blob so a write does not erase them", async () => {
+    const { seed, store } = setup();
     const { name: _, ...legacyTeam } = createTestTeamRecord();
-    readTeamJsonMock.mockResolvedValue(JSON.stringify({ ...legacyTeam, futureField: "keep me" }));
+    await seed(JSON.stringify({ ...legacyTeam, futureField: "keep me" }));
 
-    expect(await readTeamRecord(VALID_UUID)).toMatchObject({ futureField: "keep me", name: "" });
+    expect(await store.readTeamRecord(VALID_UUID)).toMatchObject({
+      futureField: "keep me",
+      name: "",
+    });
   });
 
   it("returns null when the blob holds no fields to read", async () => {
-    readTeamJsonMock.mockResolvedValue("42");
+    const { seed, store } = setup();
+    await seed("42");
 
-    expect(await readTeamRecord(VALID_UUID)).toBeNull();
-  });
-});
-
-describe("readTeamSummary", () => {
-  it("reads the name and member count from postgres without touching redis", async () => {
-    mockMirroredSpaces([{ members: [{ id: "m1" }], name: "Mirrored", teamId: VALID_UUID }]);
-
-    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: "Mirrored" });
-    expect(readTeamJsonMock).not.toHaveBeenCalled();
-  });
-
-  it("returns null for an invalid UUID without querying", async () => {
-    expect(await readTeamSummary("not-a-uuid")).toBeNull();
-    expect(readTeamSummariesFromPostgresMock).not.toHaveBeenCalled();
-  });
-
-  it("falls back to the contents when postgres has no space row", async () => {
-    const team = createTestTeamRecord({ members: [createTestMember()] });
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(team));
-
-    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: team.name });
-  });
-
-  it("falls back when the space row exists but the mirror never filled it", async () => {
-    const team = createTestTeamRecord({ members: [createTestMember()] });
-    mockMirroredSpaces([{ members: [], name: "", teamId: VALID_UUID }]);
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(team));
-
-    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: team.name });
-  });
-
-  it("keeps an empty summary when the contents are empty too", async () => {
-    mockMirroredSpaces([{ members: [], name: "", teamId: VALID_UUID }]);
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(createTestTeamRecord({ name: "" })));
-
-    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 0, name: "" });
-  });
-
-  it("returns null when neither store holds the team", async () => {
-    readTeamJsonMock.mockResolvedValue(null);
-
-    expect(await readTeamSummary(VALID_UUID)).toBeNull();
-  });
-
-  it("counts zero members for a team stored without a members array", async () => {
-    const { members: _, ...teamWithoutMembers } = createTestTeamRecord();
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(teamWithoutMembers));
-
-    expect(await readTeamSummary(VALID_UUID)).toEqual({
-      memberCount: 0,
-      name: teamWithoutMembers.name,
-    });
-  });
-
-  it("returns null for an unparseable blob rather than throwing", async () => {
-    readTeamJsonMock.mockResolvedValue("not json");
-
-    expect(await readTeamSummary(VALID_UUID)).toBeNull();
-  });
-
-  it("summarises a legacy blob the schema rejects instead of hiding the team", async () => {
-    const memberWithoutTitle = { ...createTestMember(), title: undefined };
-    const { createdAt: _, ...legacyTeam } = createTestTeamRecord({
-      members: [memberWithoutTitle as never],
-    });
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(legacyTeam));
-
-    expect(await readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: legacyTeam.name });
+    expect(await store.readTeamRecord(VALID_UUID)).toBeNull();
   });
 });
 
 describe("readTeamSummaries", () => {
-  it("resolves every team from one query", async () => {
-    mockMirroredSpaces([
-      { members: [{ id: "m1" }], name: "First", teamId: VALID_UUID },
-      { members: [{ id: "m2" }, { id: "m3" }], name: "Second", teamId: VALID_UUID_2 },
-    ]);
-
-    const summaries = await readTeamSummaries([VALID_UUID, VALID_UUID_2]);
-
-    expect(readTeamSummariesFromPostgresMock).toHaveBeenCalledTimes(1);
-    expect(summaries.get(VALID_UUID)).toEqual({ memberCount: 1, name: "First" });
-    expect(summaries.get(VALID_UUID_2)).toEqual({ memberCount: 2, name: "Second" });
-  });
-
-  it("omits a team no store holds instead of reporting it as empty", async () => {
-    mockMirroredSpaces([{ members: [{ id: "m1" }], name: "First", teamId: VALID_UUID }]);
-    readTeamJsonMock.mockResolvedValue(null);
-
-    const summaries = await readTeamSummaries([VALID_UUID, VALID_UUID_2]);
-
-    expect(summaries.has(VALID_UUID_2)).toBe(false);
-  });
-
-  it("skips the query when no id is a valid UUID", async () => {
-    expect(await readTeamSummaries(["not-a-uuid"])).toEqual(new Map());
-    expect(readTeamSummariesFromPostgresMock).not.toHaveBeenCalled();
-  });
-
-  it("asks for each distinct team once", async () => {
-    mockMirroredSpaces([{ members: [{ id: "m1" }], name: "First", teamId: VALID_UUID }]);
-
-    await readTeamSummaries([VALID_UUID, VALID_UUID]);
-
-    expect(readTeamSummariesFromPostgresMock).toHaveBeenCalledWith([VALID_UUID]);
-  });
-});
-
-describe("writeTeamRecord", () => {
-  it("writes the blob to redis and mirrors it to postgres", async () => {
-    const team = createTestTeamRecord();
-
-    await writeTeamRecord(VALID_UUID, team);
-
-    expect(setMock).toHaveBeenCalledWith(`team:${VALID_UUID}`, JSON.stringify(team), "EX", 100);
-    expect(writeTeamMirrorMock).toHaveBeenCalledWith(VALID_UUID, team);
-  });
-
-  it("honours a caller-supplied TTL", async () => {
-    await writeTeamRecord(VALID_UUID, createTestTeamRecord(), 42);
-
-    expect(setMock).toHaveBeenCalledWith(`team:${VALID_UUID}`, expect.any(String), "EX", 42);
-  });
-
-  it("resolves when the mirror fails so the redis write still counts", async () => {
-    writeTeamMirrorMock.mockRejectedValue(new Error("postgres down"));
-
-    await expect(writeTeamRecord(VALID_UUID, createTestTeamRecord())).resolves.toBeUndefined();
-    expect(setMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("propagates a redis failure and skips the mirror", async () => {
-    setMock.mockRejectedValue(new Error("connection failed"));
-
-    await expect(writeTeamRecord(VALID_UUID, createTestTeamRecord())).rejects.toThrow(
-      "connection failed",
+  it("reads current summaries together in one batch of canonical contents", async () => {
+    const { storage, store } = setup();
+    await store.createTeamContents(
+      VALID_UUID,
+      createTestTeamRecord({ members: [createTestMember()], name: "First" }),
     );
-    expect(writeTeamMirrorMock).not.toHaveBeenCalled();
-  });
-});
+    await store.createTeamContents(
+      VALID_UUID_2,
+      createTestTeamRecord({ id: VALID_UUID_2, name: "Second" }),
+    );
 
-describe("newTeamMember", () => {
-  it("fills the shared defaults and lets a caller override them", () => {
-    expect(newTeamMember()).toEqual({
-      id: "test-uuid",
-      name: "",
-      order: 0,
-      timezone: "America/New_York",
-      title: "",
-      workingHoursEnd: 17,
-      workingHoursStart: 9,
-    });
-    expect(newTeamMember({ order: 3, timezone: "Europe/Berlin" })).toMatchObject({
-      order: 3,
-      timezone: "Europe/Berlin",
-      workingHoursStart: 9,
-    });
-  });
-});
-
-describe("applyTeamContents", () => {
-  it("writes the mutated record and returns the mutation's value", async () => {
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
-
-    const result = await applyTeamContents(VALID_UUID, (team) => {
-      if (team === null) {
-        return { error: "Team not found", ok: false };
-      }
-      team.members.push(createTestMember());
-      return { ok: true, team, value: "written" };
-    });
-
-    expect(result).toEqual({ ok: true, value: "written" });
-    const [firstCall] = setMock.mock.calls;
-    assert(firstCall, "expected a Redis write");
-    const written = JSON.parse(firstCall[1]) as {
-      members: Array<unknown>;
-    };
-    expect(written.members).toHaveLength(1);
+    expect(
+      await store.readTeamSummaries([VALID_UUID_2, VALID_UUID, VALID_UUID_2, "invalid"]),
+    ).toEqual(
+      new Map([
+        [VALID_UUID_2, { memberCount: 0, name: "Second" }],
+        [VALID_UUID, { memberCount: 1, name: "First" }],
+      ]),
+    );
+    expect(storage.readContentsBatch).toHaveBeenCalledExactlyOnceWith([VALID_UUID_2, VALID_UUID]);
+    expect(storage.readContents).not.toHaveBeenCalled();
   });
 
-  it("does not report success when the write fails", async () => {
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
-    setMock.mockRejectedValue(new Error("connection failed"));
-
-    const result = await applyTeamContents(VALID_UUID, (team) => ({
-      ok: true,
-      team,
-      value: undefined,
+  it("serves current contents after a failed mirror and a later successful write", async () => {
+    const { reportError, storage, store } = setup((memory) => ({
+      mirror: vi
+        .fn(memory.mirror)
+        .mockImplementationOnce(memory.mirror)
+        .mockRejectedValueOnce(new Error("postgres down")),
     }));
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord({ name: "Before" }));
+    await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("After"));
 
-    expect(result).toEqual({
+    expect(reportError).toHaveBeenCalledOnce();
+    expect(await store.readTeamSummary(VALID_UUID)).toEqual({ memberCount: 0, name: "After" });
+
+    await store.applyTeamCommand(VALID_UUID, memberAdded("Ada"));
+    vi.mocked(storage.readContents).mockClear();
+
+    expect(await store.readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: "After" });
+    expect(storage.readContents).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])(
+    "ignores a delayed stale mirror even when it fails after writing: %s",
+    async (failAfterWrite) => {
+      const paused = Promise.withResolvers<undefined>();
+      const resume = Promise.withResolvers<undefined>();
+      const mirrored = new Map<string, TeamRecord>();
+      const { reportError, seed, store } = setup(() => ({
+        mirror: async (teamId, team) => {
+          if (team.name === "Old") {
+            paused.resolve(undefined);
+            await resume.promise;
+          }
+          mirrored.set(teamId, team);
+          if (team.name === "Old" && failAfterWrite) {
+            throw new Error("failed after Postgres commit");
+          }
+        },
+      }));
+      await seed(JSON.stringify(createTestTeamRecord()));
+      const old = store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("Old"));
+      await paused.promise;
+      try {
+        expect(
+          await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("New")),
+        ).toMatchObject({ ok: true });
+        expect(await store.applyTeamCommand(VALID_UUID, memberAdded("Ada"))).toMatchObject({
+          ok: true,
+        });
+        expect(mirrored.get(VALID_UUID)?.name).toBe("New");
+        expect(await store.readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: "New" });
+      } finally {
+        resume.resolve(undefined);
+        await old;
+      }
+
+      expect(mirrored.get(VALID_UUID)?.name).toBe("Old");
+      expect(await store.readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: "New" });
+      expect(reportError).toHaveBeenCalledTimes(failAfterWrite ? 1 : 0);
+    },
+  );
+
+  it("serves the contents even when the mirror was never filled", async () => {
+    const { memory, seed, store } = setup();
+    const team = createTestTeamRecord({ members: [createTestMember()] });
+    await seed(JSON.stringify(team));
+    await memory.mirror(VALID_UUID, createTestTeamRecord({ name: "" }));
+
+    expect(await store.readTeamSummary(VALID_UUID)).toEqual({ memberCount: 1, name: team.name });
+  });
+
+  it("summarises contents stored without a members array or matching schema", async () => {
+    const { seed, store } = setup();
+    await seed(
+      JSON.stringify({ ...createTestTeamRecord(), createdAt: undefined, members: undefined }),
+    );
+
+    expect(await store.readTeamSummary(VALID_UUID)).toEqual({ memberCount: 0, name: "Test Team" });
+  });
+
+  it("omits missing or corrupt teams without losing valid summaries in the batch", async () => {
+    const { seed, store } = setup();
+    await seed("not json");
+    await store.createTeamContents(VALID_UUID_2, createTestTeamRecord({ id: VALID_UUID_2 }));
+
+    const summaries = await store.readTeamSummaries([VALID_UUID, VALID_UUID_2, VALID_UUID_3]);
+
+    expect(summaries).toEqual(new Map([[VALID_UUID_2, { memberCount: 0, name: "Test Team" }]]));
+  });
+
+  it("propagates a canonical read failure even after a successful mirror", async () => {
+    const error = new Error("Redis unavailable");
+    const { store } = setup(() => ({ readContentsBatch: () => Promise.reject(error) }));
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord());
+
+    await expect(store.readTeamSummaries([VALID_UUID])).rejects.toBe(error);
+    await expect(store.readTeamSummary(VALID_UUID)).rejects.toBe(error);
+  });
+
+  it("skips the batch when none of the requested IDs is valid", async () => {
+    const { storage, store } = setup();
+
+    expect(await store.readTeamSummaries(["not-a-uuid"])).toEqual(new Map());
+    expect(storage.readContentsBatch).not.toHaveBeenCalled();
+  });
+});
+
+describe("applyTeamCommand", () => {
+  it("commits the change, then publishes, and returns the team with the command value", async () => {
+    const { storage, store } = setup();
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord());
+    vi.mocked(storage.publish).mockClear();
+
+    const result = await store.applyTeamCommand(VALID_UUID, memberAdded("Ada"));
+
+    assert(result.ok, "expected the command to commit");
+    expect(result.value.name).toBe("Ada");
+    expect(result.team.members).toEqual([result.value]);
+    const record = await store.readTeamRecord(VALID_UUID);
+    expect(record?.members).toEqual([result.value]);
+    expect(storage.publish).toHaveBeenCalledExactlyOnceWith(VALID_UUID);
+    expect(storage.compareAndSet).toHaveBeenCalledBefore(vi.mocked(storage.publish));
+  });
+
+  it("rejects without writing when the command refuses", async () => {
+    const { storage, store } = setup();
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord());
+    vi.mocked(storage.compareAndSet).mockClear();
+
+    expect(
+      await store.applyTeamCommand(VALID_UUID, teamCommands.removeMember("missing", undefined)),
+    ).toEqual({
+      error: "Member not found",
+      ok: false,
+      reason: "rejected",
+    });
+    expect(storage.compareAndSet).not.toHaveBeenCalled();
+  });
+
+  it("refuses a team with no contents", async () => {
+    const { store } = setup();
+
+    expect(await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("Team"))).toEqual({
+      error: "Team not found",
+      ok: false,
+      reason: "rejected",
+    });
+  });
+
+  it("reports a failed read rather than passing it off as a missing team", async () => {
+    const { store } = setup(() => ({
+      readContents: () => Promise.reject(new Error("connection failed")),
+    }));
+    const command = vi.fn(teamCommands.renameTeam("Team"));
+
+    expect(await store.applyTeamCommand(VALID_UUID, command)).toEqual({
+      error: "Could not read the team",
+      ok: false,
+      reason: "read-failed",
+    });
+    expect(command).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed write and never publishes it", async () => {
+    const { memory, seed, storage, store } = setup(() => ({
+      compareAndSet: () => Promise.reject(new Error("connection failed")),
+    }));
+    await seed(JSON.stringify(createTestTeamRecord()));
+
+    expect(await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("Team"))).toEqual({
       error: "Failed to save the team",
       ok: false,
       reason: "write-failed",
     });
+    expect(storage.publish).not.toHaveBeenCalled();
+    expect(await memory.readContents(VALID_UUID)).toBe(JSON.stringify(createTestTeamRecord()));
   });
 
-  it("reports an unconfigured store instead of a phantom success", async () => {
-    isRedisConfiguredMock.mockReturnValue(false);
+  it("skips the write when the command changes nothing", async () => {
+    const { storage, store } = setup();
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord());
+    vi.mocked(storage.compareAndSet).mockClear();
+    vi.mocked(storage.publish).mockClear();
 
-    const result = await applyTeamContents(VALID_UUID, (team) => ({
-      ok: true,
-      team,
-      value: undefined,
-    }));
+    const result = await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("Test Team"));
 
-    expect(result).toEqual({
-      error: "Team storage is unavailable",
+    expect(result).toMatchObject({ ok: true });
+    expect(storage.compareAndSet).not.toHaveBeenCalled();
+    expect(storage.publish).not.toHaveBeenCalled();
+  });
+
+  it("keeps both of two concurrent writes to the same team", async () => {
+    const { storage, store } = setup();
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord());
+    vi.mocked(storage.compareAndSet).mockClear();
+    vi.mocked(storage.publish).mockClear();
+    vi.mocked(storage.mirror).mockClear();
+
+    const results = await Promise.all([
+      store.applyTeamCommand(VALID_UUID, memberAdded("Ada")),
+      store.applyTeamCommand(VALID_UUID, memberAdded("Grace")),
+    ]);
+
+    expect(results.every((result) => result.ok)).toBe(true);
+    expect(storage.compareAndSet).toHaveBeenCalledTimes(3);
+    expect(storage.publish).toHaveBeenCalledTimes(2);
+    expect(storage.mirror).toHaveBeenCalledTimes(2);
+    const record = await store.readTeamRecord(VALID_UUID);
+    expect(record?.members.map((member) => [member.name, member.order])).toEqual([
+      ["Ada", 0],
+      ["Grace", 1],
+    ]);
+  });
+
+  it("gives up with a conflict when the contents keep changing", async () => {
+    const { seed, store } = setup(() => ({ compareAndSet: () => Promise.resolve(false) }));
+    await seed(JSON.stringify(createTestTeamRecord()));
+
+    expect(await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("Team"))).toEqual({
+      error: "This workspace changed while saving. Try again.",
       ok: false,
-      reason: "unconfigured",
+      reason: "conflict",
     });
-    expect(setMock).not.toHaveBeenCalled();
   });
 
-  it("reports a failed read rather than passing it off as a team with no contents", async () => {
-    readTeamJsonMock.mockRejectedValue(new Error("connection failed"));
-    const mutate = vi.fn((): { ok: true; team: null; value: undefined } => ({
-      ok: true,
-      team: null,
-      value: undefined,
+  it("still publishes and succeeds when the mirror write fails", async () => {
+    const { reportError, storage, store } = setup(() => ({
+      mirror: () => Promise.reject(new Error("postgres down")),
     }));
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord());
 
-    const result = await applyTeamContents(VALID_UUID, mutate);
+    const result = await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("Renamed"));
 
-    expect(result).toEqual({ error: "Could not read the team", ok: false, reason: "read-failed" });
-    expect(mutate).not.toHaveBeenCalled();
-    expect(setMock).not.toHaveBeenCalled();
+    expect(result.ok).toBe(true);
+    expect(storage.publish).toHaveBeenCalledTimes(2);
+    expect(reportError).toHaveBeenCalledTimes(2);
   });
 
-  it("passes a null record through so the mutation can refuse", async () => {
-    readTeamJsonMock.mockResolvedValue(null);
+  it("invalidates the cached name once when the name changes, and only then", async () => {
+    const { invalidateTeamName, store } = setup();
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord());
 
-    const result = await applyTeamContents(VALID_UUID, (team) =>
-      team === null ? { error: "Team not found", ok: false } : { ok: true, team, value: undefined },
-    );
+    await store.applyTeamCommand(VALID_UUID, memberAdded("Ada"));
+    await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("Test Team"));
+    expect(invalidateTeamName).not.toHaveBeenCalled();
 
-    expect(result).toEqual({ error: "Team not found", ok: false, reason: "rejected" });
-    expect(setMock).not.toHaveBeenCalled();
+    await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("Renamed"));
+    expect(invalidateTeamName).toHaveBeenCalledExactlyOnceWith(VALID_UUID);
   });
 
-  it("skips the write when the mutation has nothing to persist", async () => {
-    readTeamJsonMock.mockResolvedValue(JSON.stringify(createTestTeamRecord()));
+  it("keys the cached name on the team id", () => {
+    expect(teamNameTag("abc")).toBe("team-name:abc");
+    expect(teamNameTag("abc")).not.toBe(teamNameTag("def"));
+  });
+});
 
-    const result = await applyTeamContents(VALID_UUID, () => ({
-      ok: true,
-      team: null,
-      value: "unchanged",
-    }));
+describe("createTeamContents", () => {
+  it("refuses to overwrite existing contents", async () => {
+    const { store } = setup();
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord({ name: "First" }));
 
-    expect(result).toEqual({ ok: true, value: "unchanged" });
-    expect(setMock).not.toHaveBeenCalled();
+    expect(
+      await store.createTeamContents(VALID_UUID, createTestTeamRecord({ name: "Second" })),
+    ).toEqual({ error: "Team already exists", ok: false, reason: "rejected" });
+    const record = await store.readTeamRecord(VALID_UUID);
+    expect(record?.name).toBe("First");
   });
 });

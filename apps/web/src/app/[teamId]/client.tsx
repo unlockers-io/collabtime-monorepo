@@ -23,8 +23,8 @@ import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { ViewerZoneNote } from "@/components/timezone-visualizer/viewer-zone-note";
 import { WorkspaceVisibilityDialog } from "@/components/workspace-visibility-dialog";
+import { useTeamQuery } from "@/hooks/use-team-cache";
 import { useTeamLiveSync } from "@/hooks/use-team-live-sync";
-import { useTeamMutation, useTeamQuery } from "@/hooks/use-team-query";
 import type { TeamStatus } from "@/types";
 
 import { GroupsGrid } from "./client/groups-grid";
@@ -89,8 +89,6 @@ const TeamPageClient = ({
     refetch,
   } = useTeamQuery({ isLive: liveStatus === "live", teamId });
 
-  const teamMutation = useTeamMutation(teamId);
-
   useEffect(() => {
     if (teamError) {
       toast.error(teamError.message, { id: "team-query-error" });
@@ -123,21 +121,13 @@ const TeamPageClient = ({
     setEditingTeamName,
   } = useTeamNameEdit({ isAdmin, teamId, teamName });
 
-  const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members);
+  const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members, groups);
   const { excludedMemberIds, setExcludedMemberIds } = useExcludedMembers();
 
   const orderedMembers = [...members].toSorted((a, b) => a.order - b.order);
   const orderedGroups = [...groups].toSorted((a, b) => a.order - b.order);
 
-  const { handleDragEnd } = useDragEnd({
-    groups,
-    isAdmin,
-    members,
-    orderedGroups,
-    orderedMembers,
-    teamId,
-    teamMutation,
-  });
+  const { handleDragEnd } = useDragEnd({ orderedGroups, orderedMembers, teamId });
 
   const handleDragTypeChange = (dragType: "group" | "member" | null) => {
     setActiveDragType(dragType);

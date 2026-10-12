@@ -3,17 +3,17 @@
 import { TooltipProvider } from "@repo/ui/components/tooltip";
 import { useState } from "react";
 
-import { getMinuteOfDay, getViewerTimezone } from "@/lib/timezones";
+import { getTeamSchedule } from "@/lib/team-schedule";
 import { useHalfMinuteTick } from "@/lib/use-tick";
+import { useViewerTimezone } from "@/lib/use-viewer-timezone";
 import type { TeamGroup, TeamMember } from "@/types";
 
 import { CurrentTimeIndicator } from "./timezone-visualizer/current-time-indicator";
-import { EMPTY_GROUPS, EMPTY_IDS, useClientValue } from "./timezone-visualizer/helpers";
+import { EMPTY_GROUPS, EMPTY_IDS } from "./timezone-visualizer/helpers";
 import { Legend } from "./timezone-visualizer/legend";
 import { GroupHeader, MemberTimelineRow } from "./timezone-visualizer/member-timeline-row";
 import { SharedWindowSummary } from "./timezone-visualizer/shared-window-summary";
 import { TimeAxis } from "./timezone-visualizer/time-axis";
-import { getTimezoneData } from "./timezone-visualizer/timezone-data";
 
 type TimezoneVisualizerProps = {
   collapsedGroupIds?: ReadonlyArray<string>;
@@ -44,7 +44,7 @@ const TimezoneVisualizer = ({
     setLocalExcluded(next);
   };
 
-  const viewerTimezone = useClientValue(getViewerTimezone, "");
+  const viewerTimezone = useViewerTimezone();
   const tick = useHalfMinuteTick();
 
   if (members.length === 0 || !viewerTimezone || tick === 0) {
@@ -52,18 +52,16 @@ const TimezoneVisualizer = ({
   }
 
   const now = new Date(tick);
-  const nowMinute = getMinuteOfDay(viewerTimezone, now);
   const memberIds = new Set(members.map((member) => member.id));
   const excludedSet = new Set(excludedIds.filter((id) => memberIds.has(id)));
   const collapsedSet = new Set(collapsedGroupIds);
 
-  const { groupedSections, reading, rows } = getTimezoneData({
+  const { groupedSections, nowMinute, reading, rows } = getTeamSchedule({
     collapsedGroupIds: collapsedSet,
     excludedMemberIds: excludedSet,
     groups,
     members,
     now,
-    nowMinute,
     viewerTimezone,
   });
 
@@ -86,6 +84,7 @@ const TimezoneVisualizer = ({
         <SharedWindowSummary
           hasCollapsedGroups={hasCollapsedCounted}
           hasExplicitExclusions={excludedSet.size > 0}
+          now={now}
           onCountEveryone={() => {
             setExcluded([]);
           }}
@@ -135,6 +134,7 @@ const TimezoneVisualizer = ({
                           bestSlots={reading.bestSlots}
                           isInBestWindow={primaryAvailable.has(row.member.id)}
                           key={row.member.id}
+                          now={now}
                           onToggleCounted={toggleCounted}
                           row={row}
                           viewerTimezone={viewerTimezone}

@@ -5,27 +5,24 @@ import {
   createTestGroup,
   createTestGuards,
   createTestMember,
-  createTestTeamMutator,
   createTestTeamRecord,
+  createTestTeamStore,
   VALID_UUID,
   VALID_UUID_2,
   VALID_UUID_3,
 } from "./test-helpers";
 
-const testMutator = createTestTeamMutator();
+const harness = createTestTeamStore();
 const guards = createTestGuards();
 const { createGroup, removeGroup, reorderGroups, updateGroup } = createGroupActions({
   authorizeTeamAdmin: guards.authorizeTeamAdmin,
-  createId: () => "test-uuid",
-  mutateTeam: testMutator.mutateTeam,
+  mutateTeam: harness.mutateTeam,
 });
 
-const seedTeam = (team: ReturnType<typeof createTestTeamRecord>) => {
-  testMutator.seedTeam(team);
-};
+const { seedTeam } = harness;
 
-const persistedTeam = () => {
-  const team = testMutator.persistedTeam();
+const persistedTeam = async () => {
+  const team = await harness.readTeam();
   if (!team) {
     throw new Error("team was not persisted");
   }
@@ -33,7 +30,7 @@ const persistedTeam = () => {
 };
 
 beforeEach(() => {
-  testMutator.reset();
+  harness.reset();
   guards.reset();
 });
 
@@ -45,12 +42,12 @@ describe("authorization", () => {
     ["reorderGroups", () => reorderGroups(VALID_UUID, [])],
   ])("%s refuses a non-admin before validating input", async (_name, run) => {
     const team = createTestTeamRecord({ groups: [createTestGroup()] });
-    seedTeam(team);
+    await seedTeam(team);
     guards.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
 
     expect(await run()).toEqual({ error: "Admin access required", success: false });
     expect(guards.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
-    expect(testMutator.persistedTeam()).toEqual(team);
+    expect(await harness.readTeam()).toEqual(team);
   });
 });
 
@@ -65,15 +62,13 @@ describe("createGroup", () => {
   });
 
   it("returns error when team is not found", async () => {
-    testMutator.seedTeam(null);
-
     const result = await createGroup(VALID_UUID, { name: "Design" });
 
     expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("assigns order based on existing group count", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         groups: [createTestGroup({ id: "g1", order: 0 }), createTestGroup({ id: "g2", order: 1 })],
       }),
@@ -90,11 +85,11 @@ describe("createGroup", () => {
   });
 
   it("persists the new group via redis.set", async () => {
-    seedTeam(createTestTeamRecord({ groups: [] }));
+    await seedTeam(createTestTeamRecord({ groups: [] }));
 
     await createGroup(VALID_UUID, { name: "Design" });
 
-    const saved = persistedTeam();
+    const saved = await persistedTeam();
     expect(saved.groups).toHaveLength(1);
     expect(saved.groups[0]?.name).toBe("Design");
   });
@@ -108,15 +103,13 @@ describe("updateGroup", () => {
   });
 
   it("returns error when team is not found", async () => {
-    testMutator.seedTeam(null);
-
     const result = await updateGroup(VALID_UUID, VALID_UUID_2, { name: "New Name" });
 
     expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("returns error when group is not found", async () => {
-    seedTeam(createTestTeamRecord({ groups: [createTestGroup()] }));
+    await seedTeam(createTestTeamRecord({ groups: [createTestGroup()] }));
 
     const result = await updateGroup(VALID_UUID, VALID_UUID_3, { name: "New Name" });
 
@@ -124,7 +117,7 @@ describe("updateGroup", () => {
   });
 
   it("persists the updated group", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         groups: [createTestGroup({ id: VALID_UUID_2, name: "Engineering" })],
       }),
@@ -133,7 +126,8 @@ describe("updateGroup", () => {
     const result = await updateGroup(VALID_UUID, VALID_UUID_2, { name: "Product" });
 
     expect(result.success).toBe(true);
-    expect(persistedTeam().groups[0]?.name).toBe("Product");
+    const persisted = await persistedTeam();
+    expect(persisted.groups[0]?.name).toBe("Product");
   });
 });
 
@@ -145,15 +139,13 @@ describe("removeGroup", () => {
   });
 
   it("returns error when team is not found", async () => {
-    testMutator.seedTeam(null);
-
     const result = await removeGroup(VALID_UUID, VALID_UUID_2);
 
     expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("returns error when group is not found", async () => {
-    seedTeam(createTestTeamRecord({ groups: [createTestGroup({ id: VALID_UUID_3 })] }));
+    await seedTeam(createTestTeamRecord({ groups: [createTestGroup({ id: VALID_UUID_3 })] }));
 
     const result = await removeGroup(VALID_UUID, VALID_UUID_2);
 
@@ -162,9 +154,9 @@ describe("removeGroup", () => {
 
   it("unassigns members belonging to the removed group", async () => {
     const groupId = VALID_UUID_2;
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
-        groups: [createTestGroup({ id: groupId })],
+        groups: [createTestGroup({ id: groupId }), createTestGroup({ id: VALID_UUID_3, order: 1 })],
         members: [
           createTestMember({ groupId, id: "m1" }),
           createTestMember({ groupId: VALID_UUID_3, id: "m2" }),
@@ -176,7 +168,7 @@ describe("removeGroup", () => {
     const result = await removeGroup(VALID_UUID, groupId);
 
     expect(result.success).toBe(true);
-    const saved = persistedTeam();
+    const saved = await persistedTeam();
     const m1 = saved.members.find((m) => m.id === "m1");
     const m2 = saved.members.find((m) => m.id === "m2");
     const m3 = saved.members.find((m) => m.id === "m3");
@@ -186,7 +178,7 @@ describe("removeGroup", () => {
   });
 
   it("reindexes remaining group order values", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         groups: [
           createTestGroup({ id: "g1", name: "A", order: 0 }),
@@ -200,7 +192,7 @@ describe("removeGroup", () => {
     const result = await removeGroup(VALID_UUID, VALID_UUID_2);
 
     expect(result.success).toBe(true);
-    const saved = persistedTeam();
+    const saved = await persistedTeam();
     expect(saved.groups).toHaveLength(2);
     expect(saved.groups[0]).toEqual(expect.objectContaining({ id: "g1", order: 0 }));
     expect(saved.groups[1]).toEqual(expect.objectContaining({ id: "g3", order: 1 }));
@@ -209,15 +201,13 @@ describe("removeGroup", () => {
 
 describe("reorderGroups", () => {
   it("returns error when team is not found", async () => {
-    testMutator.seedTeam(null);
-
     const result = await reorderGroups(VALID_UUID, ["g1"]);
 
     expect(result).toEqual({ error: "Team not found", success: false });
   });
 
   it("returns error when group IDs do not match existing groups", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         groups: [createTestGroup({ id: "g1", order: 0 }), createTestGroup({ id: "g2", order: 1 })],
       }),
@@ -229,7 +219,7 @@ describe("reorderGroups", () => {
   });
 
   it("returns error when group IDs count mismatches", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         groups: [createTestGroup({ id: "g1", order: 0 }), createTestGroup({ id: "g2", order: 1 })],
       }),
@@ -241,7 +231,7 @@ describe("reorderGroups", () => {
   });
 
   it("updates order values based on new positions", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         groups: [
           createTestGroup({ id: "g1", name: "A", order: 0 }),
@@ -254,7 +244,7 @@ describe("reorderGroups", () => {
     const result = await reorderGroups(VALID_UUID, ["g3", "g1", "g2"]);
 
     expect(result.success).toBe(true);
-    const saved = persistedTeam();
+    const saved = await persistedTeam();
     expect(saved.groups[0]).toEqual(expect.objectContaining({ id: "g3", order: 0 }));
     expect(saved.groups[1]).toEqual(expect.objectContaining({ id: "g1", order: 1 }));
     expect(saved.groups[2]).toEqual(expect.objectContaining({ id: "g2", order: 2 }));
@@ -263,7 +253,7 @@ describe("reorderGroups", () => {
 
 describe("group limits", () => {
   it("allows the 50th group and rejects the next", async () => {
-    seedTeam(
+    await seedTeam(
       createTestTeamRecord({
         groups: Array.from({ length: 49 }, (_, index) => createTestGroup({ id: `group-${index}` })),
       }),
@@ -274,6 +264,7 @@ describe("group limits", () => {
       error: "A workspace can have up to 50 groups",
       success: false,
     });
-    expect(persistedTeam().groups).toHaveLength(50);
+    const persisted = await persistedTeam();
+    expect(persisted.groups).toHaveLength(50);
   });
 });

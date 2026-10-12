@@ -2,12 +2,8 @@ import { prisma } from "@repo/db";
 import { Redis } from "ioredis";
 import { z } from "zod";
 
-import {
-  diffTeamMirror,
-  readTeamMirror,
-  writeTeamMirror,
-} from "../src/lib/team-postgres-repository";
-import type { TeamRecord } from "../src/types";
+import { writeTeamMirror } from "../src/lib/team-postgres-repository";
+import type { TeamMember, TeamRecord } from "../src/types";
 
 const SCAN_COUNT = 200;
 
@@ -44,6 +40,7 @@ const parseTeam = (raw: string): TeamRecord | null => {
     return null;
   }
   const candidate = result.data;
+  const groupIds = new Set((candidate.groups ?? []).map((group) => group.id));
 
   return {
     ...candidate,
@@ -51,10 +48,112 @@ const parseTeam = (raw: string): TeamRecord | null => {
     groups: candidate.groups ?? [],
     id: candidate.id,
     members: (candidate.members ?? []).map((member, index) =>
-      Object.assign(member, { order: member.order ?? index }),
+      Object.assign(member, {
+        // The app reads a dangling groupId as ungrouped, and the mirror's foreign key rejects it.
+        groupId:
+          member.groupId !== undefined && groupIds.has(member.groupId) ? member.groupId : undefined,
+        order: member.order ?? index,
+      }),
     ),
     name: candidate.name,
   };
+};
+
+const readTeamMirror = async (teamId: string): Promise<TeamRecord | null> => {
+  const space = await prisma.space.findUnique({
+    include: {
+      groups: { orderBy: { order: "asc" } },
+      members: { orderBy: { order: "asc" } },
+    },
+    where: { teamId },
+  });
+
+  if (!space) {
+    return null;
+  }
+
+  const team: TeamRecord = {
+    createdAt: space.createdAt.toISOString(),
+    groups: space.groups.map((group) => ({ id: group.id, name: group.name, order: group.order })),
+    id: space.teamId,
+    members: space.members.map((row) => {
+      const member: TeamMember = {
+        id: row.id,
+        name: row.name,
+        order: row.order,
+        timezone: row.timezone,
+        title: row.title,
+        workingHoursEnd: row.workingHoursEnd,
+        workingHoursStart: row.workingHoursStart,
+      };
+      if (row.groupId !== null) {
+        member.groupId = row.groupId;
+      }
+      if (row.userId !== null) {
+        member.userId = row.userId;
+      }
+      return member;
+    }),
+    name: space.name,
+  };
+  if (space.adminPasswordHash !== null) {
+    team.adminPasswordHash = space.adminPasswordHash;
+  }
+  return team;
+};
+
+const FIELD_SEPARATOR = "\u0000";
+
+const canonicalGroups = (groups: TeamRecord["groups"]): string =>
+  groups
+    .toSorted((a, b) => a.id.localeCompare(b.id))
+    .map((group) => [group.id, group.order, group.name].join(FIELD_SEPARATOR))
+    .join("\n");
+
+const canonicalMembers = (members: Array<TeamMember>): string =>
+  members
+    .toSorted((a, b) => a.id.localeCompare(b.id))
+    .map((member) =>
+      [
+        member.id,
+        member.order,
+        member.name,
+        member.title,
+        member.timezone,
+        member.workingHoursStart,
+        member.workingHoursEnd,
+        member.groupId ?? "",
+        member.userId ?? "",
+      ].join(FIELD_SEPARATOR),
+    )
+    .join("\n");
+
+/**
+ * `createdAt` is excluded on purpose: the blob carries the string the app wrote,
+ * the mirror carries `Space.createdAt`, and for teams created before the space
+ * row those two legitimately differ. Everything else must match exactly.
+ */
+const diffTeamMirror = (expected: TeamRecord, actual: TeamRecord | null): Array<string> => {
+  if (actual === null) {
+    return ["missing from Postgres"];
+  }
+
+  const problems: Array<string> = [];
+
+  if (expected.name !== actual.name) {
+    problems.push(`name "${expected.name}" != "${actual.name}"`);
+  }
+  if ((expected.adminPasswordHash ?? null) !== (actual.adminPasswordHash ?? null)) {
+    problems.push("adminPasswordHash differs");
+  }
+  if (canonicalGroups(expected.groups) !== canonicalGroups(actual.groups)) {
+    problems.push(`groups differ (${expected.groups.length} vs ${actual.groups.length})`);
+  }
+  if (canonicalMembers(expected.members) !== canonicalMembers(actual.members)) {
+    problems.push(`members differ (${expected.members.length} vs ${actual.members.length})`);
+  }
+
+  return problems;
 };
 
 const main = async (): Promise<void> => {

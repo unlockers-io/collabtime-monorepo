@@ -4,17 +4,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@repo/ui/components/too
 import { cn } from "@repo/ui/lib/utils";
 import { ChevronRight } from "lucide-react";
 
-import {
-  formatMinuteRange,
-  formatTimezoneCity,
-  formatUtcOffset,
-  getOffsetMinutes,
-} from "@/lib/timezones";
+import { SLOTS_PER_HOUR } from "@/lib/team-schedule";
+import type { MemberRow } from "@/lib/team-schedule";
+import { formatMinuteRange, formatTimezoneCity, formatUtcOffset } from "@/lib/timezones";
 import type { TeamGroup } from "@/types";
 
 import { HOURS_IN_DAY, formatDayOffset } from "./helpers";
-import { SLOTS_PER_HOUR } from "./timezone-data";
-import type { MemberRow } from "./types";
 
 const HOURS = Array.from({ length: HOURS_IN_DAY }, (_, hour) => hour);
 const QUARTERS = Array.from({ length: SLOTS_PER_HOUR }, (_, quarter) => quarter);
@@ -33,12 +28,12 @@ type HourCellProps = {
   bestSlots: ReadonlyArray<boolean>;
   city: string;
   hour: number;
-  memberShiftMinutes: number;
   row: MemberRow;
 };
 
-const HourCell = ({ bestSlots, city, hour, memberShiftMinutes, row }: HourCellProps) => {
+const HourCell = ({ bestSlots, city, hour, row }: HourCellProps) => {
   const startMinute = hour * 60;
+  const { shiftMinutes } = row;
 
   return (
     <Tooltip>
@@ -61,13 +56,10 @@ const HourCell = ({ bestSlots, city, hour, memberShiftMinutes, row }: HourCellPr
           <span className="font-mono font-medium tabular-nums">
             {formatMinuteRange(startMinute, startMinute + 60)} your time
           </span>
-          {memberShiftMinutes !== 0 && (
+          {shiftMinutes !== 0 && (
             <span className="font-mono text-xs text-background/70 tabular-nums">
-              {formatMinuteRange(
-                startMinute + memberShiftMinutes,
-                startMinute + memberShiftMinutes + 60,
-              )}{" "}
-              in {city}
+              {formatMinuteRange(startMinute + shiftMinutes, startMinute + shiftMinutes + 60)} in{" "}
+              {city}
             </span>
           )}
         </div>
@@ -79,16 +71,19 @@ const HourCell = ({ bestSlots, city, hour, memberShiftMinutes, row }: HourCellPr
 type MemberTimelineRowProps = {
   bestSlots: ReadonlyArray<boolean>;
   isInBestWindow: boolean;
+  now: Date;
   onToggleCounted: (memberId: string) => void;
   row: MemberRow;
   viewerTimezone: string;
 };
 
+type RowContext = Pick<MemberTimelineRowProps, "isInBestWindow" | "now" | "viewerTimezone"> & {
+  hasBestWindow: boolean;
+};
+
 const describeRow = (
   row: MemberRow,
-  isInBestWindow: boolean,
-  hasBestWindow: boolean,
-  viewerTimezone: string,
+  { hasBestWindow, isInBestWindow, now, viewerTimezone }: RowContext,
 ): string => {
   const { interval, member } = row;
   const yourTime = formatMinuteRange(
@@ -97,7 +92,7 @@ const describeRow = (
   );
   const localTime = formatMinuteRange(member.workingHoursStart * 60, member.workingHoursEnd * 60);
   const parts = [
-    `Works ${yourTime} your time (${localTime} in ${formatTimezoneCity(member.timezone)}, ${formatUtcOffset(member.timezone)}).`,
+    `Works ${yourTime} your time (${localTime} in ${formatTimezoneCity(member.timezone)}, ${formatUtcOffset(member.timezone, now)}).`,
   ];
   const dayOffset = formatDayOffset(row.dayOffset);
   if (dayOffset !== null) {
@@ -117,6 +112,7 @@ const describeRow = (
 const MemberTimelineRow = ({
   bestSlots,
   isInBestWindow,
+  now,
   onToggleCounted,
   row,
   viewerTimezone,
@@ -124,7 +120,6 @@ const MemberTimelineRow = ({
   const { dayOffset, isCounted, member } = row;
   const descriptionId = `tz-row-${member.id}`;
   const dayOffsetLabel = formatDayOffset(dayOffset);
-  const memberShiftMinutes = getOffsetMinutes(member.timezone) - getOffsetMinutes(viewerTimezone);
   const city = formatTimezoneCity(member.timezone);
   const hasBestWindow = bestSlots.some(Boolean);
 
@@ -181,19 +176,12 @@ const MemberTimelineRow = ({
         </TooltipContent>
       </Tooltip>
       <span className="sr-only" id={descriptionId}>
-        {describeRow(row, isInBestWindow, hasBestWindow, viewerTimezone)}
+        {describeRow(row, { hasBestWindow, isInBestWindow, now, viewerTimezone })}
       </span>
 
       <div aria-hidden className="flex h-8 flex-1 gap-px">
         {HOURS.map((hour) => (
-          <HourCell
-            bestSlots={bestSlots}
-            city={city}
-            hour={hour}
-            key={hour}
-            memberShiftMinutes={memberShiftMinutes}
-            row={row}
-          />
+          <HourCell bestSlots={bestSlots} city={city} hour={hour} key={hour} row={row} />
         ))}
       </div>
     </div>

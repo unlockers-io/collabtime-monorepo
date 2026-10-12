@@ -14,8 +14,8 @@ const TeamEventSchema = z.object({
 });
 
 type TeamEvent = z.infer<typeof TeamEventSchema>;
-type TeamNotification = TeamEvent | { kind: "reconnect" };
-type TeamListener = (event: TeamNotification) => void;
+type TeamHubEvent = TeamEvent | { kind: "reconnect" };
+type TeamListener = (event: TeamHubEvent) => void;
 type ReportError = typeof log.error;
 type SubscriberEvents = {
   close: [];
@@ -39,6 +39,9 @@ type TeamEventHubDeps = {
   reportError: ReportError;
 };
 
+const isLiveSyncEnabled = (): boolean =>
+  isRedisConfigured() && getEnv("LIVE_SYNC_ENABLED") !== "false";
+
 const createTeamEventHub = (deps: TeamEventHubDeps) => {
   const listeners = new Map<string, Set<TeamListener>>();
   const readiness = new Set<() => void>();
@@ -55,7 +58,7 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
     deps.reportError({ error, message: "Live sync subscriber failed", route: "lib/team-events" });
   };
 
-  const dispatch = (targets: Iterable<TeamListener>, event: TeamNotification) => {
+  const dispatch = (targets: Iterable<TeamListener>, event: TeamHubEvent) => {
     const snapshot = [...targets];
     for (const listener of snapshot) {
       try {
@@ -228,7 +231,7 @@ const teamEventHub = createTeamEventHub({
 });
 
 const publishTeamEvent = createTeamEventPublisher({
-  enabled: () => isRedisConfigured() && getEnv("LIVE_SYNC_ENABLED") !== "false",
+  enabled: isLiveSyncEnabled,
   publish: (channel, message) => redis.publish(channel, message),
   reportError: log.error,
 });
@@ -236,8 +239,9 @@ const publishTeamEvent = createTeamEventPublisher({
 export {
   createTeamEventHub,
   createTeamEventPublisher,
+  isLiveSyncEnabled,
   publishTeamEvent,
   teamEventHub,
   TEAM_EVENTS_CHANNEL,
 };
-export type { TeamEvent, TeamListener, TeamNotification };
+export type { TeamEvent, TeamHubEvent, TeamListener };

@@ -10,11 +10,6 @@ import { UUIDSchema } from "./validation";
 
 type SessionUser = NonNullable<Awaited<ReturnType<typeof getSession>>>["user"];
 
-type TeamAuthResult = {
-  role: TeamRole;
-  userId: string;
-};
-
 type TeamAccess = {
   teamId: string;
   user: SessionUser;
@@ -30,15 +25,6 @@ const createTeamAuth = (deps: TeamAuthDeps) => {
   const findRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
     const membership = await deps.findMembership(teamId, userId);
     return membership !== null && isTeamRole(membership.role) ? membership.role : null;
-  };
-
-  const getTeamRole = async (teamId: string): Promise<TeamAuthResult | null> => {
-    const session = await deps.getSession();
-    if (!session) {
-      return null;
-    }
-    const role = await findRole(teamId, session.user.id);
-    return role === null ? null : { role, userId: session.user.id };
   };
 
   const authenticate = async (): Promise<ActionResult<SessionUser>> => {
@@ -78,10 +64,10 @@ const createTeamAuth = (deps: TeamAuthDeps) => {
 
   const authorizeTeamMember = (teamId: string) => authorizeTeam(teamId, () => true);
 
-  return { authenticate, authorizeTeamAdmin, authorizeTeamMember, getTeamRole };
+  return { authenticate, authorizeTeamAdmin, authorizeTeamMember };
 };
 
-const { authenticate, authorizeTeamAdmin, authorizeTeamMember, getTeamRole } = createTeamAuth({
+const { authenticate, authorizeTeamAdmin, authorizeTeamMember } = createTeamAuth({
   findMembership: (teamId, userId) =>
     prisma.membership.findUnique({
       select: { role: true },
@@ -91,5 +77,5 @@ const { authenticate, authorizeTeamAdmin, authorizeTeamMember, getTeamRole } = c
   reportError: log.error,
 });
 
-export { authenticate, authorizeTeamAdmin, authorizeTeamMember, createTeamAuth, getTeamRole };
+export { authenticate, authorizeTeamAdmin, authorizeTeamMember, createTeamAuth };
 export type { SessionUser, TeamAccess };

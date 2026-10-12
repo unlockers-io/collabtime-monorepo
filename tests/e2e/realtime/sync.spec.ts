@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import { prisma } from "@repo/db";
 
-import { expect, test as base } from "../fixtures/realtime.fixture";
+import { expect, test as base } from "../fixtures/workspace.fixture";
 
 const members = (page: Page) =>
   page.locator("section").filter({

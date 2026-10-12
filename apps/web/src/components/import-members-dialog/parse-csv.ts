@@ -1,15 +1,13 @@
-import type { COMMON_TIMEZONES } from "@/lib/timezones";
+import { NO_GROUP, toMemberInput } from "@/lib/member-input";
+import type { MemberInput } from "@/lib/member-input";
 import { fuzzyMatchTimezone } from "@/lib/timezones";
+import { TeamMemberInputSchema } from "@/lib/validation";
 
 type ParsedRow = {
   errors: Array<string>;
   index: number;
-  matchedTimezone: (typeof COMMON_TIMEZONES)[number] | null;
-  name: string;
+  member: MemberInput;
   rawTimezone: string;
-  title: string;
-  workingHoursEnd: number;
-  workingHoursStart: number;
 };
 
 const TEMPLATE_CSV = [
@@ -59,6 +57,11 @@ const parseCSVLine = (line: string, sep: string): Array<string> => {
   cells.push(cur.trim());
   return cells;
 };
+
+const parseHour = (cell: string) => (cell ? Math.trunc(Number(cell)) : Number.NaN);
+
+const describeTimezoneError = (rawTimezone: string) =>
+  rawTimezone ? `Unknown timezone: "${rawTimezone}"` : "Timezone is required";
 
 const parseCSV = (text: string): Array<ParsedRow> => {
   const lines = text.split(/\r?\n/v).filter((l) => l.trim());
@@ -111,44 +114,26 @@ const parseCSV = (text: string): Array<ParsedRow> => {
       continue;
     }
 
-    const name = (cells[nameIdx] ?? "").trim();
-    const rawTimezone = (cells[tzIdx] ?? "").trim();
-    const title = (cells[titleIdx] ?? "").trim();
-    const workStartRaw = (cells[startIdx] ?? "9").trim();
-    const workEndRaw = (cells[endIdx] ?? "17").trim();
-
-    const matchedTimezone = rawTimezone ? fuzzyMatchTimezone(rawTimezone) : null;
-    const workStart = workStartRaw ? Math.trunc(Number(workStartRaw)) : Number.NaN;
-    const workEnd = workEndRaw ? Math.trunc(Number(workEndRaw)) : Number.NaN;
-
-    const errors: Array<string> = [];
-    if (!name) {
-      errors.push("Name is required");
-    }
-    if (name.length > 100) {
-      errors.push("Name too long (max 100 chars)");
-    }
-    if (!rawTimezone) {
-      errors.push("Timezone is required");
-    } else if (!matchedTimezone) {
-      errors.push(`Unknown timezone: "${rawTimezone}"`);
-    }
-    if (Number.isNaN(workStart) || workStart < 0 || workStart > 23) {
-      errors.push("Work start must be 0–23");
-    }
-    if (Number.isNaN(workEnd) || workEnd < 0 || workEnd > 23) {
-      errors.push("Work end must be 0–23");
-    }
+    const rawTimezone = cells[tzIdx] ?? "";
+    const member = toMemberInput({
+      groupId: NO_GROUP,
+      name: cells[nameIdx] ?? "",
+      timezone: fuzzyMatchTimezone(rawTimezone) ?? rawTimezone,
+      title: cells[titleIdx] ?? "",
+      workingHoursEnd: parseHour(cells[endIdx] ?? "17"),
+      workingHoursStart: parseHour(cells[startIdx] ?? "9"),
+    });
+    const result = TeamMemberInputSchema.safeParse(member);
 
     rows.push({
-      errors,
+      errors: result.success
+        ? []
+        : result.error.issues.map((issue) =>
+            issue.path[0] === "timezone" ? describeTimezoneError(rawTimezone) : issue.message,
+          ),
       index: offset + 1,
-      matchedTimezone,
-      name,
+      member,
       rawTimezone,
-      title,
-      workingHoursEnd: Number.isNaN(workEnd) ? 17 : workEnd,
-      workingHoursStart: Number.isNaN(workStart) ? 9 : workStart,
     });
   }
 

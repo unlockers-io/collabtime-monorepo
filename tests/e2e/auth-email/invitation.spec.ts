@@ -1,6 +1,5 @@
-import { expect, test } from "@playwright/test";
-
 import { webUrl } from "../../../playwright.config";
+import { expect, test } from "../fixtures/workspace.fixture";
 import { extractLink, waitForEmail } from "../helpers/resend";
 import { makeTestEmail } from "../helpers/test-email";
 import { HomePage } from "../pages/home.page";

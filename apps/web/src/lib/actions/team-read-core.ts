@@ -1,7 +1,7 @@
 import type { getSession } from "@/lib/auth-server";
-import { SPACE_ACCESS_COOKIE_PREFIX } from "@/lib/space-access";
-import type { getTeamRole } from "@/lib/team-auth";
-import type { Team, TeamRole } from "@/types";
+import { canViewWorkspace } from "@/lib/workspace-access";
+import type { WorkspaceAccessStore, WorkspaceSpace } from "@/lib/workspace-access";
+import type { Team } from "@/types";
 
 import type { readTeamRecord } from "../team-store";
 import { UUIDSchema } from "../validation";
@@ -10,37 +10,14 @@ import { sanitizeTeam } from "./helpers";
 import type { ActionErrorEvent, ActionResult } from "./types";
 
 type TeamReadDeps = {
-  findSpace: (
-    teamId: string,
-  ) => Promise<{ accessPassword: string | null; id: string; isPrivate: boolean } | null>;
-  getAccessToken: (cookieName: string) => Promise<string | undefined>;
+  accessStore: WorkspaceAccessStore;
+  findSpace: (teamId: string) => Promise<WorkspaceSpace | null>;
   getSession: typeof getSession;
-  getTeamRole: typeof getTeamRole;
   readTeamRecord: typeof readTeamRecord;
   reportError: (event: ActionErrorEvent) => void;
-  verifyAccessToken: (token: string, spaceId: string, accessPassword: string | null) => boolean;
 };
 
 const createTeamReadActions = (deps: TeamReadDeps) => {
-  const getTeamMembershipRole = async (teamId: string): Promise<TeamRole | null> => {
-    try {
-      const uuidResult = UUIDSchema.safeParse(teamId);
-      if (!uuidResult.success) {
-        return null;
-      }
-
-      const result = await deps.getTeamRole(teamId);
-      return result?.role ?? null;
-    } catch (error) {
-      deps.reportError({
-        error,
-        message: "Failed to get membership role",
-        route: "actions/team-read",
-      });
-      return null;
-    }
-  };
-
   const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team }>> => {
     try {
       const uuidResult = UUIDSchema.safeParse(teamId);
@@ -56,18 +33,8 @@ const createTeamReadActions = (deps: TeamReadDeps) => {
       const session = await deps.getSession();
       const userId = session?.user.id;
 
-      if (space.isPrivate) {
-        const memberRole = await getTeamMembershipRole(teamId);
-        if (!memberRole) {
-          const accessToken = await deps.getAccessToken(`${SPACE_ACCESS_COOKIE_PREFIX}${space.id}`);
-          const hasGuestAccess =
-            accessToken !== undefined && accessToken !== ""
-              ? deps.verifyAccessToken(accessToken, space.id, space.accessPassword)
-              : false;
-          if (!hasGuestAccess) {
-            return { error: "This team is private", success: false };
-          }
-        }
+      if (!(await canViewWorkspace(space, userId, deps.accessStore))) {
+        return { error: "This team is private", success: false };
       }
 
       const team = await deps.readTeamRecord(teamId);
@@ -86,7 +53,7 @@ const createTeamReadActions = (deps: TeamReadDeps) => {
     }
   };
 
-  return { getPublicTeam, getTeamMembershipRole };
+  return { getPublicTeam };
 };
 
 export { createTeamReadActions };

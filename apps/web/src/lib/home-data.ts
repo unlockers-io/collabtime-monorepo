@@ -3,8 +3,7 @@ import { prisma } from "@repo/db";
 import { readTeamSummaries } from "@/lib/team-store";
 
 import { displayName } from "./display-name";
-import { openInvitationWhere } from "./invitations";
-import { normalizeEmail } from "./validation";
+import { invitations } from "./invitations";
 
 const getMyTeams = async (userId: string) => {
   const memberships = await prisma.membership.findMany({
@@ -51,14 +50,10 @@ const getMyTeams = async (userId: string) => {
 };
 
 const getPendingInvitations = async (email: string) => {
-  const invitations = await prisma.invitation.findMany({
-    include: { invitedBy: { select: { email: true, name: true } } },
-    orderBy: { createdAt: "desc" },
-    where: { email: normalizeEmail(email), ...openInvitationWhere(new Date()) },
-  });
-  const summaries = await readTeamSummaries(invitations.map((invitation) => invitation.teamId));
+  const open = await invitations.listOpenForEmail(email);
+  const summaries = await readTeamSummaries(open.map((invitation) => invitation.teamId));
 
-  return invitations.map((invitation) => {
+  return open.map((invitation) => {
     const name = summaries.get(invitation.teamId)?.name ?? "";
     return {
       expiresAt: invitation.expiresAt?.toISOString() ?? null,

@@ -12,6 +12,7 @@ import { Suspense, use, useState, useTransition } from "react";
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
 import { safeRedirectPath } from "@/lib/redirect-validation";
+import { useClientReady } from "@/lib/use-client-ready";
 
 import { AuthErrorNotice } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
@@ -44,6 +45,7 @@ const SignInLink = ({ searchParams }: Props) => {
 
 const RegisterForm = ({ searchParams }: Props) => {
   const { push, refresh } = useRouter();
+  const ready = useClientReady();
   const [isPending, startTransition] = useTransition();
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
   const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
@@ -120,7 +122,7 @@ const RegisterForm = ({ searchParams }: Props) => {
                     aria-invalid={isInvalid}
                     autoComplete="name"
                     className="h-11 sm:h-10"
-                    disabled={isPending}
+                    disabled={!ready || isPending}
                     id="register-name"
                     onBlur={field.handleBlur}
                     onChange={(e) => {
@@ -148,7 +150,7 @@ const RegisterForm = ({ searchParams }: Props) => {
                     aria-invalid={isInvalid}
                     autoComplete="email"
                     className="h-11 sm:h-10"
-                    disabled={isPending}
+                    disabled={!ready || isPending}
                     id="register-email"
                     onBlur={field.handleBlur}
                     onChange={(e) => {
@@ -179,7 +181,7 @@ const RegisterForm = ({ searchParams }: Props) => {
                     aria-invalid={isInvalid}
                     autoComplete="new-password"
                     className="h-11 sm:h-10"
-                    disabled={isPending}
+                    disabled={!ready || isPending}
                     id="register-password"
                     onBlur={field.handleBlur}
                     onChange={(e) => {
@@ -205,7 +207,7 @@ const RegisterForm = ({ searchParams }: Props) => {
           <Button
             aria-busy={isPending}
             className="h-11 w-full sm:h-10"
-            disabled={isPending}
+            disabled={!ready || isPending}
             type="submit"
           >
             {isPending ? "Creating account…" : "Create account"}

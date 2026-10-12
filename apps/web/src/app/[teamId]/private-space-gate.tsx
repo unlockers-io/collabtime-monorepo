@@ -14,6 +14,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { useClientReady } from "@/lib/use-client-ready";
+
 import { InviteMismatchNotice } from "./client/invite-mismatch-notice";
 
 const passwordSchema = z.object({
@@ -36,6 +38,7 @@ const PrivateSpaceGate = ({
   teamId,
 }: PrivateSpaceGateProps) => {
   const { refresh } = useRouter();
+  const ready = useClientReady();
   const [isPending, setIsPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
@@ -161,7 +164,7 @@ const PrivateSpaceGate = ({
                           aria-describedby={isInvalid ? "space-password-error" : undefined}
                           aria-invalid={isInvalid}
                           autoComplete="current-password"
-                          disabled={isPending}
+                          disabled={!ready || isPending}
                           id="space-password"
                           onBlur={field.handleBlur}
                           onChange={(e) => {
@@ -187,7 +190,7 @@ const PrivateSpaceGate = ({
                 </form.Field>
 
                 <Field>
-                  <Button aria-busy={isPending} disabled={isPending} type="submit">
+                  <Button aria-busy={isPending} disabled={!ready || isPending} type="submit">
                     {isPending && <Spinner className="mr-2 size-4" />}
                     {isPending ? "Checking…" : "Continue"}
                   </Button>

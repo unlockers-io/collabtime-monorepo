@@ -1,4 +1,12 @@
 import { withTimeout } from "./promise-timeout";
+import {
+  isAccessLossStatus,
+  LIVE_EVENTS,
+  RECONNECT_DELAY_MS,
+  RECONNECT_JITTER_MS,
+  teamEventsUrl,
+  type LiveEvent,
+} from "./team-live-protocol";
 
 type LiveSyncStatus = "connecting" | "live" | "offline";
 type LiveObserver = {
@@ -21,6 +29,7 @@ type LiveConnectionDeps = {
 const BACKOFF_MS = [30_000, 60_000, 120_000, 300_000, 600_000];
 
 const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
+  const url = teamEventsUrl(teamId);
   const observers = new Set<LiveObserver>();
   let status: LiveSyncStatus = "offline";
   let source: ReturnType<LiveConnectionDeps["createSource"]> | undefined;
@@ -31,15 +40,15 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
   let terminal = false;
   let disposed = false;
 
-  const notify = (event: keyof LiveObserver) => {
-    for (const listener of new Set([...observers].map((observer) => observer[event]))) {
+  const notify = (select: (observer: LiveObserver) => () => void) => {
+    for (const listener of new Set([...observers].map(select))) {
       listener();
     }
   };
   const setStatus = (next: LiveSyncStatus) => {
     if (status !== next) {
       status = next;
-      notify("status");
+      notify((observer) => observer.status);
     }
   };
   const stop = () => {
@@ -54,7 +63,7 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
     stop();
     setStatus(planned ? "connecting" : "offline");
     const delay = planned
-      ? 2000 + Math.floor(deps.random() * 500)
+      ? RECONNECT_DELAY_MS + Math.floor(deps.random() * RECONNECT_JITTER_MS)
       : BACKOFF_MS[Math.min(failures++, BACKOFF_MS.length - 1)];
     if (!disposed && !terminal && deps.isVisible()) {
       retryTimer = setTimeout(reconnect, delay);
@@ -64,18 +73,18 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
     terminal = true;
     stop();
     setStatus("offline");
-    notify("terminal");
+    notify((observer) => observer.terminal);
   };
   const recoverAccess = async () => {
     const probe = new AbortController();
     accessProbe = probe;
     try {
       const responseStatus = await withTimeout(
-        deps.checkAccess(`/api/teams/${teamId}/events`, probe.signal),
+        deps.checkAccess(url, probe.signal),
         5000,
         probe.signal,
       );
-      if (!probe.signal.aborted && (responseStatus === 403 || responseStatus === 404)) {
+      if (!probe.signal.aborted && isAccessLossStatus(responseStatus)) {
         revoked();
       }
     } catch {
@@ -97,39 +106,39 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
     setStatus("connecting");
     let connection: ReturnType<LiveConnectionDeps["createSource"]>;
     try {
-      connection = deps.createSource(`/api/teams/${teamId}/events`);
+      connection = deps.createSource(url);
     } catch {
       retry(false, connect);
       return;
     }
     source = connection;
-    const listen = (event: string, listener: () => void) => {
+    const listen = (event: LiveEvent | "error", listener: () => void) => {
       connection.addEventListener(event, () => {
         if (source === connection && !disposed && !terminal) {
           listener();
         }
       });
     };
-    listen("ready", () => {
+    listen(LIVE_EVENTS.ready, () => {
       failures = 0;
       setStatus("live");
-      notify("change");
+      notify((observer) => observer.change);
     });
-    listen("change", () => {
-      notify("change");
+    listen(LIVE_EVENTS.change, () => {
+      notify((observer) => observer.change);
     });
-    listen("space", () => {
-      notify("space");
+    listen(LIVE_EVENTS.space, () => {
+      notify((observer) => observer.space);
     });
-    listen("reconnect", () => {
+    listen(LIVE_EVENTS.reconnect, () => {
       retry(true, connect);
     });
     listen("error", () => {
       retry(false, connect);
       void recoverAccess();
     });
-    listen("revoked", revoked);
-    listen("deleted", revoked);
+    listen(LIVE_EVENTS.revoked, revoked);
+    listen(LIVE_EVENTS.deleted, revoked);
   };
   const visibilityChanged = () => {
     clearTimeout(hiddenTimer);

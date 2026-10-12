@@ -1,78 +1,35 @@
 import { prisma } from "@repo/db";
 
 import { log } from "@/lib/observability";
-import { SPACE_ACCESS_COOKIE_PREFIX, verifySpaceAccessToken } from "@/lib/space-access";
+import { parseAccessCookies, verifyAccessToken } from "@/lib/workspace-access";
 
-// Verification now needs each space's current password hash, so candidates are
-// read from the header first and the query is what proves them. Capped because
-// an unauthenticated caller controls how many space-access-* cookies they send,
-// and the cap is applied before the query rather than after.
+import { type GrantMembership, grantMembership } from "./membership";
+
+// Capped before the query: an unauthenticated caller controls how many access cookies they send.
 const MAX_CANDIDATE_SPACES = 20;
-
-type SpaceAccessCandidate = { spaceId: string; token: string };
 
 type PrivateSpace = { accessPassword: string | null; id: string; teamId: string };
 
-type MembershipUpsert = {
-  create: { role: "MEMBER"; teamId: string; userId: string };
-  update: { archivedAt: null };
-  where: { userId_teamId: { teamId: string; userId: string } };
-};
 type ErrorEvent = Parameters<typeof log.error>[0];
 
 type SpaceJoinDeps = {
   findPrivateSpaces: (spaceIds: Array<string>) => Promise<Array<PrivateSpace>>;
+  grantMembership: GrantMembership;
   reportError: (event: ErrorEvent) => void;
-  upsertMembership: (input: MembershipUpsert) => Promise<void>;
   verifyAccessToken: (token: string, spaceId: string, accessPassword: string | null) => boolean;
 };
 
-const spaceAccessCandidates = (cookieHeader: string | null): Array<SpaceAccessCandidate> => {
-  if (cookieHeader === null || cookieHeader === "") {
-    return [];
-  }
-
-  const candidates: Array<SpaceAccessCandidate> = [];
-  for (const part of cookieHeader.split(";")) {
-    const separatorIndex = part.indexOf("=");
-    if (separatorIndex === -1) {
-      continue;
-    }
-    const name = part.slice(0, separatorIndex).trim();
-    if (!name.startsWith(SPACE_ACCESS_COOKIE_PREFIX)) {
-      continue;
-    }
-    const spaceId = name.slice(SPACE_ACCESS_COOKIE_PREFIX.length);
-    const rawValue = part.slice(separatorIndex + 1).trim();
-    let token = rawValue;
-    try {
-      token = decodeURIComponent(rawValue);
-    } catch {
-      // Malformed percent-encoding; verify the raw value as-is.
-    }
-    candidates.push({ spaceId, token });
-    if (candidates.length >= MAX_CANDIDATE_SPACES) {
-      break;
-    }
-  }
-  return candidates;
-};
-
 const createSpaceJoiner = (deps: SpaceJoinDeps) => {
-  const joinPrivateSpace = (userId: string, teamId: string) => {
-    return deps.upsertMembership({
-      create: { role: "MEMBER", teamId, userId },
-      update: { archivedAt: null },
-      where: { userId_teamId: { teamId, userId } },
-    });
-  };
+  const joinPrivateSpace = (userId: string, teamId: string) =>
+    // Password viewers stay off the roster until they add their own profile.
+    deps.grantMembership({ role: "MEMBER", slot: null, teamId, userId });
 
   const joinPrivateSpacesFromCookies = async (
     userId: string,
     cookieHeader: string | null,
   ): Promise<void> => {
     try {
-      const candidates = spaceAccessCandidates(cookieHeader);
+      const candidates = parseAccessCookies(cookieHeader).slice(0, MAX_CANDIDATE_SPACES);
       if (candidates.length === 0) {
         return;
       }
@@ -121,12 +78,9 @@ const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
       select: { accessPassword: true, id: true, teamId: true },
       where: { id: { in: spaceIds }, isPrivate: true },
     }),
+  grantMembership,
   reportError: log.error,
-  upsertMembership: async (input) => {
-    await prisma.membership.upsert(input);
-  },
-  verifyAccessToken: (token, spaceId, accessPassword) =>
-    verifySpaceAccessToken(token, spaceId, accessPassword).valid,
+  verifyAccessToken,
 });
 
 export { createSpaceJoiner, joinPrivateSpace, joinPrivateSpacesFromCookies };

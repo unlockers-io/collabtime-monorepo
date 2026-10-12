@@ -115,6 +115,7 @@ describe("getEnv", () => {
   });
 
   it("returns undefined for unset optional vars", () => {
+    vi.stubEnv("RESEND_API_KEY", undefined);
     expect(getEnv("RESEND_API_KEY")).toBeUndefined();
   });
 });

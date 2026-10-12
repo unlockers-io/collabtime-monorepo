@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { acceptInvitation, declineInvitation } from "@/lib/actions/invitation-actions";
 import { runWithCleanup } from "@/lib/run-with-cleanup";
+import { useClientReady } from "@/lib/use-client-ready";
 
 const AcceptWorkspaceInvitation = ({
   invitationId,
@@ -19,8 +20,9 @@ const AcceptWorkspaceInvitation = ({
   teamName?: string;
 }) => {
   const { refresh } = useRouter();
+  const ready = useClientReady();
   const [action, setAction] = useState<"accept" | "decline" | null>(null);
-  const pending = action !== null;
+  const pending = !ready || action !== null;
   const [acceptError, setError] = useState<string | null>(null);
   const handleDecision = async (decision: "accept" | "decline") => {
     setAction(decision);

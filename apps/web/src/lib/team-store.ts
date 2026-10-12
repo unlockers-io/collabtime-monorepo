@@ -1,22 +1,18 @@
+import { updateTag } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { log } from "@/lib/observability";
-import { publishTeamEvent } from "@/lib/team-events";
 import {
   DEFAULT_MEMBER_TIMEZONE,
   DEFAULT_WORKING_HOURS_END,
   DEFAULT_WORKING_HOURS_START,
   isCommonTimezone,
 } from "@/lib/timezones";
-import type { TeamMember, TeamRecord } from "@/types";
+import type { TeamRecord } from "@/types";
 
-import { isRedisConfigured, readTeamJson, redis, teamKey, TEAM_ACTIVE_TTL_SECONDS } from "./redis";
-import {
-  readTeamSummariesFromPostgres,
-  type TeamSummary,
-  writeTeamMirror,
-} from "./team-postgres-repository";
+import type { TeamCommand } from "./team-commands";
+import { redisTeamStorage, type TeamStorage } from "./team-storage";
 import { UUIDSchema } from "./validation";
 
 const StoredGroupSchema = z.looseObject({
@@ -28,6 +24,7 @@ const StoredGroupSchema = z.looseObject({
 const StoredMemberSchema = z.looseObject({
   groupId: z.string().optional(),
   id: z.string(),
+  membershipRevision: z.string().optional(),
   name: z.string(),
   order: z.number().optional(),
   timezone: z.string(),
@@ -65,40 +62,40 @@ const RescuedTeamSchema = z.looseObject({
 });
 
 type MaybeStoredTeam = z.infer<typeof RescuedTeamSchema> | z.infer<typeof StoredTeamSchema>;
-type ErrorEvent = Parameters<typeof log.error>[0];
+type ReportError = (event: Parameters<typeof log.error>[0]) => void;
 
 type TeamStoreDeps = {
   createId: () => string;
-  isRedisConfigured: () => boolean;
-  publishTeamEvent: typeof publishTeamEvent;
-  readTeamJson: typeof readTeamJson;
-  readTeamSummariesFromPostgres: typeof readTeamSummariesFromPostgres;
-  reportError: (event: ErrorEvent) => void;
-  set: (key: string, value: string, mode: "EX", ttlSeconds: number) => Promise<void>;
-  writeTeamMirror: typeof writeTeamMirror;
+  invalidateTeamName: (teamId: string) => void;
+  reportError: ReportError;
+  storage: TeamStorage;
 };
 
-const defaultTeamStoreDeps: TeamStoreDeps = {
-  createId: uuidv4,
-  isRedisConfigured,
-  publishTeamEvent,
-  readTeamJson,
-  readTeamSummariesFromPostgres,
-  reportError: log.error,
-  set: async (key, value, mode, ttlSeconds) => {
-    await redis.set(key, value, mode, ttlSeconds);
-  },
-  writeTeamMirror,
-};
+type TeamContentsFailureReason = "conflict" | "read-failed" | "rejected" | "write-failed";
+type TeamSummary = { memberCount: number; name: string };
+type TeamContentsFailure = { error: string; ok: false; reason: TeamContentsFailureReason };
+type TeamContentsResult<TValue> =
+  | TeamContentsFailure
+  | { ok: true; team: TeamRecord; value: TValue };
+type Snapshot = { contents: string; team: TeamRecord } | null;
+
+const ROUTE = "lib/team-store";
+const MAX_APPLY_ATTEMPTS = 5;
+
+const isUuid = (value: string): boolean => UUIDSchema.safeParse(value).success;
 
 const asText = (value: string | undefined, fallback: string): string =>
   typeof value === "string" && value !== "" ? value : fallback;
 
-const asTimezone = (value: string | undefined, teamId: string, deps: TeamStoreDeps): string => {
+const asTimezone = (
+  value: string | undefined,
+  teamId: string,
+  reportError: ReportError,
+): string => {
   if (typeof value !== "string" || value === "") {
-    deps.reportError({
+    reportError({
       message: "Stored member timezone is missing, using the default",
-      route: "lib/team-store",
+      route: ROUTE,
       teamId,
     });
     return DEFAULT_MEMBER_TIMEZONE;
@@ -116,9 +113,9 @@ const asTimezone = (value: string | undefined, teamId: string, deps: TeamStoreDe
     // Intl rejects it, so every downstream toLocaleString call would throw.
   }
 
-  deps.reportError({
+  reportError({
     message: "Stored member timezone is not a supported zone, using the default",
-    route: "lib/team-store",
+    route: ROUTE,
     teamId,
     timezone: value,
   });
@@ -129,251 +126,227 @@ const asTimezone = (value: string | undefined, teamId: string, deps: TeamStoreDe
 const toTeamRecord = (
   teamId: string,
   stored: MaybeStoredTeam,
-  deps: TeamStoreDeps,
-): TeamRecord => ({
-  ...stored,
-  createdAt: asText(stored.createdAt, ""),
-  groups: Array.isArray(stored.groups) ? stored.groups : [],
-  id: asText(stored.id, teamId),
-  members: (Array.isArray(stored.members) ? stored.members : []).map((m, i) =>
-    Object.assign(m, { order: m.order ?? i, timezone: asTimezone(m.timezone, teamId, deps) }),
-  ),
-  name: asText(stored.name, ""),
-});
+  reportError: ReportError,
+): TeamRecord => {
+  const groups = Array.isArray(stored.groups) ? stored.groups : [];
+  const groupIds = new Set(groups.map((group) => group.id));
 
-type TeamRecordRead = { ok: false } | { ok: true; team: TeamRecord | null };
-
-const loadTeamRecord = async (teamId: string, deps: TeamStoreDeps): Promise<TeamRecordRead> => {
-  const uuidResult = UUIDSchema.safeParse(teamId);
-  if (!uuidResult.success) {
-    return { ok: true, team: null };
-  }
-
-  try {
-    const data = await deps.readTeamJson(teamId);
-
-    if (data === null) {
-      return { ok: true, team: null };
-    }
-
-    const raw: unknown = JSON.parse(data);
-    const parsed = StoredTeamSchema.safeParse(raw);
-
-    if (parsed.success) {
-      return { ok: true, team: toTeamRecord(teamId, parsed.data, deps) };
-    }
-
-    deps.reportError({
-      error: parsed.error,
-      message: "Stored team failed validation, reading it untrusted",
-      route: "lib/team-store",
-      teamId,
-    });
-
-    const rescued = RescuedTeamSchema.safeParse(raw);
-    return rescued.success
-      ? { ok: true, team: toTeamRecord(teamId, rescued.data, deps) }
-      : { ok: false };
-  } catch (error) {
-    deps.reportError({ error, message: "Failed to get team", route: "lib/team-store", teamId });
-    return { ok: false };
-  }
+  return {
+    ...stored,
+    createdAt: asText(stored.createdAt, ""),
+    groups,
+    id: asText(stored.id, teamId),
+    members: (Array.isArray(stored.members) ? stored.members : []).map((m, i) =>
+      Object.assign(m, {
+        // A dangling groupId breaks the mirror's foreign key, so it reads as ungrouped.
+        groupId: m.groupId !== undefined && groupIds.has(m.groupId) ? m.groupId : undefined,
+        order: m.order ?? i,
+        timezone: asTimezone(m.timezone, teamId, reportError),
+      }),
+    ),
+    name: asText(stored.name, ""),
+  };
 };
 
-const readTeamRecord = async (
-  teamId: string,
-  deps: TeamStoreDeps = defaultTeamStoreDeps,
-): Promise<TeamRecord | null> => {
-  const read = await loadTeamRecord(teamId, deps);
+const decodeTeam = (teamId: string, contents: string, reportError: ReportError) => {
+  const raw: unknown = JSON.parse(contents);
+  const parsed = StoredTeamSchema.safeParse(raw);
 
-  return read.ok ? read.team : null;
-};
-
-const isEmptySummary = (summary: TeamSummary): boolean =>
-  summary.memberCount === 0 && summary.name === "";
-
-const summaryFromContents = async (
-  teamId: string,
-  deps: TeamStoreDeps,
-): Promise<TeamSummary | null> => {
-  const read = await loadTeamRecord(teamId, deps);
-
-  if (!read.ok) {
-    deps.reportError({
-      message: "Could not check team contents against the Postgres summary",
-      route: "lib/team-store",
-      teamId,
-    });
-    return null;
+  if (parsed.success) {
+    return toTeamRecord(teamId, parsed.data, reportError);
   }
 
-  if (read.team === null) {
-    return null;
-  }
-
-  const fromContents = { memberCount: read.team.members.length, name: read.team.name };
-
-  return isEmptySummary(fromContents) ? null : fromContents;
-};
-
-/**
- * One query for every team the caller needs, keyed by teamId. A teamId with no
- * resolvable summary is absent from the map rather than defaulted, so a caller
- * cannot render a fabricated zero count.
- */
-const readTeamSummaries = async (
-  teamIds: Array<string>,
-  deps: TeamStoreDeps = defaultTeamStoreDeps,
-): Promise<Map<string, TeamSummary>> => {
-  const wanted = [...new Set(teamIds)].filter((id) => UUIDSchema.safeParse(id).success);
-
-  if (wanted.length === 0) {
-    return new Map<string, TeamSummary>();
-  }
-
-  const summaries = await deps.readTeamSummariesFromPostgres(wanted);
-
-  const unresolved = wanted.filter((id) => {
-    const summary = summaries.get(id);
-    return summary === undefined || isEmptySummary(summary);
+  reportError({
+    error: parsed.error,
+    message: "Stored team failed validation, reading it untrusted",
+    route: ROUTE,
+    teamId,
   });
 
-  const reconciled = await Promise.all(
-    unresolved.map(async (id) => [id, await summaryFromContents(id, deps)] as const),
-  );
+  const rescued = RescuedTeamSchema.safeParse(raw);
+  return rescued.success ? toTeamRecord(teamId, rescued.data, reportError) : null;
+};
 
-  for (const [id, summary] of reconciled) {
-    if (summary === null) {
-      continue;
+const createTeamStore = (deps: TeamStoreDeps) => {
+  const load = async (
+    teamId: string,
+  ): Promise<{ ok: false } | { ok: true; snapshot: Snapshot }> => {
+    if (!isUuid(teamId)) {
+      return { ok: true, snapshot: null };
     }
 
-    deps.reportError({
-      message: "Postgres team summary is absent or empty, served from team contents",
-      mirrored: summaries.get(id) ?? null,
-      route: "lib/team-store",
-      teamId: id,
-    });
-    summaries.set(id, summary);
-  }
+    try {
+      const contents = await deps.storage.readContents(teamId);
+      if (contents === null) {
+        return { ok: true, snapshot: null };
+      }
 
-  return summaries;
-};
+      const team = decodeTeam(teamId, contents, deps.reportError);
+      return team === null ? { ok: false } : { ok: true, snapshot: { contents, team } };
+    } catch (error) {
+      deps.reportError({ error, message: "Failed to get team", route: ROUTE, teamId });
+      return { ok: false };
+    }
+  };
 
-const readTeamSummary = async (
-  teamId: string,
-  deps: TeamStoreDeps = defaultTeamStoreDeps,
-): Promise<TeamSummary | null> => {
-  const summaries = await readTeamSummaries([teamId], deps);
+  /** Resolves false when the contents changed since `expected` was read. */
+  const commit = async (
+    teamId: string,
+    expected: string | null,
+    team: TeamRecord,
+  ): Promise<TeamContentsFailure | boolean> => {
+    try {
+      const stored = JSON.stringify(team);
+      if (!(await deps.storage.compareAndSet(teamId, expected, stored))) {
+        return false;
+      }
+    } catch (error) {
+      deps.reportError({ error, message: "Failed to write team contents", route: ROUTE, teamId });
+      return { error: "Failed to save the team", ok: false, reason: "write-failed" };
+    }
 
-  return summaries.get(teamId) ?? null;
-};
+    await deps.storage.publish(teamId);
 
-const writeTeamRecord = async (
-  teamId: string,
-  team: TeamRecord,
-  ttlSeconds: number = TEAM_ACTIVE_TTL_SECONDS,
-  deps: TeamStoreDeps = defaultTeamStoreDeps,
-): Promise<void> => {
-  await deps.set(teamKey(teamId), JSON.stringify(team), "EX", ttlSeconds);
+    try {
+      await deps.storage.mirror(teamId, team);
+    } catch (error) {
+      deps.reportError({
+        error,
+        message: "Failed to mirror team to Postgres",
+        route: ROUTE,
+        teamId,
+      });
+    }
 
-  await deps.publishTeamEvent(teamId, "contents");
+    return true;
+  };
 
-  try {
-    await deps.writeTeamMirror(teamId, team);
-  } catch (error) {
-    deps.reportError({
-      error,
-      message: "Failed to mirror team to Postgres",
-      route: "lib/team-store",
-    });
-  }
-};
+  const applyTeamCommand = async <TValue>(
+    teamId: string,
+    command: TeamCommand<TValue>,
+  ): Promise<TeamContentsResult<TValue>> => {
+    for (let attempt = 1; attempt <= MAX_APPLY_ATTEMPTS; attempt += 1) {
+      const read = await load(teamId);
+      if (!read.ok) {
+        return { error: "Could not read the team", ok: false, reason: "read-failed" };
+      }
+      if (read.snapshot === null) {
+        return { error: "Team not found", ok: false, reason: "rejected" };
+      }
 
-const newTeamMember = (
-  overrides?: Partial<TeamMember>,
-  deps: TeamStoreDeps = defaultTeamStoreDeps,
-): TeamMember => ({
-  id: deps.createId(),
-  name: "",
-  order: 0,
-  timezone: DEFAULT_MEMBER_TIMEZONE,
-  title: "",
-  workingHoursEnd: DEFAULT_WORKING_HOURS_END,
-  workingHoursStart: DEFAULT_WORKING_HOURS_START,
-  ...overrides,
-});
+      const { contents, team } = read.snapshot;
+      const before = JSON.stringify(team);
+      const previousName = team.name;
+      const outcome = command(team, { createId: deps.createId });
 
-type TeamContentsMutation<TValue> = (
-  team: TeamRecord | null,
-) => { error: string; ok: false } | { ok: true; team: TeamRecord | null; value: TValue };
+      if (!outcome.ok) {
+        return { ...outcome, reason: "rejected" };
+      }
+      if (JSON.stringify(outcome.team) === before) {
+        return outcome;
+      }
 
-export type TeamContentsFailureReason =
-  | "read-failed"
-  | "rejected"
-  | "unconfigured"
-  | "write-failed";
+      const committed = await commit(teamId, contents, outcome.team);
 
-type TeamContentsResult<TValue> =
-  | { ok: true; value: TValue }
-  | {
-      error: string;
-      ok: false;
-      reason: TeamContentsFailureReason;
+      if (committed === true) {
+        if (outcome.team.name !== previousName) {
+          deps.invalidateTeamName(teamId);
+        }
+        return outcome;
+      }
+      if (committed !== false) {
+        return committed;
+      }
+    }
+
+    deps.reportError({ message: "Team contents kept changing while saving", route: ROUTE, teamId });
+    return {
+      error: "This workspace changed while saving. Try again.",
+      ok: false,
+      reason: "conflict",
     };
+  };
 
-const applyTeamContents = async <TValue>(
-  teamId: string,
-  mutate: TeamContentsMutation<TValue>,
-  ttlSeconds: number = TEAM_ACTIVE_TTL_SECONDS,
-  deps: TeamStoreDeps = defaultTeamStoreDeps,
-): Promise<TeamContentsResult<TValue>> => {
-  if (!deps.isRedisConfigured()) {
-    deps.reportError({
-      message: "Team contents write skipped: REDIS_URL is unset",
-      route: "lib/team-store",
-      teamId,
-    });
-    return { error: "Team storage is unavailable", ok: false, reason: "unconfigured" };
-  }
+  const createTeamContents = async (
+    teamId: string,
+    team: TeamRecord,
+  ): Promise<TeamContentsFailure | { ok: true }> => {
+    const committed = await commit(teamId, null, team);
 
-  const read = await loadTeamRecord(teamId, deps);
+    if (committed === true) {
+      return { ok: true };
+    }
+    return committed === false
+      ? { error: "Team already exists", ok: false, reason: "rejected" }
+      : committed;
+  };
 
-  if (!read.ok) {
-    return { error: "Could not read the team", ok: false, reason: "read-failed" };
-  }
+  const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
+    const read = await load(teamId);
+    return read.ok ? (read.snapshot?.team ?? null) : null;
+  };
 
-  const outcome = mutate(read.team);
+  // Unreadable teams are omitted so callers cannot render a fabricated zero count.
+  const readTeamSummaries = async (teamIds: Array<string>): Promise<Map<string, TeamSummary>> => {
+    const wanted = [...new Set(teamIds)].filter(isUuid);
 
-  if (!outcome.ok) {
-    return { error: outcome.error, ok: false, reason: "rejected" };
-  }
+    if (wanted.length === 0) {
+      return new Map<string, TeamSummary>();
+    }
 
-  if (outcome.team === null) {
-    return { ok: true, value: outcome.value };
-  }
+    const contents = await deps.storage.readContentsBatch(wanted);
+    const summaries = new Map<string, TeamSummary>();
+    for (const [index, teamId] of wanted.entries()) {
+      const stored = contents[index];
+      if (stored === null || stored === undefined) {
+        continue;
+      }
+      try {
+        const team = decodeTeam(teamId, stored, deps.reportError);
+        if (team !== null) {
+          summaries.set(teamId, { memberCount: team.members.length, name: team.name });
+        }
+      } catch (error) {
+        deps.reportError({ error, message: "Failed to read team summary", route: ROUTE, teamId });
+      }
+    }
 
-  try {
-    await writeTeamRecord(teamId, outcome.team, ttlSeconds, deps);
-  } catch (error) {
-    deps.reportError({
-      error,
-      message: "Failed to write team contents",
-      route: "lib/team-store",
-      teamId,
-    });
-    return { error: "Failed to save the team", ok: false, reason: "write-failed" };
-  }
+    return summaries;
+  };
 
-  return { ok: true, value: outcome.value };
+  const readTeamSummary = async (teamId: string): Promise<TeamSummary | null> => {
+    const summaries = await readTeamSummaries([teamId]);
+    return summaries.get(teamId) ?? null;
+  };
+
+  return {
+    applyTeamCommand,
+    createTeamContents,
+    readTeamRecord,
+    readTeamSummaries,
+    readTeamSummary,
+  };
 };
 
-export type { TeamStoreDeps };
+const teamNameTag = (teamId: string): string => `team-name:${teamId}`;
+
+const { applyTeamCommand, createTeamContents, readTeamRecord, readTeamSummaries, readTeamSummary } =
+  createTeamStore({
+    createId: uuidv4,
+    invalidateTeamName: (teamId) => {
+      updateTag(teamNameTag(teamId));
+    },
+    reportError: log.error,
+    storage: redisTeamStorage,
+  });
 
 export {
-  applyTeamContents,
-  newTeamMember,
+  applyTeamCommand,
+  createTeamContents,
+  createTeamStore,
   readTeamRecord,
   readTeamSummaries,
   readTeamSummary,
-  writeTeamRecord,
+  teamNameTag,
 };
+export type { TeamContentsFailure, TeamContentsFailureReason, TeamContentsResult, TeamStoreDeps };

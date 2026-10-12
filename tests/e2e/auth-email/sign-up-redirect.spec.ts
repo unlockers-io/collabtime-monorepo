@@ -17,7 +17,24 @@ test.describe("Sign-up with redirect context", () => {
     const email = makeTestEmail(testInfo);
     const redirectPath = "/settings";
 
-    await page.goto(`${webUrl}/register?redirect=${encodeURIComponent(redirectPath)}`);
+    const scripts = Promise.withResolvers<undefined>();
+    await page.route("**/_next/static/**/*.js", async (route) => {
+      await scripts.promise;
+      await route.continue();
+    });
+    try {
+      await page.goto(`${webUrl}/register?redirect=${encodeURIComponent(redirectPath)}`, {
+        waitUntil: "commit",
+      });
+      await expect(page.getByLabel("Full Name")).toBeDisabled();
+      await expect(page.getByLabel("Email")).toBeDisabled();
+      await expect(page.getByLabel("Password")).toBeDisabled();
+      await expect(
+        page.getByRole("button", { includeHidden: true, name: /create account/i }),
+      ).toBeDisabled();
+    } finally {
+      scripts.resolve(undefined);
+    }
 
     await expect(page.getByRole("link", { name: /sign in/i })).toHaveAttribute(
       "href",

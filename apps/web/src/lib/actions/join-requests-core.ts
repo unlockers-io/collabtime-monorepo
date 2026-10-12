@@ -1,7 +1,7 @@
 import type { authenticate, authorizeTeamAdmin } from "@/lib/team-auth";
 
 import { displayName } from "../display-name";
-import type { SlotClaimResult } from "../team-slots";
+import type { GrantMembership, MembershipGrant } from "../membership";
 import { UUIDSchema } from "../validation";
 
 import type { ActionErrorEvent, ActionResult } from "./types";
@@ -24,13 +24,17 @@ type PendingJoinRequestView = {
   userName: string;
 };
 
-type JoinRequestDeps = {
-  approveMembership: (requestId: string, teamId: string, userId: string) => Promise<void>;
+type JoinRequestDeps<TTransaction> = {
+  approveMembership: (
+    requestId: string,
+    membership: MembershipGrant,
+    transaction: TTransaction,
+  ) => Promise<void>;
   authenticate: typeof authenticate;
   authorizeTeamAdmin: typeof authorizeTeamAdmin;
   denyRequest: (requestId: string) => Promise<void>;
-  ensureMemberSlot: (teamId: string, userId: string, name: string) => Promise<SlotClaimResult>;
   findRequest: (requestId: string) => Promise<JoinRequestRecord | null>;
+  grantMembership: GrantMembership<TTransaction>;
   listPending: (
     teamId: string,
   ) => Promise<{ memberUserIds: Array<string>; requests: Array<PendingJoinRequest> }>;
@@ -48,7 +52,7 @@ type JoinRequestDeps = {
   upsertRequest: (teamId: string, userId: string) => Promise<{ id: string }>;
 };
 
-const createJoinRequestActions = (deps: JoinRequestDeps) => {
+const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransaction>) => {
   const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: string }>> => {
     const auth = await deps.authenticate();
     if (!auth.success) {
@@ -114,19 +118,20 @@ const createJoinRequestActions = (deps: JoinRequestDeps) => {
       }
       const joinRequest = found.data;
 
-      const memberName = displayName(joinRequest.user.name, joinRequest.user.email);
-      const applied = await deps.ensureMemberSlot(
-        joinRequest.teamId,
-        joinRequest.userId,
-        memberName,
-      );
-      if (!applied.ok) {
-        return { error: applied.error, success: false };
+      const granted = await deps.grantMembership({
+        commit: (membership, _memberId, transaction) =>
+          deps.approveMembership(requestId, membership, transaction),
+        role: "MEMBER",
+        slot: { name: displayName(joinRequest.user.name, joinRequest.user.email) },
+        teamId: joinRequest.teamId,
+        userId: joinRequest.userId,
+      });
+      if (!granted.ok) {
+        return { error: granted.error, success: false };
       }
-      await deps.approveMembership(requestId, joinRequest.teamId, joinRequest.userId);
       deps.notifyRequester(joinRequest, "approved");
 
-      return { data: { memberId: applied.memberId }, success: true };
+      return { data: { memberId: granted.memberId }, success: true };
     } catch (error) {
       deps.reportError({
         error,

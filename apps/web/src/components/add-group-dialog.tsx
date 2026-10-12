@@ -15,13 +15,12 @@ import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { teamQueryKeys } from "@/hooks/use-team-query";
+import { useTeamWrite } from "@/hooks/use-team-cache";
 import { createGroup } from "@/lib/actions/group-actions";
 
 type AddGroupDialogProps = {
@@ -43,17 +42,16 @@ const DEFAULT_VALUES: FormValues = {
 };
 
 const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
-  const queryClient = useQueryClient();
+  const writeTeam = useTeamWrite(teamId);
   const [open, setOpen] = useState(false);
 
   const form = useForm({
     defaultValues: DEFAULT_VALUES,
     onSubmit: async ({ value }) => {
-      const result = await createGroup(teamId, { name: value.name });
+      const result = await writeTeam({ submit: () => createGroup(teamId, { name: value.name }) });
 
       if (result.success) {
         setOpen(false);
-        void queryClient.invalidateQueries({ queryKey: teamQueryKeys.team(teamId) });
         toast.success(`Group "${value.name}" created`);
       } else {
         toast.error(result.error);

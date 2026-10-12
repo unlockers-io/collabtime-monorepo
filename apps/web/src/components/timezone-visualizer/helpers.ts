@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from "react";
-
 import type { TeamGroup } from "@/types";
 
 const HOURS_IN_DAY = 24;
@@ -38,11 +36,6 @@ const formatNameList = (names: ReadonlyArray<string>): string => {
   return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 };
 
-const emptySubscribe = () => () => {};
-
-const useClientValue = <T>(clientValue: () => T, serverValue: T): T =>
-  useSyncExternalStore(emptySubscribe, clientValue, () => serverValue);
-
 export {
   EMPTY_GROUPS,
   EMPTY_IDS,
@@ -52,5 +45,4 @@ export {
   formatDayOffset,
   formatNameList,
   getEdgeAlignment,
-  useClientValue,
 };

@@ -2,11 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as joinRequests from "./join-requests";
 import { createJoinRequestActions } from "./join-requests-core";
-import { createTestGuards, VALID_UUID, VALID_UUID_2 } from "./test-helpers";
+import {
+  createTestGuards,
+  createTestTeamRecord,
+  createTestTeamStore,
+  VALID_UUID,
+  VALID_UUID_2,
+} from "./test-helpers";
 
 type JoinRequestDeps = Parameters<typeof createJoinRequestActions>[0];
 
-const ensureMemberSlot = vi.fn<JoinRequestDeps["ensureMemberSlot"]>();
+const harness = createTestTeamStore();
 const notifyAdmins = vi.fn<JoinRequestDeps["notifyAdmins"]>();
 const notifyRequester = vi.fn<JoinRequestDeps["notifyRequester"]>();
 const approveMembership = vi.fn<JoinRequestDeps["approveMembership"]>();
@@ -23,8 +29,8 @@ const { approveJoinRequest, denyJoinRequest, getPendingJoinRequests, requestToJo
     authenticate: guards.authenticate,
     authorizeTeamAdmin: guards.authorizeTeamAdmin,
     denyRequest,
-    ensureMemberSlot,
     findRequest,
+    grantMembership: harness.grantMembership,
     listPending,
     loadJoinContext,
     notifyAdmins,
@@ -41,10 +47,13 @@ const pendingRequest = {
   userId: "user-456",
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
-  ensureMemberSlot.mockResolvedValue({ created: true, memberId: "member-1", ok: true });
-  approveMembership.mockResolvedValue();
+  harness.reset();
+  await harness.seedTeam(createTestTeamRecord());
+  approveMembership.mockImplementation((_requestId, membership) =>
+    harness.membershipStore.grant(membership, undefined),
+  );
   denyRequest.mockResolvedValue();
   findRequest.mockResolvedValue(pendingRequest);
   listPending.mockResolvedValue({ memberUserIds: [], requests: [] });
@@ -166,46 +175,51 @@ describe("approveJoinRequest", () => {
     });
   });
 
-  it("requires an admin and commits the membership", async () => {
+  it("adds the requester to the roster, grants membership and notifies them", async () => {
     const result = await approveJoinRequest(VALID_UUID, "jr-1");
 
     expect(guards.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
-    expect(approveMembership).toHaveBeenCalledWith("jr-1", VALID_UUID, "user-456");
-    expect(result).toEqual({ data: { memberId: "member-1" }, success: true });
-  });
-
-  it("persists the member before approval", async () => {
-    await approveJoinRequest(VALID_UUID, "jr-1");
-
-    expect(ensureMemberSlot).toHaveBeenCalledWith(VALID_UUID, "user-456", "Bob");
-    expect(ensureMemberSlot).toHaveBeenCalledBefore(approveMembership);
+    expect(result).toEqual({ data: { memberId: "test-uuid" }, success: true });
+    const team = await harness.readTeam();
+    expect(team?.members).toEqual([
+      expect.objectContaining({ id: "test-uuid", name: "Bob", userId: "user-456" }),
+    ]);
+    expect(approveMembership).toHaveBeenCalledWith(
+      "jr-1",
+      {
+        role: "MEMBER",
+        teamId: VALID_UUID,
+        userId: "user-456",
+      },
+      undefined,
+    );
+    expect(harness.findMembership("user-456")).toEqual({ archivedAt: null, role: "MEMBER" });
     expect(notifyRequester).toHaveBeenCalledWith(pendingRequest, "approved");
   });
 
-  it("reports a failed member write", async () => {
-    ensureMemberSlot.mockResolvedValue({
-      error: "Failed to save the team",
-      ok: false,
-      reason: "write-failed",
-    });
+  it("grants nothing when the roster refuses the slot", async () => {
+    harness.reset();
 
-    const result = await approveJoinRequest(VALID_UUID, "jr-1");
-    expect(result.success).toBe(false);
+    expect(await approveJoinRequest(VALID_UUID, "jr-1")).toEqual({
+      error: "Team not found",
+      success: false,
+    });
     expect(approveMembership).not.toHaveBeenCalled();
+    expect(harness.findMembership("user-456")).toBeNull();
     expect(notifyRequester).not.toHaveBeenCalled();
   });
 
-  it("distinguishes an unreachable team", async () => {
-    ensureMemberSlot.mockResolvedValue({
-      error: "Could not read the team",
-      ok: false,
-      reason: "read-failed",
-    });
+  it("takes the new slot back when the request was decided meanwhile", async () => {
+    approveMembership.mockRejectedValue(new Error("Join request is no longer pending"));
 
     expect(await approveJoinRequest(VALID_UUID, "jr-1")).toEqual({
-      error: "Could not read the team",
+      error: "Failed to approve join request",
       success: false,
     });
+    const team = await harness.readTeam();
+    expect(team?.members).toEqual([]);
+    expect(harness.findMembership("user-456")).toBeNull();
+    expect(notifyRequester).not.toHaveBeenCalled();
   });
 });
 

@@ -1,8 +1,15 @@
 import type { log } from "./observability";
 import { withTimeout } from "./promise-timeout";
-import type { TeamListener, TeamNotification } from "./team-events";
+import type { TeamHubEvent, TeamListener } from "./team-events";
+import {
+  LIVE_EVENTS,
+  RECONNECT_DELAY_MS,
+  STREAM_LIFETIME_MS,
+  type AccessLoss,
+  type LiveEvent,
+} from "./team-live-protocol";
 
-type AccessResult = "allowed" | "deleted" | "revoked";
+type AccessResult = AccessLoss | "allowed";
 type TeamEventStreamDeps = {
   checkAccess: () => Promise<AccessResult>;
   isReady: () => boolean;
@@ -15,7 +22,6 @@ type TeamEventStreamDeps = {
   teamId: string;
 };
 
-const STREAM_LIFETIME_MS = 285_000;
 const HEARTBEAT_MS = 25_000;
 const encoder = new TextEncoder();
 const HEARTBEAT = encoder.encode(": ping\n\n");
@@ -88,15 +94,15 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
     }
   };
 
-  const send = (name: string, data: Record<string, string | number> = {}) => {
-    const retry = name === "ready" ? "retry: 2000\n" : "";
+  const send = (name: LiveEvent, data: Record<string, string | number> = {}) => {
+    const retry = name === LIVE_EVENTS.ready ? `retry: ${RECONNECT_DELAY_MS}\n` : "";
     if (enqueue(encoder.encode(`${retry}event: ${name}\ndata: ${JSON.stringify(data)}\n\n`))) {
       eventsSent += 1;
     }
   };
 
   const reconnect = (reason: string) => {
-    send("reconnect");
+    send(LIVE_EVENTS.reconnect);
     close(reason);
   };
 
@@ -135,20 +141,20 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
         return;
       }
       if (initialized) {
-        send("space");
+        send(LIVE_EVENTS.space);
       } else {
         initialized = true;
-        send("ready", { teamId: deps.teamId });
+        send(LIVE_EVENTS.ready, { teamId: deps.teamId });
         deps.log.info({ ...context, message: "Live sync opened" });
       }
     }
     if (initialized && contentsPending) {
       contentsPending = false;
-      send("change", { at: Date.now(), kind: "contents" });
+      send(LIVE_EVENTS.change, { at: Date.now(), kind: "contents" });
     }
   };
 
-  const handleEvent = (event: TeamNotification) => {
+  const handleEvent = (event: TeamHubEvent) => {
     if (closed) {
       return;
     }

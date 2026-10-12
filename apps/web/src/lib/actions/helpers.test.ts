@@ -1,18 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { checkUuid, sanitizeTeam } from "./helpers";
+import { teamCommands } from "../team-commands";
+import { createMemoryTeamStorage } from "../team-memory-storage";
+import { createTeamStore } from "../team-store";
+import { TeamNameSchema } from "../validation";
+
+import { createTeamMutator, invalidUuid, parsedInput, sanitizeTeam } from "./helpers";
 import {
   createTestAccess,
   createTestMember,
-  createTestTeamMutator,
   createTestTeamRecord,
+  createTestTeamStore,
   VALID_UUID,
 } from "./test-helpers";
 
-const testMutator = createTestTeamMutator();
-const { mutateTeam } = testMutator;
 const access = createTestAccess();
-const continueMutation = () => ({ ok: true as const, value: undefined });
 
 describe("sanitizeTeam", () => {
   it("strips adminPasswordHash from output", () => {
@@ -20,6 +22,16 @@ describe("sanitizeTeam", () => {
     const result = sanitizeTeam(team);
 
     expect(result).not.toHaveProperty("adminPasswordHash");
+  });
+
+  it("strips membership revisions from every public member", () => {
+    const team = createTestTeamRecord({
+      members: [
+        { ...createTestMember({ userId: "user-123" }), membershipRevision: "private-revision" },
+      ],
+    });
+    expect(sanitizeTeam(team, "user-123").members[0]).not.toHaveProperty("membershipRevision");
+    expect(sanitizeTeam(team).members[0]).not.toHaveProperty("membershipRevision");
   });
 
   it("preserves userId when it matches currentUserId", () => {
@@ -57,108 +69,123 @@ describe("sanitizeTeam", () => {
   });
 });
 
-describe("checkUuid", () => {
-  it("returns ok for valid UUIDs", () => {
-    expect(checkUuid(VALID_UUID, "team ID")).toEqual({ ok: true, value: undefined });
+describe("invalidUuid", () => {
+  it("passes a valid UUID", () => {
+    expect(invalidUuid(VALID_UUID, "team ID")).toBeNull();
   });
 
-  it("returns labelled error for invalid UUIDs", () => {
-    expect(checkUuid("not-a-uuid", "member ID")).toEqual({
+  it("returns a labelled failure for an invalid UUID", () => {
+    expect(invalidUuid("not-a-uuid", "member ID")).toEqual({
       error: "Invalid member ID",
-      ok: false,
+      success: false,
+    });
+  });
+});
+
+describe("parsedInput", () => {
+  it("returns the parsed data or the first issue", () => {
+    expect(parsedInput(TeamNameSchema.safeParse("  Team  "), "Invalid")).toEqual({
+      data: "Team",
+      success: true,
+    });
+    expect(parsedInput(TeamNameSchema.safeParse("   "), "Invalid")).toEqual({
+      error: "Workspace name is required",
+      success: false,
     });
   });
 });
 
 describe("mutateTeam", () => {
+  const harness = createTestTeamStore();
+  const { mutateTeam } = harness;
+
   beforeEach(() => {
-    testMutator.reset();
+    harness.reset();
   });
 
-  it("short-circuits on prelude failure before load", async () => {
-    const mutate = vi.fn();
-
+  it("returns 'Team not found' when the team has no contents", async () => {
     const result = await mutateTeam({
       access,
+      command: teamCommands.renameTeam("Renamed"),
       errorContext: "do thing",
-      mutate,
-      prelude: () => ({ error: "Bad input", ok: false }),
-    });
-
-    expect(result).toEqual({ error: "Bad input", success: false });
-    expect(mutate).not.toHaveBeenCalled();
-  });
-
-  it("converts thrown prelude errors to 'Failed to <errorContext>'", async () => {
-    const result = await mutateTeam({
-      access,
-      errorContext: "remove widget",
-      mutate: () => ({ ok: true, value: 1 }),
-      prelude: () => Promise.reject(new Error("Database unavailable")),
-    });
-
-    expect(result).toEqual({ error: "Failed to remove widget", success: false });
-    expect(testMutator.reportError).toHaveBeenCalledOnce();
-  });
-
-  it("returns 'Team not found' when redis has no team", async () => {
-    testMutator.seedTeam(null);
-    const mutate = vi.fn();
-
-    const result = await mutateTeam({
-      access,
-      errorContext: "do thing",
-      mutate,
-      prelude: continueMutation,
     });
 
     expect(result).toEqual({ error: "Team not found", success: false });
-    expect(mutate).not.toHaveBeenCalled();
   });
 
-  it("passes prelude value into mutate and persists on success", async () => {
-    const team = createTestTeamRecord();
-    testMutator.seedTeam(team);
+  it("persists the command and returns the committed team with its value", async () => {
+    await harness.seedTeam(createTestTeamRecord());
 
     const result = await mutateTeam({
       access,
+      command: teamCommands.addGroup("Design"),
       errorContext: "do thing",
-      mutate: (loaded, payload) => {
-        loaded.name = payload;
-        return { ok: true, value: payload };
+    });
+
+    assert(result.success, "expected the command to commit");
+    expect(result.data.value).toEqual({ id: "test-uuid", name: "Design", order: 0 });
+    expect(result.data.team.groups).toEqual([result.data.value]);
+    const stored = await harness.readTeam();
+    expect(stored?.groups).toEqual([result.data.value]);
+  });
+
+  it("does not persist when the command rejects", async () => {
+    const team = createTestTeamRecord();
+    await harness.seedTeam(team);
+
+    const result = await mutateTeam({
+      access,
+      command: teamCommands.removeMember("missing", undefined),
+      errorContext: "do thing",
+    });
+
+    expect(result).toEqual({ error: "Member not found", success: false });
+    expect(await harness.readTeam()).toEqual(team);
+  });
+
+  it("names the action when the write fails", async () => {
+    const storage = createMemoryTeamStorage();
+    const store = createTeamStore({
+      createId: () => VALID_UUID,
+      invalidateTeamName: vi.fn<() => void>(),
+      reportError: vi.fn<() => void>(),
+      storage: {
+        ...storage,
+        compareAndSet: (teamId, expected, next) =>
+          expected === null
+            ? storage.compareAndSet(teamId, expected, next)
+            : Promise.reject(new Error("Redis unavailable")),
       },
-      prelude: () => ({ ok: true, value: "Renamed" }),
+    });
+    await store.createTeamContents(VALID_UUID, createTestTeamRecord());
+    const failingMutate = createTeamMutator({
+      applyTeamCommand: store.applyTeamCommand,
+      reportError: vi.fn<() => void>(),
     });
 
-    expect(result).toEqual({ data: "Renamed", success: true });
-    expect(testMutator.persistedTeam()?.name).toBe("Renamed");
+    const result = await failingMutate({
+      access,
+      command: teamCommands.renameTeam("Renamed"),
+      errorContext: "rename widget",
+    });
+
+    expect(result).toEqual({ error: "Failed to rename widget", success: false });
   });
 
-  it("does not persist when mutate returns a domain error", async () => {
-    const team = createTestTeamRecord();
-    testMutator.seedTeam(team);
-
-    const result = await mutateTeam({
-      access,
-      errorContext: "do thing",
-      mutate: () => ({ error: "Item not found", ok: false }),
-      prelude: continueMutation,
+  it("converts an unexpected throw into 'Failed to <errorContext>'", async () => {
+    const reportError = vi.fn<() => void>();
+    const throwingMutate = createTeamMutator({
+      applyTeamCommand: () => Promise.reject(new Error("Database unavailable")),
+      reportError,
     });
 
-    expect(result).toEqual({ error: "Item not found", success: false });
-    expect(testMutator.persistedTeam()).toEqual(team);
-  });
-
-  it("supports async preludes", async () => {
-    testMutator.seedTeam(createTestTeamRecord());
-
-    const result = await mutateTeam({
+    const result = await throwingMutate({
       access,
-      errorContext: "do thing",
-      mutate: (_team, payload) => ({ ok: true, value: payload }),
-      prelude: () => Promise.resolve({ ok: true as const, value: 42 }),
+      command: teamCommands.renameTeam("Renamed"),
+      errorContext: "remove widget",
     });
 
-    expect(result).toEqual({ data: 42, success: true });
+    expect(result).toEqual({ error: "Failed to remove widget", success: false });
+    expect(reportError).toHaveBeenCalledOnce();
   });
 });
