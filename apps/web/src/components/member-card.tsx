@@ -22,7 +22,7 @@ import { toast } from "sonner";
 
 import { ConfirmRemoveDialog } from "@/components/confirm-remove-dialog";
 import { EditMemberDialog } from "@/components/edit-member-dialog";
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { removeMember } from "@/lib/actions/member-actions";
 import { formatExpiresIn } from "@/lib/invitation-expiry";
 import { queryKeys } from "@/lib/query-keys";

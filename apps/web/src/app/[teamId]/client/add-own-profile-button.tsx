@@ -3,7 +3,7 @@ import { Button } from "@repo/ui/components/button";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { createOwnMemberSlot } from "@/lib/actions/member-actions";
 import { runWithCleanup } from "@/lib/run-with-cleanup";
 

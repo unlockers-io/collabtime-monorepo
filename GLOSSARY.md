@@ -18,7 +18,7 @@ Domain terms, and the module that owns each one. Paths are under `apps/web/src/`
 
 ## Modules
 
-- **Team cache** (`hooks/use-team-cache.ts`): the client's copy of a team. `useTeamQuery` reads it, and every team write goes through `useTeamWrite`.
+- **Team cache**: the client's copy of a team. `useTeamQuery` (`hooks/use-team-query.ts`) reads it, and every team write goes through `useTeamWrite` (`hooks/use-team-write.ts`).
 - **Live-sync protocol** (`lib/team-live-protocol.ts`): the SSE event names, URL, timings and access-loss statuses. The server stream and the client connection both import it.
 - **Team schedule** (`lib/team-schedule.ts`): the overlap, best window and member rows for one instant. `getTeamSchedule` takes `now` explicitly and never reads the clock.
 - **Member input** (`lib/member-input.ts`): one schema and normaliser for member data. The add and edit dialogs and CSV import all use it, and it derives from the server's `TeamMemberInputSchema`.

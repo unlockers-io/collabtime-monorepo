@@ -1,21 +1,13 @@
 "use client";
 
-import {
-  MutationObserver,
-  type QueryClient,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { MutationObserver, type QueryClient, useQueryClient } from "@tanstack/react-query";
 
-import { getPublicTeam } from "@/lib/actions/team-read";
 import type { ActionResult } from "@/lib/actions/types";
 import { queryKeys, teamMutationKey } from "@/lib/query-keys";
 import { beginTeamWrite } from "@/lib/team-query-sync";
 import type { Team } from "@/types";
 
-type TeamQueryData = {
-  team: Team;
-};
+import type { TeamQueryData } from "./use-team-query";
 
 type TeamWrite<T> = {
   optimistic?: (team: Team) => Team;
@@ -26,20 +18,6 @@ type OptimisticSnapshot = {
   previous: TeamQueryData | undefined;
   written: TeamQueryData | undefined;
 };
-
-const useTeamQuery = ({ isLive = false, teamId }: { isLive?: boolean; teamId: string }) =>
-  useQuery<TeamQueryData>({
-    queryFn: async () => {
-      const result = await getPublicTeam(teamId);
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-      return { team: result.data.team };
-    },
-    queryKey: queryKeys.teams.detail(teamId),
-    refetchInterval: isLive ? 5 * 60 * 1000 : 20 * 1000,
-    refetchIntervalInBackground: false,
-  });
 
 const writeTeam = async <T>(
   queryClient: QueryClient,
@@ -96,4 +74,4 @@ const useTeamWrite = (teamId: string) => {
   return <T>(write: TeamWrite<T>) => writeTeam(queryClient, teamId, write);
 };
 
-export { useTeamQuery, useTeamWrite };
+export { useTeamWrite };

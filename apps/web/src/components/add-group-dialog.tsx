@@ -20,7 +20,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { createGroup } from "@/lib/actions/group-actions";
 
 type AddGroupDialogProps = {

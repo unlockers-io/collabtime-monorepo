@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 import { MemberFields } from "@/components/member-fields";
 import { MEMBER_FIELDS, useMemberForm } from "@/hooks/use-member-form";
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
 import { memberFormSchema, toMemberFormValues, toMemberInput } from "@/lib/member-input";
 import type { PendingTeamInvitation, TeamGroup, TeamMember } from "@/types";

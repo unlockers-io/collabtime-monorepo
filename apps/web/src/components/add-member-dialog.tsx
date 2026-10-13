@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { MemberFields } from "@/components/member-fields";
 import { MemberTextField } from "@/components/member-text-field";
 import { bindField, MEMBER_FIELDS, useMemberForm } from "@/hooks/use-member-form";
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { inviteMember } from "@/lib/actions/invitation-actions";
 import { addMember } from "@/lib/actions/member-actions";
 import { addMemberFormSchema, NO_GROUP, toMemberInput } from "@/lib/member-input";
