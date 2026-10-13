@@ -2,7 +2,7 @@ import { applyPortlessUrls } from "@repo/portless-env";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
-applyPortlessUrls({ WEB_APP_URL: ["collabtime.web"] });
+applyPortlessUrls(["WEB_APP_URL"]);
 
 const WORKSPACE_ID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 

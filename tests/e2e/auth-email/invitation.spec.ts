@@ -1,8 +1,8 @@
-import { webUrl } from "../../../playwright.config";
 import { expect, test } from "../fixtures/workspace.fixture";
 import { extractLink, waitForEmail } from "../helpers/resend";
 import { makeTestEmail } from "../helpers/test-email";
 import { HomePage } from "../pages/home.page";
+import { webUrl } from "../urls";
 
 test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 test("invitation email carries a guest through signup and acceptance", async ({

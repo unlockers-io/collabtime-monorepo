@@ -4,7 +4,7 @@ import { prisma } from "@repo/db";
 import { hashPassword } from "better-auth/crypto";
 import { Redis } from "ioredis";
 
-import { webUrl } from "../../../playwright.config";
+import { webUrl } from "../urls";
 
 import { expect, test as base } from "./auth.fixture";
 

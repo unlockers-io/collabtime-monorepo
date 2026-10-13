@@ -1,7 +1,7 @@
 import { prisma } from "@repo/db";
 import { signJWT } from "better-auth/crypto";
 
-import { webUrl } from "../../../playwright.config";
+import { webUrl } from "../urls";
 
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => {

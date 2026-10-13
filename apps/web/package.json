@@ -25,6 +25,7 @@
     "@repo/auth": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/observability": "workspace:*",
+    "@repo/portless-env": "workspace:*",
     "@repo/social-image": "workspace:*",
     "@repo/transactional": "workspace:*",
     "@repo/ui": "workspace:*",
@@ -47,7 +48,6 @@
   },
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
-    "@repo/portless-env": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",

@@ -1,27 +1,9 @@
 /// <reference types="node" />
 
-import { execFileSync } from "node:child_process";
-
 import { defineConfig, devices } from "@playwright/test";
+import { apps } from "@repo/portless-env/apps";
 
-const getPortlessUrl = (name: string) => {
-  if (process.env.CI) {
-    return undefined;
-  }
-
-  try {
-    return execFileSync("portless", ["get", name], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return undefined;
-  }
-};
-
-const webUrl = getPortlessUrl("collabtime.web") ?? "http://localhost:3000";
-
-export { webUrl };
+import { webUrl } from "./tests/e2e/urls";
 
 export default defineConfig({
   forbidOnly: !!process.env.CI,
@@ -89,7 +71,7 @@ export default defineConfig({
           url: `${process.env.RESEND_BASE_URL}/emails`,
         },
         {
-          command: "pnpm --filter @repo/web start",
+          command: `pnpm --filter @repo/web start --port ${apps.web.port}`,
           env: { PGAPPNAME: "collabtime:ci:web" },
           timeout: 120_000,
           url: webUrl,
