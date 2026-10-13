@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { captureException } from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,7 +9,6 @@ import { toast } from "sonner";
 
 import { acceptInvitation, declineInvitation } from "@/lib/actions/invitation-actions";
 import { runWithCleanup } from "@/lib/run-with-cleanup";
-import { useClientReady } from "@/lib/use-client-ready";
 
 const AcceptWorkspaceInvitation = ({
   invitationId,
@@ -22,7 +22,7 @@ const AcceptWorkspaceInvitation = ({
   const { refresh } = useRouter();
   const ready = useClientReady();
   const [action, setAction] = useState<"accept" | "decline" | null>(null);
-  const pending = !ready || action !== null;
+  const pending = action !== null;
   const [acceptError, setError] = useState<string | null>(null);
   const handleDecision = async (decision: "accept" | "decline") => {
     setAction(decision);
@@ -68,7 +68,7 @@ const AcceptWorkspaceInvitation = ({
       <div className="flex flex-wrap gap-2">
         <Button
           className="self-start"
-          disabled={pending}
+          disabled={!ready || pending}
           onClick={() => {
             void handleDecision("accept");
           }}
@@ -76,7 +76,7 @@ const AcceptWorkspaceInvitation = ({
           {action === "accept" ? "Accepting…" : "Accept invitation"}
         </Button>
         <Button
-          disabled={pending}
+          disabled={!ready || pending}
           onClick={() => {
             void handleDecision("decline");
           }}

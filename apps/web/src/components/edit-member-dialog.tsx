@@ -11,6 +11,7 @@ import {
 } from "@repo/ui/components/dialog";
 import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
@@ -104,7 +105,7 @@ const EditMemberForm = ({
         </DialogDescription>
       </DialogHeader>
 
-      <form
+      <ClientReadyForm
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -151,7 +152,7 @@ const EditMemberForm = ({
             )}
           </form.Subscribe>
         </DialogFooter>
-      </form>
+      </ClientReadyForm>
     </>
   );
 };

@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 class LoginPage {
   private readonly emailInput: Locator;
@@ -25,6 +25,12 @@ class LoginPage {
     await this.passwordInput.fill(password);
     await this.page.keyboard.press("Tab");
     await this.submitButton.click();
+  };
+
+  expectDisabled = async () => {
+    await expect(this.emailInput).toBeDisabled();
+    await expect(this.passwordInput).toBeDisabled();
+    await expect(this.submitButton).toBeDisabled();
   };
 
   getSignUpLink = () => this.signUpLink;

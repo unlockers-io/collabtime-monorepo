@@ -3,6 +3,7 @@
 import { Button, buttonVariants } from "@repo/ui/components/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { cn } from "@repo/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
@@ -58,7 +59,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
 
   return (
     <>
-      <form
+      <ClientReadyForm
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -141,7 +142,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
             {isPending ? "Resetting…" : "Reset password"}
           </Button>
         </FieldGroup>
-      </form>
+      </ClientReadyForm>
 
       <BackToSignIn />
     </>

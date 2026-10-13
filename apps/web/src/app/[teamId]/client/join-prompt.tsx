@@ -2,6 +2,7 @@
 
 import { Button, buttonVariants } from "@repo/ui/components/button";
 import { Spinner } from "@repo/ui/components/spinner";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { cn } from "@repo/ui/lib/utils";
 import { LogIn, UserPlus } from "lucide-react";
 import Link from "next/link";
@@ -35,6 +36,8 @@ const JoinPrompt = ({
   teamName,
   teamStatus,
 }: JoinPromptProps) => {
+  const ready = useClientReady();
+
   if (!isAuthenticated) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -82,7 +85,12 @@ const JoinPrompt = ({
             : "Work on this team? Ask an admin to let you in."}
         </p>
         {teamStatus !== "PENDING" && (
-          <Button disabled={isRequestingJoin} onClick={onRequestJoin} size="sm" variant="outline">
+          <Button
+            disabled={!ready || isRequestingJoin}
+            onClick={onRequestJoin}
+            size="sm"
+            variant="outline"
+          >
             {isRequestingJoin ? (
               <Spinner className="mr-2 size-4" />
             ) : (

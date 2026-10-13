@@ -1,6 +1,7 @@
 import { instant } from "@next/playwright";
 
 import { test, expect } from "../fixtures/auth.fixture";
+import { holdScripts } from "../helpers/hold-scripts";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -15,6 +16,17 @@ test.describe("Login", () => {
 
     await expect(page).toHaveURL("/", { timeout: 10_000 });
     await expect(page.getByRole("button", { name: /create a workspace/i })).toBeVisible();
+  });
+
+  test("keeps the form disabled until it hydrates", async ({ loginPage, page, testUser }) => {
+    const releaseScripts = await holdScripts(page);
+    await page.goto("/login", { waitUntil: "commit" });
+    await loginPage.expectDisabled();
+
+    releaseScripts();
+    await loginPage.login(testUser.email, testUser.password);
+
+    await expect(page).toHaveURL("/", { timeout: 10_000 });
   });
 
   test("shows error with wrong password", async ({ loginPage, page, testUser }) => {

@@ -12,7 +12,9 @@ import {
 } from "@repo/ui/components/dialog";
 import { Field, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
@@ -32,6 +34,7 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const id = useId();
+  const ready = useClientReady();
   const form = useForm({
     canSubmitWhenInvalid: true,
     defaultValues: { name: "" },
@@ -62,9 +65,11 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
       }}
       open={open}
     >
-      <DialogTrigger render={<Button size="lg" />}>Create a workspace</DialogTrigger>
+      <DialogTrigger disabled={!ready} render={<Button size="lg" />}>
+        Create a workspace
+      </DialogTrigger>
       <DialogContent>
-        <form
+        <ClientReadyForm
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
@@ -128,7 +133,7 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
               </DialogFooter>
             )}
           </form.Subscribe>
-        </form>
+        </ClientReadyForm>
       </DialogContent>
     </Dialog>
   );

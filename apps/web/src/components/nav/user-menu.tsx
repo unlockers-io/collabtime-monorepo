@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { LogIn, LogOut, Settings, Shield, User } from "lucide-react";
 import Link from "next/link";
 
@@ -38,10 +39,12 @@ type UserMenuProps = {
 const UserMenu = ({ isSigningOut, navRole, onSignOut }: UserMenuProps) => {
   const { description, title } = ROLE_LABELS[navRole];
   const isAuthenticated = navRole !== "guest";
+  const ready = useClientReady();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        disabled={!ready}
         render={<Button aria-label="Account menu" size="icon" variant="outline" />}
       >
         {navRole === "admin" ? <Shield className="size-4" /> : <User className="size-4" />}

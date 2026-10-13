@@ -12,6 +12,7 @@ import {
 } from "@repo/ui/components/dialog";
 import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
@@ -95,7 +96,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
   });
 
   return (
-    <form
+    <ClientReadyForm
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
@@ -163,7 +164,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
           )}
         </form.Subscribe>
       </DialogFooter>
-    </form>
+    </ClientReadyForm>
   );
 };
 

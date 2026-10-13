@@ -1,6 +1,7 @@
 import { instant } from "@next/playwright";
 
 import { test, expect } from "../fixtures/workspace.fixture";
+import { holdScripts } from "../helpers/hold-scripts";
 
 test.describe("Create Workspace", () => {
   test("creates a new workspace and navigates to it", async ({ homePage, page }) => {
@@ -12,6 +13,17 @@ test.describe("Create Workspace", () => {
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
 
     await expect(page.getByRole("heading", { name: /team members/i })).toBeVisible();
+  });
+
+  test("keeps the create button disabled until it hydrates", async ({ homePage, page }) => {
+    const releaseScripts = await holdScripts(page);
+    await page.goto("/", { waitUntil: "commit" });
+    await expect(homePage.getCreateWorkspaceButton()).toBeDisabled();
+
+    releaseScripts();
+    await homePage.createWorkspace();
+
+    await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
   });
 
   test("new workspace appears in the active workspaces list", async ({ homePage, page }) => {

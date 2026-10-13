@@ -4,6 +4,7 @@ import { Button, buttonVariants } from "@repo/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { cn } from "@repo/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
@@ -13,8 +14,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-
-import { useClientReady } from "@/lib/use-client-ready";
 
 import { InviteMismatchNotice } from "./client/invite-mismatch-notice";
 
@@ -38,7 +37,6 @@ const PrivateSpaceGate = ({
   teamId,
 }: PrivateSpaceGateProps) => {
   const { refresh } = useRouter();
-  const ready = useClientReady();
   const [isPending, setIsPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
@@ -143,7 +141,7 @@ const PrivateSpaceGate = ({
                 {" to accept an invitation or access your workspace."}
               </p>
             )}
-            <form
+            <ClientReadyForm
               noValidate
               onSubmit={(e) => {
                 e.preventDefault();
@@ -164,7 +162,7 @@ const PrivateSpaceGate = ({
                           aria-describedby={isInvalid ? "space-password-error" : undefined}
                           aria-invalid={isInvalid}
                           autoComplete="current-password"
-                          disabled={!ready || isPending}
+                          disabled={isPending}
                           id="space-password"
                           onBlur={field.handleBlur}
                           onChange={(e) => {
@@ -190,13 +188,13 @@ const PrivateSpaceGate = ({
                 </form.Field>
 
                 <Field>
-                  <Button aria-busy={isPending} disabled={!ready || isPending} type="submit">
+                  <Button aria-busy={isPending} disabled={isPending} type="submit">
                     {isPending && <Spinner className="mr-2 size-4" />}
                     {isPending ? "Checking…" : "Continue"}
                   </Button>
                 </Field>
               </FieldGroup>
-            </form>
+            </ClientReadyForm>
           </div>
         )}
       </div>

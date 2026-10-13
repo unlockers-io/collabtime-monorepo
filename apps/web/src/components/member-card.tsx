@@ -14,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { cn } from "@repo/ui/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { Hand, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -259,11 +260,13 @@ type ClaimProfileControlProps = Pick<MemberCardProps, "groups" | "member" | "tea
 
 const ClaimProfileControl = ({ groups, member, teamId }: ClaimProfileControlProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const ready = useClientReady();
 
   return (
     <>
       <Button
         aria-label={`Claim ${member.name}'s profile`}
+        disabled={!ready}
         onClick={() => {
           setIsOpen(true);
         }}

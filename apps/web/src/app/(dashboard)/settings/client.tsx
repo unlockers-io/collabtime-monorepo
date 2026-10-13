@@ -3,6 +3,7 @@
 import { Button } from "@repo/ui/components/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { captureException } from "@sentry/nextjs";
 import { useForm } from "@tanstack/react-form";
@@ -68,7 +69,7 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
           <SectionCardTitle description="Your name and sign-in email.">Profile</SectionCardTitle>
         </SectionCardHeader>
 
-        <form
+        <ClientReadyForm
           className="flex max-w-xl flex-col gap-6"
           noValidate
           onSubmit={(event) => {
@@ -138,7 +139,7 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
               </div>
             )}
           </form.Subscribe>
-        </form>
+        </ClientReadyForm>
       </SectionCard>
     </>
   );

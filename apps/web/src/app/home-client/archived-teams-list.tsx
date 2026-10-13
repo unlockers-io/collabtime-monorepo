@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { cn } from "@repo/ui/lib/utils";
 import { ChevronDown } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
@@ -23,6 +24,7 @@ const ArchivedTeamsList = ({
 }: ArchivedTeamsListProps) => {
   const [showArchived, setShowArchived] = useState(false);
   const listId = useId();
+  const ready = useClientReady();
 
   if (teams.length === 0) {
     return null;
@@ -36,6 +38,7 @@ const ArchivedTeamsList = ({
         aria-controls={listId}
         aria-expanded={showArchived}
         className="flex items-center justify-between text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+        disabled={!ready}
         onClick={() => {
           setShowArchived((prev) => !prev);
         }}

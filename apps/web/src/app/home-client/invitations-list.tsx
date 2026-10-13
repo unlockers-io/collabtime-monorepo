@@ -2,6 +2,7 @@
 
 import { Button } from "@repo/ui/components/button";
 import { Spinner } from "@repo/ui/components/spinner";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { Check, X } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 
@@ -17,6 +18,8 @@ type InvitationsListProps = {
 };
 
 const InvitationsList = ({ invitations, isPending, onAccept, onDecline }: InvitationsListProps) => {
+  const ready = useClientReady();
+
   if (invitations.length === 0) {
     return null;
   }
@@ -51,7 +54,7 @@ const InvitationsList = ({ invitations, isPending, onAccept, onDecline }: Invita
               <div className="flex shrink-0 items-center gap-1">
                 <Button
                   aria-label={`Decline invitation to ${invitation.teamName}`}
-                  disabled={isPending}
+                  disabled={!ready || isPending}
                   onClick={() => {
                     onDecline(invitation);
                   }}
@@ -62,7 +65,7 @@ const InvitationsList = ({ invitations, isPending, onAccept, onDecline }: Invita
                 </Button>
                 <Button
                   aria-label={`Accept invitation to ${invitation.teamName}`}
-                  disabled={isPending}
+                  disabled={!ready || isPending}
                   onClick={() => {
                     onAccept(invitation);
                   }}
