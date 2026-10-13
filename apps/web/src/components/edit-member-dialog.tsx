@@ -11,12 +11,13 @@ import {
 } from "@repo/ui/components/dialog";
 import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { MemberFields } from "@/components/member-fields";
 import { MEMBER_FIELDS, useMemberForm } from "@/hooks/use-member-form";
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
 import { memberFormSchema, toMemberFormValues, toMemberInput } from "@/lib/member-input";
 import type { PendingTeamInvitation, TeamGroup, TeamMember } from "@/types";
@@ -104,7 +105,7 @@ const EditMemberForm = ({
         </DialogDescription>
       </DialogHeader>
 
-      <form
+      <ClientReadyForm
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -151,7 +152,7 @@ const EditMemberForm = ({
             )}
           </form.Subscribe>
         </DialogFooter>
-      </form>
+      </ClientReadyForm>
     </>
   );
 };

@@ -3,6 +3,7 @@
 import { Button } from "@repo/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
@@ -81,7 +82,7 @@ const LoginForm = ({ searchParams }: Props) => {
 
   return (
     <>
-      <form
+      <ClientReadyForm
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -171,7 +172,7 @@ const LoginForm = ({ searchParams }: Props) => {
             {isPending ? "Signing in…" : "Sign in"}
           </Button>
         </FieldGroup>
-      </form>
+      </ClientReadyForm>
 
       <AuthFooter>
         Don&apos;t have an account?{" "}

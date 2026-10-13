@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { webUrl } from "../../../playwright.config";
+import { holdScripts } from "../helpers/hold-scripts";
 import { extractLink, waitForEmail } from "../helpers/resend";
 import { makeTestEmail } from "../helpers/test-email";
 
@@ -17,11 +18,7 @@ test.describe("Sign-up with redirect context", () => {
     const email = makeTestEmail(testInfo);
     const redirectPath = "/settings";
 
-    const scripts = Promise.withResolvers<undefined>();
-    await page.route("**/_next/static/**/*.js", async (route) => {
-      await scripts.promise;
-      await route.continue();
-    });
+    const releaseScripts = await holdScripts(page);
     try {
       await page.goto(`${webUrl}/register?redirect=${encodeURIComponent(redirectPath)}`, {
         waitUntil: "commit",
@@ -33,7 +30,7 @@ test.describe("Sign-up with redirect context", () => {
         page.getByRole("button", { includeHidden: true, name: /create account/i }),
       ).toBeDisabled();
     } finally {
-      scripts.resolve(undefined);
+      releaseScripts();
     }
 
     await expect(page.getByRole("link", { name: /sign in/i })).toHaveAttribute(

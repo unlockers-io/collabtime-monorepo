@@ -3,6 +3,7 @@
 import { Button } from "@repo/ui/components/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
@@ -12,7 +13,6 @@ import { Suspense, use, useState, useTransition } from "react";
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
 import { safeRedirectPath } from "@/lib/redirect-validation";
-import { useClientReady } from "@/lib/use-client-ready";
 
 import { AuthErrorNotice } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
@@ -45,7 +45,6 @@ const SignInLink = ({ searchParams }: Props) => {
 
 const RegisterForm = ({ searchParams }: Props) => {
   const { push, refresh } = useRouter();
-  const ready = useClientReady();
   const [isPending, startTransition] = useTransition();
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
   const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
@@ -102,7 +101,7 @@ const RegisterForm = ({ searchParams }: Props) => {
 
   return (
     <>
-      <form
+      <ClientReadyForm
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -122,7 +121,7 @@ const RegisterForm = ({ searchParams }: Props) => {
                     aria-invalid={isInvalid}
                     autoComplete="name"
                     className="h-11 sm:h-10"
-                    disabled={!ready || isPending}
+                    disabled={isPending}
                     id="register-name"
                     onBlur={field.handleBlur}
                     onChange={(e) => {
@@ -150,7 +149,7 @@ const RegisterForm = ({ searchParams }: Props) => {
                     aria-invalid={isInvalid}
                     autoComplete="email"
                     className="h-11 sm:h-10"
-                    disabled={!ready || isPending}
+                    disabled={isPending}
                     id="register-email"
                     onBlur={field.handleBlur}
                     onChange={(e) => {
@@ -181,7 +180,7 @@ const RegisterForm = ({ searchParams }: Props) => {
                     aria-invalid={isInvalid}
                     autoComplete="new-password"
                     className="h-11 sm:h-10"
-                    disabled={!ready || isPending}
+                    disabled={isPending}
                     id="register-password"
                     onBlur={field.handleBlur}
                     onChange={(e) => {
@@ -207,13 +206,13 @@ const RegisterForm = ({ searchParams }: Props) => {
           <Button
             aria-busy={isPending}
             className="h-11 w-full sm:h-10"
-            disabled={!ready || isPending}
+            disabled={isPending}
             type="submit"
           >
             {isPending ? "Creating account…" : "Create account"}
           </Button>
         </FieldGroup>
-      </form>
+      </ClientReadyForm>
 
       <AuthFooter>Already have an account? {signInLink}</AuthFooter>
     </>

@@ -12,7 +12,9 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { Switch } from "@repo/ui/components/switch";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { captureException } from "@sentry/nextjs";
 import { useForm, useSelector } from "@tanstack/react-form";
 import { Check, Copy } from "lucide-react";
@@ -137,6 +139,7 @@ const WorkspaceVisibilityDialog = ({
   });
 
   const isSaving = useSelector(form.store, (state) => state.isSubmitting);
+  const ready = useClientReady();
 
   return (
     <Dialog
@@ -153,7 +156,7 @@ const WorkspaceVisibilityDialog = ({
           <DialogDescription>Choose who can open this workspace&apos;s link.</DialogDescription>
         </DialogHeader>
         <ShareLink />
-        <form
+        <ClientReadyForm
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
@@ -168,7 +171,7 @@ const WorkspaceVisibilityDialog = ({
                   <FieldLabel htmlFor="workspace-private">Private workspace</FieldLabel>
                   <Switch
                     checked={field.state.value}
-                    disabled={isSaving}
+                    disabled={!ready || isSaving}
                     id="workspace-private"
                     onBlur={field.handleBlur}
                     onCheckedChange={field.handleChange}
@@ -251,7 +254,7 @@ const WorkspaceVisibilityDialog = ({
               </DialogFooter>
             )}
           </form.Subscribe>
-        </form>
+        </ClientReadyForm>
       </DialogContent>
     </Dialog>
   );

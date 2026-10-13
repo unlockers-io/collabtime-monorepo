@@ -1,5 +1,6 @@
 import { webUrl } from "../../../playwright.config";
 import { expect, test } from "../fixtures/workspace.fixture";
+import { holdScripts } from "../helpers/hold-scripts";
 import { extractLink, waitForEmail } from "../helpers/resend";
 import { makeTestEmail } from "../helpers/test-email";
 import { HomePage } from "../pages/home.page";
@@ -34,13 +35,9 @@ test.describe("Private space password self-join", () => {
     });
     expect(patch.ok()).toBeTruthy();
     const guest = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-    const scripts = Promise.withResolvers<undefined>();
-    await guest.route("**/_next/static/**/*.js", async (route) => {
-      await scripts.promise;
-      await route.continue();
-    });
+    const page = await guest.newPage();
+    const releaseScripts = await holdScripts(page);
     try {
-      const page = await guest.newPage();
       await page.goto(`${webUrl}/${teamId}`, { waitUntil: "commit" });
       await expect(
         page.getByRole("heading", { includeHidden: true, name: /private workspace/i }),
@@ -49,7 +46,7 @@ test.describe("Private space password self-join", () => {
       await expect(
         page.getByRole("button", { includeHidden: true, name: /^continue$/i }),
       ).toBeDisabled();
-      scripts.resolve(undefined);
+      releaseScripts();
       await page.getByLabel("Password").fill(SPACE_PASSWORD);
       await page.getByRole("button", { name: /^continue$/i }).click();
 
@@ -86,7 +83,7 @@ test.describe("Private space password self-join", () => {
       });
       await clicker.close();
     } finally {
-      scripts.resolve(undefined);
+      releaseScripts();
       await guest.close();
     }
   });

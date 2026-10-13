@@ -4,7 +4,7 @@ import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { reorderGroups } from "@/lib/actions/group-actions";
 import { reorderMembers, updateMember } from "@/lib/actions/member-actions";
 import type { ActionResult } from "@/lib/actions/types";

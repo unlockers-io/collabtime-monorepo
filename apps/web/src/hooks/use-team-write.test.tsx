@@ -8,9 +8,8 @@ import { queryKeys } from "@/lib/query-keys";
 import { createTeamQueryInvalidator } from "@/lib/team-query-sync";
 import type { Team } from "@/types";
 
-import { useTeamWrite } from "./use-team-cache";
-
-type TeamQueryData = { team: Team };
+import type { TeamQueryData } from "./use-team-query";
+import { useTeamWrite } from "./use-team-write";
 
 const makeTeam = (name: string, id = "team-1"): Team => ({
   createdAt: "2026-01-01T00:00:00.000Z",

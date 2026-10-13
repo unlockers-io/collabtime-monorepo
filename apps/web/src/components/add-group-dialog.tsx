@@ -13,6 +13,7 @@ import {
 import { Field, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
+import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useForm } from "@tanstack/react-form";
 import { Users } from "lucide-react";
@@ -20,7 +21,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { createGroup } from "@/lib/actions/group-actions";
 
 type AddGroupDialogProps = {
@@ -82,7 +83,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
         Add group
       </DialogTrigger>
       <DialogContent>
-        <form
+        <ClientReadyForm
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
@@ -155,7 +156,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
               )}
             </form.Subscribe>
           </DialogFooter>
-        </form>
+        </ClientReadyForm>
       </DialogContent>
     </Dialog>
   );

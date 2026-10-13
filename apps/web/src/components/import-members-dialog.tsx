@@ -15,7 +15,7 @@ import { Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { importMembers } from "@/lib/actions/member-actions";
 
 import type { ParsedRow } from "./import-members-dialog/parse-csv";

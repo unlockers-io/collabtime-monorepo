@@ -23,8 +23,8 @@ import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { ViewerZoneNote } from "@/components/timezone-visualizer/viewer-zone-note";
 import { WorkspaceVisibilityDialog } from "@/components/workspace-visibility-dialog";
-import { useTeamQuery } from "@/hooks/use-team-cache";
 import { useTeamLiveSync } from "@/hooks/use-team-live-sync";
+import { useTeamQuery } from "@/hooks/use-team-query";
 import type { TeamStatus } from "@/types";
 
 import { GroupsGrid } from "./client/groups-grid";

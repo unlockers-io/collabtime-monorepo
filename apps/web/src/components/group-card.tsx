@@ -8,7 +8,7 @@ import { type ReactNode, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { ConfirmRemoveDialog } from "@/components/confirm-remove-dialog";
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
 import type { TeamGroup } from "@/types";
 

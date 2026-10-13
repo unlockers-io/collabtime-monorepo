@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { cn } from "@repo/ui/lib/utils";
 import { Archive, ArchiveRestore, ChevronRight, MoreHorizontal, Trash2 } from "lucide-react";
 import { m } from "motion/react";
@@ -40,6 +41,7 @@ const WorkspaceRow = ({
   team,
 }: WorkspaceRowProps) => {
   const detailsId = useId();
+  const ready = useClientReady();
   const name = team.teamName || "Untitled workspace";
   const { spaceId } = team;
 
@@ -78,6 +80,7 @@ const WorkspaceRow = ({
       <div className="relative">
         <DropdownMenu>
           <DropdownMenuTrigger
+            disabled={!ready}
             render={
               <Button aria-label={`More actions for ${name}`} size="icon-sm" variant="ghost" />
             }

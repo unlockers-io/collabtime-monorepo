@@ -14,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { cn } from "@repo/ui/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { Hand, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -22,7 +23,7 @@ import { toast } from "sonner";
 
 import { ConfirmRemoveDialog } from "@/components/confirm-remove-dialog";
 import { EditMemberDialog } from "@/components/edit-member-dialog";
-import { useTeamWrite } from "@/hooks/use-team-cache";
+import { useTeamWrite } from "@/hooks/use-team-write";
 import { removeMember } from "@/lib/actions/member-actions";
 import { formatExpiresIn } from "@/lib/invitation-expiry";
 import { queryKeys } from "@/lib/query-keys";
@@ -259,11 +260,13 @@ type ClaimProfileControlProps = Pick<MemberCardProps, "groups" | "member" | "tea
 
 const ClaimProfileControl = ({ groups, member, teamId }: ClaimProfileControlProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const ready = useClientReady();
 
   return (
     <>
       <Button
         aria-label={`Claim ${member.name}'s profile`}
+        disabled={!ready}
         onClick={() => {
           setIsOpen(true);
         }}

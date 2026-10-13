@@ -2,6 +2,7 @@
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button, buttonVariants } from "@repo/ui/components/button";
+import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { cn } from "@repo/ui/lib/utils";
 import { Archive, Globe, Lock, LogIn, Menu, X } from "lucide-react";
 import Link from "next/link";
@@ -49,6 +50,7 @@ const TeamNav = (props: Extract<NavViewProps, { variant: "team" }>) => {
   const { isAuthenticated } = props;
   const [hasCopied, setHasCopied] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const ready = useClientReady();
   const { handleSignOut, isSigningOut } = props.signOut;
 
   const handleCopyLink = async () => {
@@ -123,6 +125,7 @@ const TeamNav = (props: Extract<NavViewProps, { variant: "team" }>) => {
             aria-controls="mobile-menu"
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            disabled={!ready}
             onClick={() => {
               setMobileMenuOpen(!mobileMenuOpen);
             }}
