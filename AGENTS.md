@@ -6,6 +6,14 @@ Project conventions and defaults live in [`docs/CONVENTIONS.md`](docs/CONVENTION
 
 Collabtime is a team timezone visualizer. Distributed teams create spaces, add members with timezones and working hours, and visualize overlap for scheduling. Single `web` app, pnpm monorepo, Better Auth, Prisma/Postgres, Redis. There is no billing: no Stripe, no plans, no paid tier.
 
+## Friction Log
+
+- Log papercuts and friction (tooling, docs, APIs, tests, conventions) as you hit them with `npx frog log`.
+- Do not add global, system, or internal friction.
+- Run `npx frog list` first to see what is already known.
+
+Entries live in `.agents/friction-log/`, one directory each. A GitHub Action reports them as issues and deletes the entry once the issue closes, so anything still in that directory is still outstanding.
+
 ## Stack
 
 - **Framework**: Next.js 16 App Router (Turbopack, React Compiler enabled)

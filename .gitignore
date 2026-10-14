@@ -72,7 +72,6 @@ logs/
 .claude/projects/
 
 .context/
-.agents/
 
 # CI selection and execution reports
 .ci-results/
