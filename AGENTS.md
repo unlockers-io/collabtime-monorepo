@@ -16,11 +16,11 @@ Entries live in `.agents/friction-log/`, one directory each. A GitHub Action rep
 
 ## Standards
 
-This repo follows the fleet's shared standards, checked by `keel` (`~/dev/keel`).
+This repo follows the fleet's shared standards, checked by `standy` (`~/dev/standy`).
 
-- Before editing, run `keel standards --for <paths>` for the rules that apply to the files you will touch.
-- Before finishing, run `keel check --changed --fix-hints` and fix what fails. It only sees tracked files, so run `git add -N` on new files first.
-- When a failure is unclear, `keel explain <rule>` prints what the rule asserts, why, and how to fix it.
+- Before editing, run `standy standards --for <paths>` for the rules that apply to the files you will touch.
+- Before finishing, run `standy check --changed --fix-hints` and fix what fails. It only sees tracked files, so run `git add -N` on new files first.
+- When a failure is unclear, `standy explain <rule>` prints what the rule asserts, why, and how to fix it.
 
 ## Stack
 
@@ -169,7 +169,7 @@ Spaces link to teams via a unique `teamId` and support private access through `i
 
 ## CI (GitHub Actions)
 
-Three workflows are checked in: `check.yml` (one job running the secret scan, formatting, dead-code analysis, lint, typecheck and unit tests), `e2e.yml`, and `react-doctor.yml` (pull requests only). Validation runs on pull requests, a weekly schedule and manual dispatch, never on pushes to `main`. `keel standards --for .github/workflows/check.yml` prints the rules they follow.
+Three workflows are checked in: `check.yml` (one job running the secret scan, formatting, dead-code analysis, lint, typecheck and unit tests), `e2e.yml`, and `react-doctor.yml` (pull requests only). Validation runs on pull requests, a weekly schedule and manual dispatch, never on pushes to `main`. `standy standards --for .github/workflows/check.yml` prints the rules they follow.
 
 ## References
 
