@@ -161,7 +161,7 @@ Spaces link to teams via a unique `teamId` and support private access through `i
 
 ## CI (GitHub Actions)
 
-Three workflows are checked in: `check.yml` (one job running the secret scan, formatting, dead-code analysis, lint, typecheck and unit tests), `e2e.yml`, and `react-doctor.yml` (pull requests only). Validation runs on pull requests, a weekly schedule and manual dispatch, never on pushes to `main`. `orchestrator standards --for .github/workflows/check.yml` prints the rules they follow.
+Three workflows are checked in: `check.yml` (one job running the secret scan, formatting, dead-code analysis, lint, typecheck and unit tests), `e2e.yml`, and `react-doctor.yml` (pull requests only). Validation runs on pull requests, a weekly schedule and manual dispatch, never on pushes to `main`. `keel standards --for .github/workflows/check.yml` prints the rules they follow.
 
 ## References
 
