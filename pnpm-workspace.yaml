@@ -82,3 +82,8 @@ minimumReleaseAgeExclude:
   - "@shadcn/lint@0.1.0"
 
 nodeLinker: hoisted
+
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  - prisma@7.10.0
+  - semver@6.3.1
