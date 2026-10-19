@@ -26,31 +26,32 @@ const main = async () => {
   const ctx = await getAuth().$context;
   const hashed = await ctx.password.hash(PASSWORD);
 
-  // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- a hashing failure must not leave a partially seeded user.
-  const user = await prisma.user.upsert({
-    create: {
-      email: EMAIL,
-      emailVerified: true,
-      id: SLUG,
-      name: NAME,
-    },
-    update: {
-      emailVerified: true,
-      name: NAME,
-    },
-    where: { email: EMAIL },
-  });
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.upsert({
+      create: {
+        email: EMAIL,
+        emailVerified: true,
+        id: SLUG,
+        name: NAME,
+      },
+      update: {
+        emailVerified: true,
+        name: NAME,
+      },
+      where: { email: EMAIL },
+    });
 
-  await prisma.account.upsert({
-    create: {
-      accountId: user.id,
-      issuer: "local:credential",
-      password: hashed,
-      providerId: "credential",
-      userId: user.id,
-    },
-    update: { password: hashed },
-    where: { issuer_accountId: { accountId: user.id, issuer: "local:credential" } },
+    await tx.account.upsert({
+      create: {
+        accountId: user.id,
+        issuer: "local:credential",
+        password: hashed,
+        providerId: "credential",
+        userId: user.id,
+      },
+      update: { password: hashed },
+      where: { issuer_accountId: { accountId: user.id, issuer: "local:credential" } },
+    });
   });
 
   console.log(`✓ e2e user ${EMAIL} ready; password: ${PASSWORD}`);

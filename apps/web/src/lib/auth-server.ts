@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { cache } from "react";
 
 import { log } from "./observability";
-import { redis } from "./redis";
+import { getRedis } from "./redis";
 import { joinPrivateSpacesFromCookies } from "./space-join";
 
 let cachedAuth: Auth | null = null;
@@ -42,6 +42,7 @@ const getAuthConfig = (): AuthConfig => {
     }
   }
   if (process.env.REDIS_URL !== undefined && process.env.REDIS_URL !== "") {
+    const redis = getRedis();
     config.secondaryStorage = {
       delete: async (key: string) => {
         await redis.del(key);

@@ -5,7 +5,7 @@ import { Redis } from "ioredis";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createTestMember, createTestTeamRecord } from "./actions/test-helpers";
-import { redis } from "./redis";
+import { getRedis } from "./redis";
 import { COMPARE_AND_SET, redisTeamStorage } from "./team-storage";
 import { createTeamStore } from "./team-store";
 
@@ -30,7 +30,7 @@ describe.skipIf(url === undefined || url === "")("team storage against Redis", (
       await client.del(...keys);
     }
     await client.quit();
-    await redis.quit();
+    await getRedis().quit();
   });
 
   it("writes only over the contents it read", async () => {

@@ -25,7 +25,7 @@ const registry = createTeamLiveRegistry({
 const getServerSnapshot = (): LiveSyncStatus => "offline";
 const unsubscribeDisabled = () => undefined;
 
-const useTeamLiveSync = ({
+const useTeamLiveUpdates = ({
   enabled = true,
   refresh,
   teamId,
@@ -65,4 +65,4 @@ const useTeamLiveSync = ({
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 };
 
-export { useTeamLiveSync };
+export { useTeamLiveUpdates };

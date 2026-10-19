@@ -2,7 +2,7 @@ import { log } from "@/lib/observability";
 import { publishTeamEvent } from "@/lib/team-events";
 import type { TeamRecord } from "@/types";
 
-import { isRedisConfigured, redis } from "./redis";
+import { getRedis, isRedisConfigured } from "./redis";
 import { writeTeamMirror } from "./team-postgres-repository";
 
 type TeamStorage = {
@@ -36,7 +36,7 @@ const readContentsBatch = async (teamIds: Array<string>): Promise<Array<string |
     throw new Error("Team storage is unavailable: REDIS_URL is unset");
   }
 
-  const contents = await redis.mget(teamIds.map(contentsKey));
+  const contents = await getRedis().mget(teamIds.map(contentsKey));
   return Promise.all(
     teamIds.map(async (teamId, index) => {
       const value = contents[index];
@@ -45,7 +45,7 @@ const readContentsBatch = async (teamIds: Array<string>): Promise<Array<string |
       }
 
       try {
-        await redis.expire(contentsKey(teamId), TEAM_ACTIVE_TTL_SECONDS);
+        await getRedis().expire(contentsKey(teamId), TEAM_ACTIVE_TTL_SECONDS);
       } catch (error) {
         log.error({
           error,
@@ -67,7 +67,7 @@ const redisTeamStorage: TeamStorage = {
     }
 
     const ttlSeconds = expected === null ? TEAM_INITIAL_TTL_SECONDS : TEAM_ACTIVE_TTL_SECONDS;
-    const applied = await redis.eval(
+    const applied = await getRedis().eval(
       COMPARE_AND_SET,
       1,
       contentsKey(teamId),

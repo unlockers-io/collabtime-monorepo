@@ -4,7 +4,7 @@ import { after } from "next/server";
 
 import { log } from "./observability";
 import { TimeoutError, withTimeout } from "./promise-timeout";
-import { redis } from "./redis";
+import { getRedis } from "./redis";
 import { checkRateLimit } from "./space-rate-limit";
 
 const LEASE_SECONDS = 360;
@@ -110,11 +110,11 @@ const createTeamEventAdmission = (deps: AdmissionDeps) => {
 
 const acquireTeamEventConnection = createTeamEventAdmission({
   acquire: async (key, id, limit) =>
-    Number(await redis.eval(ACQUIRE_LEASE, 1, key, id, limit, LEASE_SECONDS)) === 1,
+    Number(await getRedis().eval(ACQUIRE_LEASE, 1, key, id, limit, LEASE_SECONDS)) === 1,
   after,
   checkRateLimit,
   createId: randomUUID,
-  release: (key, id) => redis.zrem(key, id),
+  release: (key, id) => getRedis().zrem(key, id),
   reportError: log.error,
 });
 
