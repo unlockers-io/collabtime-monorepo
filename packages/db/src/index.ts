@@ -3,11 +3,9 @@ import { Pool } from "pg";
 
 import { PrismaClient } from "./generated/client";
 
-// SAFETY: Prisma owns this process-wide slot, and every assignment stores PrismaClient.
-// oxlint-disable-next-line no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- globalThis has no typed prisma slot to narrow to
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+declare global {
+  var prisma: PrismaClient | undefined;
+}
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -18,13 +16,13 @@ const pool = new Pool({
 const adapter = new PrismaPg(pool);
 
 export const prisma =
-  globalForPrisma.prisma ??
+  globalThis.prisma ??
   new PrismaClient({
     adapter,
   });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalThis.prisma = prisma;
 }
 
 export * from "./generated/client";

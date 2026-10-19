@@ -1,4 +1,4 @@
-import { isRedisConfigured, redis } from "@/lib/redis";
+import { getRedis, isRedisConfigured } from "@/lib/redis";
 
 type RateLimitResult = { allowed: boolean; remaining: number };
 
@@ -19,7 +19,6 @@ const createRateLimiter = (deps: RateLimitDeps) => {
   return async (key: string, max: number, windowSeconds: number): Promise<RateLimitResult> => {
     const redisKey = `ratelimit:${key}`;
 
-    // `eval` is absent from the unconfigured-Redis stub allowlist in lib/redis.ts.
     if (!deps.isRedisConfigured()) {
       return { allowed: true, remaining: max };
     }
@@ -35,7 +34,7 @@ const createRateLimiter = (deps: RateLimitDeps) => {
 
 const checkRateLimit = createRateLimiter({
   increment: async (key, windowSeconds) =>
-    Number(await redis.eval(INCR_WITH_EXPIRE, 1, key, String(windowSeconds))),
+    Number(await getRedis().eval(INCR_WITH_EXPIRE, 1, key, String(windowSeconds))),
   isRedisConfigured,
 });
 

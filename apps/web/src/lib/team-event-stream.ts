@@ -38,6 +38,8 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
   let eventsSent = 0;
   let unsubscribe: (() => void) | undefined;
   let removeAbortListener: (() => void) | undefined;
+  const isClosed = () => closed;
+  const isAccessPending = () => accessPending;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
   let lifetime: ReturnType<typeof setTimeout> | undefined;
   const context = { principal: deps.principal, route: ROUTE, teamId: deps.teamId };
@@ -117,8 +119,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
       try {
         access = await withTimeout(deps.checkAccess(), 2000, work.signal);
       } catch (error) {
-        // oxlint-disable-next-line typescript/no-unnecessary-condition -- close() and handleEvent() reassign this while withTimeout is awaited; TypeScript keeps the pre-await narrowing
-        if (!closed) {
+        if (!isClosed()) {
           deps.log.error({ ...context, error, message: "Live sync access recheck failed" });
           reconnect("access-error");
         }
@@ -126,8 +127,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
       } finally {
         checking = false;
       }
-      // oxlint-disable-next-line typescript/no-unnecessary-condition -- close() and handleEvent() reassign this while withTimeout is awaited; TypeScript keeps the pre-await narrowing
-      if (closed) {
+      if (isClosed()) {
         return;
       }
       if (access !== "allowed") {
@@ -135,8 +135,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
         close(access);
         return;
       }
-      // oxlint-disable-next-line typescript/no-unnecessary-condition -- close() and handleEvent() reassign this while withTimeout is awaited; TypeScript keeps the pre-await narrowing
-      if (accessPending) {
+      if (isAccessPending()) {
         await flush();
         return;
       }

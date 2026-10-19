@@ -3,7 +3,7 @@ import { act, renderHook } from "@testing-library/react";
 import type { PropsWithChildren } from "react";
 import { afterEach, assert, expect, it, vi } from "vitest";
 
-import { useTeamLiveSync } from "./use-team-live-sync";
+import { useTeamLiveUpdates } from "./use-team-live-updates";
 
 class FakeEventSource extends EventTarget {
   static instances: Array<FakeEventSource> = [];
@@ -28,10 +28,10 @@ afterEach(() => {
 it("connects two consumers to one source and refreshes the route on revoked", () => {
   vi.stubGlobal("EventSource", FakeEventSource);
   const refresh = vi.fn<() => void>();
-  const first = renderHook(() => useTeamLiveSync({ refresh, teamId: "hook-team" }), {
+  const first = renderHook(() => useTeamLiveUpdates({ refresh, teamId: "hook-team" }), {
     wrapper: Wrapper,
   });
-  const second = renderHook(() => useTeamLiveSync({ refresh, teamId: "hook-team" }), {
+  const second = renderHook(() => useTeamLiveUpdates({ refresh, teamId: "hook-team" }), {
     wrapper: Wrapper,
   });
   expect(FakeEventSource.instances).toHaveLength(1);
@@ -57,7 +57,7 @@ it("does not construct EventSource when disabled", () => {
   vi.stubGlobal("EventSource", FakeEventSource);
   const hook = renderHook(
     () =>
-      useTeamLiveSync({ enabled: false, refresh: vi.fn<() => void>(), teamId: "disabled-team" }),
+      useTeamLiveUpdates({ enabled: false, refresh: vi.fn<() => void>(), teamId: "disabled-team" }),
     { wrapper: Wrapper },
   );
   expect(hook.result.current).toBe("offline");

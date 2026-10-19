@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getEnv } from "./env";
 import { log } from "./observability";
 import { withTimeout } from "./promise-timeout";
-import { createRedisClient, isRedisConfigured, redis } from "./redis";
+import { createRedisClient, getRedis, isRedisConfigured } from "./redis";
 import { UUIDSchema } from "./validation";
 
 const TEAM_EVENTS_CHANNEL = "collabtime:team-events";
@@ -232,7 +232,7 @@ const teamEventHub = createTeamEventHub({
 
 const publishTeamEvent = createTeamEventPublisher({
   enabled: isLiveSyncEnabled,
-  publish: (channel, message) => redis.publish(channel, message),
+  publish: (channel, message) => getRedis().publish(channel, message),
   reportError: log.error,
 });
 

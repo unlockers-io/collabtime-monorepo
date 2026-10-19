@@ -23,7 +23,7 @@ import { TeamInsights } from "@/components/team-insights";
 import { TimezoneVisualizer } from "@/components/timezone-visualizer";
 import { ViewerZoneNote } from "@/components/timezone-visualizer/viewer-zone-note";
 import { WorkspaceVisibilityDialog } from "@/components/workspace-visibility-dialog";
-import { useTeamLiveSync } from "@/hooks/use-team-live-sync";
+import { useTeamLiveUpdates } from "@/hooks/use-team-live-updates";
 import { useTeamQuery } from "@/hooks/use-team-query";
 import type { TeamStatus } from "@/types";
 
@@ -80,8 +80,7 @@ const TeamPageClient = ({
   const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
   const [isDeleteWorkspaceOpen, setIsDeleteWorkspaceOpen] = useState(false);
 
-  // oxlint-disable-next-line node/no-sync -- This React hook subscribes to SSE; it performs no synchronous I/O.
-  const liveStatus = useTeamLiveSync({ refresh, teamId });
+  const liveStatus = useTeamLiveUpdates({ refresh, teamId });
   const {
     data: teamData,
     error: teamError,
