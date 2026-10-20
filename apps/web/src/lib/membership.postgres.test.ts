@@ -5,14 +5,12 @@ import { setTimeout } from "node:timers/promises";
 import { type Prisma, prisma } from "@repo/db";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
-import {
-  createMockSession,
-  createTestMember,
-  createTestTeamRecord,
-  createTestTeamStore,
-} from "./actions/test-helpers";
+import { createMockSession, createTestMember, createTestTeamRecord } from "./actions/test-helpers";
 import { createInvitations, type InvitationDeps, prismaInvitationStore } from "./invitations";
 import { createMembershipLifecycle, prismaMembershipStore } from "./membership";
+import { teamCommands } from "./team-commands";
+import { postgresTeamStorage } from "./team-storage";
+import { createTeamStore } from "./team-store";
 
 const enabled = process.env.MEMBERSHIP_POSTGRES_TESTS === "1";
 
@@ -31,14 +29,23 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     const teamId = randomUUID();
     const memberId = randomUUID();
     await prisma.space.create({ data: { ownerId: owner.id, teamId } });
-    const harness = createTestTeamStore(randomUUID);
-    await harness.seedTeam(
+    const reportError = vi.fn<() => void>();
+    const publish = vi.fn<(id: string) => Promise<void>>().mockResolvedValue();
+    const teamStore = createTeamStore({
+      createId: randomUUID,
+      invalidateTeamName: vi.fn<() => void>(),
+      reportError,
+      storage: { ...postgresTeamStorage, publish },
+    });
+    const harness = { ...teamStore, readTeam: teamStore.readTeamRecord, reportError };
+    await harness.createTeamContents(
+      teamId,
       createTestTeamRecord({ id: teamId, members: [createTestMember({ id: memberId })] }),
     );
     const lifecycle = () =>
       createMembershipLifecycle({
-        applyTeamCommand: harness.applyTeamCommand,
-        reportError: harness.reportError,
+        applyTeamCommand: harness.applyInTransaction,
+        publish,
         store: prismaMembershipStore,
       });
     const membership = lifecycle();
@@ -75,6 +82,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
       lifecycle,
       memberId,
       membership,
+      publish,
       readMembership,
       service,
       teamId,
@@ -115,7 +123,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     try {
       const probe = await prisma.$transaction(
         (transaction) => transaction.$queryRaw<Array<{ available: boolean }>>`
-        SELECT pg_try_advisory_xact_lock(hashtextextended(${`membership:${teamId}`}, 0)) AS available
+        SELECT pg_try_advisory_xact_lock(hashtextextended(${`team:${teamId}`}, 0)) AS available
       `,
       );
       expect(probe).toEqual([{ available: false }]);
@@ -154,8 +162,12 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     const paused = Promise.withResolvers<undefined>();
     const resume = Promise.withResolvers<undefined>();
     let pause = true;
-    const applyTeamCommand: typeof harness.applyTeamCommand = async (idToApply, command) => {
-      const result = await harness.applyTeamCommand(idToApply, command);
+    const applyTeamCommand: typeof harness.applyInTransaction = async (
+      idToApply,
+      command,
+      transaction,
+    ) => {
+      const result = await harness.applyInTransaction(idToApply, command, transaction);
       if (pause) {
         pause = false;
         paused.resolve(undefined);
@@ -165,7 +177,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     };
     const delayed = createMembershipLifecycle({
       applyTeamCommand,
-      reportError: harness.reportError,
+      publish: vi.fn().mockResolvedValue(undefined),
       store: prismaMembershipStore,
     });
     const losing = createInvitations({ ...deps, grantMembership: delayed.grantMembership }).accept(
@@ -195,17 +207,21 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     const paused = Promise.withResolvers<undefined>();
     const resume = Promise.withResolvers<undefined>();
     let calls = 0;
-    const applyTeamCommand: typeof harness.applyTeamCommand = async (idToApply, command) => {
+    const applyTeamCommand: typeof harness.applyInTransaction = async (
+      idToApply,
+      command,
+      transaction,
+    ) => {
       calls += 1;
-      if (calls === 2) {
+      if (calls === 1) {
         paused.resolve(undefined);
         await resume.promise;
       }
-      return harness.applyTeamCommand(idToApply, command);
+      return harness.applyInTransaction(idToApply, command, transaction);
     };
     const delayed = createMembershipLifecycle({
       applyTeamCommand,
-      reportError: harness.reportError,
+      publish: vi.fn().mockResolvedValue(undefined),
       store: prismaMembershipStore,
     });
     const removing = Promise.allSettled([delayed.revokeMembership({ access, memberId })]);
@@ -233,6 +249,103 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     const team = await harness.readTeam(teamId);
     expect(team?.members).toMatchObject([{ id: memberId, userId: user.id }]);
   }, 15_000);
+
+  it("never publishes a rolled-back claim and publishes after SQL access is visible", async () => {
+    const { harness, memberId, membership, publish, readMembership, teamId, user } = await setup();
+    publish.mockImplementation(async () => {
+      expect(await readMembership()).not.toBeNull();
+      const storedTeam = await harness.readTeam(teamId);
+      expect(storedTeam?.members[0]?.userId).toBe(user.id);
+    });
+    await expect(
+      membership.grantMembership({
+        commit: () => Promise.reject(new Error("rollback")),
+        role: "MEMBER",
+        slot: { memberId, name: "Member" },
+        teamId,
+        userId: user.id,
+      }),
+    ).rejects.toThrow("rollback");
+    expect(publish).not.toHaveBeenCalled();
+    expect(await readMembership()).toBeNull();
+    const storedTeam = await harness.readTeam(teamId);
+    expect(storedTeam?.members[0]?.userId).toBeUndefined();
+    expect(
+      await membership.grantMembership({
+        role: "MEMBER",
+        slot: { memberId, name: "Member" },
+        teamId,
+        userId: user.id,
+      }),
+    ).toMatchObject({ ok: true });
+    expect(publish).toHaveBeenCalledOnce();
+  });
+
+  it("rolls back a terminated database connection without splitting access and roster", async () => {
+    const { harness, memberId, membership, publish, readMembership, teamId, user } = await setup();
+    const entered = Promise.withResolvers<number>();
+    const resume = Promise.withResolvers<undefined>();
+    const writing = Promise.allSettled([
+      membership.grantMembership({
+        commit: async (grant, _memberId, transaction) => {
+          await prismaMembershipStore.grant(grant, transaction);
+          const rows = await transaction.$queryRaw<
+            Array<{ pid: number }>
+          >`SELECT pg_backend_pid() AS pid`;
+          entered.resolve(rows[0]?.pid ?? 0);
+          await resume.promise;
+          await transaction.$queryRaw`SELECT 1`;
+        },
+        role: "MEMBER",
+        slot: { memberId, name: "Member" },
+        teamId,
+        userId: user.id,
+      }),
+    ]);
+    const pid = await entered.promise;
+    expect(pid).toBeGreaterThan(0);
+    await prisma.$queryRaw`SELECT pg_terminate_backend(${pid}::integer)`;
+    resume.resolve(undefined);
+    const results = await writing;
+    expect(results[0]?.status).toBe("rejected");
+    expect(await readMembership()).toBeNull();
+    const rolledBack = await harness.readTeam(teamId);
+    expect(rolledBack?.members[0]?.userId).toBeUndefined();
+    expect(publish).not.toHaveBeenCalled();
+  });
+
+  it("serializes ordinary roster writes with membership transactions", async () => {
+    const { harness, memberId, membership, teamId, user } = await setup();
+    await Promise.all([
+      membership.grantMembership({
+        role: "MEMBER",
+        slot: { memberId, name: "Member" },
+        teamId,
+        userId: user.id,
+      }),
+      harness.applyTeamCommand(teamId, teamCommands.addGroup("Engineering")),
+      harness.applyTeamCommand(teamId, teamCommands.renameTeam("Concurrent")),
+    ]);
+    const team = await harness.readTeam(teamId);
+    expect(team).toMatchObject({
+      groups: [{ name: "Engineering" }],
+      members: [{ id: memberId, userId: user.id }],
+      name: "Concurrent",
+    });
+  });
+
+  it("preserves role and viewer-only membership without a roster slot", async () => {
+    const { harness, memberId, membership, teamId, user } = await setup();
+    await prisma.membership.create({
+      data: { archivedAt: new Date(), role: "ADMIN", teamId, userId: user.id },
+    });
+    await membership.grantMembership({ role: "MEMBER", slot: null, teamId, userId: user.id });
+    expect(
+      await prisma.membership.findUnique({ where: { userId_teamId: { teamId, userId: user.id } } }),
+    ).toMatchObject({ archivedAt: null, role: "ADMIN" });
+    const storedTeam = await harness.readTeam(teamId);
+    expect(storedTeam?.members).toEqual([createTestMember({ id: memberId })]);
+  });
 
   it.each(["accept", "decline"] as const)(
     "checks expiry in the database when %s crosses the deadline",

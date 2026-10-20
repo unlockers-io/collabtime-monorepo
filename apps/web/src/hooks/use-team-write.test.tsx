@@ -119,25 +119,32 @@ describe("team writes", () => {
     state.dispose();
   });
 
-  it("keeps a concurrent write's patch when an earlier write fails", async () => {
-    const state = setup();
-    const first = Promise.withResolvers<ActionResult<undefined>>();
-    const second = Promise.withResolvers<ActionResult<undefined>>();
-    const writingFirst = state.write({
-      optimistic: rename("renamed"),
-      submit: () => first.promise,
-    });
-    const writingSecond = state.write({ optimistic: addDesign, submit: () => second.promise });
-    await vi.advanceTimersByTimeAsync(0);
-    first.resolve(failed);
-    await expect(writingFirst).resolves.toEqual(failed);
-    expect(state.cachedTeam()?.groups).toEqual([design]);
-    expect(state.queryFn).not.toHaveBeenCalled();
-    second.resolve(succeeded);
-    await writingSecond;
-    expect(state.cachedTeam()).toEqual(makeTeam("server"));
-    state.dispose();
-  });
+  it.each([false, true])(
+    "keeps a concurrent patch when an earlier write rejects=%s",
+    async (rejects) => {
+      const state = setup();
+      const first = Promise.withResolvers<ActionResult<undefined>>();
+      const second = Promise.withResolvers<ActionResult<undefined>>();
+      const writingFirst = state.write({
+        optimistic: rename("renamed"),
+        submit: () => first.promise,
+      });
+      const writingSecond = state.write({ optimistic: addDesign, submit: () => second.promise });
+      await vi.advanceTimersByTimeAsync(0);
+      if (rejects) {
+        first.reject(new TypeError("Failed to fetch"));
+      } else {
+        first.resolve(failed);
+      }
+      await expect(writingFirst).resolves.toMatchObject({ success: false });
+      expect(state.cachedTeam()?.groups).toEqual([design]);
+      expect(state.queryFn).not.toHaveBeenCalled();
+      second.resolve(succeeded);
+      await writingSecond;
+      expect(state.cachedTeam()).toEqual(makeTeam("server"));
+      state.dispose();
+    },
+  );
 
   it("restores the previous team when a lone write fails", async () => {
     const state = setup();
@@ -171,7 +178,7 @@ describe("team writes", () => {
     state.dispose();
   });
 
-  it("rolls back a thrown submission and awaits the canonical refresh before rejecting", async () => {
+  it("rolls back a thrown submission and awaits the canonical refresh before returning a failure", async () => {
     const state = setup();
     const submit = Promise.withResolvers<ActionResult<undefined>>();
     const refetch = Promise.withResolvers<TeamQueryData>();
@@ -179,7 +186,10 @@ describe("team writes", () => {
     const writing = state.write({ optimistic: rename("optimistic"), submit: () => submit.promise });
     const rejected = vi.fn();
     const finish = async () => {
-      await expect(writing).rejects.toThrow("Network failed");
+      await expect(writing).resolves.toMatchObject({
+        error: expect.stringContaining("Check your connection"),
+        success: false,
+      });
       rejected();
     };
     const finished = finish();

@@ -27,7 +27,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-const adapter = new PrismaPgRequiringUrl(pool);
+const adapter = new PrismaPgRequiringUrl(pool, { disposeExternalPool: true });
 
 export const prisma =
   globalThis.prisma ??

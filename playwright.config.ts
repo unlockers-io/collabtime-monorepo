@@ -71,7 +71,7 @@ export default defineConfig({
           url: `${process.env.RESEND_BASE_URL}/emails`,
         },
         {
-          command: `pnpm --filter @repo/web start --port ${apps.web.port}`,
+          command: `pnpm --filter @repo/web start --port ${new URL(webUrl).port || apps.web.port}`,
           env: { PGAPPNAME: "collabtime:ci:web" },
           timeout: 120_000,
           url: webUrl,
