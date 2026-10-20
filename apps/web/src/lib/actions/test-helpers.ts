@@ -70,9 +70,10 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
   const invalidateTeamName = vi.fn<TeamStoreDeps["invalidateTeamName"]>();
   const reportError = vi.fn<TeamStoreDeps["reportError"]>();
   let memberships = createMemoryMembershipStore();
-  const lock: MembershipStore<undefined>["lock"] = (teamId, run) => memberships.lock(teamId, run);
+  let teamStorage = createMemoryTeamStorage();
+  const lock: MembershipStore<undefined>["lock"] = (teamId, run) =>
+    teamStorage.transaction(teamId, () => memberships.lock(teamId, run));
   const membershipStore = {
-    find: vi.fn<MembershipStore<undefined>["find"]>(),
     grant: vi.fn<MembershipStore<undefined>["grant"]>(),
     lock,
     revoke: vi.fn<MembershipStore<undefined>["revoke"]>(),
@@ -82,16 +83,11 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
       createId,
       invalidateTeamName,
       reportError,
-      storage: createMemoryTeamStorage(),
+      storage: teamStorage,
     });
   let store = build();
   const wireMemberships = () => {
     memberships = createMemoryMembershipStore();
-    membershipStore.find
-      .mockReset()
-      .mockImplementation((teamId, userId, transaction) =>
-        memberships.find(teamId, userId, transaction),
-      );
     membershipStore.grant
       .mockReset()
       .mockImplementation((grant) => memberships.grant(grant, undefined));
@@ -103,13 +99,17 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
 
   const applyTeamCommand: typeof store.applyTeamCommand = (teamId, command) =>
     store.applyTeamCommand(teamId, command);
+  const publish = vi.fn<(teamId: string) => Promise<void>>().mockResolvedValue();
+  const applyInTransaction: typeof store.applyInTransaction = (teamId, command, transaction) =>
+    store.applyInTransaction(teamId, command, transaction);
   const { grantMembership, revokeMembership } = createMembershipLifecycle({
-    applyTeamCommand,
-    reportError,
+    applyTeamCommand: applyInTransaction,
+    publish,
     store: membershipStore,
   });
 
   return {
+    applyInTransaction,
     applyTeamCommand,
     createTeamContents: (teamId: string, team: TeamRecord) =>
       store.createTeamContents(teamId, team),
@@ -119,10 +119,13 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
     invitationsRevoked: (memberId: string) => memberships.invitationsRevoked(VALID_UUID, memberId),
     membershipStore,
     mutateTeam: createTeamMutator({ applyTeamCommand, reportError }),
+    publish,
     readTeam: (teamId = VALID_UUID) => store.readTeamRecord(teamId),
     reportError,
     reset: () => {
+      teamStorage = createMemoryTeamStorage();
       store = build();
+      publish.mockClear();
       wireMemberships();
       invalidateTeamName.mockReset();
       reportError.mockReset();

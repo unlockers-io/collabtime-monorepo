@@ -202,7 +202,7 @@ describe("member slots", () => {
       await team.apply(
         teamCommands.claimMemberSlot({ memberId: VALID_UUID, name: "Bob", userId: "bob" }),
       ),
-    ).toMatchObject({ ok: true, value: { claimed: true, created: false, memberId: VALID_UUID } });
+    ).toMatchObject({ ok: true, value: { created: false, memberId: VALID_UUID } });
     const stored = await team.stored();
     expect(stored.members[0]).toMatchObject({
       name: "Alice",
@@ -220,7 +220,7 @@ describe("member slots", () => {
       await team.apply(
         teamCommands.claimMemberSlot({ memberId: VALID_UUID, name: "Bob", userId: "bob" }),
       ),
-    ).toMatchObject({ ok: true, value: { created: true, memberId: "new-2" } });
+    ).toMatchObject({ ok: true, value: { created: true, memberId: "new-1" } });
     const stored = await team.stored();
     expect(stored.members[1]).toMatchObject({ name: "Bob", order: 1, userId: "bob" });
   });
@@ -253,85 +253,20 @@ describe("member slots", () => {
     expect(stored.members).toEqual([owned, createTestMember({ id: "free" })]);
   });
 
-  it("releases a claimed slot by removing a created one and unclaiming an existing one", async () => {
-    const claimed = {
-      ...createTestMember({ id: "claimed", userId: "bob" }),
-      membershipRevision: "claim-bob",
-    };
-    const created = {
-      ...createTestMember({ id: "created", userId: "carol" }),
-      membershipRevision: "claim-carol",
-    };
-    const team = await storeWith(createTestTeamRecord({ members: [claimed, created] }));
-
-    await team.apply(
-      teamCommands.releaseMemberSlot(
-        { claimed: true, created: false, memberId: "claimed", revision: "claim-bob" },
-        "bob",
-      ),
-    );
-    await team.apply(
-      teamCommands.releaseMemberSlot(
-        { claimed: true, created: true, memberId: "created", revision: "claim-carol" },
-        "carol",
-      ),
-    );
-
-    const stored = await team.stored();
-    expect(stored.members).toEqual([createTestMember({ id: "claimed" })]);
-  });
-
-  it("fences delayed release and removal when the same user adopts a slot again", async () => {
-    const team = await storeWith(createTestTeamRecord({ members: [createTestMember()] }));
-    const claim = { memberId: VALID_UUID, name: "Bob", userId: "bob" };
-    const first = await team.apply(teamCommands.claimMemberSlot(claim));
-    const second = await team.apply(teamCommands.claimMemberSlot(claim));
-    if (!first.ok || !second.ok) {
-      throw new Error("Claims must succeed");
-    }
-
-    expect(first.value.revision).not.toBe(second.value.revision);
-    await team.apply(teamCommands.releaseMemberSlot(first.value, "bob"));
+  it("reuses a user's existing profile", async () => {
+    const owned = createTestMember({ userId: "bob" });
+    const team = await storeWith(createTestTeamRecord({ members: [owned] }));
     expect(
-      await team.apply(teamCommands.removeMember(VALID_UUID, "bob", first.value.revision)),
-    ).toMatchObject({ ok: false });
-    const stored = await team.stored();
-    expect(stored.members).toMatchObject([{ id: VALID_UUID, userId: "bob" }]);
+      await team.apply(teamCommands.claimMemberSlot({ name: "Bob", userId: "bob" })),
+    ).toMatchObject({ ok: true, value: { created: false, memberId: owned.id } });
+    const storedTeam = await team.stored();
+    expect(storedTeam.members).toEqual([owned]);
   });
-
-  it("leaves a slot alone once another user owns it", async () => {
-    const taken = createTestMember({ id: "taken", userId: "x" });
-    const team = await storeWith(createTestTeamRecord({ members: [taken] }));
-
-    await team.apply(
-      teamCommands.releaseMemberSlot(
-        { claimed: true, created: true, memberId: "taken", revision: "claim-bob" },
-        "bob",
-      ),
-    );
-
-    const stored = await team.stored();
-    expect(stored.members).toEqual([taken]);
-  });
-
-  it("removes a slot only while its owner is the one the caller read", async () => {
-    const team = await storeWith(
-      createTestTeamRecord({ members: [createTestMember({ userId: "bob" })] }),
-    );
-
-    expect(await team.apply(teamCommands.readMember(VALID_UUID))).toMatchObject({
-      ok: true,
-      value: { userId: "bob" },
-    });
-    expect(await team.apply(teamCommands.removeMember(VALID_UUID, undefined))).toMatchObject({
-      error: "This member changed while saving. Try again.",
-      ok: false,
-    });
-    expect(await team.apply(teamCommands.removeMember(VALID_UUID, "bob"))).toMatchObject({
-      ok: true,
-    });
-    const stored = await team.stored();
-    expect(stored.members).toEqual([]);
+  it("removes a member inside the team transaction", async () => {
+    const team = await storeWith(createTestTeamRecord({ members: [createTestMember()] }));
+    expect(await team.apply(teamCommands.removeMember(VALID_UUID))).toMatchObject({ ok: true });
+    const storedTeam = await team.stored();
+    expect(storedTeam.members).toEqual([]);
   });
 });
 

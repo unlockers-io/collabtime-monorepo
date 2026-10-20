@@ -3,19 +3,23 @@ import type { TeamRole } from "@/types";
 import type { MembershipStore } from "./membership";
 
 type StoredMembership = { archivedAt: Date | null; role: TeamRole };
-
-const key = (teamId: string, id: string): string => `${teamId}:${id}`;
-
+type TeamState = { memberships: Map<string, StoredMembership>; revokedSlots: Set<string> };
 const createMemoryMembershipStore = () => {
-  const memberships = new Map<string, StoredMembership>();
-  const revokedSlots = new Set<string>();
+  const teams = new Map<string, TeamState>();
   const locks = new Map<string, Promise<undefined>>();
-
+  const stateFor = (teamId: string): TeamState => {
+    let state = teams.get(teamId);
+    if (!state) {
+      state = { memberships: new Map(), revokedSlots: new Set() };
+      teams.set(teamId, state);
+    }
+    return state;
+  };
   const store: MembershipStore<undefined> = {
-    find: (teamId, userId) => Promise.resolve(memberships.get(key(teamId, userId)) ?? null),
     grant: ({ role, teamId, userId }) => {
-      const existing = memberships.get(key(teamId, userId));
-      memberships.set(key(teamId, userId), { archivedAt: null, role: existing?.role ?? role });
+      const state = stateFor(teamId);
+      const existing = state.memberships.get(userId);
+      state.memberships.set(userId, { archivedAt: null, role: existing?.role ?? role });
       return Promise.resolve();
     },
     lock: async (teamId, run) => {
@@ -23,28 +27,11 @@ const createMemoryMembershipStore = () => {
       const gate = Promise.withResolvers<undefined>();
       locks.set(teamId, gate.promise);
       await previous;
-      const prefix = `${teamId}:`;
-      const before = new Map([...memberships].filter(([id]) => id.startsWith(prefix)));
-      const revokedBefore = new Set([...revokedSlots].filter((id) => id.startsWith(prefix)));
+      const before = structuredClone(stateFor(teamId));
       try {
         return await run(undefined);
       } catch (error) {
-        for (const id of memberships.keys()) {
-          if (id.startsWith(prefix)) {
-            memberships.delete(id);
-          }
-        }
-        for (const [id, value] of before) {
-          memberships.set(id, value);
-        }
-        for (const id of revokedSlots) {
-          if (id.startsWith(prefix)) {
-            revokedSlots.delete(id);
-          }
-        }
-        for (const id of revokedBefore) {
-          revokedSlots.add(id);
-        }
+        teams.set(teamId, before);
         throw error;
       } finally {
         gate.resolve(undefined);
@@ -54,24 +41,23 @@ const createMemoryMembershipStore = () => {
       }
     },
     revoke: ({ memberId, teamId, userId }) => {
-      revokedSlots.add(key(teamId, memberId));
-      if (userId !== undefined && memberships.get(key(teamId, userId))?.role === "MEMBER") {
-        memberships.delete(key(teamId, userId));
+      const state = stateFor(teamId);
+      state.revokedSlots.add(memberId);
+      if (userId !== undefined && state.memberships.get(userId)?.role === "MEMBER") {
+        state.memberships.delete(userId);
       }
       return Promise.resolve();
     },
   };
-
   return {
     ...store,
     invitationsRevoked: (teamId: string, memberId: string): boolean =>
-      revokedSlots.has(key(teamId, memberId)),
+      stateFor(teamId).revokedSlots.has(memberId),
     read: (teamId: string, userId: string): StoredMembership | null =>
-      memberships.get(key(teamId, userId)) ?? null,
+      stateFor(teamId).memberships.get(userId) ?? null,
     seed: (teamId: string, userId: string, membership: StoredMembership) => {
-      memberships.set(key(teamId, userId), membership);
+      stateFor(teamId).memberships.set(userId, membership);
     },
   };
 };
-
 export { createMemoryMembershipStore };

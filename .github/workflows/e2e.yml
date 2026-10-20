@@ -85,6 +85,10 @@ jobs:
             next-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('pnpm-lock.yaml') }}-e2e-${{ github.event.pull_request.number || github.ref_name }}-
             next-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('pnpm-lock.yaml') }}-e2e-main-
       - run: pnpm db:push
+      - name: Verify team transactions and cutover
+        env:
+          MEMBERSHIP_POSTGRES_TESTS: "1"
+        run: node .github/ci/ci.mjs run e2e -- pnpm --filter @repo/web exec vitest run src/lib/membership.postgres.test.ts src/lib/team-postgres-repository.postgres.test.ts
       - run: pnpm build
       - name: Seed E2E test user
         run: pnpm --filter @repo/web exec tsx scripts/ensure-e2e-user.ts

@@ -10,7 +10,6 @@ import {
   VALID_UUID,
   VALID_UUID_2,
 } from "./actions/test-helpers";
-import { teamCommands } from "./team-commands";
 
 const ADMIN_ID = "user-123";
 const access = { teamId: VALID_UUID, user: createMockSession({ userId: ADMIN_ID }).user };
@@ -151,19 +150,21 @@ describe("revokeMembership", () => {
     expect(harness.findMembership(ADMIN_ID)).not.toBeNull();
   });
 
-  it("refuses to remove a slot claimed while its access was being revoked", async () => {
+  it("publishes only committed membership changes", async () => {
     await seed();
-    harness.membershipStore.revoke.mockImplementationOnce(async () => {
-      await harness.applyTeamCommand(
-        VALID_UUID,
-        teamCommands.claimMemberSlot({ memberId: VALID_UUID_2, name: "Bob", userId: "bob" }),
-      );
+    const granted = await harness.grantMembership({
+      ...bob,
+      slot: { memberId: VALID_UUID_2, name: "Bob" },
     });
-
-    expect(await harness.revokeMembership({ access, memberId: VALID_UUID_2 })).toMatchObject({
-      ok: false,
-      reason: "rejected",
-    });
+    expect(granted.ok).toBe(true);
+    expect(harness.publish).toHaveBeenCalledExactlyOnceWith(VALID_UUID);
+    harness.publish.mockClear();
+    harness.membershipStore.revoke.mockRejectedValueOnce(new Error("rollback"));
+    await expect(harness.revokeMembership({ access, memberId: VALID_UUID_2 })).rejects.toThrow(
+      "rollback",
+    );
+    expect(harness.publish).not.toHaveBeenCalled();
+    expect(harness.findMembership("bob")).not.toBeNull();
     expect(await roster()).toMatchObject([bobsSlot]);
   });
 });

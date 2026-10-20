@@ -1,91 +1,34 @@
-import { log } from "@/lib/observability";
-import { publishTeamEvent } from "@/lib/team-events";
+import { type Prisma, prisma } from "@repo/db";
+
 import type { TeamRecord } from "@/types";
 
-import { getRedis, isRedisConfigured } from "./redis";
-import { writeTeamMirror } from "./team-postgres-repository";
+import { publishTeamEvent } from "./team-events";
+import { readTeams, writeTeam } from "./team-postgres-repository";
 
-type TeamStorage = {
-  /** Stores `next` only while the contents still equal `expected` (null: absent). */
-  compareAndSet: (teamId: string, expected: string | null, next: string) => Promise<boolean>;
-  /** Best-effort Postgres copy for backfill tooling; never used for live summaries. */
-  mirror: (teamId: string, team: TeamRecord) => Promise<void>;
+type TeamStorage<TTransaction = undefined> = {
   publish: (teamId: string) => Promise<void>;
-  readContents: (teamId: string) => Promise<string | null>;
-  readContentsBatch: (teamIds: Array<string>) => Promise<Array<string | null>>;
+  read: (teamId: string, transaction?: TTransaction) => Promise<TeamRecord | null>;
+  readBatch: (teamIds: Array<string>) => Promise<Array<TeamRecord>>;
+  transaction: <T>(teamId: string, run: (transaction: TTransaction) => Promise<T>) => Promise<T>;
+  write: (teamId: string, team: TeamRecord, transaction: TTransaction) => Promise<void>;
 };
-
-const TEAM_INITIAL_TTL_SECONDS = 60 * 60 * 24 * 60;
-const TEAM_ACTIVE_TTL_SECONDS = 60 * 60 * 24 * 365 * 2;
-
-const contentsKey = (teamId: string): string => `team:${teamId}`;
-
-const COMPARE_AND_SET = `
-  if (redis.call("GET", KEYS[1]) or "") ~= ARGV[1] then
-    return 0
-  end
-  redis.call("SET", KEYS[1], ARGV[2], "EX", ARGV[3])
-  return 1
-`;
-
-const readContentsBatch = async (teamIds: Array<string>): Promise<Array<string | null>> => {
-  if (teamIds.length === 0) {
-    return [];
-  }
-  if (!isRedisConfigured()) {
-    throw new Error("Team storage is unavailable: REDIS_URL is unset");
-  }
-
-  const contents = await getRedis().mget(teamIds.map(contentsKey));
-  return Promise.all(
-    teamIds.map(async (teamId, index) => {
-      const value = contents[index];
-      if (value === null || value === undefined || value === "") {
-        return null;
-      }
-
-      try {
-        await getRedis().expire(contentsKey(teamId), TEAM_ACTIVE_TTL_SECONDS);
-      } catch (error) {
-        log.error({
-          error,
-          message: "Failed to refresh team TTL",
-          route: "lib/team-storage",
-          teamId,
-        });
-      }
-
-      return value;
-    }),
-  );
-};
-
-const redisTeamStorage: TeamStorage = {
-  compareAndSet: async (teamId, expected, next) => {
-    if (!isRedisConfigured()) {
-      throw new Error("Team storage is unavailable: REDIS_URL is unset");
-    }
-
-    const ttlSeconds = expected === null ? TEAM_INITIAL_TTL_SECONDS : TEAM_ACTIVE_TTL_SECONDS;
-    const applied = await getRedis().eval(
-      COMPARE_AND_SET,
-      1,
-      contentsKey(teamId),
-      expected ?? "",
-      next,
-      ttlSeconds,
-    );
-
-    return applied === 1;
-  },
-  mirror: writeTeamMirror,
+const withTeamTransaction = <T>(
+  teamId: string,
+  run: (transaction: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> =>
+  prisma.$transaction(async (transaction) => {
+    await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`team:${teamId}`}, 0))`;
+    return run(transaction);
+  });
+const postgresTeamStorage: TeamStorage<Prisma.TransactionClient> = {
   publish: (teamId) => publishTeamEvent(teamId, "contents"),
-  readContents: async (teamId) => {
-    const [contents] = await readContentsBatch([teamId]);
-    return contents ?? null;
+  read: async (teamId, transaction = prisma) => {
+    const teams = await readTeams([teamId], transaction);
+    return teams[0] ?? null;
   },
-  readContentsBatch,
+  readBatch: (teamIds) => readTeams(teamIds, prisma),
+  transaction: withTeamTransaction,
+  write: writeTeam,
 };
-
-export { COMPARE_AND_SET, redisTeamStorage };
+export { postgresTeamStorage, withTeamTransaction };
 export type { TeamStorage };

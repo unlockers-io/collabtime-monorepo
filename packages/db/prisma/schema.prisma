@@ -126,6 +126,8 @@ model JoinRequest {
 
 model Space {
   id                String        @id @default(cuid())
+  teamCreatedAt     String?
+  teamExpiresAt     DateTime?
   teamId            String        @unique
   name              String        @default("")
   isPrivate         Boolean       @default(false)

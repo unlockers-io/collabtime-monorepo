@@ -33,8 +33,8 @@ const lifecycle = (
   store: MembershipStore<undefined>,
 ) =>
   createMembershipLifecycle({
-    applyTeamCommand: harness.applyTeamCommand,
-    reportError: harness.reportError,
+    applyTeamCommand: harness.applyInTransaction,
+    publish: harness.publish,
     store,
   });
 
@@ -63,7 +63,7 @@ describe("membership operation interleavings", () => {
     expect(team?.members).toEqual([]);
   });
 
-  it("keeps access and the adopted slot when a grant lands between revocation commit and removal", async () => {
+  it("serializes a regrant after the complete revocation", async () => {
     const harness = await setup();
     await harness.grantMembership(request);
     let regrant = true;
@@ -78,14 +78,14 @@ describe("membership operation interleavings", () => {
     const remover = lifecycle(harness, { ...harness.membershipStore, lock });
 
     expect(await remover.revokeMembership({ access, memberId: VALID_UUID_2 })).toMatchObject({
-      ok: false,
+      ok: true,
     });
     expect(harness.findMembership("bob")).not.toBeNull();
     const team = await harness.readTeam();
-    expect(team?.members).toMatchObject([{ id: VALID_UUID_2, userId: "bob" }]);
-    expect(await harness.revokeMembership({ access, memberId: VALID_UUID_2 })).toMatchObject({
-      ok: true,
-    });
+    expect(team?.members).toMatchObject([{ userId: "bob" }]);
+    expect(
+      await harness.revokeMembership({ access, memberId: team?.members[0]?.id ?? "missing" }),
+    ).toMatchObject({ ok: true });
     expect(harness.findMembership("bob")).toBeNull();
   });
 
@@ -105,7 +105,7 @@ describe("membership operation interleavings", () => {
     await expect(failing.grantMembership(request)).rejects.toThrow("Connection lost after commit");
     expect(harness.findMembership("bob")).not.toBeNull();
     const team = await harness.readTeam();
-    expect(team?.members).toMatchObject([{ id: VALID_UUID_2, userId: "bob" }]);
+    expect(team?.members).toMatchObject([{ userId: "bob" }]);
     expect(await harness.revokeMembership({ access, memberId: VALID_UUID_2 })).toMatchObject({
       ok: true,
     });
