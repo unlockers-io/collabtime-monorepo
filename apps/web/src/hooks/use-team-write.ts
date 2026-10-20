@@ -1,5 +1,6 @@
 "use client";
 
+import { captureException } from "@sentry/nextjs";
 import { MutationObserver, type QueryClient, useQueryClient } from "@tanstack/react-query";
 
 import type { ActionResult } from "@/lib/actions/types";
@@ -62,6 +63,12 @@ const writeTeam = async <T>(
   const finishWrite = beginTeamWrite(queryClient, teamId);
   try {
     return await observer.mutate();
+  } catch (error) {
+    captureException(error);
+    return {
+      error: "Could not save your changes. Check your connection and try again.",
+      success: false,
+    };
   } finally {
     observer.reset();
     // Mutation callbacks keep the mutation pending until they return.
