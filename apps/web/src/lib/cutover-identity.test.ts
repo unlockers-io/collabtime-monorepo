@@ -17,16 +17,19 @@ const request = (overrides: RequestInit = {}, target = url) =>
     ...overrides,
   });
 
-describe("cutover identity probe", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.stubEnv("CUTOVER_IDENTITY_BEARER", bearer);
-    vi.stubEnv("CUTOVER_IDENTITY_EXPIRES_AT", String(Date.now() + 60_000));
-    vi.stubEnv("VERCEL_URL", host);
-    readRedisServerInfo.mockResolvedValue(`redis_version:8.6.3\r\nrun_id:${"a".repeat(40)}\r\n`);
-  });
-  afterEach(() => vi.unstubAllEnvs());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.stubEnv("CUTOVER_IDENTITY_BEARER", bearer);
+  vi.stubEnv("CUTOVER_IDENTITY_EXPIRES_AT", String(Date.now() + 60_000));
+  vi.stubEnv("VERCEL_URL", host);
+  readRedisServerInfo.mockResolvedValue(`redis_version:8.6.3\r\nrun_id:${"a".repeat(40)}\r\n`);
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
+describe("cutover identity probe", () => {
   it.each([
     ["CUTOVER_IDENTITY_BEARER", ""],
     ["CUTOVER_IDENTITY_BEARER", "short"],
@@ -77,5 +80,36 @@ describe("cutover identity probe", () => {
     const response = await GET(request());
     expect(response.status).toBe(503);
     expect(await response.text()).toBe("");
+  });
+});
+
+describe("probe configuration boundaries", () => {
+  it.each(["CUTOVER_IDENTITY_BEARER", "CUTOVER_IDENTITY_EXPIRES_AT", "VERCEL_URL"])(
+    "stays closed with missing %s",
+    async (name) => {
+      vi.stubEnv(name, undefined);
+      const response = await GET(request());
+      expect(response.status).toBe(404);
+      expect(readRedisServerInfo).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([0, 15 * 60 * 1000 + 1, 60_000.5])(
+    "rejects an invalid remaining lifetime of %s ms before connecting",
+    async (remaining) => {
+      vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+      vi.stubEnv("CUTOVER_IDENTITY_EXPIRES_AT", String(Date.now() + remaining));
+      const response = await GET(request());
+      expect(response.status).toBe(404);
+      expect(readRedisServerInfo).not.toHaveBeenCalled();
+    },
+  );
+
+  it("accepts the exact 15-minute maximum lifetime", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+    vi.stubEnv("CUTOVER_IDENTITY_EXPIRES_AT", String(Date.now() + 15 * 60 * 1000));
+    const response = await GET(request());
+    expect(response.status).toBe(200);
+    expect(readRedisServerInfo).toHaveBeenCalledOnce();
   });
 });
