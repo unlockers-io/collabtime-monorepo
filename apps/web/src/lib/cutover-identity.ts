@@ -23,22 +23,31 @@ const readProbeConfig = () => {
   return { bearer, host };
 };
 
-const isAuthorizedProbeRequest = (request: Request, bearer: string, host: string): boolean => {
+const isAuthorizedProbeRequest = (request: Request, method: "GET" | "HEAD"): boolean => {
+  const config = readProbeConfig();
+  if (config === null) {
+    return false;
+  }
   const url = new URL(request.url);
   return (
-    request.method === "GET" &&
-    request.headers.get("host") === host &&
+    request.method === method &&
+    request.headers.get("host") === config.host &&
     url.pathname === "/api/internal/cutover-identity" &&
     url.search === "" &&
-    timingSafeEqual(digest(request.headers.get("authorization") ?? ""), digest(`Bearer ${bearer}`))
+    timingSafeEqual(
+      digest(request.headers.get("authorization") ?? ""),
+      digest(`Bearer ${config.bearer}`),
+    )
   );
 };
+
+const handleCutoverIdentityReadiness = (request: Request): Response =>
+  new Response(null, { headers, status: isAuthorizedProbeRequest(request, "HEAD") ? 204 : 404 });
 
 const createCutoverIdentityHandler =
   (readRedisServerInfo: () => Promise<string>) =>
   async (request: Request): Promise<Response> => {
-    const config = readProbeConfig();
-    if (config === null || !isAuthorizedProbeRequest(request, config.bearer, config.host)) {
+    if (!isAuthorizedProbeRequest(request, "GET")) {
       return new Response(null, { headers, status: 404 });
     }
 
@@ -54,4 +63,4 @@ const createCutoverIdentityHandler =
     }
   };
 
-export { createCutoverIdentityHandler };
+export { createCutoverIdentityHandler, handleCutoverIdentityReadiness };

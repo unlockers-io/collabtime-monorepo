@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HEAD } from "@/app/api/internal/cutover-identity/route";
+import * as redis from "@/lib/redis";
+
 import { createCutoverIdentityHandler } from "./cutover-identity";
 
 const readRedisServerInfo = vi.fn<() => Promise<string>>();
@@ -19,6 +22,7 @@ const request = (overrides: RequestInit = {}, target = url) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(redis, "createRedisClient");
   vi.stubEnv("CUTOVER_IDENTITY_BEARER", bearer);
   vi.stubEnv("CUTOVER_IDENTITY_EXPIRES_AT", String(Date.now() + 60_000));
   vi.stubEnv("VERCEL_URL", host);
@@ -111,5 +115,75 @@ describe("probe configuration boundaries", () => {
     const response = await GET(request());
     expect(response.status).toBe(200);
     expect(readRedisServerInfo).toHaveBeenCalledOnce();
+  });
+});
+
+describe("explicit HEAD readiness", () => {
+  it("returns empty no-store 204 without creating a Redis client", async () => {
+    const response = HEAD(request({ method: "HEAD" }));
+    expect(response.status).toBe(204);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.text()).toBe("");
+    expect(redis.createRedisClient).not.toHaveBeenCalled();
+    expect(readRedisServerInfo).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    request({ headers: { host }, method: "HEAD" }),
+    request({ headers: { authorization: "Bearer wrong", host }, method: "HEAD" }),
+    request({ headers: { authorization: `Bearer ${bearer}` }, method: "HEAD" }),
+    request({
+      headers: { authorization: `Bearer ${bearer}`, host: "legacy.example.test" },
+      method: "HEAD",
+    }),
+    request({ method: "HEAD" }, `${url}?extra=1`),
+    request({ method: "HEAD" }, `${url}/extra`),
+    request({ method: "GET" }),
+    request({ method: "POST" }),
+  ])("stays closed for a mismatched request without creating a client", async (input) => {
+    const response = HEAD(input);
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.text()).toBe("");
+    expect(redis.createRedisClient).not.toHaveBeenCalled();
+    expect(readRedisServerInfo).not.toHaveBeenCalled();
+  });
+});
+
+describe("HEAD configuration and expiry gates", () => {
+  it.each([
+    ["CUTOVER_IDENTITY_BEARER", undefined],
+    ["CUTOVER_IDENTITY_BEARER", ""],
+    ["CUTOVER_IDENTITY_BEARER", "short"],
+    ["CUTOVER_IDENTITY_EXPIRES_AT", undefined],
+    ["CUTOVER_IDENTITY_EXPIRES_AT", ""],
+    ["CUTOVER_IDENTITY_EXPIRES_AT", "invalid"],
+    ["CUTOVER_IDENTITY_EXPIRES_AT", "1"],
+    ["VERCEL_URL", undefined],
+    ["VERCEL_URL", ""],
+  ])("stays indistinguishably closed for invalid %s", async (name, value) => {
+    vi.stubEnv(name, value);
+    const response = HEAD(request({ method: "HEAD" }));
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe("");
+    expect(redis.createRedisClient).not.toHaveBeenCalled();
+  });
+
+  it.each([0, -1, 15 * 60 * 1000 + 1, 60_000.5])(
+    "rejects an invalid remaining lifetime of %s ms without creating a client",
+    (remaining) => {
+      vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+      vi.stubEnv("CUTOVER_IDENTITY_EXPIRES_AT", String(Date.now() + remaining));
+      const response = HEAD(request({ method: "HEAD" }));
+      expect(response.status).toBe(404);
+      expect(redis.createRedisClient).not.toHaveBeenCalled();
+    },
+  );
+
+  it("accepts exactly 15 minutes without creating a client", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+    vi.stubEnv("CUTOVER_IDENTITY_EXPIRES_AT", String(Date.now() + 15 * 60 * 1000));
+    expect(HEAD(request({ method: "HEAD" })).status).toBe(204);
+    expect(redis.createRedisClient).not.toHaveBeenCalled();
   });
 });

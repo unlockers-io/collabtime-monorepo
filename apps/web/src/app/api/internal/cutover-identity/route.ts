@@ -26,3 +26,6 @@ const readRedisServerInfo = async (): Promise<string> => {
 
 // public-route: an expiring operator bearer and exact deployment host gate this read-only probe before Redis is opened
 export const GET = createCutoverIdentityHandler(readRedisServerInfo);
+
+// public-route: the same expiring operator bearer gates readiness without creating a Redis client
+export { handleCutoverIdentityReadiness as HEAD } from "@/lib/cutover-identity";
