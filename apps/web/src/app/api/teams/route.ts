@@ -17,6 +17,7 @@ export const GET = withEvlog(async () => {
     return NextResponse.json({ teams });
   } catch (error) {
     log.error({ error, message: "Failed to fetch teams", route: "/api/teams" });
+
     return NextResponse.json({ error: "Failed to fetch teams" }, { status: 500 });
   }
 });

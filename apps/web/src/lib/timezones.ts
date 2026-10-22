@@ -58,6 +58,7 @@ const clockFormatters = new Map<string, Intl.DateTimeFormat>();
 
 const getOffsetFormatter = (timezone: string): Intl.DateTimeFormat => {
   let formatter = offsetFormatters.get(timezone);
+
   if (formatter === undefined) {
     formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: timezone,
@@ -65,11 +66,13 @@ const getOffsetFormatter = (timezone: string): Intl.DateTimeFormat => {
     });
     offsetFormatters.set(timezone, formatter);
   }
+
   return formatter;
 };
 
 const getClockFormatter = (timezone: string): Intl.DateTimeFormat => {
   let formatter = clockFormatters.get(timezone);
+
   if (formatter === undefined) {
     formatter = new Intl.DateTimeFormat("en-US", {
       hour: "2-digit",
@@ -79,6 +82,7 @@ const getClockFormatter = (timezone: string): Intl.DateTimeFormat => {
     });
     clockFormatters.set(timezone, formatter);
   }
+
   return formatter;
 };
 
@@ -90,12 +94,16 @@ const getOffsetMinutes = (timezone: string, at: Date): number => {
     getOffsetFormatter(timezone)
       .formatToParts(at)
       .find((part) => part.type === "timeZoneName")?.value ?? "GMT";
+
   const groups: Partial<Record<"hours" | "minutes" | "sign", string>> | undefined =
     OFFSET_PATTERN.exec(name)?.groups;
+
   if (groups === undefined) {
     return 0;
   }
+
   const minutes = Number(groups.hours) * 60 + Number(groups.minutes ?? 0);
+
   return groups.sign === "+" ? minutes : -minutes;
 };
 
@@ -104,6 +112,7 @@ const getMinuteOfDay = (timezone: string, at: Date): number => {
   const parts = getClockFormatter(timezone).formatToParts(at);
   const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
   const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
+
   return (hour % 24) * 60 + minute;
 };
 
@@ -114,23 +123,28 @@ const formatMinuteOfDay = (minutes: number): string => {
   const wrapped = wrapMinutes(minutes);
   const hours = Math.floor(wrapped / 60);
   const mins = wrapped % 60;
+
   return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
 };
 
 /** A range end of midnight reads as 24:00 so "22:00 – 24:00" never looks inverted. */
 const formatMinuteRange = (startMinute: number, endMinute: number): string => {
   const end = wrapMinutes(endMinute) === 0 ? "24:00" : formatMinuteOfDay(endMinute);
+
   return `${formatMinuteOfDay(startMinute)} – ${end}`;
 };
 
 const formatUtcOffset = (timezone: string, at: Date): string => {
   const offset = getOffsetMinutes(timezone, at);
+
   if (offset === 0) {
     return "UTC";
   }
+
   const sign = offset > 0 ? "+" : "-";
   const hours = Math.floor(Math.abs(offset) / 60);
   const minutes = Math.abs(offset) % 60;
+
   return minutes === 0
     ? `UTC${sign}${hours}`
     : `UTC${sign}${hours}:${minutes.toString().padStart(2, "0")}`;
@@ -163,7 +177,9 @@ const getMemberStatus = (member: WorkingHours, at: Date): MemberStatus => {
   const sinceStart = wrapMinutes(
     getMinuteOfDay(member.timezone, at) - member.workingHoursStart * 60,
   );
+
   const lengthMinutes = getWorkingMinutes(member);
+
   return sinceStart < lengthMinutes
     ? { kind: "working", minutesLeft: lengthMinutes - sinceStart }
     : { kind: "off", minutesUntilStart: wrapMinutes(-sinceStart) };
@@ -176,9 +192,11 @@ const formatDuration = (minutes: number): string => {
   if (hours === 0) {
     return `${mins}m`;
   }
+
   if (mins === 0) {
     return `${hours}h`;
   }
+
   return `${hours}h ${mins}m`;
 };
 
@@ -187,6 +205,7 @@ const isCommonTimezone = (value: string): value is CommonTimezone => COMMON_TIME
 const isValidTimezone = (value: string): boolean => {
   try {
     Intl.DateTimeFormat("en", { timeZone: value });
+
     return true;
   } catch {
     return false;
@@ -204,6 +223,7 @@ const getOffsetDistance = (a: string, b: string): number =>
 
 const fuzzyMatchTimezone = (input: string): CommonTimezone | null => {
   const trimmed = input.trim();
+
   if (!trimmed) {
     return null;
   }
@@ -215,11 +235,13 @@ const fuzzyMatchTimezone = (input: string): CommonTimezone | null => {
   if (!isValidTimezone(trimmed)) {
     return null;
   }
+
   let best: CommonTimezone | null = null;
   let bestDiff = Infinity;
 
   for (const tz of COMMON_TIMEZONES) {
     const diff = getOffsetDistance(tz, trimmed);
+
     if (diff < bestDiff) {
       bestDiff = diff;
       best = tz;
@@ -232,6 +254,7 @@ const fuzzyMatchTimezone = (input: string): CommonTimezone | null => {
 /** The supported zone closest to the browser's, for defaults that must be stored. */
 const getUserTimezone = (): CommonTimezone => {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   return (
     COMMON_TIMEZONES.find((commonTimezone) => commonTimezone === timezone) ??
     fuzzyMatchTimezone(timezone) ??
@@ -246,6 +269,7 @@ const getUserTimezone = (): CommonTimezone => {
  */
 const getViewerTimezone = (): string => {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   return timezone !== "" && isValidTimezone(timezone) ? timezone : getUserTimezone();
 };
 

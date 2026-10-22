@@ -18,33 +18,46 @@ const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   notFound: vi.fn(),
 }));
+
 vi.mock("@repo/db", () => ({ prisma: { space: { findUnique: mocks.findSpace } } }));
+
 vi.mock("@/lib/auth-server", () => ({ getSession: mocks.getSession }));
+
 vi.mock("@/lib/actions/team-read", () => ({ getPublicTeam: mocks.getPublicTeam }));
+
 vi.mock("@/lib/team-meta", () => ({ getTeamName: vi.fn() }));
+
 vi.mock("@/lib/workspace-access", async (importOriginal) => {
   const actual = await importOriginal<typeof WorkspaceAccess>();
+
   return {
     resolveViewer: (input: Parameters<typeof actual.resolveViewer>[0]) =>
       actual.resolveViewer(input, access.store),
   };
 });
+
 vi.mock("next/navigation", () => ({ notFound: mocks.notFound }));
+
 vi.mock("@/providers/query-provider", () => ({
   QueryProvider: ({ children }: { children: ReactNode }) => children,
 }));
+
 vi.mock("./client", () => ({
   TeamPageClient: (props: { teamStatus: string }) => {
     mocks.clientProps(props);
+
     return <p>Workspace: {props.teamStatus}</p>;
   },
 }));
+
 vi.mock("./private-space-gate", () => ({
   PrivateSpaceGate: (props: { returnTo: string }) => {
     mocks.gateProps(props);
+
     return <p>Password gate</p>;
   },
 }));
+
 vi.mock("@/components/accept-workspace-invitation", () => ({
   AcceptWorkspaceInvitation: () => <button type="button">Accept invitation</button>,
 }));
@@ -52,6 +65,7 @@ vi.mock("@/components/accept-workspace-invitation", () => ({
 const TEAM_ID = "550e8400-e29b-41d4-a716-446655440000";
 const HINT = "cmf12345678901234567890123";
 const params = Promise.resolve({ teamId: TEAM_ID });
+
 const privateSpace = {
   accessPassword: "hash",
   id: "space-1",

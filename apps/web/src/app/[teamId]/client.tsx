@@ -41,6 +41,7 @@ import { TeamUnavailable } from "./team-unavailable";
 const DndWrapper = dynamic(
   async () => {
     const { DndWrapper: Component } = await import("./dnd-wrapper");
+
     return Component;
   },
   { ssr: false },
@@ -81,6 +82,7 @@ const TeamPageClient = ({
   const [isDeleteWorkspaceOpen, setIsDeleteWorkspaceOpen] = useState(false);
 
   const liveStatus = useTeamLiveUpdates({ refresh, teamId });
+
   const {
     data: teamData,
     error: teamError,
@@ -91,8 +93,10 @@ const TeamPageClient = ({
   useEffect(() => {
     if (teamError) {
       toast.error(teamError.message, { id: "team-query-error" });
+
       return;
     }
+
     toast.dismiss("team-query-error");
   }, [teamError]);
 

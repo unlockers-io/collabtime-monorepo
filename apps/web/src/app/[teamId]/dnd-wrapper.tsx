@@ -61,13 +61,16 @@ const DndWrapper = ({
     const id = String(event.active.id);
 
     const member = members.find((m) => m.id === id);
+
     if (member) {
       setActiveDrag({ kind: "member", member });
       onDragTypeChange?.("member");
+
       return;
     }
 
     const group = groups.find((g) => g.id === id);
+
     if (group) {
       setActiveDrag({ group, kind: "group" });
       onDragTypeChange?.("group");
@@ -77,16 +80,20 @@ const DndWrapper = ({
   const nameOf = (id: UniqueIdentifier): string => {
     const key = String(id);
     const member = members.find((m) => m.id === key);
+
     if (member) {
       return member.name;
     }
+
     const group = groups.find((g) => g.id === key);
+
     return group ? `the ${group.name} group` : "this item";
   };
 
   const describeTarget = (activeId: UniqueIdentifier, overId: UniqueIdentifier): string => {
     const isMemberOverGroup =
       members.some((m) => m.id === String(activeId)) && groups.some((g) => g.id === String(overId));
+
     return isMemberOverGroup ? `into ${nameOf(overId)}` : `to the place of ${nameOf(overId)}`;
   };
 
@@ -128,11 +135,13 @@ const DndWrapper = ({
     keyframes: ({ transform }) => {
       if (droppedOnGroupRef.current) {
         const initial = CSS.Transform.toString(transform.initial);
+
         return [
           { opacity: 1, transform: initial },
           { opacity: 0, transform: `${initial} scale(0.85)` },
         ];
       }
+
       return [
         { transform: CSS.Transform.toString(transform.initial) },
         { transform: CSS.Transform.toString(transform.final) },

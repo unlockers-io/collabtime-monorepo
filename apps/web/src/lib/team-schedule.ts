@@ -85,16 +85,21 @@ const toRuns = (keys: ReadonlyArray<string | null>): Array<KeyedRun> => {
     if (key === null) {
       return;
     }
+
     const last = runs.at(-1);
+
     if (last?.key === key && last.startSlot + last.lengthSlots === slot) {
       last.lengthSlots += 1;
+
       return;
     }
+
     runs.push({ key, lengthSlots: 1, startSlot: slot });
   });
 
   const [first] = runs;
   const last = runs.at(-1);
+
   if (
     runs.length > 1 &&
     first !== undefined &&
@@ -120,6 +125,7 @@ const getTiming = (run: SlotRun, nowMinute: number): WindowTiming => {
   }
 
   const minutesUntil = wrapMinutes(startMinute - nowMinute);
+
   return { isTomorrow: nowMinute + minutesUntil >= MINUTES_IN_DAY, kind: "later", minutesUntil };
 };
 
@@ -134,6 +140,7 @@ const pickUpcoming = <T extends SlotRun>(
   for (const run of runs) {
     const timing = getTiming(run, nowMinute);
     const rank = timing.kind === "now" ? -1 : timing.minutesUntil;
+
     if (rank < bestRank) {
       best = { run, timing };
       bestRank = rank;
@@ -150,6 +157,7 @@ const readGroupCoverage = (
 ): TimedRun<SlotRun> | null => {
   const groupRows = [...groupIds].flatMap((groupId) => {
     const rows = counted.filter((row) => row.member.groupId === groupId);
+
     return rows.length > 0 ? [rows] : [];
   });
 
@@ -191,6 +199,7 @@ const readSharedWindow = (
     { length: SLOTS_IN_DAY },
     (_, slot) => counted.filter((row) => row.slots[slot] === true).length,
   );
+
   const peak = Math.max(...counts);
   const groupCoverage = readGroupCoverage(counted, groupIds, nowMinute);
 
@@ -199,11 +208,13 @@ const readSharedWindow = (
   }
 
   const bestSlots = counts.map((count) => count === peak);
+
   const keys = bestSlots.map((isBest, slot) =>
     isBest
       ? counted.flatMap((row) => (row.slots[slot] === true ? [row.member.id] : [])).join(",")
       : null,
   );
+
   const windows: Array<SharedWindow> = toRuns(keys).map(({ key, lengthSlots, startSlot }) => ({
     availableMemberIds: key.split(","),
     lengthSlots,
@@ -232,10 +243,12 @@ const toGroupedSections = (
     .toSorted((a, b) => a.order - b.order)
     .flatMap((group) => {
       const groupRows = rows.filter((row) => row.member.groupId === group.id);
+
       return groupRows.length > 0 ? [{ group, rows: groupRows }] : [];
     });
 
   const ungrouped = rows.filter((row) => isUngrouped(row.member, groupIds));
+
   if (ungrouped.length > 0) {
     sections.push({ group: null, rows: ungrouped });
   }
@@ -271,12 +284,15 @@ const getTeamSchedule = ({
 
   const rows: Array<MemberRow> = members.map((member) => {
     const shiftMinutes = getOffsetMinutes(member.timezone, now) - viewerOffset;
+
     const interval = {
       lengthMinutes: getWorkingMinutes(member),
       startMinute: wrapMinutes(member.workingHoursStart * 60 - shiftMinutes),
     };
+
     const isInCollapsedGroup =
       !isUngrouped(member, groupIds) && collapsedGroupIds.has(member.groupId ?? "");
+
     return {
       dayOffset: Math.floor((nowMinute + shiftMinutes) / MINUTES_IN_DAY),
       interval,

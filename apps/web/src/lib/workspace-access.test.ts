@@ -21,20 +21,25 @@ const privateSpace: ViewedSpace = {
   ownerId: "owner-1",
   teamId: VALID_UUID,
 };
+
 const publicSpace = { ...privateSpace, isPrivate: false };
 const member = createMockSession({ email: "member@example.com", userId: "user-1" });
 
 const setup = () => {
   const access = createTestAccessStore();
+
   const viewerOf = (
     session: ReturnType<typeof createMockSession> | null,
     space: ViewedSpace = privateSpace,
     inviteHint?: string,
   ) => resolveViewer({ inviteHint, session, space }, access.store);
+
   const guestWithCookie = (token: string, space: ViewedSpace = privateSpace) => {
     access.setToken(space.id, token);
+
     return viewerOf(null, space);
   };
+
   return { access, guestWithCookie, viewerOf };
 };
 

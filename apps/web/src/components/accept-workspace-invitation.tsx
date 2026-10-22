@@ -24,6 +24,7 @@ const AcceptWorkspaceInvitation = ({
   const [action, setAction] = useState<"accept" | "decline" | null>(null);
   const pending = action !== null;
   const [acceptError, setError] = useState<string | null>(null);
+
   const handleDecision = async (decision: "accept" | "decline") => {
     setAction(decision);
     setError(null);
@@ -34,12 +35,15 @@ const AcceptWorkspaceInvitation = ({
             decision === "accept"
               ? await acceptInvitation(invitationId)
               : await declineInvitation(invitationId);
+
           if (!result.success) {
             setError(result.error);
           }
+
           if (result.success) {
             toast.success(decision === "accept" ? "Invitation accepted" : "Invitation declined");
           }
+
           refresh();
         } catch (error) {
           captureException(error);
@@ -51,6 +55,7 @@ const AcceptWorkspaceInvitation = ({
       },
     );
   };
+
   return (
     <div className="flex flex-col gap-4">
       <p className="font-medium">

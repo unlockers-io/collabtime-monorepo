@@ -22,6 +22,7 @@ const values: MemberFormValues = {
 
 const issuesOf = (input: MemberFormValues) => {
   const result = memberFormSchema.safeParse(input);
+
   return result.success ? [] : result.error.issues.map((issue) => issue.message);
 };
 
@@ -87,6 +88,7 @@ describe("toMemberFormValues", () => {
       workingHoursEnd: 17,
       workingHoursStart: 9,
     });
+
     expect(formValues.groupId).toBe(NO_GROUP);
     expect(memberFormSchema.safeParse(formValues).success).toBe(true);
   });

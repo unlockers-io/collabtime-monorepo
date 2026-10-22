@@ -13,6 +13,7 @@ export const teamNotifier = createTeamNotifier({
       select: { user: { select: { email: true, name: true } } },
       where: { archivedAt: null, role: "ADMIN", teamId },
     });
+
     return memberships.map((membership) => membership.user);
   },
   readTeamName: getTeamName,

@@ -1,10 +1,12 @@
 "use client";
+
 import { Button } from "@repo/ui/components/button";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 
 import { useSignOut } from "@/hooks/use-sign-out";
 
 type Props = { invitedEmailMasked: string; returnTo: string };
+
 export const InviteMismatchNoticeView = ({
   invitedEmailMasked,
   onSwitchAccount,
@@ -34,10 +36,12 @@ export const InviteMismatchNoticeView = ({
     </div>
   );
 };
+
 export const InviteMismatchNotice = ({ invitedEmailMasked, returnTo }: Props) => {
   const { handleSignOut, isSigningOut } = useSignOut({
     redirectTo: `/login?redirect=${encodeURIComponent(returnTo)}`,
   });
+
   return (
     <InviteMismatchNoticeView
       invitedEmailMasked={invitedEmailMasked}

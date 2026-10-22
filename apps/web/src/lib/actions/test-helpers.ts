@@ -71,13 +71,16 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
   const reportError = vi.fn<TeamStoreDeps["reportError"]>();
   let memberships = createMemoryMembershipStore();
   let teamStorage = createMemoryTeamStorage();
+
   const lock: MembershipStore<undefined>["lock"] = (teamId, run) =>
     teamStorage.transaction(teamId, () => memberships.lock(teamId, run));
+
   const membershipStore = {
     grant: vi.fn<MembershipStore<undefined>["grant"]>(),
     lock,
     revoke: vi.fn<MembershipStore<undefined>["revoke"]>(),
   };
+
   const build = () =>
     createTeamStore({
       createId,
@@ -85,7 +88,9 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
       reportError,
       storage: teamStorage,
     });
+
   let store = build();
+
   const wireMemberships = () => {
     memberships = createMemoryMembershipStore();
     membershipStore.grant
@@ -95,13 +100,17 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
       .mockReset()
       .mockImplementation((revocation) => memberships.revoke(revocation, undefined));
   };
+
   wireMemberships();
 
   const applyTeamCommand: typeof store.applyTeamCommand = (teamId, command) =>
     store.applyTeamCommand(teamId, command);
+
   const publish = vi.fn<(teamId: string) => Promise<void>>().mockResolvedValue();
+
   const applyInTransaction: typeof store.applyInTransaction = (teamId, command, transaction) =>
     store.applyInTransaction(teamId, command, transaction);
+
   const { grantMembership, revokeMembership } = createMembershipLifecycle({
     applyTeamCommand: applyInTransaction,
     publish,
@@ -161,6 +170,7 @@ const createTestGuards = () => {
     authorizeMember.mockReset();
     authorizeMember.mockImplementation(grant);
   };
+
   reset();
 
   return {

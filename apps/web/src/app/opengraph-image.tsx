@@ -62,4 +62,5 @@ const OpengraphImage = () =>
   );
 
 export { alt, contentType, size };
+
 export default OpengraphImage;

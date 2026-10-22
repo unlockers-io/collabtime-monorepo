@@ -11,10 +11,12 @@ const mocks = vi.hoisted(() => ({
   declineInvitation: vi.fn(),
   refresh: vi.fn(),
 }));
+
 vi.mock("@/lib/actions/invitation-actions", () => ({
   acceptInvitation: mocks.acceptInvitation,
   declineInvitation: mocks.declineInvitation,
 }));
+
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh }) }));
 
 beforeEach(() => {
@@ -28,9 +30,11 @@ describe("invitation acceptance", () => {
     container.innerHTML = html;
     const buttons = container.querySelectorAll("button");
     expect(buttons).toHaveLength(2);
+
     for (const button of buttons) {
       expect(button).toBeDisabled();
     }
+
     render(<AcceptWorkspaceInvitation invitationId="invite-1" />);
     expect(screen.getByRole("button", { name: "Accept invitation" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Decline" })).toBeEnabled();
@@ -71,6 +75,7 @@ it("declines from the workspace and refreshes", async () => {
   });
   expect(mocks.declineInvitation).toHaveBeenCalledWith("invite-1");
 });
+
 it("disables acceptance and decline together while pending", () => {
   mocks.acceptInvitation.mockReturnValue(new Promise(() => {}));
   render(<AcceptWorkspaceInvitation invitationId="invite-1" />);

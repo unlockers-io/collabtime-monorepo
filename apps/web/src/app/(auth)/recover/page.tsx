@@ -30,4 +30,5 @@ const Page = () => (
 export const instant = true;
 
 export { metadata };
+
 export default Page;

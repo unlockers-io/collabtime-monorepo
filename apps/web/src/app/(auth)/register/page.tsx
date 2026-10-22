@@ -34,4 +34,5 @@ const Page = ({ searchParams }: Props) => (
 export const instant = true;
 
 export { metadata };
+
 export default Page;

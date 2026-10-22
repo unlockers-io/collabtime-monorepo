@@ -19,6 +19,7 @@ const BaseLayout = ({
   unsubscribeUrl,
 }: BaseLayoutProps) => {
   const copyrightYear = new Date().getFullYear();
+
   return (
     <Html>
       <Tailwind config={tailwindConfig}>

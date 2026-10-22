@@ -40,6 +40,7 @@ const useTeamNameEdit = ({ isAdmin, teamId, teamName }: UseTeamNameEditArgs) => 
         optimistic: (team) => ({ ...team, name: trimmedName }),
         submit: () => updateTeamName(teamId, trimmedName),
       });
+
       if (!result.success) {
         toast.error(result.error);
       }

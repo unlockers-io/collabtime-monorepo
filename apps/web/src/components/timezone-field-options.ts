@@ -38,17 +38,20 @@ const getOffsetAliases = (timezone: string, at: Date): Array<string> => {
   const hours = Math.floor(Math.abs(offset) / 60).toString();
   const minutes = (Math.abs(offset) % 60).toString().padStart(2, "0");
   const paddedHours = hours.padStart(2, "0");
+
   const offsets = [
     `${sign}${hours}`,
     `${sign}${hours}:${minutes}`,
     `${sign}${paddedHours}:${minutes}`,
     `${sign}${paddedHours}${minutes}`,
   ];
+
   return offsets.flatMap((alias) => [`utc${alias}`, `gmt${alias}`]);
 };
 
 const buildOption = (timezone: CommonTimezone, at: Date): TimezoneOption => {
   const label = formatTimezoneLabel(timezone, at);
+
   const search = [
     label,
     timezone,
@@ -74,17 +77,21 @@ const getTimezoneOption = (timezone: CommonTimezone): TimezoneOption => {
   const now = new Date();
   const hour = Math.floor(now.getTime() / HOUR_MS);
   const cached = optionCache.get(timezone);
+
   if (cached?.hour === hour) {
     return cached.option;
   }
+
   const option = buildOption(timezone, now);
   optionCache.set(timezone, { hour, option });
+
   return option;
 };
 
 const matchesTimezoneQuery = (timezone: CommonTimezone, query: string): boolean => {
   const tokens = normalizeSearchText(query).split(/\s+/v).filter(Boolean);
   const { search } = getTimezoneOption(timezone);
+
   return tokens.every((token) => search.includes(token));
 };
 

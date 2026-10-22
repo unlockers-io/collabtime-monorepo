@@ -4,6 +4,7 @@ import { createTeamNotifier } from "./team-notifications";
 
 it("notifies each admin, the requester and the inviter with the right decision", async () => {
   const sendEmail = vi.fn().mockResolvedValue({ sent: true });
+
   const notifier = createTeamNotifier({
     appUrl: () => "https://example.com",
     listTeamAdmins: () =>
@@ -15,6 +16,7 @@ it("notifies each admin, the requester and the inviter with the right decision",
     reportError: vi.fn<() => void>(),
     sendEmail,
   });
+
   const user = { email: "friend@example.com", name: "Friend" };
   await notifier.notifyAdminsOfJoinRequest("team", user);
   expect(sendEmail).toHaveBeenCalledTimes(2);
@@ -52,8 +54,10 @@ it("notifies each admin, the requester and the inviter with the right decision",
     }),
   );
 });
+
 it("reports lookup failures without rejecting", async () => {
   const reportError = vi.fn<() => void>();
+
   const notifier = createTeamNotifier({
     appUrl: () => "https://example.com",
     listTeamAdmins: () => Promise.reject(new Error("Unavailable")),
@@ -61,6 +65,7 @@ it("reports lookup failures without rejecting", async () => {
     reportError,
     sendEmail: vi.fn(),
   });
+
   await notifier.notifyAdminsOfJoinRequest("team", { email: "friend@example.com", name: "Friend" });
   expect(reportError).toHaveBeenCalled();
 });

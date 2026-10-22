@@ -26,10 +26,12 @@ it("requires a name and submits a trimmed workspace name", async () => {
   });
   expect(onCreated).toHaveBeenCalledWith("team");
 });
+
 it("keeps the entered name and reports creation failure", async () => {
   const createWorkspace = vi
     .fn()
     .mockResolvedValue({ error: "Team storage is unavailable", success: false });
+
   render(
     <CreateWorkspaceDialogView
       createWorkspace={createWorkspace}

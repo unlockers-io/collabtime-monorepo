@@ -20,6 +20,7 @@ const memberCountLabel = (count: number): string => {
   if (count === 0) {
     return "No members";
   }
+
   return `${count} member${count === 1 ? "" : "s"}`;
 };
 

@@ -103,4 +103,5 @@ const JoinPrompt = ({
     </div>
   );
 };
+
 export { JoinPrompt };

@@ -46,14 +46,19 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
     defaultValues: { name: user.name },
     onSubmit: async ({ value }) => {
       const name = value.name.trim();
+
       if (name === user.name) {
         return;
       }
+
       const result = await saveName(name);
+
       if (!result.success) {
         toast.error(result.error);
+
         return;
       }
+
       toast.success("Name updated");
       onSaved();
     },
@@ -82,6 +87,7 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
             <form.Field name="name">
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
                 return (
                   <Field data-invalid={isInvalid || undefined}>
                     <FieldLabel htmlFor={nameId}>Full name</FieldLabel>
@@ -148,13 +154,17 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
 const saveName = async (name: string): Promise<ActionResult<null>> => {
   try {
     const { error } = await authClient.updateUser({ name });
+
     if (error) {
       captureException(error);
+
       return { error: error.message ?? "Failed to update name", success: false };
     }
+
     return { data: null, success: true };
   } catch (error) {
     captureException(error);
+
     return { error: "Failed to update name", success: false };
   }
 };
@@ -165,6 +175,7 @@ type SettingsClientProps = {
 
 const SettingsClient = ({ user }: SettingsClientProps) => {
   const { refresh } = useRouter();
+
   return <SettingsView onSaved={refresh} saveName={saveName} user={user} />;
 };
 

@@ -20,6 +20,7 @@ const cleanup = async () => {
       const entries = await Promise.all(
         keys.map(async (key) => ({ key, value: await redis.get(key) })),
       );
+
       for (const { key, value } of entries) {
         if (value?.includes("e2e-test@collabtime")) {
           keysToDelete.push(key);

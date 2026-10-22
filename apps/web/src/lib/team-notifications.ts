@@ -4,6 +4,7 @@ import type { ActionErrorEvent } from "./actions/types";
 import { displayName } from "./display-name";
 
 type Person = { email: string; name: string | null };
+
 type NotifierDeps = {
   appUrl: () => string;
   listTeamAdmins: (teamId: string) => Promise<Array<Person>>;
@@ -11,6 +12,7 @@ type NotifierDeps = {
   reportError: (event: ActionErrorEvent) => void;
   sendEmail: (email: TransactionalEmail) => Promise<{ sent: boolean }>;
 };
+
 export const createTeamNotifier = (deps: NotifierDeps) => {
   const notify = async (
     teamId: string,
@@ -22,12 +24,15 @@ export const createTeamNotifier = (deps: NotifierDeps) => {
   ) => {
     try {
       const teamName = (await deps.readTeamName(teamId)) ?? "";
+
       const emails = await build({
         teamId,
         teamName,
         teamUrl: new URL(`/${teamId}`, deps.appUrl()).toString(),
       });
+
       const outcomes = await Promise.allSettled(emails.map((email) => deps.sendEmail(email)));
+
       for (const outcome of outcomes) {
         if (outcome.status === "rejected") {
           deps.reportError({
@@ -47,10 +52,12 @@ export const createTeamNotifier = (deps: NotifierDeps) => {
       });
     }
   };
+
   return {
     notifyAdminsOfJoinRequest: (teamId: string, requester: Person) =>
       notify(teamId, async (context) => {
         const admins = await deps.listTeamAdmins(teamId);
+
         return admins.map((admin) => ({
           recipientEmail: admin.email,
           requesterName: displayName(requester.name, requester.email),

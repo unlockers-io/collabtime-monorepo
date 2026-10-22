@@ -4,10 +4,13 @@ import { applyPortlessUrls, portlessUrl } from "./index";
 
 const worktree = (prefix: string) => {
   const calls: Array<Array<string>> = [];
+
   const run = (file: string, args: ReadonlyArray<string>) => {
     calls.push([file, ...args]);
+
     return `https://${prefix}.${args.at(-1)}.localhost\n`;
   };
+
   return { calls, run };
 };
 
@@ -55,11 +58,13 @@ describe("applyPortlessUrls", () => {
 
   it("replaces canonical local defaults on any scheme or port", () => {
     const { run } = worktree("fix-styles");
+
     const env = {
       CORS_ORIGINS: "http://collabtime.web.localhost:1355",
       PORTLESS_URL: "https://fix-styles.collabtime.web.localhost",
       WEB_APP_URL: "https://collabtime.web.localhost",
     };
+
     applyPortlessUrls(["CORS_ORIGINS", "WEB_APP_URL"], { env, run });
     expect(env).toMatchObject({
       CORS_ORIGINS: "https://fix-styles.collabtime.web.localhost",
@@ -72,6 +77,7 @@ describe("applyPortlessUrls", () => {
       CORS_ORIGINS: "https://collabtime.web.localhost,https://app.example.com",
       WEB_APP_URL: "https://other.collabtime.web.localhost",
     };
+
     const { calls, run } = worktree("fix-styles");
     const env = { ...explicit, PORTLESS_URL: "https://fix-styles.collabtime.web.localhost" };
     applyPortlessUrls(["CORS_ORIGINS", "WEB_APP_URL"], { env, run });

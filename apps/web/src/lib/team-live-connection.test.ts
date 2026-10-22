@@ -24,35 +24,45 @@ const setup = () => {
   const sources: Array<FakeEventSource> = [];
   let visible = true;
   const visibilityListeners = new Set<() => void>();
+
   const createSource = vi.fn(() => {
     const source = new FakeEventSource();
     sources.push(source);
+
     return source;
   });
+
   const checkAccess = vi.fn<LiveConnectionDeps["checkAccess"]>().mockResolvedValue(204);
+
   const registry = createTeamLiveRegistry({
     checkAccess,
     createSource,
     isVisible: () => visible,
     onVisibilityChange: (listener) => {
       visibilityListeners.add(listener);
+
       return () => {
         visibilityListeners.delete(listener);
       };
     },
     random: () => 0.5,
   });
+
   const sourceAt = (index: number) => {
     const source = sources[index];
     assert(source, `expected EventSource ${index}`);
+
     return source;
   };
+
   const visibility = (next: boolean) => {
     visible = next;
+
     for (const listener of visibilityListeners) {
       listener();
     }
   };
+
   return {
     checkAccess,
     createSource,
@@ -67,6 +77,7 @@ const setup = () => {
 beforeEach(() => {
   vi.useFakeTimers();
 });
+
 afterEach(() => {
   vi.useRealTimers();
 });

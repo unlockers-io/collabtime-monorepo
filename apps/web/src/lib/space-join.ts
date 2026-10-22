@@ -30,11 +30,13 @@ const createSpaceJoiner = (deps: SpaceJoinDeps) => {
   ): Promise<void> => {
     try {
       const candidates = parseAccessCookies(cookieHeader).slice(0, MAX_CANDIDATE_SPACES);
+
       if (candidates.length === 0) {
         return;
       }
 
       const spaces = await deps.findPrivateSpaces(candidates.map((candidate) => candidate.spaceId));
+
       if (spaces.length === 0) {
         return;
       }
@@ -45,8 +47,10 @@ const createSpaceJoiner = (deps: SpaceJoinDeps) => {
 
       const granted = spaces.filter((space) => {
         const token = tokenBySpaceId.get(space.id);
+
         return token !== undefined && deps.verifyAccessToken(token, space.id, space.accessPassword);
       });
+
       if (granted.length === 0) {
         return;
       }

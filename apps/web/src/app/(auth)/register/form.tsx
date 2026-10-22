@@ -58,21 +58,28 @@ const RegisterForm = ({ searchParams }: Props) => {
         try {
           const { redirect: redirectParam } = await searchParams;
           const redirect = safeRedirectPath(redirectParam);
+
           const result = await signUp.email({
             callbackURL: redirect,
             email: value.email,
             name: value.name,
             password: value.password,
           });
+
           if (result.error) {
             setErrorKind(authErrorKind(result.error));
+
             return;
           }
+
           const sessionToken = result.data.token;
+
           if (sessionToken === null || sessionToken === "") {
             setSentToEmail(value.email);
+
             return;
           }
+
           push(redirect);
           refresh();
         } catch {
@@ -113,6 +120,7 @@ const RegisterForm = ({ searchParams }: Props) => {
           <form.Field name="name">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="register-name">Full name</FieldLabel>
@@ -141,6 +149,7 @@ const RegisterForm = ({ searchParams }: Props) => {
           <form.Field name="email">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="register-email">Email</FieldLabel>
@@ -170,6 +179,7 @@ const RegisterForm = ({ searchParams }: Props) => {
           <form.Field name="password">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="register-password">Password</FieldLabel>

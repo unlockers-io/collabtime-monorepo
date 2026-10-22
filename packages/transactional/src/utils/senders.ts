@@ -66,6 +66,7 @@ type TeamNotificationPayload = {
   teamName: string;
   teamUrl: string;
 };
+
 type TransactionalEmail =
   | ({ requesterName: string; type: "join-request-received" } & TeamNotificationPayload)
   | ({ decision: "approved" | "denied"; type: "join-request-decided" } & TeamNotificationPayload)
@@ -91,6 +92,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
         to: email.recipientEmail,
       };
     }
+
     case "join-request-decided": {
       return {
         subject: `Your request to join ${teamLabel(email.teamName)} was ${email.decision}`,
@@ -98,6 +100,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
         to: email.recipientEmail,
       };
     }
+
     case "invitation-decided": {
       return {
         subject: `${email.inviteeName} ${email.decision} your invitation to ${teamLabel(email.teamName)}`,
@@ -105,6 +108,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
         to: email.recipientEmail,
       };
     }
+
     case "change-email-confirmation": {
       return {
         subject: `Confirm change of your ${APP_NAME} account email`,
@@ -117,6 +121,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
         to: email.currentEmail,
       };
     }
+
     case "invitation": {
       return {
         subject: `${email.inviterName} invited you to join ${teamLabel(email.teamName)} on ${APP_NAME}`,
@@ -130,6 +135,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
         to: email.recipientEmail,
       };
     }
+
     case "password-reset": {
       return {
         subject: `Reset your ${APP_NAME} password`,
@@ -143,6 +149,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
         to: email.userEmail,
       };
     }
+
     case "sign-up-attempt": {
       return {
         subject: `Sign-up attempt with your ${APP_NAME} account`,
@@ -155,9 +162,11 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
         to: email.userEmail,
       };
     }
+
     case "welcome": {
       const greetingName =
         email.username !== undefined && email.username !== "" ? `, ${email.username}` : "";
+
       return {
         subject: `Welcome to ${APP_NAME}${greetingName}! Please verify your email`,
         template: React.createElement(WelcomeEmail, {
@@ -168,6 +177,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
         to: email.userEmail,
       };
     }
+
     default: {
       const unhandled: never = email;
       throw new Error(`Unhandled transactional email: ${String(unhandled)}`);
@@ -185,6 +195,7 @@ const createTransactionalEmailSender =
   (deliver: typeof sendEmail) => (email: TransactionalEmail, config: MailerConfig) => {
     const { subject, template, to } = buildEmail(email);
     const from = config.from !== undefined && config.from !== "" ? config.from : DEFAULT_FROM;
+
     return deliver({
       apiKey: config.apiKey,
       defaultReplyTo: config.defaultReplyTo,
@@ -199,4 +210,5 @@ const createTransactionalEmailSender =
 const sendTransactionalEmail = createTransactionalEmailSender(sendEmail);
 
 export type { MailerConfig, TransactionalEmail };
+
 export { createTransactionalEmailSender, sendTransactionalEmail };

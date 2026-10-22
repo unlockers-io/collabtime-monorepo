@@ -38,6 +38,7 @@ const DeleteWorkspaceDialog = ({
 
   const handleDelete = async () => {
     setIsDeleting(true);
+
     try {
       const response = await fetch(`/api/spaces/${spaceId}`, {
         method: "DELETE",
@@ -56,6 +57,7 @@ const DeleteWorkspaceDialog = ({
       captureException(error);
       toast.error("Failed to delete workspace");
     }
+
     setIsDeleting(false);
   };
 
@@ -63,6 +65,7 @@ const DeleteWorkspaceDialog = ({
     if (isDeleting) {
       return;
     }
+
     onOpenChange(next);
   };
 

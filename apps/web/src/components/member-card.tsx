@@ -210,10 +210,13 @@ const MemberAdminControls = ({
         }),
         submit: () => removeMember(teamId, member.id),
       });
+
       if (!result.success) {
         toast.error(result.error);
+
         return;
       }
+
       setIsRemoveOpen(false);
       toast.success(`${member.name} removed`);
       void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });

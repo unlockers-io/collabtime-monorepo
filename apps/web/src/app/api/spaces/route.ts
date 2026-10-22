@@ -20,6 +20,7 @@ export const GET = withEvlog(async () => {
     return NextResponse.json({ spaces });
   } catch (error) {
     log.error({ error, message: "Failed to fetch spaces", route: "/api/spaces" });
+
     return NextResponse.json({ error: "Failed to fetch spaces" }, { status: 500 });
   }
 });

@@ -47,6 +47,7 @@ const JoinRequestRow = ({ onSettled, request, teamId }: JoinRequestRowProps) => 
     setAction(next);
 
     const successMessage = next === "approve" ? "Request approved" : "Request denied";
+
     const failureMessage =
       next === "approve" ? "Failed to approve request" : "Failed to deny request";
 
@@ -122,9 +123,11 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   const { data: requests = [], isLoading } = useQuery({
     queryFn: async () => {
       const result = await getPendingJoinRequests(teamId);
+
       if (!result.success) {
         throw new Error(result.error);
       }
+
       return result.data;
     },
     queryKey: queryKeys.joinRequests(teamId),

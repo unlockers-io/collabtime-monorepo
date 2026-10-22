@@ -27,6 +27,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
 
     const clientIp = getClientIp(request);
     const { allowed } = await checkRateLimit(`space-verify:${spaceId}:${clientIp}`, 10, 60);
+
     if (!allowed) {
       return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
     }
@@ -67,6 +68,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
     }
 
     const session = await getSession();
+
     if (session) {
       try {
         await joinPrivateSpace(session.user.id, space.teamId);
@@ -83,6 +85,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       success: true,
       teamId: space.teamId,
     });
+
     response.cookies.set(issueAccessCookie(spaceId, accessPassword));
 
     return response;
@@ -93,11 +96,13 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
         { status: 400 },
       );
     }
+
     log.error({
       error,
       message: "Failed to verify password",
       route: "/api/spaces/[spaceId]/verify-password",
     });
+
     return NextResponse.json({ error: "Failed to verify password" }, { status: 500 });
   }
 });

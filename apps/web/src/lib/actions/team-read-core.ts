@@ -21,11 +21,13 @@ const createTeamReadActions = (deps: TeamReadDeps) => {
   const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team }>> => {
     try {
       const uuidResult = UUIDSchema.safeParse(teamId);
+
       if (!uuidResult.success) {
         return { error: "Invalid team ID", success: false };
       }
 
       const space = await deps.findSpace(teamId);
+
       if (!space) {
         return { error: "Team not found", success: false };
       }
@@ -38,6 +40,7 @@ const createTeamReadActions = (deps: TeamReadDeps) => {
       }
 
       const team = await deps.readTeamRecord(teamId);
+
       if (!team) {
         return { error: "Team not found", success: false };
       }
@@ -49,6 +52,7 @@ const createTeamReadActions = (deps: TeamReadDeps) => {
         message: "Failed to fetch public team",
         route: "actions/team-read",
       });
+
       return { error: "Failed to fetch team", success: false };
     }
   };

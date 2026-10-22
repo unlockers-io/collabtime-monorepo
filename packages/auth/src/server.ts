@@ -117,6 +117,7 @@ const createAuth = (config: AuthConfig) => {
       onExistingUserSignUp: mailer
         ? async ({ user }, request) => {
             const origin = request?.headers.get("origin") ?? "";
+
             const result = await sendTransactionalEmail(
               {
                 resetPasswordUrl: `${origin}/recover`,
@@ -128,6 +129,7 @@ const createAuth = (config: AuthConfig) => {
               },
               mailer,
             );
+
             if (!result.success) {
               log.error({
                 error: result.error,
@@ -142,6 +144,7 @@ const createAuth = (config: AuthConfig) => {
         if (!mailer) {
           return;
         }
+
         const result = await sendTransactionalEmail(
           {
             resetUrl: url,
@@ -152,6 +155,7 @@ const createAuth = (config: AuthConfig) => {
           },
           mailer,
         );
+
         if (!result.success) {
           throw new Error(`Failed to send password reset email: ${result.error}`);
         }
@@ -166,6 +170,7 @@ const createAuth = (config: AuthConfig) => {
         if (!mailer) {
           return;
         }
+
         const result = await sendTransactionalEmail(
           {
             type: "welcome",
@@ -176,6 +181,7 @@ const createAuth = (config: AuthConfig) => {
           },
           mailer,
         );
+
         if (!result.success) {
           throw new Error(`Failed to send verification email: ${result.error}`);
         }
@@ -214,6 +220,7 @@ const createAuth = (config: AuthConfig) => {
           if (!mailer) {
             return;
           }
+
           const result = await sendTransactionalEmail(
             {
               changeUrl: url,
@@ -225,6 +232,7 @@ const createAuth = (config: AuthConfig) => {
             },
             mailer,
           );
+
           if (!result.success) {
             throw new Error(`Failed to send change-email confirmation: ${result.error}`);
           }
@@ -237,4 +245,5 @@ const createAuth = (config: AuthConfig) => {
 type Auth = ReturnType<typeof createAuth>;
 
 export { createAuth };
+
 export type { Auth, AuthConfig };

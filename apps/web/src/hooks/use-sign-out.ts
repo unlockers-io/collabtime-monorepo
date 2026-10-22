@@ -35,6 +35,7 @@ const useSignOut = ({ redirectTo = "/" }: { redirectTo?: string } = {}) => {
       captureException(error);
       toast.error("Failed to sign out");
     }
+
     setIsSigningOut(false);
   };
 

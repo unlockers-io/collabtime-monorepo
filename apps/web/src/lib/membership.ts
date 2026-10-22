@@ -14,6 +14,7 @@ import {
 } from "./team-store";
 
 type MembershipGrant = { role: TeamRole; teamId: string; userId: string };
+
 type MembershipRevocation = { memberId: string; teamId: string; userId: string | undefined };
 
 type MembershipStore<TTransaction> = {
@@ -35,8 +36,11 @@ type RosterGrant<TTransaction> = MembershipGrant & {
   commit?: (grant: MembershipGrant, memberId: string, transaction: TTransaction) => Promise<void>;
   slot: Omit<SlotClaim, "userId">;
 };
+
 type ViewerGrant = MembershipGrant & { slot: null };
+
 type RosterGranted = TeamContentsFailure | { memberId: string; ok: true };
+
 type Revocation = { access: TeamAccess; memberId: string };
 
 const membershipUpsert = ({ role, teamId, userId }: MembershipGrant) => ({
@@ -52,27 +56,35 @@ const createMembershipLifecycle = <TTransaction>(deps: MembershipDeps<TTransacti
     request: RosterGrant<TTransaction> | ViewerGrant,
   ): Promise<RosterGranted | undefined> {
     const grant = { role: request.role, teamId: request.teamId, userId: request.userId };
+
     const result = await deps.store.lock(grant.teamId, async (transaction) => {
       if (request.slot === null) {
         await deps.store.grant(grant, transaction);
+
         return undefined;
       }
+
       const claimed = await deps.applyTeamCommand(
         grant.teamId,
         teamCommands.claimMemberSlot({ ...request.slot, userId: grant.userId }),
         transaction,
       );
+
       if (!claimed.ok) {
         return claimed;
       }
+
       await (request.commit
         ? request.commit(grant, claimed.value.memberId, transaction)
         : deps.store.grant(grant, transaction));
+
       return { memberId: claimed.value.memberId, ok: true as const };
     });
+
     if (result === undefined || result.ok) {
       await deps.publish(grant.teamId);
     }
+
     return result;
   }
 
@@ -81,25 +93,31 @@ const createMembershipLifecycle = <TTransaction>(deps: MembershipDeps<TTransacti
     memberId,
   }: Revocation): Promise<TeamContentsResult<TeamMember>> => {
     const { teamId } = access;
+
     const result = await deps.store.lock(teamId, async (transaction) => {
       const found = await deps.applyTeamCommand(
         teamId,
         teamCommands.removeMember(memberId),
         transaction,
       );
+
       if (!found.ok) {
         return found;
       }
+
       const { userId } = found.value;
       await deps.store.revoke(
         { memberId, teamId, userId: userId === access.user.id ? undefined : userId },
         transaction,
       );
+
       return found;
     });
+
     if (result.ok) {
       await deps.publish(teamId);
     }
+
     return result;
   };
 
@@ -116,6 +134,7 @@ const prismaMembershipStore: MembershipStore<Prisma.TransactionClient> = {
       data: { status: "REVOKED" },
       where: { memberId, status: "PENDING", teamId },
     });
+
     if (userId !== undefined) {
       await transaction.membership.deleteMany({ where: { role: "MEMBER", teamId, userId } });
     }
@@ -131,6 +150,7 @@ const { grantMembership, revokeMembership } = createMembershipLifecycle({
 type GrantMembership<TTransaction = unknown> = ReturnType<
   typeof createMembershipLifecycle<TTransaction>
 >["grantMembership"];
+
 type RevokeMembership = typeof revokeMembership;
 
 export {
@@ -140,4 +160,5 @@ export {
   prismaMembershipStore,
   revokeMembership,
 };
+
 export type { GrantMembership, MembershipGrant, MembershipStore, RevokeMembership };

@@ -192,6 +192,7 @@ const TeamNav = (props: Extract<NavViewProps, { variant: "team" }>) => {
 const NavView = (props: NavViewProps) => {
   const { isAuthenticated } = props;
   const { handleSignOut, isSigningOut } = props.signOut;
+
   if (props.variant === "centered") {
     return (
       <header className="flex items-center justify-center px-4 py-8 sm:px-6">
@@ -245,6 +246,7 @@ const NavView = (props: NavViewProps) => {
 
 const Nav = (props: NavProps) => {
   const signOut = useSignOut();
+
   return <NavView {...props} signOut={signOut} />;
 };
 

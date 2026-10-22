@@ -49,4 +49,5 @@ const toMemberInput = ({
 });
 
 export type { AddMemberFormValues, MemberFormValues, MemberInput };
+
 export { addMemberFormSchema, memberFormSchema, NO_GROUP, toMemberFormValues, toMemberInput };

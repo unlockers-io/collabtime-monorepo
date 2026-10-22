@@ -14,9 +14,11 @@ const useTeamQuery = ({ isLive = false, teamId }: { isLive?: boolean; teamId: st
   useQuery<TeamQueryData>({
     queryFn: async () => {
       const result = await getPublicTeam(teamId);
+
       if (!result.success) {
         throw new Error(result.error);
       }
+
       return { team: result.data.team };
     },
     queryKey: queryKeys.teams.detail(teamId),
@@ -25,4 +27,5 @@ const useTeamQuery = ({ isLive = false, teamId }: { isLive?: boolean; teamId: st
   });
 
 export type { TeamQueryData };
+
 export { useTeamQuery };

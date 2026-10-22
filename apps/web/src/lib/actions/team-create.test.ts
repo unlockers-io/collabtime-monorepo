@@ -4,9 +4,11 @@ import { createTeamAction } from "./team-create-core";
 import { createTestGuards, createTestMember } from "./test-helpers";
 
 type Deps = Parameters<typeof createTeamAction>[0];
+
 const guards = createTestGuards();
 const persistTeam = vi.fn<Deps["persistTeam"]>();
 const countAdminTeams = vi.fn<Deps["countAdminTeams"]>();
+
 const createTeam = createTeamAction({
   authenticate: guards.authenticate,
   countAdminTeams,
@@ -16,11 +18,13 @@ const createTeam = createTeamAction({
   persistTeam,
   reportError: vi.fn<() => void>(),
 });
+
 beforeEach(() => {
   guards.reset();
   persistTeam.mockReset().mockResolvedValue();
   countAdminTeams.mockReset().mockResolvedValue(0);
 });
+
 describe("create team", () => {
   it.each(["", "   ", "a".repeat(101)])("rejects invalid names %s", async (name) => {
     expect(await createTeam("Europe/Berlin", name)).toMatchObject({ success: false });

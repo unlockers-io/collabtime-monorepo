@@ -27,20 +27,26 @@ class StreamEventSource extends EventTarget {
 
   async #pump(buffered: string): Promise<void> {
     const chunk = await this.#reader.read();
+
     if (chunk.done) {
       if (!this.#closed) {
         this.dispatchEvent(new Event("error"));
       }
+
       return;
     }
+
     const frames = `${buffered}${chunk.value}`.split("\n\n");
     const rest = frames.pop() ?? "";
+
     for (const frame of frames) {
       const name = /^event: (?<name>.+)$/mv.exec(frame)?.groups?.name;
+
       if (name !== undefined) {
         this.dispatchEvent(new Event(name));
       }
     }
+
     return this.#pump(rest);
   }
 }
@@ -49,6 +55,7 @@ const setup = () => {
   const listeners = new Set<TeamListener>();
   const checkAccess = vi.fn<() => Promise<AccessResult>>().mockResolvedValue("allowed");
   const release = vi.fn<() => Promise<void>>().mockResolvedValue();
+
   const createSource = vi.fn(
     (_url: string) =>
       new StreamEventSource(
@@ -62,6 +69,7 @@ const setup = () => {
           startedAt: Date.now(),
           subscribe: (listener) => {
             listeners.add(listener);
+
             return () => {
               listeners.delete(listener);
             };
@@ -70,6 +78,7 @@ const setup = () => {
         }),
       ),
   );
+
   const registry = createTeamLiveRegistry({
     checkAccess: () => Promise.resolve(204),
     createSource,
@@ -77,11 +86,13 @@ const setup = () => {
     onVisibilityChange: () => () => undefined,
     random: () => 0,
   });
+
   const emit = (kind: TeamEvent["kind"]) => {
     for (const listener of listeners) {
       listener({ at: Date.now(), kind, teamId: VALID_UUID });
     }
   };
+
   return { checkAccess, createSource, emit, registry, release };
 };
 

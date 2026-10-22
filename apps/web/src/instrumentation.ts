@@ -18,6 +18,7 @@ const register = async () => {
       if (process.env.NODE_ENV === "production") {
         throw error;
       }
+
       log.warn({
         error,
         message: "Environment validation failed in development mode",

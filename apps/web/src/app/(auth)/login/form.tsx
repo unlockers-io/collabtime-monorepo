@@ -58,18 +58,24 @@ const LoginForm = ({ searchParams }: Props) => {
       startTransition(async () => {
         try {
           const { redirect: redirectParam } = await searchParams;
+
           const result = await signIn.email({
             email: value.email,
             password: value.password,
           });
+
           if (result.error) {
             if (result.error.code === "EMAIL_NOT_VERIFIED") {
               setShowUnverifiedNotice(true);
+
               return;
             }
+
             setErrorKind(authErrorKind(result.error));
+
             return;
           }
+
           push(safeRedirectPath(redirectParam));
           refresh();
         } catch {
@@ -94,6 +100,7 @@ const LoginForm = ({ searchParams }: Props) => {
           <form.Field name="email">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="login-email">Email</FieldLabel>
@@ -123,6 +130,7 @@ const LoginForm = ({ searchParams }: Props) => {
           <form.Field name="password">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <div className="flex items-baseline justify-between gap-3">

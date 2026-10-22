@@ -11,11 +11,14 @@ const url = process.env.LIVE_SYNC_TEST_REDIS_URL;
 describe.skipIf(url === undefined || url === "")("live sync leases against Redis", () => {
   let client: Redis;
   const keys: Array<string> = [];
+
   const key = () => {
     const value = `test:live-sync:${randomUUID()}`;
     keys.push(value);
+
     return value;
   };
+
   const acquire = async (leaseKey: string, id: string, limit: number) =>
     Number(await client.eval(ACQUIRE_LEASE, 1, leaseKey, id, limit, LEASE_SECONDS));
 
@@ -26,14 +29,17 @@ describe.skipIf(url === undefined || url === "")("live sync leases against Redis
     if (keys.length > 0) {
       await client.del(...keys);
     }
+
     await client.quit();
   });
 
   it("admits exactly the cap under concurrent acquisition", async () => {
     const leaseKey = key();
+
     const admitted = await Promise.all(
       Array.from({ length: 30 }, (_, index) => acquire(leaseKey, `connection-${index}`, 10)),
     );
+
     expect(admitted.filter(Boolean)).toHaveLength(10);
     expect(await client.zcard(leaseKey)).toBe(10);
     expect(await client.ttl(leaseKey)).toBeGreaterThan(350);

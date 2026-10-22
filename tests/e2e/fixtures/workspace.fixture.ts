@@ -16,9 +16,11 @@ const test = base.extend<{ createdTeamIds: Array<string> }>({
   },
   storageState: async ({ createdTeamIds, playwright }, use) => {
     const redisUrl = process.env.REDIS_URL;
+
     if (!redisUrl) {
       throw new Error("REDIS_URL is required for workspace tests");
     }
+
     const id = randomUUID();
     const email = `e2e-workspace-${id}@collabtime.localhost`;
     const password = await hashPassword(PASSWORD);
@@ -33,24 +35,30 @@ const test = base.extend<{ createdTeamIds: Array<string> }>({
         name: "Workspace Test User",
       },
     });
+
     const api = await playwright.request.newContext({
       baseURL: webUrl,
       storageState: { cookies: [], origins: [] },
     });
+
     const redis = new Redis(redisUrl, { lazyConnect: true, maxRetriesPerRequest: 1 });
+
     try {
       const signIn = await api.post("/api/auth/sign-in/email", {
         data: { email, password: PASSWORD },
       });
+
       expect(signIn.status()).toBe(200);
       await use(await api.storageState());
     } finally {
       try {
         await api.post("/api/auth/sign-out", { data: {} });
+
         const spaces = await prisma.space.findMany({
           select: { teamId: true },
           where: { ownerId: id },
         });
+
         await prisma.user.delete({ where: { id } });
         await redis.del(
           `live-connections:user:${id}`,
@@ -67,4 +75,5 @@ const test = base.extend<{ createdTeamIds: Array<string> }>({
 });
 
 export { expect } from "./auth.fixture";
+
 export { test };

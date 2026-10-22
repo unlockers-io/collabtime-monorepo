@@ -34,6 +34,7 @@ describe("viewer timezone", () => {
 
   it("contains only valid, unique IANA zones", () => {
     expect(new Set(COMMON_TIMEZONES).size).toBe(COMMON_TIMEZONES.length);
+
     for (const timeZone of COMMON_TIMEZONES) {
       expect(() => new NativeDateTimeFormat("en", { timeZone })).not.toThrow();
     }

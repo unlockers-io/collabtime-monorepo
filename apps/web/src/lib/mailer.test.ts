@@ -11,6 +11,7 @@ const email: TransactionalEmail = {
   teamUrl: "https://example.com/team",
   type: "invitation",
 };
+
 it("warns when email is unconfigured without attempting delivery", async () => {
   const report = vi.fn<() => void>();
   const send = vi.fn();
@@ -23,12 +24,15 @@ it("warns when email is unconfigured without attempting delivery", async () => {
   );
   expect(send).not.toHaveBeenCalled();
 });
+
 it("reports returned and thrown delivery failures without throwing", async () => {
   const report = vi.fn<() => void>();
+
   const send = vi
     .fn()
     .mockResolvedValueOnce({ error: "Rejected", success: false })
     .mockRejectedValueOnce(new Error("Unavailable"));
+
   const mailer = createAppMailer({ getConfig: () => ({ apiKey: "test" }), report, send });
   expect(await mailer(email)).toEqual({ sent: false });
   expect(await mailer(email)).toEqual({ sent: false });

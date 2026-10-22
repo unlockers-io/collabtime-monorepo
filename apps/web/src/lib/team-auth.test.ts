@@ -13,6 +13,7 @@ type TeamAuthDeps = Parameters<typeof createTeamAuth>[0];
 const mockedGetSession = vi.fn<typeof getSession>();
 const mockedFindMembership = vi.fn<TeamAuthDeps["findMembership"]>();
 const reportError = vi.fn<TeamAuthDeps["reportError"]>();
+
 const { authenticate, authorizeTeamAdmin, authorizeTeamMember } = createTeamAuth({
   findMembership: mockedFindMembership,
   getSession: mockedGetSession,

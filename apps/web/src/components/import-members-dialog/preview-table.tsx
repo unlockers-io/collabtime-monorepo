@@ -68,6 +68,7 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
             <tbody>
               {rows.map((row) => {
                 const isValid = row.errors.length === 0;
+
                 return (
                   <tr
                     className={`border-b border-border last:border-0 ${isValid ? "" : "opacity-50"}`}

@@ -5,6 +5,7 @@ import { HomePage } from "../pages/home.page";
 import { webUrl } from "../urls";
 
 test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
+
 test("invitation email carries a guest through signup and acceptance", async ({
   browser,
   page,
@@ -24,6 +25,7 @@ test("invitation email carries a guest through signup and acceptance", async ({
   const mail = await waitForEmail({ sinceMs, subject: /invited you to join/i, to: email });
   const link = extractLink(mail, /\?invite=/);
   const guest = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+
   try {
     const guestPage = await guest.newPage();
     await guestPage.goto(link);

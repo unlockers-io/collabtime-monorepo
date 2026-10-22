@@ -20,7 +20,9 @@ const execute = (file: string, args: Array<string>): Promise<{ stdout: string }>
       }
     });
   });
+
 const enabled = process.env.MEMBERSHIP_POSTGRES_TESTS === "1";
+
 const cutover = (...args: Array<string>) =>
   execute(process.execPath, [
     "--import",
@@ -33,37 +35,47 @@ const cutover = (...args: Array<string>) =>
 describe.skipIf(!enabled)("PostgreSQL contents and explicit Redis cutover", () => {
   const users: Array<string> = [];
   const keys: Array<string> = [];
+
   const redis = new Redis(process.env.REDIS_URL ?? "", {
     lazyConnect: true,
     maxRetriesPerRequest: 1,
   });
+
   const setup = async () => {
     const owner = await prisma.user.create({
       data: { email: `cutover-${randomUUID()}@example.com` },
     });
+
     users.push(owner.id);
     const teamId = randomUUID();
     await prisma.space.create({ data: { ownerId: owner.id, teamId } });
     const group = createTestGroup({ id: randomUUID() });
+
     const team = createTestTeamRecord({
       adminPasswordHash: "private-hash",
       groups: [group],
       id: teamId,
       members: [createTestMember({ groupId: group.id, id: randomUUID(), userId: owner.id })],
     });
+
     await prisma.membership.create({ data: { role: "ADMIN", teamId, userId: owner.id } });
+
     return { owner, team, teamId };
   };
+
   const seedRedis = async (team: ReturnType<typeof createTestTeamRecord>) => {
     const key = `team:${team.id}`;
     keys.push(key);
     await redis.set(key, JSON.stringify(team), "EX", 600);
+
     return redis.pexpiretime(key);
   };
+
   afterAll(async () => {
     if (keys.length > 0) {
       await redis.del(...keys);
     }
+
     redis.disconnect();
     await prisma.user.deleteMany({ where: { id: { in: users } } });
     await prisma.$disconnect();
@@ -71,6 +83,7 @@ describe.skipIf(!enabled)("PostgreSQL contents and explicit Redis cutover", () =
   it("imports actual data and exact expiry, verifies it, and refuses stale overwrite", async () => {
     const { team, teamId } = await setup();
     const deadline = await seedRedis(team);
+
     try {
       await expect(cutover()).rejects.toThrow("Command failed");
       const imported = await cutover("--apply");
@@ -95,11 +108,14 @@ describe.skipIf(!enabled)("PostgreSQL contents and explicit Redis cutover", () =
     invalid.team.members[0]!.userId = "no-membership";
     await seedRedis(valid.team);
     await seedRedis(invalid.team);
+
     try {
       await expect(cutover("--apply")).rejects.toThrow("Command failed");
+
       const spaces = await prisma.space.findMany({
         where: { teamId: { in: [valid.teamId, invalid.teamId] } },
       });
+
       expect(spaces.every((space) => space.teamCreatedAt === null)).toBe(true);
     } finally {
       await redis.del(`team:${valid.teamId}`, `team:${invalid.teamId}`);
@@ -108,15 +124,19 @@ describe.skipIf(!enabled)("PostgreSQL contents and explicit Redis cutover", () =
   it("updates changed rows without rewriting unchanged members", async () => {
     const { team, teamId } = await setup();
     await withTeamTransaction(teamId, (transaction) => writeTeam(teamId, team, transaction));
+
     const before = await prisma.$queryRaw<
       Array<{ version: string }>
     >`SELECT xmin::text AS version FROM "TeamMember" WHERE "teamId" = ${teamId}`;
+
     await withTeamTransaction(teamId, (transaction) =>
       writeTeam(teamId, { ...team, name: "Renamed" }, transaction),
     );
+
     const after = await prisma.$queryRaw<
       Array<{ version: string }>
     >`SELECT xmin::text AS version FROM "TeamMember" WHERE "teamId" = ${teamId}`;
+
     expect(after).toEqual(before);
     const members = team.members.map((member) => ({ ...member, groupId: undefined }));
     await withTeamTransaction(teamId, (transaction) =>

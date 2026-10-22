@@ -31,22 +31,29 @@ export const MemberInviteSection = ({
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const id = useId();
+
   const send = async () => {
     const parsed = InvitationEmailSchema.safeParse(normalizeEmail(email));
+
     if (!parsed.success) {
       setError("Enter a valid email address");
+
       return;
     }
+
     setPending(true);
     setError(null);
     await runWithCleanup(
       async () => {
         try {
           const result = await inviteMember(teamId, memberId, parsed.data);
+
           if (!result.success) {
             setError(result.error);
+
             return;
           }
+
           toast.success(
             result.data.emailSent
               ? `Invitation sent to ${parsed.data}`
@@ -63,6 +70,7 @@ export const MemberInviteSection = ({
       },
     );
   };
+
   if (pendingInvite) {
     return (
       <div className="flex flex-col gap-3">
@@ -76,8 +84,10 @@ export const MemberInviteSection = ({
       </div>
     );
   }
+
   const descriptionId = `${id}-description`;
   const errorId = `${id}-error`;
+
   return (
     <Field data-invalid={Boolean(error) || undefined}>
       <FieldLabel htmlFor={id}>Invite by email</FieldLabel>

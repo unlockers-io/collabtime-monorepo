@@ -26,18 +26,23 @@ const createMemberActions = (deps: MemberActionDeps) => {
     member: Omit<TeamMember, "id" | "order">,
   ): Promise<ActionResult<{ member: TeamMember; team: Team }>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const parsed = parsedInput(TeamMemberInputSchema.safeParse(member), "Invalid member data");
+
     if (!parsed.success) {
       return parsed;
     }
+
     const added = await deps.mutateTeam({
       access: access.data,
       command: teamCommands.addMember(parsed.data),
       errorContext: "add member",
     });
+
     return added.success
       ? { data: { member: added.data.value, team: sanitizeTeam(added.data.team) }, success: true }
       : added;
@@ -45,20 +50,27 @@ const createMemberActions = (deps: MemberActionDeps) => {
 
   const removeMember = async (teamId: string, memberId: string): Promise<ActionResult<Team>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const invalid = invalidUuid(memberId, "member ID");
+
     if (invalid) {
       return invalid;
     }
+
     try {
       const revoked = await deps.revokeMembership({ access: access.data, memberId });
+
       if (!revoked.ok) {
         const failed =
           revoked.reason === "write-failed" ? "Failed to remove member" : revoked.error;
+
         return { error: failed, success: false };
       }
+
       return { data: sanitizeTeam(revoked.team), success: true };
     } catch (error) {
       deps.reportError({
@@ -68,6 +80,7 @@ const createMemberActions = (deps: MemberActionDeps) => {
         route: "actions/member",
         teamId,
       });
+
       return { error: "Failed to remove member", success: false };
     }
   };
@@ -78,17 +91,23 @@ const createMemberActions = (deps: MemberActionDeps) => {
     updates: Partial<Omit<TeamMember, "id">>,
   ): Promise<ActionResult<Team>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const invalid = invalidUuid(memberId, "member ID");
+
     if (invalid) {
       return invalid;
     }
+
     const parsed = parsedInput(TeamMemberUpdateSchema.safeParse(updates), "Invalid update data");
+
     if (!parsed.success) {
       return parsed;
     }
+
     return sanitizedTeam(
       await deps.mutateTeam({
         access: access.data,
@@ -100,13 +119,17 @@ const createMemberActions = (deps: MemberActionDeps) => {
 
   const updateTeamName = async (teamId: string, name: string): Promise<ActionResult<Team>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const parsed = parsedInput(TeamNameSchema.safeParse(name), "Invalid workspace name");
+
     if (!parsed.success) {
       return parsed;
     }
+
     return sanitizedTeam(
       await deps.mutateTeam({
         access: access.data,
@@ -121,36 +144,48 @@ const createMemberActions = (deps: MemberActionDeps) => {
     members: Array<Omit<TeamMember, "id" | "order">>,
   ): Promise<ActionResult<{ imported: number; members: Array<TeamMember>; team: Team }>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     if (!Array.isArray(members) || members.length === 0) {
       return { error: "No members to import", success: false };
     }
+
     if (members.length > MAX_IMPORT_BATCH) {
       return {
         error: `Cannot import more than ${MAX_IMPORT_BATCH} members at once`,
         success: false,
       };
     }
+
     const validated = [];
+
     for (const member of members) {
       const result = TeamMemberInputSchema.safeParse(member);
+
       if (!result.success) {
         const message = result.error.issues[0]?.message ?? "Invalid member data";
+
         return { error: `Invalid member "${member.name}": ${message}`, success: false };
       }
+
       validated.push(result.data);
     }
+
     const imported = await deps.mutateTeam({
       access: access.data,
       command: teamCommands.importMembers(validated),
       errorContext: "import members",
     });
+
     if (!imported.success) {
       return imported;
     }
+
     const { team, value } = imported.data;
+
     return {
       data: { imported: value.length, members: value, team: sanitizeTeam(team) },
       success: true,
@@ -165,19 +200,26 @@ const createMemberActions = (deps: MemberActionDeps) => {
     >,
   ): Promise<ActionResult<Team>> => {
     const access = await deps.authorizeTeamMember(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const invalid = invalidUuid(memberId, "member ID");
+
     if (invalid) {
       return invalid;
     }
+
     const parsed = parsedInput(TeamMemberUpdateSchema.safeParse(updates), "Invalid update data");
+
     if (!parsed.success) {
       return parsed;
     }
+
     const { groupId: _stripped, ...safe } = parsed.data;
     const callerId = access.data.user.id;
+
     return sanitizedTeam(
       await deps.mutateTeam({
         access: access.data,
@@ -192,10 +234,13 @@ const createMemberActions = (deps: MemberActionDeps) => {
     teamId: string,
   ): Promise<ActionResult<{ created: boolean; memberId: string }>> => {
     const access = await deps.authorizeTeamMember(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const { user } = access.data;
+
     const claimed = await deps.mutateTeam({
       access: access.data,
       command: teamCommands.claimMemberSlot({
@@ -204,10 +249,13 @@ const createMemberActions = (deps: MemberActionDeps) => {
       }),
       errorContext: "add your profile",
     });
+
     if (!claimed.success) {
       return claimed;
     }
+
     const { created, memberId } = claimed.data.value;
+
     return { data: { created, memberId }, success: true };
   };
 
@@ -216,14 +264,17 @@ const createMemberActions = (deps: MemberActionDeps) => {
     memberIds: Array<string>,
   ): Promise<ActionResult<void>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const reordered = await deps.mutateTeam({
       access: access.data,
       command: teamCommands.reorderMembers(memberIds),
       errorContext: "reorder members",
     });
+
     return reordered.success ? { data: undefined, success: true } : reordered;
   };
 

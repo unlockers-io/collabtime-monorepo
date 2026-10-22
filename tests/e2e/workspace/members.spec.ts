@@ -22,6 +22,7 @@ test.describe("Member Management", () => {
     const membersSection = page.locator("section").filter({
       has: page.getByRole("heading", { exact: true, name: "Team members" }),
     });
+
     await expect(membersSection.getByText("Alice Johnson", { exact: true })).toBeVisible({
       timeout: 5000,
     });
@@ -39,9 +40,11 @@ test.describe("Member Management", () => {
     const memberCard = page.locator("[class*='rounded']").filter({
       hasText: "Bob Smith",
     });
+
     await memberCard.getByRole("button", { name: /remove|delete/i }).click();
 
     const confirmButton = page.getByRole("button", { name: /confirm|remove|delete/i });
+
     if (await confirmButton.isVisible().catch(() => false)) {
       await confirmButton.click();
     }
