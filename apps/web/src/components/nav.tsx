@@ -231,7 +231,7 @@ const NavView = (props: NavViewProps) => {
         ) : (
           <Link
             aria-label="Sign in"
-            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+            className={cn(buttonVariants({ variant: "outline" }))}
             href="/login"
           >
             <LogIn aria-hidden className="size-4 sm:hidden" />
