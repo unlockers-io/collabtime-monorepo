@@ -92,6 +92,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
                       isInvalid ? "reset-password-hint reset-password-error" : "reset-password-hint"
                     }
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="new-password"
                     className="h-11 sm:h-10"
                     disabled={isPending}
@@ -123,6 +124,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
                   <Input
                     aria-describedby={isInvalid ? "reset-confirm-password-error" : undefined}
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="new-password"
                     className="h-11 sm:h-10"
                     disabled={isPending}

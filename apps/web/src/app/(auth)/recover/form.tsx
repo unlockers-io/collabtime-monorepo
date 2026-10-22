@@ -96,6 +96,7 @@ const RecoverForm = () => {
                   <Input
                     aria-describedby={isInvalid ? "recover-email-error" : undefined}
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="email"
                     className="h-11 sm:h-10"
                     disabled={isPending}

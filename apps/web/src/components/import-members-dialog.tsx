@@ -68,6 +68,9 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   const handleImport = async (rows: Array<ParsedRow>) => {
     const valid = rows.flatMap((row) => (row.errors.length === 0 ? [row.member] : []));
     if (valid.length === 0) {
+      setImportError(
+        "No rows are ready to import. Go back and fix the rows marked in the preview.",
+      );
       return;
     }
 
@@ -143,7 +146,6 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                     Back
                   </Button>
                   <Button
-                    disabled={validCount === 0}
                     onClick={() => {
                       void handleImport(state.rows);
                     }}

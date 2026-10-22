@@ -19,6 +19,7 @@ export default defineConfig({
         "apps/web/src/app/[[]teamId]/private-space-gate.test.tsx",
         "apps/web/src/components/add-group-dialog.test.tsx",
         "apps/web/src/components/edit-member-dialog.test.tsx",
+        "apps/web/src/components/import-members-dialog.test.tsx",
       ],
       rules: { "anti-slop/no-module-mocking": "off" },
     },

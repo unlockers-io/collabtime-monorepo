@@ -134,6 +134,7 @@ const RegisterForm = ({ searchParams }: Props) => {
                       isInvalid ? "register-name-hint register-name-error" : "register-name-hint"
                     }
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="name"
                     className="h-11 sm:h-10"
                     disabled={isPending}
@@ -163,6 +164,7 @@ const RegisterForm = ({ searchParams }: Props) => {
                   <Input
                     aria-describedby={isInvalid ? "register-email-error" : undefined}
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="email"
                     className="h-11 sm:h-10"
                     disabled={isPending}
@@ -196,6 +198,7 @@ const RegisterForm = ({ searchParams }: Props) => {
                         : "register-password-hint"
                     }
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="new-password"
                     className="h-11 sm:h-10"
                     disabled={isPending}

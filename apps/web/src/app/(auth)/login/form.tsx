@@ -114,6 +114,7 @@ const LoginForm = ({ searchParams }: Props) => {
                   <Input
                     aria-describedby={isInvalid ? "login-email-error" : undefined}
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="email"
                     className="h-11 sm:h-10"
                     disabled={isPending}
@@ -151,6 +152,7 @@ const LoginForm = ({ searchParams }: Props) => {
                   <Input
                     aria-describedby={isInvalid ? "login-password-error" : undefined}
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="current-password"
                     className="h-11 sm:h-10"
                     disabled={isPending}
