@@ -15,7 +15,7 @@ import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
-import { useForm } from "@tanstack/react-form";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { z } from "zod";
@@ -36,7 +36,6 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
   const id = useId();
   const ready = useClientReady();
   const form = useForm({
-    canSubmitWhenInvalid: true,
     defaultValues: { name: "" },
     onSubmit: async ({ value }) => {
       setError(null);
@@ -52,7 +51,8 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
         setError("Could not create your workspace. Please try again.");
       }
     },
-    validators: { onBlur: schema, onChange: schema, onSubmit: schema },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: schema },
   });
   return (
     <Dialog
@@ -113,9 +113,13 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
             )}
           </div>
           <form.Subscribe
-            selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
+            selector={(state) => ({
+              canSubmit: state.canSubmit,
+              isEmpty: state.values.name.trim() === "",
+              isSubmitting: state.isSubmitting,
+            })}
           >
-            {({ canSubmit, isSubmitting }) => (
+            {({ canSubmit, isEmpty, isSubmitting }) => (
               <DialogFooter>
                 <Button
                   disabled={isSubmitting}
@@ -127,7 +131,7 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
                 >
                   Cancel
                 </Button>
-                <Button disabled={!canSubmit || isSubmitting} type="submit">
+                <Button disabled={isEmpty || !canSubmit || isSubmitting} type="submit">
                   {isSubmitting ? "Creating…" : "Create workspace"}
                 </Button>
               </DialogFooter>
