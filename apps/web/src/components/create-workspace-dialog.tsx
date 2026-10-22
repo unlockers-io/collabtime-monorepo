@@ -83,7 +83,7 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
           <div className="py-4">
             <form.Field name="name">
               {(field) => {
-                const invalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const invalid = !field.state.meta.isValid;
                 return (
                   <Field data-invalid={invalid || undefined}>
                     <FieldLabel htmlFor={id}>Workspace name</FieldLabel>
@@ -114,12 +114,11 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
           </div>
           <form.Subscribe
             selector={(state) => ({
-              canSubmit: state.canSubmit,
               isEmpty: state.values.name.trim() === "",
               isSubmitting: state.isSubmitting,
             })}
           >
-            {({ canSubmit, isEmpty, isSubmitting }) => (
+            {({ isEmpty, isSubmitting }) => (
               <DialogFooter>
                 <Button
                   disabled={isSubmitting}
@@ -131,7 +130,7 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
                 >
                   Cancel
                 </Button>
-                <Button disabled={isEmpty || !canSubmit || isSubmitting} type="submit">
+                <Button disabled={isEmpty || isSubmitting} type="submit">
                   {isSubmitting ? "Creating…" : "Create workspace"}
                 </Button>
               </DialogFooter>
