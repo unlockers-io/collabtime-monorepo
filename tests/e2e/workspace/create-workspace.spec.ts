@@ -69,13 +69,13 @@ test.describe("Create Workspace", () => {
   });
 });
 
-test("requires a workspace name and displays the chosen name", async ({ homePage, page }) => {
+test("disables create until named and displays the chosen name", async ({ homePage, page }) => {
   await homePage.goto();
   await homePage.getCreateWorkspaceButton().click();
-  await page.getByRole("button", { exact: true, name: "Create workspace" }).click();
-  await expect(page.getByText("Workspace name is required")).toBeVisible();
+  const create = page.getByRole("button", { exact: true, name: "Create workspace" });
+  await expect(create).toBeDisabled();
   await page.getByLabel("Workspace name").fill("E2E Named Workspace");
-  await page.getByRole("button", { exact: true, name: "Create workspace" }).click();
+  await create.click();
   await expect(
     page.getByRole("heading", { exact: true, name: "E2E Named Workspace" }),
   ).toBeVisible();
