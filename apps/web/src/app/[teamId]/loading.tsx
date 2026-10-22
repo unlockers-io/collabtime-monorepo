@@ -9,6 +9,7 @@ import {
 
 const STATUS_GROUPS = ["online", "starting", "wrapping"];
 const TIMELINE_HOURS = Array.from({ length: 12 }, (_, index) => `hour-${index}`);
+
 const TIMELINE_SECTIONS = [
   { id: "design", rows: 2 },
   { id: "engineering", rows: 3 },

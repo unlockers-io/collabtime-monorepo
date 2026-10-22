@@ -32,9 +32,11 @@ test.describe("Group Management", () => {
     const groupCard = page.locator("[class*='rounded']").filter({
       hasText: "Marketing",
     });
+
     await groupCard.getByRole("button", { name: /remove|delete/i }).click();
 
     const confirmButton = page.getByRole("button", { name: /confirm|remove|delete/i });
+
     if (await confirmButton.isVisible().catch(() => false)) {
       await confirmButton.click();
     }

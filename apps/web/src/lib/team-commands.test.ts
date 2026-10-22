@@ -24,15 +24,18 @@ const memberInput = {
 
 const storeWith = async (team: TeamRecord) => {
   let issued = 0;
+
   const store = createTeamStore({
     createId: () => {
       issued += 1;
+
       return `new-${issued}`;
     },
     invalidateTeamName: vi.fn<() => void>(),
     reportError: vi.fn<() => void>(),
     storage: createMemoryTeamStorage(),
   });
+
   await store.createTeamContents(VALID_UUID, team);
 
   return {
@@ -96,6 +99,7 @@ describe("member groups", () => {
     for (const result of results) {
       expect(result).toEqual({ error: "Group not found", ok: false, reason: "rejected" });
     }
+
     const stored = await team.stored();
     expect(stored.members).toEqual([createTestMember()]);
   });
@@ -181,6 +185,7 @@ describe("ordering", () => {
         team.apply(teamCommands.reorderMembers(ids)),
       ),
     );
+
     expect(refused.every((result) => !result.ok && result.error === "Invalid member order")).toBe(
       true,
     );
@@ -242,6 +247,7 @@ describe("member slots", () => {
 
   it("refuses a second profile for a user who already owns one", async () => {
     const owned = createTestMember({ id: "mine", userId: "bob" });
+
     const team = await storeWith(
       createTestTeamRecord({ members: [owned, createTestMember({ id: "free" })] }),
     );

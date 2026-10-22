@@ -28,15 +28,18 @@ import { getUserTimezone } from "@/lib/timezones";
 import { TeamNameSchema } from "@/lib/validation";
 
 const schema = z.object({ name: TeamNameSchema });
+
 type Props = {
   createWorkspace: (name: string) => Promise<ActionResult<string>>;
   onCreated: (id: string) => void;
 };
+
 export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const id = useId();
   const ready = useClientReady();
+
   const form = useForm({
     defaultValues: { name: "" },
     listeners: {
@@ -46,12 +49,16 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
     },
     onSubmit: async ({ value }) => {
       setError(null);
+
       try {
         const result = await createWorkspace(value.name.trim());
+
         if (!result.success) {
           setError(result.error);
+
           return;
         }
+
         setOpen(false);
         onCreated(result.data);
       } catch {
@@ -64,10 +71,12 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
     validationLogic: revalidateLogic(),
     validators: { onDynamic: schema },
   });
+
   return (
     <Dialog
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
+
         if (nextOpen) {
           form.reset();
           setError(null);
@@ -97,6 +106,7 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
             <form.Field name="name">
               {(field) => {
                 const invalid = !field.state.meta.isValid;
+
                 return (
                   <Field data-invalid={invalid || undefined}>
                     <FieldLabel htmlFor={id}>Workspace name</FieldLabel>
@@ -149,9 +159,12 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
     </Dialog>
   );
 };
+
 const createWorkspace = (name: string) => createTeam(getUserTimezone(), name);
+
 export const CreateWorkspaceDialog = () => {
   const { push } = useRouter();
+
   return (
     <CreateWorkspaceDialogView
       createWorkspace={createWorkspace}

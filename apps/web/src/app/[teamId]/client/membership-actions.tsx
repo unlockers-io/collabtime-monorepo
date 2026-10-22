@@ -1,4 +1,5 @@
 "use client";
+
 import { JoinRequestsPanel } from "@/components/join-requests-panel";
 import { PendingInvitationsPanel } from "@/components/pending-invitations-panel";
 import type { TeamMember } from "@/types";
@@ -13,6 +14,7 @@ type Props = JoinPromptProps & {
   isMember: boolean;
   members: Array<TeamMember>;
 };
+
 export const MembershipActions = ({
   hasClaimedProfile,
   isAdmin,
@@ -23,6 +25,7 @@ export const MembershipActions = ({
   if (!isAdmin && !isMember) {
     return <JoinPrompt {...props} />;
   }
+
   return (
     <div className="flex flex-col gap-4">
       {hasClaimedProfile ? (

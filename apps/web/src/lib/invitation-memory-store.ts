@@ -21,6 +21,7 @@ const createMemoryInvitationStore = (
     const gate = Promise.withResolvers<undefined>();
     pending = gate.promise;
     await previous;
+
     try {
       return await run();
     } finally {
@@ -31,6 +32,7 @@ const createMemoryInvitationStore = (
   // Every write moves `updatedAt` forward, even within one millisecond, so versions never repeat.
   const stamp = (): Date => {
     clock = Math.max(Date.now(), clock + 1);
+
     return new Date(clock);
   };
 
@@ -48,8 +50,10 @@ const createMemoryInvitationStore = (
         const earlier = [...invitations.values()].find(
           (invitation) => invitation.email === draft.email && invitation.teamId === draft.teamId,
         );
+
         created += 1;
         const at = stamp();
+
         const invitation: StoredInvitation = {
           ...draft,
           createdAt: earlier?.createdAt ?? at,
@@ -58,21 +62,26 @@ const createMemoryInvitationStore = (
           status: "PENDING",
           updatedAt: at,
         };
+
         invitations.set(invitation.id, invitation);
+
         return Promise.resolve(invitation);
       }),
     transition: (expected, change) =>
       write(async () => {
         const current = invitations.get(expected.id);
+
         if (current === undefined || !sameVersion(current, expected)) {
           return false;
         }
+
         if (
           (change.status === "ACCEPTED" || change.status === "DECLINED") &&
           !isInvitationOpen(current, now())
         ) {
           return false;
         }
+
         if (change.status === "ACCEPTED") {
           await grantMembership(change.membership, undefined);
           invitations.set(current.id, {
@@ -84,6 +93,7 @@ const createMemoryInvitationStore = (
         } else {
           invitations.set(current.id, { ...current, ...change, updatedAt: stamp() });
         }
+
         return true;
       }),
   };

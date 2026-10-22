@@ -19,18 +19,23 @@ const createGroupActions = (deps: GroupActionDeps) => {
     input: { name: string },
   ): Promise<ActionResult<{ group: TeamGroup; team: Team }>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const parsed = parsedInput(TeamGroupInputSchema.safeParse(input), "Invalid group data");
+
     if (!parsed.success) {
       return parsed;
     }
+
     const created = await deps.mutateTeam({
       access: access.data,
       command: teamCommands.addGroup(parsed.data.name),
       errorContext: "create group",
     });
+
     return created.success
       ? {
           data: { group: created.data.value, team: sanitizeTeam(created.data.team) },
@@ -45,17 +50,23 @@ const createGroupActions = (deps: GroupActionDeps) => {
     updates: Partial<{ name: string }>,
   ): Promise<ActionResult<Team>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const invalid = invalidUuid(groupId, "group ID");
+
     if (invalid) {
       return invalid;
     }
+
     const parsed = parsedInput(TeamGroupUpdateSchema.safeParse(updates), "Invalid update data");
+
     if (!parsed.success) {
       return parsed;
     }
+
     return sanitizedTeam(
       await deps.mutateTeam({
         access: access.data,
@@ -67,13 +78,17 @@ const createGroupActions = (deps: GroupActionDeps) => {
 
   const removeGroup = async (teamId: string, groupId: string): Promise<ActionResult<Team>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const invalid = invalidUuid(groupId, "group ID");
+
     if (invalid) {
       return invalid;
     }
+
     return sanitizedTeam(
       await deps.mutateTeam({
         access: access.data,
@@ -88,14 +103,17 @@ const createGroupActions = (deps: GroupActionDeps) => {
     groupIds: Array<string>,
   ): Promise<ActionResult<void>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     const reordered = await deps.mutateTeam({
       access: access.data,
       command: teamCommands.reorderGroups(groupIds),
       errorContext: "reorder groups",
     });
+
     return reordered.success ? { data: undefined, success: true } : reordered;
   };
 

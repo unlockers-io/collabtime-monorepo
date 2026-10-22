@@ -14,6 +14,7 @@ const GET = createCutoverIdentityHandler(readRedisServerInfo);
 const bearer = "test-only-transient-bearer-1234567890";
 const host = "probe-deployment.example.test";
 const url = `https://${host}/api/internal/cutover-identity`;
+
 const request = (overrides: RequestInit = {}, target = url) =>
   new Request(target, {
     headers: { authorization: `Bearer ${bearer}`, host },
@@ -28,6 +29,7 @@ beforeEach(() => {
   vi.stubEnv("VERCEL_URL", host);
   readRedisServerInfo.mockResolvedValue(`redis_version:8.6.3\r\nrun_id:${"a".repeat(40)}\r\n`);
 });
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();

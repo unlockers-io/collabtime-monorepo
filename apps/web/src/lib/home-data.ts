@@ -10,7 +10,9 @@ const getMyTeams = async (userId: string) => {
     orderBy: { createdAt: "desc" },
     where: { userId },
   });
+
   const teamIds = memberships.map((membership) => membership.teamId);
+
   const [summariesResult, ownedSpacesResult] = await Promise.allSettled([
     readTeamSummaries(teamIds),
     prisma.space.findMany({
@@ -22,6 +24,7 @@ const getMyTeams = async (userId: string) => {
   if (summariesResult.status === "rejected") {
     throw summariesResult.reason;
   }
+
   if (ownedSpacesResult.status === "rejected") {
     throw ownedSpacesResult.reason;
   }
@@ -32,6 +35,7 @@ const getMyTeams = async (userId: string) => {
 
   return memberships.flatMap((membership) => {
     const summary = summariesResult.value.get(membership.teamId);
+
     if (summary === undefined) {
       return [];
     }
@@ -55,6 +59,7 @@ const getPendingInvitations = async (email: string) => {
 
   return open.map((invitation) => {
     const name = summaries.get(invitation.teamId)?.name ?? "";
+
     return {
       expiresAt: invitation.expiresAt?.toISOString() ?? null,
       id: invitation.id,

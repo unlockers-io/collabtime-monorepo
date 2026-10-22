@@ -33,6 +33,7 @@ type HomeDataProps = {
 
 const HomeData = async ({ email, userId }: HomeDataProps) => {
   const queryClient = createQueryClient();
+
   const [teamsResult, invitationsResult] = await Promise.allSettled([
     getMyTeams(userId),
     getPendingInvitations(email),

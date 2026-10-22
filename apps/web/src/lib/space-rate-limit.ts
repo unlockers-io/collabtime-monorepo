@@ -28,6 +28,7 @@ const createRateLimiter = (deps: RateLimitDeps) => {
     if (count > max) {
       return { allowed: false, remaining: 0 };
     }
+
     return { allowed: true, remaining: max - count };
   };
 };

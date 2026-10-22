@@ -9,12 +9,14 @@ import {
 } from "./team-live-protocol";
 
 type LiveSyncStatus = "connecting" | "live" | "offline";
+
 type LiveObserver = {
   change: () => void;
   space: () => void;
   status: () => void;
   terminal: () => void;
 };
+
 type LiveConnectionDeps = {
   checkAccess: (url: string, signal: AbortSignal) => Promise<number>;
   createSource: (url: string) => {
@@ -45,12 +47,14 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
       listener();
     }
   };
+
   const setStatus = (next: LiveSyncStatus) => {
     if (status !== next) {
       status = next;
       notify((observer) => observer.status);
     }
   };
+
   const stop = () => {
     accessProbe?.abort();
     accessProbe = undefined;
@@ -59,31 +63,38 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
     clearTimeout(retryTimer);
     retryTimer = undefined;
   };
+
   const retry = (planned: boolean, reconnect: () => void) => {
     stop();
     setStatus(planned ? "connecting" : "offline");
+
     const delay = planned
       ? RECONNECT_DELAY_MS + Math.floor(deps.random() * RECONNECT_JITTER_MS)
       : BACKOFF_MS[Math.min(failures++, BACKOFF_MS.length - 1)];
+
     if (!disposed && !terminal && deps.isVisible()) {
       retryTimer = setTimeout(reconnect, delay);
     }
   };
+
   const revoked = () => {
     terminal = true;
     stop();
     setStatus("offline");
     notify((observer) => observer.terminal);
   };
+
   const recoverAccess = async () => {
     const probe = new AbortController();
     accessProbe = probe;
+
     try {
       const responseStatus = await withTimeout(
         deps.checkAccess(url, probe.signal),
         5000,
         probe.signal,
       );
+
       if (!probe.signal.aborted && isAccessLossStatus(responseStatus)) {
         revoked();
       }
@@ -91,27 +102,35 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
       // Network failures keep polling and the existing reconnect backoff.
     } finally {
       probe.abort();
+
       if (accessProbe === probe) {
         accessProbe = undefined;
       }
     }
   };
+
   const connect = () => {
     retryTimer = undefined;
+
     if (source || disposed || terminal || !deps.isVisible()) {
       return;
     }
+
     accessProbe?.abort();
     accessProbe = undefined;
     setStatus("connecting");
     let connection: ReturnType<LiveConnectionDeps["createSource"]>;
+
     try {
       connection = deps.createSource(url);
     } catch {
       retry(false, connect);
+
       return;
     }
+
     source = connection;
+
     const listen = (event: LiveEvent | "error", listener: () => void) => {
       connection.addEventListener(event, () => {
         if (source === connection && !disposed && !terminal) {
@@ -119,6 +138,7 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
         }
       });
     };
+
     listen(LIVE_EVENTS.ready, () => {
       failures = 0;
       setStatus("live");
@@ -140,14 +160,18 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
     listen(LIVE_EVENTS.revoked, revoked);
     listen(LIVE_EVENTS.deleted, revoked);
   };
+
   const visibilityChanged = () => {
     clearTimeout(hiddenTimer);
+
     if (deps.isVisible()) {
       if (retryTimer === undefined) {
         connect();
       }
+
       return;
     }
+
     clearTimeout(retryTimer);
     retryTimer = undefined;
     hiddenTimer = setTimeout(() => {
@@ -155,11 +179,13 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
       setStatus("offline");
     }, 10_000);
   };
+
   const unsubscribeVisibility = deps.onVisibilityChange(visibilityChanged);
 
   return {
     add: (observer: LiveObserver) => {
       observers.add(observer);
+
       if (observers.size === 1) {
         connect();
       } else if (status === "live") {
@@ -176,6 +202,7 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
     getStatus: () => status,
     remove: (observer: LiveObserver) => {
       observers.delete(observer);
+
       return observers.size;
     },
   };
@@ -183,6 +210,7 @@ const createTeamLiveConnection = (teamId: string, deps: LiveConnectionDeps) => {
 
 const createTeamLiveRegistry = (deps: LiveConnectionDeps) => {
   const connections = new Map<string, ReturnType<typeof createTeamLiveConnection>>();
+
   return {
     getStatus: (teamId: string): LiveSyncStatus =>
       connections.get(teamId)?.getStatus() ?? "offline",
@@ -190,6 +218,7 @@ const createTeamLiveRegistry = (deps: LiveConnectionDeps) => {
       const connection = connections.get(teamId) ?? createTeamLiveConnection(teamId, deps);
       connections.set(teamId, connection);
       connection.add(observer);
+
       return () => {
         if (connection.remove(observer) === 0) {
           connection.dispose();
@@ -201,4 +230,5 @@ const createTeamLiveRegistry = (deps: LiveConnectionDeps) => {
 };
 
 export { createTeamLiveRegistry };
+
 export type { LiveConnectionDeps, LiveObserver, LiveSyncStatus };

@@ -26,15 +26,18 @@ const requestUrl = (input: Parameters<typeof fetch>[0]): string => {
   if (typeof input === "string") {
     return input;
   }
+
   if (input instanceof URL) {
     return input.href;
   }
+
   return input.url;
 };
 
 const respondWith = (resolve: (url: string) => HomeApiBody | Response) => {
   fetchMock.mockImplementation((input) => {
     const result = resolve(requestUrl(input));
+
     return Promise.resolve(result instanceof Response ? result : Response.json(result));
   });
 };
@@ -51,6 +54,7 @@ const team: MyTeam = {
 const renderLists = (seed?: (client: QueryClient) => void) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   seed?.(client);
+
   return render(
     <QueryClientProvider client={client}>
       <HomeLists />

@@ -33,6 +33,7 @@ const getTeamName = async (teamId: string): Promise<string | null> => {
     return await readCachedTeamName(teamId);
   } catch (error) {
     log.error({ error, message: "Failed to get team name", route: "lib/team-meta" });
+
     return null;
   }
 };

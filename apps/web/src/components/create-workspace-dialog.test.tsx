@@ -26,6 +26,7 @@ it("disables creation until a name is entered and submits it trimmed", async () 
   });
   expect(onCreated).toHaveBeenCalledWith("team");
 });
+
 it("validates the name only once creation is attempted", async () => {
   const createWorkspace = vi.fn();
   render(
@@ -53,10 +54,12 @@ it("validates the name only once creation is attempted", async () => {
     expect(screen.queryByText(error)).not.toBeInTheDocument();
   });
 });
+
 it("keeps the entered name and reports creation failure", async () => {
   const createWorkspace = vi
     .fn()
     .mockResolvedValue({ error: "Team storage is unavailable", success: false });
+
   render(
     <CreateWorkspaceDialogView
       createWorkspace={createWorkspace}

@@ -14,6 +14,7 @@ it("keeps expired invitations visible and exposes resend and revoke after expans
     id: "invite",
     memberId: "slot",
   };
+
   const resend = vi.fn().mockResolvedValue({ data: { emailSent: true }, success: true });
   const revoke = vi.fn().mockResolvedValue({ data: undefined, success: true });
   const onSettled = vi.fn<() => void>();
@@ -46,6 +47,7 @@ it("keeps expired invitations visible and exposes resend and revoke after expans
   });
   expect(revoke).toHaveBeenCalledWith("team", "invite");
 });
+
 it("disables both row actions during delivery and restores them on failure", async () => {
   const deferred = Promise.withResolvers<{ error: string; success: false }>();
   const resend = vi.fn(() => deferred.promise);

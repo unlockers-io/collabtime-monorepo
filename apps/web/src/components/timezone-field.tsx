@@ -46,6 +46,7 @@ const TimezoneField = ({ errors, id, isInvalid, onBlur, onChange, value }: Timez
           if (next === null) {
             return;
           }
+
           onChange(next);
           setInputValue(getLabel(next));
           onBlur();
@@ -70,6 +71,7 @@ const TimezoneField = ({ errors, id, isInvalid, onBlur, onChange, value }: Timez
               const input = event.currentTarget;
               const edits = event.key.length === 1 || EDIT_KEYS.has(event.key);
               const modified = event.metaKey || event.ctrlKey || event.altKey;
+
               if (edits && !modified && selectedLabel !== null && input.value === selectedLabel) {
                 input.select();
               }
@@ -96,6 +98,7 @@ const TimezoneField = ({ errors, id, isInvalid, onBlur, onChange, value }: Timez
               <Combobox.List className="max-h-72 min-h-0 scroll-py-1 overflow-y-auto overscroll-contain p-1 data-empty:p-0">
                 {(timezone: CommonTimezone) => {
                   const option = getTimezoneOption(timezone);
+
                   return (
                     <Combobox.Item
                       className="relative flex w-full cursor-default items-center gap-3 rounded-md py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground"

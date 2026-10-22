@@ -43,6 +43,7 @@ const joinRequestActions = createJoinRequestActions({
       }),
       prisma.membership.findMany({ select: { userId: true }, where: { teamId } }),
     ]);
+
     return { memberUserIds: memberships.map((membership) => membership.userId), requests };
   },
   loadJoinContext: async (teamId, userId) => {
@@ -51,6 +52,7 @@ const joinRequestActions = createJoinRequestActions({
       prisma.membership.findUnique({ where: { userId_teamId: { teamId, userId } } }),
       prisma.joinRequest.findUnique({ where: { userId_teamId: { teamId, userId } } }),
     ]);
+
     return {
       existingMembership: existingMembership !== null,
       existingRequest,

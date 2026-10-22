@@ -17,6 +17,7 @@ const createTeamCoordinator = (queryClient: QueryClient, teamId: string) => {
 
   const refresh = () => {
     clearPending();
+
     return queryClient.invalidateQueries({ exact: true, queryKey });
   };
 
@@ -24,6 +25,7 @@ const createTeamCoordinator = (queryClient: QueryClient, teamId: string) => {
     if (!pending || timer !== undefined || writes > 0) {
       return;
     }
+
     if (queryClient.isFetching({ exact: true, queryKey }) === 0) {
       void refresh();
     }
@@ -32,8 +34,10 @@ const createTeamCoordinator = (queryClient: QueryClient, teamId: string) => {
   return {
     beginWrite: () => {
       writes += 1;
+
       return async () => {
         writes -= 1;
+
         if (writes === 0) {
           // A fresh fetch covers every completed write and preceding live event.
           await refresh();
@@ -43,19 +47,23 @@ const createTeamCoordinator = (queryClient: QueryClient, teamId: string) => {
     subscribe: () => {
       subscribers += 1;
       let disposed = false;
+
       const unsubscribe = queryClient.getQueryCache().subscribe(() => {
         if (pending) {
           queueMicrotask(flush);
         }
       });
+
       return {
         dispose: () => {
           if (disposed) {
             return;
           }
+
           disposed = true;
           unsubscribe();
           subscribers -= 1;
+
           if (subscribers === 0) {
             clearPending();
           }
@@ -64,6 +72,7 @@ const createTeamCoordinator = (queryClient: QueryClient, teamId: string) => {
           if (disposed) {
             return;
           }
+
           pending = true;
           clearTimeout(timer);
           timer = setTimeout(() => {
@@ -80,15 +89,19 @@ const clients = new WeakMap<QueryClient, Map<string, ReturnType<typeof createTea
 
 const getTeamCoordinator = (queryClient: QueryClient, teamId: string) => {
   let teams = clients.get(queryClient);
+
   if (!teams) {
     teams = new Map();
     clients.set(queryClient, teams);
   }
+
   let sync = teams.get(teamId);
+
   if (!sync) {
     sync = createTeamCoordinator(queryClient, teamId);
     teams.set(teamId, sync);
   }
+
   return sync;
 };
 

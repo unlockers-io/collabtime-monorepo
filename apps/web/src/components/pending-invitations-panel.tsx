@@ -1,4 +1,5 @@
 "use client";
+
 import { Button } from "@repo/ui/components/button";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Mail, ChevronDown, ChevronUp } from "lucide-react";
@@ -12,6 +13,7 @@ import type { TeamMember, PendingTeamInvitation } from "@/types";
 import { InvitationControls } from "./invitation-controls";
 
 type Props = { members: Array<TeamMember>; teamId: string };
+
 export const PendingInvitationsPanelView = ({
   invitations,
   members,
@@ -24,9 +26,11 @@ export const PendingInvitationsPanelView = ({
   const [expanded, setExpanded] = useState(false);
   const id = useId();
   useHalfMinuteTick();
+
   if (invitations.length === 0) {
     return null;
   }
+
   return (
     <div className="border-b border-border">
       <button
@@ -76,11 +80,14 @@ export const PendingInvitationsPanelView = ({
     </div>
   );
 };
+
 export const PendingInvitationsPanel = ({ members, teamId }: Props) => {
   const { data = [], error, isLoading, refetch } = usePendingTeamInvitations(teamId);
+
   if (isLoading) {
     return <output className="text-sm text-muted-foreground">Loading invitations…</output>;
   }
+
   if (error) {
     return (
       <div className="flex items-center gap-3">
@@ -99,6 +106,7 @@ export const PendingInvitationsPanel = ({ members, teamId }: Props) => {
       </div>
     );
   }
+
   return (
     <PendingInvitationsPanelView
       invitations={data}

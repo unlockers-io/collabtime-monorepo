@@ -7,10 +7,12 @@ import { useState } from "react";
 import { DEMO_GROUPS, DEMO_MEMBERS } from "./demo-team";
 
 const PREVIEW_HOURS = Array.from({ length: 12 }, (_, index) => `preview-hour-${index}`);
+
 const PREVIEW_SECTIONS = [
   { id: "design", rows: ["design-1", "design-2"] },
   { id: "engineering", rows: ["engineering-1", "engineering-2", "engineering-3"] },
 ];
+
 const PREVIEW_TICKS = ["midnight", "morning", "noon", "evening", "night"];
 
 const PreviewSkeleton = () => (
@@ -81,6 +83,7 @@ const PreviewSkeleton = () => (
 const TimezoneVisualizer = dynamic(
   async () => {
     const visualizerModule = await import("@/components/timezone-visualizer");
+
     return visualizerModule.TimezoneVisualizer;
   },
   { loading: () => <PreviewSkeleton />, ssr: false },

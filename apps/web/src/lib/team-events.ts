@@ -7,6 +7,7 @@ import { createRedisClient, getRedis, isRedisConfigured } from "./redis";
 import { UUIDSchema } from "./validation";
 
 const TEAM_EVENTS_CHANNEL = "collabtime:team-events";
+
 const TeamEventSchema = z.object({
   at: z.number(),
   kind: z.enum(["contents", "space", "deleted"]),
@@ -14,9 +15,13 @@ const TeamEventSchema = z.object({
 });
 
 type TeamEvent = z.infer<typeof TeamEventSchema>;
+
 type TeamHubEvent = TeamEvent | { kind: "reconnect" };
+
 type TeamListener = (event: TeamHubEvent) => void;
+
 type ReportError = typeof log.error;
+
 type SubscriberEvents = {
   close: [];
   end: [];
@@ -25,6 +30,7 @@ type SubscriberEvents = {
   ready: [];
   reconnecting: [];
 };
+
 type TeamSubscriber = {
   connect: () => Promise<void>;
   on: <T extends keyof SubscriberEvents>(
@@ -54,12 +60,14 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
     if (Date.now() - lastErrorAt < 30_000) {
       return;
     }
+
     lastErrorAt = Date.now();
     deps.reportError({ error, message: "Live sync subscriber failed", route: "lib/team-events" });
   };
 
   const dispatch = (targets: Iterable<TeamListener>, event: TeamHubEvent) => {
     const snapshot = [...targets];
+
     for (const listener of snapshot) {
       try {
         listener(event);
@@ -73,6 +81,7 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
     ready = false;
     generation += 1;
     const snapshot = [...listeners.values()];
+
     for (const targets of snapshot) {
       dispatch(targets, { kind: "reconnect" });
     }
@@ -82,16 +91,21 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
     if (subscriber) {
       return;
     }
+
     const connection = deps.createSubscriber();
+
     if (!connection) {
       return;
     }
+
     subscriber = connection;
+
     const connectionLost = () => {
       if (subscriber === connection) {
         disconnected();
       }
     };
+
     connection.on("error", reportConnectionError);
     connection.on("close", connectionLost);
     connection.on("end", () => {
@@ -105,6 +119,7 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
       if (subscriber !== connection || !ready || channel !== TEAM_EVENTS_CHANNEL) {
         return;
       }
+
       try {
         const event = TeamEventSchema.parse(JSON.parse(message));
         dispatch(listeners.get(event.teamId) ?? [], event);
@@ -112,19 +127,25 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
         deps.reportError({ error, message: "Invalid team event", route: "lib/team-events" });
       }
     });
+
     const subscribeConnection = async () => {
       if (subscriber !== connection) {
         return;
       }
+
       ready = false;
       const subscribingGeneration = ++generation;
+
       // Socket readiness precedes SUBSCRIBE acknowledgement, including on reconnect.
       try {
         await connection.subscribe(TEAM_EVENTS_CHANNEL);
+
         if (generation !== subscribingGeneration) {
           return;
         }
+
         ready = true;
+
         for (const resolve of readiness) {
           resolve();
         }
@@ -132,9 +153,11 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
         reportConnectionError(error instanceof Error ? error : new Error(String(error)));
       }
     };
+
     connection.on("ready", () => {
       void subscribeConnection();
     });
+
     const connect = async () => {
       try {
         await connection.connect();
@@ -142,15 +165,19 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
         reportConnectionError(error instanceof Error ? error : new Error(String(error)));
       }
     };
+
     void connect();
   };
 
   const waitUntilReady = async (): Promise<boolean> => {
     initialize();
+
     if (ready || !subscriber) {
       return ready;
     }
+
     let resolveReady: (() => void) | undefined;
+
     try {
       await withTimeout(
         new Promise<void>((resolve) => {
@@ -159,6 +186,7 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
         }),
         2000,
       );
+
       return ready;
     } catch {
       return false;
@@ -173,8 +201,10 @@ const createTeamEventHub = (deps: TeamEventHubDeps) => {
     const targets = listeners.get(teamId) ?? new Set<TeamListener>();
     listeners.set(teamId, targets);
     targets.add(listener);
+
     return () => {
       targets.delete(listener);
+
       if (targets.size === 0) {
         listeners.delete(teamId);
       }
@@ -196,6 +226,7 @@ const createTeamEventPublisher = (deps: TeamEventPublisherDeps) => {
       if (!deps.enabled()) {
         return;
       }
+
       const message = JSON.stringify({ at: Date.now(), kind, teamId });
       await withTimeout(deps.publish(TEAM_EVENTS_CHANNEL, message), 1000);
     } catch (error) {
@@ -216,9 +247,11 @@ const teamEventHub = createTeamEventHub({
       enableAutoPipelining: false,
       maxRetriesPerRequest: null,
     });
+
     if (!connection) {
       return null;
     }
+
     return {
       connect: () => connection.connect(),
       on: (event, listener) => {
@@ -244,4 +277,5 @@ export {
   teamEventHub,
   TEAM_EVENTS_CHANNEL,
 };
+
 export type { TeamEvent, TeamHubEvent, TeamListener };

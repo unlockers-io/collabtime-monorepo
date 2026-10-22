@@ -13,6 +13,7 @@ const renderSettings = (result: ActionResult<null>) => {
   const saveName = vi.fn<(name: string) => Promise<ActionResult<null>>>().mockResolvedValue(result);
   const onSaved = vi.fn<() => void>();
   render(<SettingsView onSaved={onSaved} saveName={saveName} user={user} />);
+
   return { onSaved, saveName };
 };
 

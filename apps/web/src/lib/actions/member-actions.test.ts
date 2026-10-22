@@ -16,6 +16,7 @@ type MemberActionDeps = Parameters<typeof createMemberActions>[0];
 const harness = createTestTeamStore();
 const guards = createTestGuards();
 const reportError = vi.fn<MemberActionDeps["reportError"]>();
+
 const {
   addMember,
   createOwnMemberSlot,
@@ -37,9 +38,11 @@ const { seedTeam } = harness;
 
 const persistedTeam = async () => {
   const team = await harness.readTeam();
+
   if (!team) {
     throw new Error("team was not persisted");
   }
+
   return team;
 };
 
@@ -69,6 +72,7 @@ describe("authorization", () => {
     const team = createTestTeamRecord({
       members: [createTestMember({ id: VALID_UUID_2, userId: "other" })],
     });
+
     await seedTeam(team);
     harness.seedMembership("other");
     guards.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
@@ -112,6 +116,7 @@ describe("addMember", () => {
     const result = await addMember(VALID_UUID, validMemberInput);
 
     expect(result.success).toBe(true);
+
     if (result.success) {
       expect(result.data.member.order).toBe(1);
       expect(result.data.member.id).toBe("test-uuid");

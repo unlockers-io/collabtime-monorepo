@@ -14,6 +14,7 @@ import type { TeamRole, TeamStatus } from "@/types";
 
 const SPACE_ACCESS_COOKIE_PREFIX = "space-access-";
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
+
 // v2 binds the grant to the credential it was issued against.
 const TOKEN_VERSION = "v2";
 
@@ -61,13 +62,17 @@ let warnedAboutFallback = false;
 
 const getSigningSecret = (): string => {
   const dedicated = process.env.SPACE_ACCESS_SECRET;
+
   if (dedicated !== undefined && dedicated !== "") {
     return dedicated;
   }
+
   const fallback = process.env.BETTER_AUTH_SECRET;
+
   if (fallback === undefined || fallback === "") {
     throw new Error("Missing SPACE_ACCESS_SECRET or BETTER_AUTH_SECRET environment variable");
   }
+
   if (!warnedAboutFallback) {
     warnedAboutFallback = true;
     log.warn({
@@ -76,6 +81,7 @@ const getSigningSecret = (): string => {
       route: "workspace-access",
     });
   }
+
   return fallback;
 };
 
@@ -84,6 +90,7 @@ const createSignature = (data: string, secret: string): string =>
 
 const verifySignature = (data: string, signature: string, secret: string): boolean => {
   const expectedSignature = createSignature(data, secret);
+
   try {
     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
   } catch {
@@ -107,13 +114,16 @@ const credentialFingerprint = (accessPasswordHash: string, secret: string): stri
 
 const createAccessToken = (spaceId: string, accessPasswordHash: string): string => {
   const secret = getSigningSecret();
+
   const payload: z.infer<typeof tokenPayloadSchema> = {
     credential: credentialFingerprint(accessPasswordHash, secret),
     expiresAt: Date.now() + TOKEN_TTL_SECONDS * 1000,
     spaceId,
     version: TOKEN_VERSION,
   };
+
   const payloadStr = Buffer.from(JSON.stringify(payload)).toString("base64url");
+
   return `${payloadStr}.${createSignature(payloadStr, secret)}`;
 };
 
@@ -125,10 +135,12 @@ const verifyAccessToken = (
   if (accessPasswordHash === null || accessPasswordHash === "") {
     return false;
   }
+
   try {
     const secret = getSigningSecret();
     const parts = token.split(".");
     const [payloadStr = "", signature = ""] = parts;
+
     if (
       parts.length !== 2 ||
       payloadStr === "" ||
@@ -137,9 +149,11 @@ const verifyAccessToken = (
     ) {
       return false;
     }
+
     const payload = tokenPayloadSchema.parse(
       JSON.parse(Buffer.from(payloadStr, "base64url").toString("utf8")),
     );
+
     return (
       payload.spaceId === spaceId &&
       Date.now() <= payload.expiresAt &&
@@ -151,6 +165,7 @@ const verifyAccessToken = (
       message: "Space access token verification failed",
       route: "workspace-access",
     });
+
     return false;
   }
 };
@@ -172,22 +187,29 @@ const parseAccessCookies = (
   if (cookieHeader === null || cookieHeader === "") {
     return [];
   }
+
   const accessCookies: Array<{ spaceId: string; token: string }> = [];
+
   for (const part of cookieHeader.split(";")) {
     const separatorIndex = part.indexOf("=");
     const name = part.slice(0, Math.max(separatorIndex, 0)).trim();
+
     if (separatorIndex === -1 || !name.startsWith(SPACE_ACCESS_COOKIE_PREFIX)) {
       continue;
     }
+
     const rawValue = part.slice(separatorIndex + 1).trim();
     let token = rawValue;
+
     try {
       token = decodeURIComponent(rawValue);
     } catch {
       // Malformed percent-encoding; verify the raw value as-is.
     }
+
     accessCookies.push({ spaceId: name.slice(SPACE_ACCESS_COOKIE_PREFIX.length), token });
   }
+
   return accessCookies;
 };
 
@@ -222,6 +244,7 @@ const workspaceAccessStore: WorkspaceAccessStore = {
   ),
   getToken: async (spaceId) => {
     const cookieStore = await cookies();
+
     return cookieStore.get(accessCookieName(spaceId))?.value;
   },
 };
@@ -235,7 +258,9 @@ const hasGuestGrant = async (space: WorkspaceSpace, store: WorkspaceAccessStore)
   if (!space.isPrivate) {
     return false;
   }
+
   const token = await store.getToken(space.id);
+
   return token !== undefined && verifyAccessToken(token, space.id, space.accessPassword);
 };
 
@@ -247,6 +272,7 @@ const canViewWorkspace = async (
   if (!space.isPrivate || (await hasGuestGrant(space, store))) {
     return true;
   }
+
   return userId !== undefined && isMembership(await store.findMembership(space.teamId, userId));
 };
 
@@ -258,6 +284,7 @@ const captureAccessCheck = async (
 ): Promise<AccessCheck> => {
   const token = await store.getToken(spaceId);
   const captured: WorkspaceAccessStore = { ...store, getToken: () => Promise.resolve(token) };
+
   return (space) => canViewWorkspace(space, userId, captured);
 };
 
@@ -275,13 +302,17 @@ const readRelation = async (
     store.findInvitation(teamId, normalizeEmail(user.email)),
     store.findJoinRequest(teamId, user.id),
   ]);
+
   if (isMembership(membership)) {
     return { isArchived: membership.archivedAt !== null, status: membership.role };
   }
+
   if (invitation !== null && isInvitationOpen(invitation, new Date())) {
     const inviterName = displayName(invitation.invitedBy.name, invitation.invitedBy.email);
+
     return { invitation: { id: invitation.id, inviterName }, isArchived: false, status: "INVITED" };
   }
+
   return { isArchived: false, status: joinRequest?.status === "PENDING" ? "PENDING" : "none" };
 };
 
@@ -292,6 +323,7 @@ const findInviteMismatch = async (
   store: WorkspaceAccessStore,
 ): Promise<Viewer["inviteMismatch"]> => {
   const invitation = await store.findInvitationById(inviteHint);
+
   if (
     invitation?.teamId !== teamId ||
     !isInvitationOpen(invitation, new Date()) ||
@@ -299,6 +331,7 @@ const findInviteMismatch = async (
   ) {
     return undefined;
   }
+
   return { invitedEmailMasked: maskEmail(invitation.email) };
 };
 
@@ -318,8 +351,10 @@ const resolveViewer = async (
     hasGuestGrant(space, store),
     session === null ? STRANGER : readRelation(space.teamId, session.user, store),
   ]);
+
   const isMember = relation.status === "ADMIN" || relation.status === "MEMBER";
   const isOutsider = relation.status === "none" || relation.status === "PENDING";
+
   return {
     ...relation,
     canView: !space.isPrivate || guestGrant || isMember,
@@ -341,4 +376,5 @@ export {
   verifyAccessToken,
   workspaceAccessStore,
 };
+
 export type { AccessCheck, WorkspaceAccessStore, WorkspaceSpace };

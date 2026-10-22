@@ -27,6 +27,7 @@ type ResendEmail = ResendListItem & {
 
 const requireApiKey = (): string => {
   const key = process.env.RESEND_API_KEY;
+
   if (!key) {
     throw new Error(
       "RESEND_API_KEY is required for the Resend e2e helper. " +
@@ -34,6 +35,7 @@ const requireApiKey = (): string => {
         "with `test.skip(!process.env.RESEND_API_KEY, ...)`.",
     );
   }
+
   return key;
 };
 
@@ -53,6 +55,7 @@ const computeBackoffMs = (attempt: number): number => {
     RETRY_BASE_MS * RETRY_FACTOR ** attempt,
     RETRY_MAX_RETRY_AFTER_SECONDS * 1000,
   );
+
   return base + Math.floor(Math.random() * RETRY_JITTER_MS);
 };
 
@@ -64,6 +67,7 @@ const resendFetch = async (path: string): Promise<Response> => {
   const headers = { Authorization: `Bearer ${requireApiKey()}` };
 
   let attempt = 0;
+
   while (true) {
     const response = await fetch(url, { headers });
 
@@ -72,11 +76,13 @@ const resendFetch = async (path: string): Promise<Response> => {
         const body = await response.text().catch(() => "<unreadable>");
         throw new Error(`Resend ${path} → ${response.status}: ${body}`);
       }
+
       return response;
     }
 
     const retryAfterHeader = response.headers.get("retry-after");
     const retryAfter = retryAfterHeader ? Math.trunc(Number(retryAfterHeader)) : Number.NaN;
+
     const delayMs = Number.isFinite(retryAfter)
       ? Math.min(retryAfter, RETRY_MAX_RETRY_AFTER_SECONDS) * 1000 +
         Math.floor(Math.random() * RETRY_JITTER_MS)
@@ -90,11 +96,13 @@ const resendFetch = async (path: string): Promise<Response> => {
 const listEmails = async (limit = 100): Promise<Array<ResendListItem>> => {
   const response = await resendFetch(`/emails?limit=${limit}`);
   const body = (await response.json()) as { data?: Array<ResendListItem> };
+
   return body.data ?? [];
 };
 
 const getEmail = async (id: string): Promise<ResendEmail> => {
   const response = await resendFetch(`/emails/${id}`);
+
   return (await response.json()) as ResendEmail;
 };
 
@@ -123,15 +131,19 @@ const waitForEmail = async (
 
     const candidate = recent.find((mail) => {
       const created = Date.parse(mail.created_at);
+
       if (Number.isNaN(created) || created < match.sinceMs) {
         return false;
       }
+
       if (!mail.to.some((addr) => addr.toLowerCase() === target)) {
         return false;
       }
+
       if (match.subject && !match.subject.test(mail.subject)) {
         return false;
       }
+
       return true;
     });
 
@@ -151,16 +163,21 @@ const waitForEmail = async (
 const extractLink = (email: ResendEmail, pattern: RegExp): string => {
   const haystack = email.html ?? email.text ?? "";
   const hrefMatches = haystack.matchAll(/href="(?<href>[^"]+)"/g);
+
   for (const { groups } of hrefMatches) {
     const decoded = (groups?.href ?? "").replaceAll("&amp;", "&");
+
     if (pattern.test(decoded)) {
       return decoded;
     }
   }
+
   const direct = haystack.match(pattern);
+
   if (direct) {
     return direct[0];
   }
+
   throw new Error(
     `extractLink: no URL matching ${pattern} in email ${email.id} ` +
       `(subject: "${email.subject}"). Body length: ${haystack.length}.`,
@@ -168,4 +185,5 @@ const extractLink = (email: ResendEmail, pattern: RegExp): string => {
 };
 
 export { extractLink, getEmail, listEmails, waitForEmail };
+
 export type { ResendEmail, ResendListItem };

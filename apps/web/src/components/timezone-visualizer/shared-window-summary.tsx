@@ -15,7 +15,9 @@ const formatTiming = (timing: WindowTiming): string => {
   if (timing.kind === "now") {
     return `Now · ${formatDuration(timing.minutesLeft)} left`;
   }
+
   const inTime = `Starts in ${formatDuration(timing.minutesUntil)}`;
+
   return timing.isTomorrow ? `${inTime}, tomorrow` : inTime;
 };
 
@@ -33,9 +35,11 @@ const readAnswer = (reading: SharedWindowReading, rows: ReadonlyArray<MemberRow>
   if (total < 2) {
     return { ...empty, headline: "Add a teammate to see where your working hours overlap." };
   }
+
   if (reading.countedCount < 2) {
     return { ...empty, headline: "Count at least two people to find a shared window." };
   }
+
   if (reading.primary === null) {
     return {
       ...empty,
@@ -46,11 +50,13 @@ const readAnswer = (reading: SharedWindowReading, rows: ReadonlyArray<MemberRow>
 
   const { run, timing } = reading.primary;
   const available = new Set(run.availableMemberIds);
+
   const off = rows.flatMap((row) =>
     row.isCounted && !available.has(row.member.id) ? [row.member.name] : [],
   );
 
   let detail: string;
+
   if (off.length === 0) {
     detail =
       reading.countedCount === total
@@ -72,17 +78,21 @@ const readNotes = (
   hasCollapsedGroups: boolean,
 ): Array<string> => {
   const primaryRun = reading.primary?.run;
+
   const otherWindows = reading.windows.flatMap((window) =>
     window === primaryRun ? [] : [formatRun(window)],
   );
+
   const notes: Array<string> = [];
 
   if (otherWindows.length > 0) {
     notes.push(`Also ${formatNameList(otherWindows)}.`);
   }
+
   if (reading.groupCoverage !== null) {
     notes.push(`Every group has someone working ${formatRun(reading.groupCoverage.run)}.`);
   }
+
   if (isCountingSome(reading, rows)) {
     const collapsed = hasCollapsedGroups ? "; collapsed groups are left out" : "";
     notes.push(`Counting ${reading.countedCount} of ${rows.length} people${collapsed}.`);

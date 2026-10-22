@@ -24,19 +24,23 @@ test.describe("Private space password self-join", () => {
     const teamId = new URL(ownerPage.url()).pathname.slice(1);
 
     const spacesResponse = await owner.request.get(`${webUrl}/api/spaces`);
+
     const { spaces } = (await spacesResponse.json()) as {
       spaces: Array<{ id: string; teamId: string }>;
     };
+
     const space = spaces.find((s) => s.teamId === teamId);
     expect(space).toBeTruthy();
 
     const patch = await owner.request.patch(`${webUrl}/api/spaces/${space?.id}`, {
       data: { password: SPACE_PASSWORD, visibility: "private" },
     });
+
     expect(patch.ok()).toBeTruthy();
     const guest = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await guest.newPage();
     const releaseScripts = await holdScripts(page);
+
     try {
       await page.goto(`${webUrl}/${teamId}`, { waitUntil: "commit" });
       await expect(

@@ -23,6 +23,7 @@ const loadJoinContext = vi.fn<JoinRequestDeps["loadJoinContext"]>();
 const reportError = vi.fn<JoinRequestDeps["reportError"]>();
 const guards = createTestGuards();
 const upsertRequest = vi.fn<JoinRequestDeps["upsertRequest"]>();
+
 const { approveJoinRequest, denyJoinRequest, getPendingJoinRequests, requestToJoin } =
   createJoinRequestActions({
     approveMembership,

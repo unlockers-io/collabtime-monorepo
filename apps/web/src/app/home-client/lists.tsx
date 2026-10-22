@@ -28,6 +28,7 @@ const HomeLists = () => {
     isLoadingInvitations,
     refetchInvitations,
   } = useInvitations();
+
   const {
     handleToggleArchive,
     isArchivePending,
@@ -43,6 +44,7 @@ const HomeLists = () => {
 
   const activeTeams = myTeams.filter((team) => team.archivedAt === null);
   const archivedTeams = myTeams.filter((team) => team.archivedAt !== null);
+
   const isEmpty =
     !isLoadingTeams &&
     !isLoadingInvitations &&

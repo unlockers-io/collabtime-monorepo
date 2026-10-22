@@ -11,11 +11,13 @@ const PARAM = "without";
  */
 const setExcludedMemberIds = (memberIds: Array<string>) => {
   const url = new URL(window.location.href);
+
   if (memberIds.length === 0) {
     url.searchParams.delete(PARAM);
   } else {
     url.searchParams.set(PARAM, memberIds.join(","));
   }
+
   window.history.replaceState(null, "", url);
 };
 

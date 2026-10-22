@@ -23,6 +23,7 @@ test.describe("Password reset", () => {
     const signUp = await request.post(`${webUrl}/api/auth/sign-up/email`, {
       data: { email, name: "Reset Me", password: originalPassword },
     });
+
     expect([200, 201]).toContain(signUp.status());
     const verify = await verification.forVerifyEmail(email);
     const verified = await page.request.get(verify.url);
@@ -34,6 +35,7 @@ test.describe("Password reset", () => {
     const reset = await request.post(`${webUrl}/api/auth/request-password-reset`, {
       data: { email, redirectTo: "/reset-password" },
     });
+
     expect(reset.status()).toBe(200);
 
     const mail = await waitForEmail({
@@ -41,6 +43,7 @@ test.describe("Password reset", () => {
       subject: /reset/i,
       to: email,
     });
+
     expect(mail.last_event).not.toBe("bounced");
 
     const resetUrl = extractLink(mail, /\/reset-password\/[^"?]+\?callbackURL=/);

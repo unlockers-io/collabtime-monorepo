@@ -19,9 +19,11 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
+
     if (!file) {
       return;
     }
+
     const text = await file.text();
     onFileRead(text);
   };
@@ -30,9 +32,11 @@ const UploadForm = ({ csvText, onCsvTextChange, onFileRead }: UploadFormProps) =
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files.item(0);
+
     if (file === null) {
       return;
     }
+
     const text = await file.text();
     onFileRead(text);
   };

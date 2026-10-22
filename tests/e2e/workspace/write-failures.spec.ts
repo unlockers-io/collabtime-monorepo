@@ -7,9 +7,12 @@ const rejectSubmission = async (page: Page, draft: string) => {
     const matches =
       request.request().headers()["next-action"] !== undefined &&
       request.request().postData()?.includes(draft) === true;
+
     await (matches ? request.abort("failed") : request.continue());
   };
+
   await page.route("**/*", route);
+
   return () => page.unroute("**/*", route);
 };
 

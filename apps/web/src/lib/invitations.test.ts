@@ -42,20 +42,24 @@ type Overrides = Partial<
 
 const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides = {}) => {
   const harness = createTestTeamStore();
+
   if (team !== null) {
     await harness.seedTeam(team);
   }
+
   const clock = { now: NOW };
   const store = createMemoryInvitationStore(harness.membershipStore.grant, () => clock.now);
   const hits = new Map<string, number>();
   const outbox: Array<TransactionalEmail> = [];
   const race: { next?: () => Promise<void> } = {};
   const notifyInviter = vi.fn<InvitationDeps<undefined>["notifyInviter"]>();
+
   const invitations = createInvitations({
     appUrl: () => "https://app.example.com",
     checkRateLimit: createRateLimiter({
       increment: (key) => {
         hits.set(key, (hits.get(key) ?? 0) + 1);
+
         return Promise.resolve(hits.get(key) ?? 0);
       },
       isRedisConfigured: () => true,
@@ -68,6 +72,7 @@ const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides
     reportError: vi.fn<InvitationDeps<undefined>["reportError"]>(),
     sendEmail: (email) => {
       outbox.push(email);
+
       return Promise.resolve({ sent: true });
     },
     store: {
@@ -77,36 +82,49 @@ const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides
         const interleaved = race.next;
         race.next = undefined;
         await interleaved?.();
+
         return found;
       },
     },
     ...overrides,
   });
+
   const invite = async (email = EMAIL) => {
     const invited = await invitations.invite(admin, { ...request, email });
+
     if (!invited.success) {
       throw new Error(invited.error);
     }
+
     return invited.data.invitationId;
   };
+
   const pending = async () => {
     const listed = await invitations.listForTeam(admin);
+
     return listed.success ? listed.data : [];
   };
+
   const slot = async () => {
     const stored = await harness.readTeam();
+
     return stored?.members.find((member) => member.id === VALID_UUID_2);
   };
+
   const advance = (days: number) => {
     clock.now = new Date(clock.now.getTime() + days * DAY);
   };
+
   const rewrite = async (id: string, patch: Partial<StoredInvitation>) => {
     const stored = await store.find(id);
+
     if (stored === null) {
       throw new Error(`Invitation ${id} is missing`);
     }
+
     store.seed({ ...stored, ...patch });
   };
+
   return {
     advance,
     harness,
@@ -126,6 +144,7 @@ const refusal = async (team: TeamRecord | null, overrides: Overrides, input = re
   const { invitations, outbox } = await setup(team, overrides);
   const invited = await invitations.invite(admin, input);
   expect(outbox).toEqual([]);
+
   return invited.success ? null : invited.error;
 };
 
@@ -174,6 +193,7 @@ describe("inviting", () => {
     const claimed = createTestTeamRecord({
       members: [createTestMember({ id: VALID_UUID_2, userId: "someone" })],
     });
+
     expect(await refusal(invitedTeam, {}, { ...request, memberId: "nope" })).toBe(
       "Invalid member ID",
     );

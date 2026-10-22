@@ -30,7 +30,9 @@ type TeamRecord = Team & { adminPasswordHash?: string };
 
 const teamRoleSchema = z.enum(["ADMIN", "MEMBER"]);
 const jsonValueSchema = z.json();
+
 type TeamRole = z.infer<typeof teamRoleSchema>;
+
 type TeamRoleInput = z.infer<typeof jsonValueSchema> | undefined;
 
 type TeamStatus = "INVITED" | "ADMIN" | "MEMBER" | "PENDING" | "none";
@@ -48,6 +50,7 @@ type PendingInvitation = {
 };
 
 export type { PendingInvitation, Team, TeamGroup, TeamMember, TeamRecord, TeamRole, TeamStatus };
+
 export { isTeamRole };
 
 export type PendingTeamInvitation = {

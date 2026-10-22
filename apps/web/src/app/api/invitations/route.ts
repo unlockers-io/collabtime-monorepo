@@ -17,6 +17,7 @@ export const GET = withEvlog(async () => {
     return NextResponse.json({ invitations });
   } catch (error) {
     log.error({ error, message: "Failed to fetch invitations", route: "/api/invitations" });
+
     return NextResponse.json({ error: "Failed to fetch invitations" }, { status: 500 });
   }
 });

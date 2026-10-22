@@ -10,21 +10,27 @@ let redisPresent = true;
 const evalScript = (key: string, windowSeconds: number): number => {
   const now = Date.now();
   const existing = store.get(key);
+
   if (existing && existing.expiresAt !== null && now > existing.expiresAt) {
     store.delete(key);
   }
+
   const entry = store.get(key) ?? { count: 0, expiresAt: null };
   entry.count += 1;
+
   if (entry.count === 1) {
     entry.expiresAt = now + windowSeconds * 1000;
   }
+
   store.set(key, entry);
+
   return entry.count;
 };
 
 const incrementMock = vi.fn((key: string, windowSeconds: number): Promise<number> =>
   Promise.resolve(evalScript(key, windowSeconds)),
 );
+
 const checkRateLimit = createRateLimiter({
   increment: incrementMock,
   isRedisConfigured: () => redisPresent,
@@ -40,7 +46,9 @@ const runSequential = async (
   if (times <= 0) {
     return acc;
   }
+
   const result = await run();
+
   return runSequential(times - 1, run, [...acc, result]);
 };
 
@@ -74,9 +82,11 @@ describe("checkRateLimit", () => {
 
   it("is atomic under concurrency: exactly `max` allowed in a burst", async () => {
     const max = 10;
+
     const results = await Promise.all(
       Array.from({ length: max + 5 }, () => checkRateLimit("key-c", max, 60)),
     );
+
     const allowed = results.filter((r) => r.allowed).length;
     const blocked = results.filter((r) => !r.allowed).length;
     expect(allowed).toBe(max);

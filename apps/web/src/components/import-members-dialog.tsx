@@ -50,6 +50,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
     if (!next) {
       handleReset();
     }
+
     setOpen(next);
   };
 
@@ -62,11 +63,13 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
     if (!csvText.trim()) {
       return;
     }
+
     setState({ rows: parseCSV(csvText), step: "preview" });
   };
 
   const handleImport = async (rows: Array<ParsedRow>) => {
     const valid = rows.flatMap((row) => (row.errors.length === 0 ? [row.member] : []));
+
     if (valid.length === 0) {
       setImportError(
         "No rows are ready to import. Go back and fix the rows marked in the preview.",
@@ -83,6 +86,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
         `${result.data.imported} member${result.data.imported === 1 ? "" : "s"} imported`,
       );
       handleOpenChange(false);
+
       return;
     }
 

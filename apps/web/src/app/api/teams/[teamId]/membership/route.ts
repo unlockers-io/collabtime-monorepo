@@ -46,11 +46,13 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
         { status: 400 },
       );
     }
+
     log.error({
       error,
       message: "Failed to update membership",
       route: "/api/teams/[teamId]/membership",
     });
+
     return NextResponse.json({ error: "Failed to update membership" }, { status: 500 });
   }
 });

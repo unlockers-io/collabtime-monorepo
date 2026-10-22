@@ -12,30 +12,37 @@ import { createTeamStore, teamNameTag } from "./team-store";
 
 const setup = () => {
   const memory = createMemoryTeamStorage();
+
   const storage = {
     ...memory,
     publish: vi.fn(memory.publish),
     readBatch: vi.fn(memory.readBatch),
     write: vi.fn(memory.write),
   };
+
   const invalidateTeamName = vi.fn<() => void>();
   let issued = 0;
+
   const store = createTeamStore({
     createId: () => `member-${++issued}`,
     invalidateTeamName,
     reportError: vi.fn<() => void>(),
     storage,
   });
+
   return { invalidateTeamName, storage, store };
 };
+
 describe("transactional team store", () => {
   it("keeps concurrent edits without retries", async () => {
     const { storage, store } = setup();
     await store.createTeamContents(VALID_UUID, createTestTeamRecord());
+
     const results = await Promise.all([
       store.applyTeamCommand(VALID_UUID, teamCommands.addGroup("A")),
       store.applyTeamCommand(VALID_UUID, teamCommands.addGroup("B")),
     ]);
+
     expect(results.every((result) => result.ok)).toBe(true);
     const storedTeam = await store.readTeamRecord(VALID_UUID);
     expect(storedTeam?.groups.map((group) => group.name)).toEqual(["A", "B"]);

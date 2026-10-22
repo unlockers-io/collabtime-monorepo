@@ -15,7 +15,7 @@
     "src/components/badge.tsx": {
       "registry": "badge",
       "registrySha256": "ccc20021cdcbf0fb23c0d4d28f1da4adde8e51ba59f4b11dd2722ed97a5ee3a4",
-      "sha256": "18c107451f03c2bb393046bf5a71a13c1d962d14415cd258ba8d3cb8bbf1eebe"
+      "sha256": "99ced74312f20c69e5ed1928ad884772fcaad03e24ed92f307dfbc3846d7e738"
     },
     "src/components/button.tsx": {
       "registry": "button",
@@ -40,7 +40,7 @@
     "src/components/field.tsx": {
       "registry": "field",
       "registrySha256": "586110f5563cbb5dc0929207ee34361f1349cf2f816465799c60b98821e4cedc",
-      "sha256": "f8896b9925e7b199ed73b77fd4b3964e7c2a2776569f371e1c2d8d35951b82c5"
+      "sha256": "fbfc85c0b7dea9a152557740ed3d2c7b09fc73c6b1d974e7206d08c0c69d3d23"
     },
     "src/components/input.tsx": {
       "registry": "input",

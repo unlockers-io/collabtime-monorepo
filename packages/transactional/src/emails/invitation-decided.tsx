@@ -8,6 +8,7 @@ type Props = {
   teamName: string;
   teamUrl: string;
 };
+
 const InvitationDecided = ({ decision, inviteeName, teamName, teamUrl }: Props) => (
   <TeamNotification
     heading={`Invitation ${decision}`}
@@ -15,5 +16,7 @@ const InvitationDecided = ({ decision, inviteeName, teamName, teamUrl }: Props) 
     teamUrl={teamUrl}
   />
 );
+
 export { InvitationDecided };
+
 export default InvitationDecided;

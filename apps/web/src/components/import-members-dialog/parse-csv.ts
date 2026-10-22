@@ -22,10 +22,12 @@ const normalizeHeader = (h: string) => h.toLowerCase().replaceAll(/[\s_\-]/gv, "
 const findColIndex = (headerIndices: Map<string, number>, ...names: Array<string>): number => {
   for (const name of names) {
     const idx = headerIndices.get(normalizeHeader(name));
+
     if (idx !== undefined) {
       return idx;
     }
   }
+
   return -1;
 };
 
@@ -40,6 +42,7 @@ const parseCSVLine = (line: string, sep: string): Array<string> => {
 
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
+
     if (c === '"') {
       if (inQ && line[i + 1] === '"') {
         cur += '"';
@@ -54,7 +57,9 @@ const parseCSVLine = (line: string, sep: string): Array<string> => {
       cur += c;
     }
   }
+
   cells.push(cur.trim());
+
   return cells;
 };
 
@@ -66,6 +71,7 @@ const describeTimezoneError = (rawTimezone: string) =>
 const parseCSV = (text: string): Array<ParsedRow> => {
   const lines = text.split(/\r?\n/v).filter((l) => l.trim());
   const [firstLine] = lines;
+
   if (firstLine === undefined) {
     return [];
   }
@@ -88,11 +94,13 @@ const parseCSV = (text: string): Array<ParsedRow> => {
   if (hasHeader) {
     startRow = 1;
     const headerIndices = new Map<string, number>();
+
     for (const [i, cell] of firstCells.entries()) {
       if (!headerIndices.has(cell)) {
         headerIndices.set(cell, i);
       }
     }
+
     nameIdx = findColIndex(headerIndices, "name");
     tzIdx = findColIndex(headerIndices, "timezone", "tz");
     titleIdx = findColIndex(headerIndices, "title", "role", "position");
@@ -110,11 +118,13 @@ const parseCSV = (text: string): Array<ParsedRow> => {
 
   for (const [offset, line] of lines.slice(startRow).entries()) {
     const cells: ReadonlyArray<string | undefined> = parseCSVLine(line, sep);
+
     if (cells.every((c) => c === "")) {
       continue;
     }
 
     const rawTimezone = cells[tzIdx] ?? "";
+
     const member = toMemberInput({
       groupId: NO_GROUP,
       name: cells[nameIdx] ?? "",
@@ -123,6 +133,7 @@ const parseCSV = (text: string): Array<ParsedRow> => {
       workingHoursEnd: parseHour(cells[endIdx] ?? "17"),
       workingHoursStart: parseHour(cells[startIdx] ?? "9"),
     });
+
     const result = TeamMemberInputSchema.safeParse(member);
 
     rows.push({
@@ -153,4 +164,5 @@ const downloadTemplate = () => {
 };
 
 export type { ParsedRow };
+
 export { downloadTemplate, parseCSV };

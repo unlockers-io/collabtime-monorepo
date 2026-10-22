@@ -135,6 +135,7 @@ describe("mutateTeam", () => {
 
   it("names the action when the write fails", async () => {
     const storage = createMemoryTeamStorage();
+
     const store = createTeamStore({
       createId: () => VALID_UUID,
       invalidateTeamName: vi.fn<() => void>(),
@@ -144,7 +145,9 @@ describe("mutateTeam", () => {
         write: () => Promise.reject(new Error("Postgres unavailable")),
       },
     });
+
     await storage.write(VALID_UUID, createTestTeamRecord(), undefined);
+
     const failingMutate = createTeamMutator({
       applyTeamCommand: store.applyTeamCommand,
       reportError: vi.fn<() => void>(),
@@ -161,6 +164,7 @@ describe("mutateTeam", () => {
 
   it("converts an unexpected throw into 'Failed to <errorContext>'", async () => {
     const reportError = vi.fn<() => void>();
+
     const throwingMutate = createTeamMutator({
       applyTeamCommand: () => Promise.reject(new Error("Database unavailable")),
       reportError,

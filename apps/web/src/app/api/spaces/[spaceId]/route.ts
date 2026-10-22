@@ -70,6 +70,7 @@ export const GET = withEvlog(async (_request: Request, { params }: Params) => {
     return spaceResponse(owned.space);
   } catch (error) {
     log.error({ error, message: "Space operation failed", route: "/api/spaces/[spaceId]" });
+
     return NextResponse.json({ error: "Failed to fetch space" }, { status: 500 });
   }
 });
@@ -98,11 +99,13 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
     }
 
     let accessPassword = owned.space.accessPassword;
+
     if (updates.visibility === "public") {
       accessPassword = null;
     } else if (updates.password !== undefined) {
       accessPassword = await hashPassword(updates.password);
     }
+
     const updateData = { accessPassword, isPrivate: updates.visibility === "private" };
 
     const updatedSpace = await prisma.space.update({
@@ -120,7 +123,9 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
         { status: 400 },
       );
     }
+
     log.error({ error, message: "Space operation failed", route: "/api/spaces/[spaceId]" });
+
     return NextResponse.json({ error: "Failed to update space" }, { status: 500 });
   }
 });
@@ -144,6 +149,7 @@ export const DELETE = withEvlog(async (_request: Request, { params }: Params) =>
     return NextResponse.json({ success: true });
   } catch (error) {
     log.error({ error, message: "Space operation failed", route: "/api/spaces/[spaceId]" });
+
     return NextResponse.json({ error: "Failed to delete space" }, { status: 500 });
   }
 });

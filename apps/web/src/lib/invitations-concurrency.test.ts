@@ -26,6 +26,7 @@ const setup = async () => {
   const clock = { now: NOW };
   const store = createMemoryInvitationStore(harness.membershipStore.grant, () => clock.now);
   const transition = vi.fn(store.transition);
+
   const deps: InvitationDeps<undefined> = {
     appUrl: () => "https://app.example.com",
     checkRateLimit: () => Promise.resolve({ allowed: true, remaining: 49 }),
@@ -38,14 +39,18 @@ const setup = async () => {
     sendEmail: () => Promise.resolve({ sent: true }),
     store: { ...store, transition },
   };
+
   const invitations = createInvitations(deps);
   const invited = await invitations.invite(access, { email: user.email, memberId: VALID_UUID_2 });
+
   if (!invited.success) {
     throw new Error(invited.error);
   }
+
   const expire = () => {
     clock.now = new Date("2026-09-24T12:00:00Z");
   };
+
   return {
     deps,
     expire,
@@ -66,6 +71,7 @@ describe("invitation concurrency", () => {
     transition.mockImplementationOnce(async (...args) => {
       paused.resolve(undefined);
       await resume.promise;
+
       return store.transition(...args);
     });
     const first = invitations.accept(user, id);
@@ -94,15 +100,19 @@ describe("invitation concurrency", () => {
       const paused = Promise.withResolvers<undefined>();
       const resume = Promise.withResolvers<undefined>();
       const persist = harness.membershipStore.grant.getMockImplementation();
+
       if (!persist) {
         throw new Error("Membership persistence must be configured");
       }
+
       harness.membershipStore.grant.mockImplementationOnce(async (grant, transaction) => {
         paused.resolve(undefined);
         await resume.promise;
+
         if (!succeeds) {
           throw new Error("Database unavailable");
         }
+
         await persist(grant, transaction);
       });
       const accept = invitations.accept(user, id);
@@ -122,6 +132,7 @@ describe("invitation concurrency", () => {
     const { expire, harness, id, invitations, store, transition } = await setup();
     transition.mockImplementationOnce((...args) => {
       expire();
+
       return store.transition(...args);
     });
 
@@ -136,6 +147,7 @@ describe("invitation concurrency", () => {
     const { expire, id, invitations, store, transition } = await setup();
     transition.mockImplementationOnce((...args) => {
       expire();
+
       return store.transition(...args);
     });
 

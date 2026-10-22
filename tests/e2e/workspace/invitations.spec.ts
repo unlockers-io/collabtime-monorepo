@@ -35,6 +35,7 @@ for (const isPrivate of [false, true]) {
       },
     });
     const invitee = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+
     try {
       await homePage.goto();
       await homePage.createWorkspace("E2E Invitation Lifecycle");
@@ -58,9 +59,11 @@ for (const isPrivate of [false, true]) {
       await page.getByRole("button", { name: "Send invitation" }).click();
       await expect(page.getByText(`Invited ${email}`, { exact: true })).toBeVisible();
       await page.getByRole("button", { exact: true, name: "Cancel" }).click();
+
       const invitation = await prisma.invitation.findUniqueOrThrow({
         where: { email_teamId: { email, teamId } },
       });
+
       expect(invitation.status).toBe("PENDING");
       await prisma.invitation.update({
         data: { expiresAt: new Date(0) },
@@ -75,23 +78,29 @@ for (const isPrivate of [false, true]) {
 
       if (isPrivate) {
         const space = await prisma.space.findUniqueOrThrow({ where: { teamId } });
+
         const response = await page.request.patch(`/api/spaces/${space.id}`, {
           data: { password: "PrivateInvitation123!", visibility: "private" },
         });
+
         expect(response.ok()).toBe(true);
       }
+
       const login = await invitee.request.post("/api/auth/sign-in/email", {
         data: { email, password: PASSWORD },
       });
+
       expect(login.status()).toBe(200);
       const friend = await invitee.newPage();
       await friend.goto(`/${teamId}?invite=${invitation.id}`);
       await expect(friend.getByRole("button", { name: "Accept invitation" })).toBeVisible();
       await friend.getByRole("button", { name: "Accept invitation" }).click();
       await expect(friend.getByText("You are a member of this team")).toBeVisible();
+
       const membership = await prisma.membership.findUniqueOrThrow({
         where: { userId_teamId: { teamId, userId } },
       });
+
       expect(membership.role).toBe("MEMBER");
       const accepted = await prisma.invitation.findUniqueOrThrow({ where: { id: invitation.id } });
       expect(accepted.status).toBe("ACCEPTED");

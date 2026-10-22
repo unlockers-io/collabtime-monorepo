@@ -18,9 +18,11 @@ const getSlotClass = (isWorking: boolean, isBest: boolean, isCounted: boolean): 
   if (!isCounted) {
     return isWorking ? "bg-foreground/25" : "bg-muted/40";
   }
+
   if (isBest) {
     return isWorking ? "bg-foreground" : "bg-foreground/15";
   }
+
   return isWorking ? "bg-foreground/55" : "bg-muted/50";
 };
 
@@ -40,6 +42,7 @@ const HourCell = ({ bestSlots, city, hour, row }: HourCellProps) => {
       <TooltipTrigger render={<div className="flex h-full flex-1" />}>
         {QUARTERS.map((quarter) => {
           const slot = hour * SLOTS_PER_HOUR + quarter;
+
           return (
             <span
               className={cn(
@@ -86,26 +89,34 @@ const describeRow = (
   { hasBestWindow, isInBestWindow, now, viewerTimezone }: RowContext,
 ): string => {
   const { interval, member } = row;
+
   const yourTime = formatMinuteRange(
     interval.startMinute,
     interval.startMinute + interval.lengthMinutes,
   );
+
   const localTime = formatMinuteRange(member.workingHoursStart * 60, member.workingHoursEnd * 60);
+
   const parts = [
     `Works ${yourTime} your time (${localTime} in ${formatTimezoneCity(member.timezone)}, ${formatUtcOffset(member.timezone, now)}).`,
   ];
+
   const dayOffset = formatDayOffset(row.dayOffset);
+
   if (dayOffset !== null) {
     parts.push(`Their date is ${dayOffset}.`);
   }
+
   if (!row.isCounted) {
     parts.push("Not counted in the best window.");
   } else if (hasBestWindow) {
     parts.push(isInBestWindow ? "Working during the best window." : "Off during the best window.");
   }
+
   if (viewerTimezone === member.timezone) {
     parts.push("Same timezone as you.");
   }
+
   return parts.join(" ");
 };
 

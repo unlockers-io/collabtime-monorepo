@@ -1,4 +1,5 @@
 "use client";
+
 import { Button } from "@repo/ui/components/button";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { useState } from "react";
@@ -12,12 +13,14 @@ export const AddOwnProfileButton = ({ teamId }: { teamId: string }) => {
   const [pending, setPending] = useState(false);
   const writeTeam = useTeamWrite(teamId);
   const ready = useClientReady();
+
   const add = async () => {
     setPending(true);
     await runWithCleanup(
       async () => {
         try {
           const result = await writeTeam({ submit: () => createOwnMemberSlot(teamId) });
+
           if (!result.success) {
             toast.error(result.error);
           }
@@ -30,6 +33,7 @@ export const AddOwnProfileButton = ({ teamId }: { teamId: string }) => {
       },
     );
   };
+
   return (
     <Button
       disabled={!ready || pending}

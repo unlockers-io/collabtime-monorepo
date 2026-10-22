@@ -21,6 +21,7 @@ const harness = createTestTeamStore();
 
 const roster = async () => {
   const team = await harness.readTeam();
+
   return team?.members ?? [];
 };
 
@@ -152,10 +153,12 @@ describe("revokeMembership", () => {
 
   it("publishes only committed membership changes", async () => {
     await seed();
+
     const granted = await harness.grantMembership({
       ...bob,
       slot: { memberId: VALID_UUID_2, name: "Bob" },
     });
+
     expect(granted.ok).toBe(true);
     expect(harness.publish).toHaveBeenCalledExactlyOnceWith(VALID_UUID);
     harness.publish.mockClear();

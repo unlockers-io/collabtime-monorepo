@@ -8,6 +8,7 @@ import { getRedis } from "./redis";
 import { checkRateLimit } from "./space-rate-limit";
 
 const LEASE_SECONDS = 360;
+
 const ACQUIRE_LEASE = `
   local time = redis.call("TIME")
   local now = tonumber(time[1]) * 1000 + math.floor(tonumber(time[2]) / 1000)
@@ -23,7 +24,9 @@ const ACQUIRE_LEASE = `
 type Admission =
   | { allowed: true; release: () => Promise<void> }
   | { allowed: false; status: 429 | 503 };
+
 type AdmissionViewer = { ip: string; userId: string | undefined };
+
 type AdmissionDeps = {
   acquire: (key: string, id: string, limit: number) => Promise<boolean>;
   after: (callback: () => Promise<void>) => void;
@@ -39,6 +42,7 @@ const createTeamEventAdmission = (deps: AdmissionDeps) => {
     const id = deps.createId();
     const key = `live-connections:${principal}`;
     let releasePromise: Promise<void> | undefined;
+
     const releaseLease = async () => {
       try {
         await withTimeout(deps.release(key, id), 1000);
@@ -50,6 +54,7 @@ const createTeamEventAdmission = (deps: AdmissionDeps) => {
         });
       }
     };
+
     // Stream closure and after() must await the same in-flight Redis command.
     const release = () => (releasePromise ??= releaseLease());
 
@@ -58,17 +63,21 @@ const createTeamEventAdmission = (deps: AdmissionDeps) => {
         deps.checkRateLimit(`live-open:${principal}`, 30, 60),
         1000,
       );
+
       if (!attempt.allowed) {
         return { allowed: false, status: 429 };
       }
+
       const acquiring = deps.acquire(key, id, userId === undefined ? 40 : 10);
       let acquired: boolean;
+
       try {
         acquired = await withTimeout(acquiring, 1000);
       } catch (error) {
         if (!(error instanceof TimeoutError)) {
           throw error;
         }
+
         // A timed-out command may still succeed in Redis; release its unique lease afterwards.
         const releaseLate = async () => {
           try {
@@ -83,19 +92,23 @@ const createTeamEventAdmission = (deps: AdmissionDeps) => {
             });
           }
         };
+
         const cleanup = releaseLate();
         deps.after(() => cleanup);
         throw error;
       }
+
       if (!acquired) {
         return { allowed: false, status: 429 };
       }
+
       try {
         deps.after(release);
       } catch (error) {
         await release();
         throw error;
       }
+
       return { allowed: true, release };
     } catch (error) {
       deps.reportError({
@@ -103,6 +116,7 @@ const createTeamEventAdmission = (deps: AdmissionDeps) => {
         message: "Live sync admission unavailable",
         route: "lib/team-event-admission",
       });
+
       return { allowed: false, status: 503 };
     }
   };
@@ -119,4 +133,5 @@ const acquireTeamEventConnection = createTeamEventAdmission({
 });
 
 export { ACQUIRE_LEASE, acquireTeamEventConnection, createTeamEventAdmission, LEASE_SECONDS };
+
 export type { Admission, AdmissionDeps, AdmissionViewer };
