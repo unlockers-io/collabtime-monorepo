@@ -12,7 +12,9 @@ import {
 import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
-import { useTransition } from "react";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { revalidateLogic } from "@tanstack/react-form";
+import { useRef, useTransition } from "react";
 import { toast } from "sonner";
 
 import { MemberFields } from "@/components/member-fields";
@@ -67,6 +69,7 @@ const EditMemberForm = ({
   const writeTeam = useTeamWrite(teamId);
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
   const form = useMemberForm({
     defaultValues: toMemberFormValues(member),
     onSubmit: ({ value }) => {
@@ -87,11 +90,11 @@ const EditMemberForm = ({
         onOpenChange(false);
       });
     },
-    validators: {
-      onBlur: memberFormSchema,
-      onChange: memberFormSchema,
-      onSubmit: memberFormSchema,
+    onSubmitInvalid: () => {
+      focusFirstInvalidField(formRef.current);
     },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: memberFormSchema },
   });
 
   return (
@@ -112,6 +115,7 @@ const EditMemberForm = ({
           e.stopPropagation();
           void form.handleSubmit();
         }}
+        ref={formRef}
       >
         <div className="flex flex-col gap-5 py-4">
           <MemberFields
@@ -144,13 +148,9 @@ const EditMemberForm = ({
           >
             Cancel
           </Button>
-          <form.Subscribe selector={(state) => ({ canSubmit: state.canSubmit })}>
-            {({ canSubmit }) => (
-              <Button disabled={isPending || !canSubmit} type="submit">
-                <SaveButtonLabel isClaim={isClaim} isPending={isPending} />
-              </Button>
-            )}
-          </form.Subscribe>
+          <Button disabled={isPending} type="submit">
+            <SaveButtonLabel isClaim={isClaim} isPending={isPending} />
+          </Button>
         </DialogFooter>
       </ClientReadyForm>
     </>

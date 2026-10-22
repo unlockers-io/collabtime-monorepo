@@ -5,10 +5,11 @@ import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { useForm } from "@tanstack/react-form";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense, use, useState, useTransition } from "react";
+import { Suspense, use, useRef, useState, useTransition } from "react";
 
 import { signIn } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/form-schemas";
@@ -48,9 +49,16 @@ const LoginForm = ({ searchParams }: Props) => {
   const [isPending, startTransition] = useTransition();
   const [showUnverifiedNotice, setShowUnverifiedNotice] = useState(false);
   const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
+    listeners: {
+      onChange: () => {
+        setShowUnverifiedNotice(false);
+        setErrorKind(null);
+      },
+    },
     onSubmit: ({ value }) => {
       setShowUnverifiedNotice(false);
       // Clearing first re-inserts the alert, so a repeated failure is announced again.
@@ -77,7 +85,11 @@ const LoginForm = ({ searchParams }: Props) => {
         }
       });
     },
-    validators: { onSubmit: loginSchema },
+    onSubmitInvalid: () => {
+      focusFirstInvalidField(formRef.current);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: loginSchema },
   });
 
   return (
@@ -89,11 +101,12 @@ const LoginForm = ({ searchParams }: Props) => {
           e.stopPropagation();
           void form.handleSubmit();
         }}
+        ref={formRef}
       >
         <FieldGroup>
           <form.Field name="email">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="login-email">Email</FieldLabel>
@@ -122,7 +135,7 @@ const LoginForm = ({ searchParams }: Props) => {
 
           <form.Field name="password">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <div className="flex items-baseline justify-between gap-3">

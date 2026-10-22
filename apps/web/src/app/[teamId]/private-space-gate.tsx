@@ -6,12 +6,13 @@ import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { cn } from "@repo/ui/lib/utils";
-import { useForm } from "@tanstack/react-form";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { Lock, LogIn, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -40,6 +41,7 @@ const PrivateSpaceGate = ({
   const [isPending, setIsPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const redirectTarget = returnTo ?? `/${teamId}`;
   const withRedirect = (path: string) => `${path}?redirect=${encodeURIComponent(redirectTarget)}`;
@@ -84,7 +86,11 @@ const PrivateSpaceGate = ({
       setAccepted(true);
       setIsPending(false);
     },
-    validators: { onSubmit: passwordSchema },
+    onSubmitInvalid: () => {
+      focusFirstInvalidField(formRef.current);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: passwordSchema },
   });
 
   return (
@@ -148,13 +154,12 @@ const PrivateSpaceGate = ({
                 e.stopPropagation();
                 void form.handleSubmit();
               }}
+              ref={formRef}
             >
               <FieldGroup>
                 <form.Field name="password">
                   {(field) => {
-                    const isInvalid =
-                      Boolean(serverError) ||
-                      (field.state.meta.isTouched && !field.state.meta.isValid);
+                    const isInvalid = Boolean(serverError) || !field.state.meta.isValid;
                     return (
                       <Field data-invalid={isInvalid || undefined}>
                         <FieldLabel htmlFor="space-password">Password</FieldLabel>

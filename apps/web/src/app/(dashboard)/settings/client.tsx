@@ -5,10 +5,11 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/compon
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { captureException } from "@sentry/nextjs";
-import { useForm } from "@tanstack/react-form";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
-import { useId } from "react";
+import { useId, useRef } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -41,6 +42,7 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
   const id = useId();
   const nameId = `${id}-name`;
   const emailId = `${id}-email`;
+  const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm({
     defaultValues: { name: user.name },
@@ -57,7 +59,11 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
       toast.success("Name updated");
       onSaved();
     },
-    validators: { onBlur: profileSchema, onChange: profileSchema, onSubmit: profileSchema },
+    onSubmitInvalid: () => {
+      focusFirstInvalidField(formRef.current);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: profileSchema },
   });
 
   return (
@@ -77,11 +83,12 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
             event.stopPropagation();
             void form.handleSubmit();
           }}
+          ref={formRef}
         >
           <FieldGroup>
             <form.Field name="name">
               {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const isInvalid = !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid || undefined}>
                     <FieldLabel htmlFor={nameId}>Full name</FieldLabel>
@@ -123,17 +130,13 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
 
           <form.Subscribe
             selector={(state) => ({
-              canSubmit: state.canSubmit,
               isSubmitting: state.isSubmitting,
-              name: state.values.name,
+              name: state.values.name.trim(),
             })}
           >
-            {({ canSubmit, isSubmitting, name }) => (
+            {({ isSubmitting, name }) => (
               <div>
-                <Button
-                  disabled={!canSubmit || isSubmitting || name.trim() === user.name}
-                  type="submit"
-                >
+                <Button disabled={isSubmitting || name === "" || name === user.name} type="submit">
                   {isSubmitting ? "Saving…" : "Save changes"}
                 </Button>
               </div>

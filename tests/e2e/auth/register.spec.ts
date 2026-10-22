@@ -65,7 +65,8 @@ test.describe("Register", () => {
     await passwordInput.pressSequentially("short", { delay: 10 });
     await page.getByRole("button", { name: /create account/i }).click();
 
-    await expect(page.getByText(/at least 12 characters/i)).toBeVisible();
+    await expect(page.getByText("Password must be at least 12 characters")).toBeVisible();
+    await expect(passwordInput).toBeFocused();
   });
 
   test("navigates to login page", async ({ page, registerPage }) => {

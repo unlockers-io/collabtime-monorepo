@@ -5,7 +5,7 @@ import { Field, FieldDescription, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useQueryClient } from "@tanstack/react-query";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { inviteMember } from "@/lib/actions/invitation-actions";
@@ -16,6 +16,11 @@ import { InvitationEmailSchema, normalizeEmail } from "@/lib/validation";
 import type { PendingTeamInvitation } from "@/types";
 
 import { InvitationControls } from "./invitation-controls";
+
+const INVALID_EMAIL = "Enter a valid email address";
+
+const isValidEmail = (email: string) =>
+  InvitationEmailSchema.safeParse(normalizeEmail(email)).success;
 
 export const MemberInviteSection = ({
   memberId,
@@ -29,12 +34,16 @@ export const MemberInviteSection = ({
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasAttempted = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const id = useId();
   const send = async () => {
+    hasAttempted.current = true;
     const parsed = InvitationEmailSchema.safeParse(normalizeEmail(email));
     if (!parsed.success) {
-      setError("Enter a valid email address");
+      setError(INVALID_EMAIL);
+      inputRef.current?.focus();
       return;
     }
     setPending(true);
@@ -53,6 +62,7 @@ export const MemberInviteSection = ({
               : `Invitation created for ${parsed.data} (email was not delivered)`,
           );
           setEmail("");
+          hasAttempted.current = false;
           await queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
         } catch {
           setError("Could not send the invitation. Try again.");
@@ -88,16 +98,14 @@ export const MemberInviteSection = ({
           autoComplete="off"
           className="min-w-0 flex-1"
           id={id}
-          onBlur={() => {
-            if (email && !InvitationEmailSchema.safeParse(normalizeEmail(email)).success) {
-              setError("Enter a valid email address");
-            }
-          }}
           onChange={(event) => {
             setEmail(event.target.value);
-            setError(null);
+            setError(
+              hasAttempted.current && !isValidEmail(event.target.value) ? INVALID_EMAIL : null,
+            );
           }}
           placeholder="name@company.com"
+          ref={inputRef}
           type="email"
           value={email}
         />

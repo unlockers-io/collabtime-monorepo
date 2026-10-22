@@ -15,10 +15,11 @@ import { Switch } from "@repo/ui/components/switch";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { captureException } from "@sentry/nextjs";
-import { useForm, useSelector } from "@tanstack/react-form";
+import { revalidateLogic, useForm, useSelector } from "@tanstack/react-form";
 import { Check, Copy } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -105,6 +106,7 @@ const WorkspaceVisibilityDialog = ({
         });
       }
     });
+  const formRef = useRef<HTMLFormElement>(null);
   const form = useForm({
     defaultValues: { isPrivate, password: "" },
     onSubmit: async ({ value }) => {
@@ -135,7 +137,11 @@ const WorkspaceVisibilityDialog = ({
         toast.error("Couldn't update workspace privacy. Please try again.");
       }
     },
-    validators: { onBlur: schema, onChange: schema },
+    onSubmitInvalid: () => {
+      focusFirstInvalidField(formRef.current);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: schema },
   });
 
   const isSaving = useSelector(form.store, (state) => state.isSubmitting);
@@ -163,6 +169,7 @@ const WorkspaceVisibilityDialog = ({
             event.stopPropagation();
             void form.handleSubmit();
           }}
+          ref={formRef}
         >
           <FieldGroup>
             <form.Field name="isPrivate">
@@ -193,7 +200,7 @@ const WorkspaceVisibilityDialog = ({
                 privateWorkspace && (
                   <form.Field name="password">
                     {(field) => {
-                      const invalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                      const invalid = !field.state.meta.isValid;
                       return (
                         <Field data-invalid={invalid || undefined}>
                           <FieldLabel htmlFor="workspace-access-password">

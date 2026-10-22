@@ -13,9 +13,11 @@ import {
 import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { revalidateLogic } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { MemberFields } from "@/components/member-fields";
@@ -50,6 +52,7 @@ type AddMemberFormProps = {
 const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMemberFormProps) => {
   const queryClient = useQueryClient();
   const writeTeam = useTeamWrite(teamId);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const [defaultValues] = useState<AddMemberFormValues>(() => ({
     email: "",
@@ -88,11 +91,11 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
         toast.error(result.error);
       }
     },
-    validators: {
-      onBlur: addMemberFormSchema,
-      onChange: addMemberFormSchema,
-      onSubmit: addMemberFormSchema,
+    onSubmitInvalid: () => {
+      focusFirstInvalidField(formRef.current);
     },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: addMemberFormSchema },
   });
 
   return (
@@ -103,6 +106,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
         e.stopPropagation();
         void form.handleSubmit();
       }}
+      ref={formRef}
     >
       <DialogHeader>
         <DialogTitle>Add team member</DialogTitle>
@@ -144,14 +148,9 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
             Cancel
           </Button>
         )}
-        <form.Subscribe
-          selector={(state) => ({
-            canSubmit: state.canSubmit,
-            isSubmitting: state.isSubmitting,
-          })}
-        >
-          {({ canSubmit, isSubmitting }) => (
-            <Button disabled={isSubmitting || !canSubmit} type="submit">
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button disabled={isSubmitting} type="submit">
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <Spinner />

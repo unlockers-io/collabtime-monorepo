@@ -35,15 +35,16 @@ it("saves a trimmed name once it differs from the current one", async () => {
   expect(onSaved).toHaveBeenCalledOnce();
 });
 
-it("rejects an empty name without saving", async () => {
+it("keeps save disabled while the name is empty, without showing an error", () => {
   const { saveName } = renderSettings({ data: null, success: true });
   const input = screen.getByLabelText("Full name");
 
   fireEvent.change(input, { target: { value: "   " } });
   fireEvent.blur(input);
 
-  expect(await screen.findByText("Name is required")).toBeVisible();
   expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  expect(screen.queryByText("Name is required")).not.toBeInTheDocument();
+  expect(input).toHaveAttribute("aria-invalid", "false");
   expect(saveName).not.toHaveBeenCalled();
 });
 

@@ -46,11 +46,13 @@ This document records the defaults used across the collabtime monorepo. New code
 
 - `@tanstack/react-form`, never `react-hook-form`.
 - Validate on submit, then on every change: `validationLogic: revalidateLogic()` with `validators: { onDynamic: schema }`. An error appears only after a submit attempt and clears on the keystroke that fixes it. Never validate on blur.
-- Display errors with `!field.state.meta.isValid`; the validation logic already holds them back until submit.
-- On a failed submit, move focus to the first invalid field with `onSubmitInvalid`.
-- Explain any rule people can't guess (password length, allowed characters) with a `FieldDescription` before they hit it. Live hints such as a strength meter derive from the value; they are not validator errors.
-- Server-only failures (wrong password, email taken, rate limits) arrive on submit. Return them per field from `onSubmitAsync` as `{ fields }`, or keep them in local state that clears on the next change.
-- Keep submit enabled and disable it only while `isSubmitting`. Never disable on `!canSubmit`: a disabled button can't say which field is wrong. The one exception is a form with exactly one editable field, which may also disable submit while its trimmed value is empty or unchanged.
+- Put every rule in the one form-level schema, never in field-level `validators`. TanStack runs form-level validators on submit only after field-level ones pass, so a form mixing the two shows partial errors.
+- Display errors with `!field.state.meta.isValid`; the validation logic already holds them back until submit. Don't add an `isTouched`, `isBlurred` or `submissionAttempts` check. `bindField` in `apps/web/src/hooks/use-member-form.ts` does this for the member dialogs.
+- On a failed submit, move focus to the first invalid field: `onSubmitInvalid` calls `focusFirstInvalidField(formRef.current)` from `@repo/ui/lib/focus-first-invalid-field`, with `ref={formRef}` on the `ClientReadyForm`. It waits a frame, because TanStack calls `onSubmitInvalid` before React renders `aria-invalid` and while inputs may still be disabled.
+- Explain any rule people can't guess (password length, allowed characters) with a `FieldDescription` before they hit it, and keep it visible beside the error, with the input described by both. Live hints such as a strength meter derive from the value; they are not validator errors.
+- Server-only failures (wrong password, email taken, rate limits) arrive on submit. Return them per field from `onSubmitAsync` as `{ fields }`, or keep them in local state that the form's `listeners: { onChange }` clears on the next change. Keep auth failures generic.
+- Keep submit enabled and disable it only while `isSubmitting`. Never disable on `!canSubmit`: a disabled button can't say which field is wrong. The one exception is a form with exactly one editable field, which may also disable submit while its trimmed value is empty or unchanged. Use it only where empty is the obvious error, such as naming a workspace or a group.
+- An input that can't be its own TanStack form, such as the invite section nested inside the edit-member form, follows the same rules by hand: remember that a submit was attempted, and after that re-run the same check on every change.
 - Never call `field.handleChange` inside `useEffect` or `useCallback` with `field` in deps; use `field.form.setFieldValue(field.name, value)` with stable refs.
 
 ## Tooling

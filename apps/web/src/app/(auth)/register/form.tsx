@@ -5,10 +5,11 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/compon
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { useForm } from "@tanstack/react-form";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense, use, useState, useTransition } from "react";
+import { Suspense, use, useRef, useState, useTransition } from "react";
 
 import { signUp } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/form-schemas";
@@ -49,8 +50,15 @@ const RegisterForm = ({ searchParams }: Props) => {
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
   const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
 
+  const formRef = useRef<HTMLFormElement>(null);
+
   const form = useForm({
     defaultValues: { email: "", name: "", password: "" },
+    listeners: {
+      onChange: () => {
+        setErrorKind(null);
+      },
+    },
     onSubmit: ({ value }) => {
       // Clearing first re-inserts the alert, so a repeated failure is announced again.
       setErrorKind(null);
@@ -80,7 +88,11 @@ const RegisterForm = ({ searchParams }: Props) => {
         }
       });
     },
-    validators: { onSubmit: signupSchema },
+    onSubmitInvalid: () => {
+      focusFirstInvalidField(formRef.current);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: signupSchema },
   });
 
   if (sentToEmail !== null && sentToEmail !== "") {
@@ -108,11 +120,12 @@ const RegisterForm = ({ searchParams }: Props) => {
           e.stopPropagation();
           void form.handleSubmit();
         }}
+        ref={formRef}
       >
         <FieldGroup>
           <form.Field name="name">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="register-name">Full name</FieldLabel>
@@ -140,7 +153,7 @@ const RegisterForm = ({ searchParams }: Props) => {
 
           <form.Field name="email">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="register-email">Email</FieldLabel>
@@ -169,13 +182,15 @@ const RegisterForm = ({ searchParams }: Props) => {
 
           <form.Field name="password">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="register-password">Password</FieldLabel>
                   <Input
                     aria-describedby={
-                      isInvalid ? "register-password-error" : "register-password-hint"
+                      isInvalid
+                        ? "register-password-hint register-password-error"
+                        : "register-password-hint"
                     }
                     aria-invalid={isInvalid}
                     autoComplete="new-password"
@@ -189,12 +204,11 @@ const RegisterForm = ({ searchParams }: Props) => {
                     type="password"
                     value={field.state.value}
                   />
-                  {isInvalid ? (
+                  <FieldDescription id="register-password-hint">
+                    Must be at least 12 characters long.
+                  </FieldDescription>
+                  {isInvalid && (
                     <FormFieldError errors={field.state.meta.errors} id="register-password-error" />
-                  ) : (
-                    <FieldDescription id="register-password-hint">
-                      Must be at least 12 characters long.
-                    </FieldDescription>
                   )}
                 </Field>
               );

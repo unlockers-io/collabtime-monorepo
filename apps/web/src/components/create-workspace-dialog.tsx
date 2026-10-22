@@ -15,9 +15,10 @@ import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { z } from "zod";
 
 import { createTeam } from "@/lib/actions/team-create";
@@ -35,8 +36,14 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
   const [error, setError] = useState<string | null>(null);
   const id = useId();
   const ready = useClientReady();
+  const formRef = useRef<HTMLFormElement>(null);
   const form = useForm({
     defaultValues: { name: "" },
+    listeners: {
+      onChange: () => {
+        setError(null);
+      },
+    },
     onSubmit: async ({ value }) => {
       setError(null);
       try {
@@ -50,6 +57,9 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
       } catch {
         setError("Could not create your workspace. Please try again.");
       }
+    },
+    onSubmitInvalid: () => {
+      focusFirstInvalidField(formRef.current);
     },
     validationLogic: revalidateLogic(),
     validators: { onDynamic: schema },
@@ -75,6 +85,7 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
             event.preventDefault();
             void form.handleSubmit();
           }}
+          ref={formRef}
         >
           <DialogHeader>
             <DialogTitle>Name your workspace</DialogTitle>

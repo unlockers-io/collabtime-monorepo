@@ -42,6 +42,11 @@ it("validates the name only once creation is attempted", async () => {
   fireEvent.click(screen.getByRole("button", { name: /^Create workspace$/ }));
   expect(await screen.findByText(error)).toBeVisible();
   expect(createWorkspace).not.toHaveBeenCalled();
+  await waitFor(() => {
+    expect(input).toHaveFocus();
+  });
+  fireEvent.change(input, { target: { value: "y".repeat(101) } });
+  expect(await screen.findByText(error)).toBeVisible();
   fireEvent.change(input, { target: { value: "Platform" } });
   await waitFor(() => {
     expect(screen.queryByText(error)).not.toBeInTheDocument();
@@ -64,4 +69,6 @@ it("keeps the entered name and reports creation failure", async () => {
   fireEvent.click(screen.getByRole("button", { name: /^Create workspace$/ }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Team storage is unavailable");
   expect(screen.getByLabelText("Workspace name")).toHaveValue("Platform");
+  fireEvent.change(screen.getByLabelText("Workspace name"), { target: { value: "Platform 2" } });
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });

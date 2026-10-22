@@ -50,6 +50,37 @@ describe("workspace privacy", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("validates the password on submit, then on every change", async () => {
+    const fetchMock = stubSave(true);
+    renderDialog();
+    fireEvent.click(screen.getByRole("switch", { name: "Private workspace" }));
+    const password = screen.getByLabelText("Workspace password");
+    const save = screen.getByRole("button", { name: "Save changes" });
+    const error = "Password must be at least 8 characters";
+
+    fireEvent.change(password, { target: { value: "short" } });
+    fireEvent.blur(password);
+    expect(screen.queryByText(error)).not.toBeInTheDocument();
+    expect(password).toHaveAttribute("aria-invalid", "false");
+    expect(save).toBeEnabled();
+
+    fireEvent.click(save);
+    expect(await screen.findByText(error)).toBeVisible();
+    expect(save).toBeEnabled();
+    await waitFor(() => {
+      expect(password).toHaveFocus();
+    });
+
+    fireEvent.change(password, { target: { value: "shorter" } });
+    expect(await screen.findByText(error)).toBeVisible();
+
+    fireEvent.change(password, { target: { value: "long enough" } });
+    await waitFor(() => {
+      expect(screen.queryByText(error)).not.toBeInTheDocument();
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("submits the password and updates state from the response", async () => {
     const fetchMock = stubSave(true);
     const { onOpenChange, onSaved } = renderDialog();

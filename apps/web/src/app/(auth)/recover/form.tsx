@@ -5,9 +5,10 @@ import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { useForm } from "@tanstack/react-form";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { recoverSchema } from "@/lib/form-schemas";
@@ -22,8 +23,15 @@ const RecoverForm = () => {
   const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const formRef = useRef<HTMLFormElement>(null);
+
   const form = useForm({
     defaultValues: { email: "" },
+    listeners: {
+      onChange: () => {
+        setErrorKind(null);
+      },
+    },
     onSubmit: ({ value }) => {
       // Clearing first re-inserts the alert, so a repeated failure is announced again.
       setErrorKind(null);
@@ -43,7 +51,11 @@ const RecoverForm = () => {
         }
       });
     },
-    validators: { onSubmit: recoverSchema },
+    onSubmitInvalid: () => {
+      focusFirstInvalidField(formRef.current);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: recoverSchema },
   });
 
   if (submittedEmail !== null && submittedEmail !== "") {
@@ -72,11 +84,12 @@ const RecoverForm = () => {
           e.stopPropagation();
           void form.handleSubmit();
         }}
+        ref={formRef}
       >
         <FieldGroup>
           <form.Field name="email">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="recover-email">Email</FieldLabel>
