@@ -25,6 +25,7 @@ const MemberFields = withFieldGroup<MemberFormValues, unknown, MemberFieldsProps
           {(field) => (
             <MemberTextField
               {...bindField(field)}
+              description="Up to 100 characters."
               id={`${idPrefix}-name`}
               label="Full name"
               placeholder="Jane Doe"
@@ -37,6 +38,7 @@ const MemberFields = withFieldGroup<MemberFormValues, unknown, MemberFieldsProps
           {(field) => (
             <MemberTextField
               {...bindField(field)}
+              description="Up to 100 characters."
               id={`${idPrefix}-title`}
               label="Title (optional)"
               placeholder="e.g. Product designer"

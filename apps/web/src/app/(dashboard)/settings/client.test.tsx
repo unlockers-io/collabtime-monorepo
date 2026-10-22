@@ -36,16 +36,31 @@ it("saves a trimmed name once it differs from the current one", async () => {
   expect(onSaved).toHaveBeenCalledOnce();
 });
 
-it("rejects an empty name without saving", async () => {
+it("keeps save disabled while the name is empty, without showing an error", () => {
   const { saveName } = renderSettings({ data: null, success: true });
   const input = screen.getByLabelText("Full name");
 
   fireEvent.change(input, { target: { value: "   " } });
   fireEvent.blur(input);
 
-  expect(await screen.findByText("Name is required")).toBeVisible();
   expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  expect(screen.queryByText("Name is required")).not.toBeInTheDocument();
+  expect(input).toHaveAttribute("aria-invalid", "false");
   expect(saveName).not.toHaveBeenCalled();
+});
+
+it("explains the length limit and reports a failed save in the form alert until the next change", async () => {
+  const { onSaved } = renderSettings({ error: "Failed to update name", success: false });
+  const input = screen.getByLabelText("Full name");
+  expect(input).toHaveAccessibleDescription("Up to 100 characters.");
+
+  fireEvent.change(input, { target: { value: "Ada Lovelace" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Failed to update name");
+  expect(onSaved).not.toHaveBeenCalled();
+  fireEvent.change(input, { target: { value: "Ada King" } });
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 
 it("shows the email as read-only", () => {

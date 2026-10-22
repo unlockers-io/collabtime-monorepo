@@ -4,15 +4,17 @@ import { Button } from "@repo/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { useForm } from "@tanstack/react-form";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { recoverSchema } from "@/lib/form-schemas";
 
-import { AuthErrorNotice } from "../auth-error";
+import { authErrorMessage } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
 import type { AuthErrorKind } from "../auth-error-kind";
 import { AUTH_LINK_CLASS, AuthConfirmation, AuthFooter } from "../auth-shell";
@@ -24,6 +26,11 @@ const RecoverForm = () => {
 
   const form = useForm({
     defaultValues: { email: "" },
+    listeners: {
+      onChange: () => {
+        setErrorKind(null);
+      },
+    },
     onSubmit: ({ value }) => {
       // Clearing first re-inserts the alert, so a repeated failure is announced again.
       setErrorKind(null);
@@ -46,7 +53,11 @@ const RecoverForm = () => {
         }
       });
     },
-    validators: { onSubmit: recoverSchema },
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: recoverSchema },
   });
 
   if (submittedEmail !== null && submittedEmail !== "") {
@@ -69,6 +80,7 @@ const RecoverForm = () => {
   return (
     <>
       <ClientReadyForm
+        id={form.formId}
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -77,9 +89,10 @@ const RecoverForm = () => {
         }}
       >
         <FieldGroup>
+          <FormAlert message={authErrorMessage(errorKind)} />
           <form.Field name="email">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -87,6 +100,7 @@ const RecoverForm = () => {
                   <Input
                     aria-describedby={isInvalid ? "recover-email-error" : undefined}
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="email"
                     className="h-11 sm:h-10"
                     disabled={isPending}
@@ -106,8 +120,6 @@ const RecoverForm = () => {
               );
             }}
           </form.Field>
-
-          {errorKind !== null && <AuthErrorNotice kind={errorKind} />}
 
           <Button
             aria-busy={isPending}

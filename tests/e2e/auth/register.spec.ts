@@ -23,7 +23,9 @@ test.describe("Register", () => {
     await registerPage.goto();
     await registerPage.register(testUser.name, testUser.email, testUser.password);
 
-    await expect(page.getByText(/already exists|failed to create/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-slot="form-alert"]')).toContainText(/already exists/i, {
+      timeout: 5000,
+    });
   });
 
   test("shows validation error for empty name", async ({ page, registerPage }) => {
@@ -65,7 +67,8 @@ test.describe("Register", () => {
     await passwordInput.pressSequentially("short", { delay: 10 });
     await page.getByRole("button", { name: /create account/i }).click();
 
-    await expect(page.getByText(/at least 12 characters/i)).toBeVisible();
+    await expect(page.getByText("Password must be at least 12 characters")).toBeVisible();
+    await expect(passwordInput).toBeFocused();
   });
 
   test("navigates to login page", async ({ page, registerPage }) => {

@@ -13,6 +13,9 @@ import {
 import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { revalidateLogic } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
@@ -50,6 +53,7 @@ type AddMemberFormProps = {
 const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMemberFormProps) => {
   const queryClient = useQueryClient();
   const writeTeam = useTeamWrite(teamId);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [defaultValues] = useState<AddMemberFormValues>(() => ({
     email: "",
@@ -63,7 +67,13 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
 
   const form = useMemberForm({
     defaultValues,
+    listeners: {
+      onChange: () => {
+        setFormError(null);
+      },
+    },
     onSubmit: async ({ value }) => {
+      setFormError(null);
       const { email } = value;
       const result = await writeTeam({ submit: () => addMember(teamId, toMemberInput(value)) });
 
@@ -87,18 +97,19 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
           }
         }
       } else {
-        toast.error(result.error);
+        setFormError(result.error);
       }
     },
-    validators: {
-      onBlur: addMemberFormSchema,
-      onChange: addMemberFormSchema,
-      onSubmit: addMemberFormSchema,
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
     },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: addMemberFormSchema },
   });
 
   return (
     <ClientReadyForm
+      id={form.formId}
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
@@ -114,6 +125,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
       </DialogHeader>
 
       <div className="flex flex-col gap-5 py-4">
+        <FormAlert message={formError} />
         <MemberFields fields={MEMBER_FIELDS} form={form} groups={groups} idPrefix="member" />
 
         <FieldSeparator />
@@ -146,14 +158,9 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
             Cancel
           </Button>
         )}
-        <form.Subscribe
-          selector={(state) => ({
-            canSubmit: state.canSubmit,
-            isSubmitting: state.isSubmitting,
-          })}
-        >
-          {({ canSubmit, isSubmitting }) => (
-            <Button disabled={isSubmitting || !canSubmit} type="submit">
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button disabled={isSubmitting} type="submit">
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <Spinner />

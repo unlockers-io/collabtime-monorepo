@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import type { AuthErrorKind } from "./auth-error-kind";
-import { FormNotice } from "./auth-shell";
 
 const RecoverLink = ({ children }: { children: React.ReactNode }) => (
   <Link className="font-medium underline underline-offset-4" href="/recover">
@@ -36,12 +35,7 @@ const MESSAGES = {
   unknown: () => "Something went wrong. Check your connection and try again.",
 } satisfies Record<AuthErrorKind, (slots: MessageSlots) => React.ReactNode>;
 
-type AuthErrorNoticeProps = MessageSlots & {
-  kind: AuthErrorKind;
-};
+const authErrorMessage = (kind: AuthErrorKind | null, slots: MessageSlots = {}) =>
+  kind === null ? null : MESSAGES[kind](slots);
 
-const AuthErrorNotice = ({ kind, signInLink }: AuthErrorNoticeProps) => (
-  <FormNotice tone="error">{MESSAGES[kind]({ signInLink })}</FormNotice>
-);
-
-export { AuthErrorNotice };
+export { authErrorMessage };

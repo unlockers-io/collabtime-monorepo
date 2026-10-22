@@ -1,5 +1,5 @@
 import { cn } from "@repo/ui/lib/utils";
-import { CircleAlert, CircleCheck, Info, type LucideIcon } from "lucide-react";
+import { CircleCheck, Info, type LucideIcon } from "lucide-react";
 
 type AuthPageProps = {
   children: React.ReactNode;
@@ -29,11 +29,10 @@ const AuthFooter = ({ children }: { children: React.ReactNode }) => (
 
 type FormNoticeProps = {
   children: React.ReactNode;
-  tone: "error" | "neutral" | "success";
+  tone: "neutral" | "success";
 };
 
 const NOTICE_ICONS = {
-  error: CircleAlert,
   neutral: Info,
   success: CircleCheck,
 } satisfies Record<FormNoticeProps["tone"], LucideIcon>;
@@ -41,32 +40,17 @@ const NOTICE_ICONS = {
 const FormNotice = ({ children, tone }: FormNoticeProps) => {
   const Icon = NOTICE_ICONS[tone];
 
-  const body = (
-    <>
+  return (
+    <output aria-live="polite" className="flex gap-2 text-sm text-pretty text-foreground">
       <Icon
         aria-hidden
         className={cn(
           "mt-0.5 size-4 shrink-0",
-          tone === "error" && "text-destructive",
           tone === "success" && "text-success",
           tone === "neutral" && "text-muted-foreground",
         )}
       />
       <span>{children}</span>
-    </>
-  );
-
-  if (tone === "error") {
-    return (
-      <div className="flex gap-2 text-sm text-pretty text-destructive" role="alert">
-        {body}
-      </div>
-    );
-  }
-
-  return (
-    <output aria-live="polite" className="flex gap-2 text-sm text-pretty text-foreground">
-      {body}
     </output>
   );
 };

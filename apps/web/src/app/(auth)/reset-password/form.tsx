@@ -4,9 +4,11 @@ import { Button, buttonVariants } from "@repo/ui/components/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { cn } from "@repo/ui/lib/utils";
-import { useForm } from "@tanstack/react-form";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -14,7 +16,7 @@ import { useState, useTransition } from "react";
 import { authClient } from "@/lib/auth-client";
 import { resetPasswordSchema } from "@/lib/form-schemas";
 
-import { AuthErrorNotice } from "../auth-error";
+import { authErrorMessage } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
 import type { AuthErrorKind } from "../auth-error-kind";
 import { AUTH_LINK_CLASS, AuthFooter, FormNotice } from "../auth-shell";
@@ -35,6 +37,11 @@ const NewPasswordForm = ({ token }: { token: string }) => {
 
   const form = useForm({
     defaultValues: { confirmPassword: "", password: "" },
+    listeners: {
+      onChange: () => {
+        setErrorKind(null);
+      },
+    },
     onSubmit: ({ value }) => {
       // Clearing first re-inserts the alert, so a repeated failure is announced again.
       setErrorKind(null);
@@ -57,12 +64,17 @@ const NewPasswordForm = ({ token }: { token: string }) => {
         }
       });
     },
-    validators: { onSubmit: resetPasswordSchema },
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: resetPasswordSchema },
   });
 
   return (
     <>
       <ClientReadyForm
+        id={form.formId}
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -71,16 +83,20 @@ const NewPasswordForm = ({ token }: { token: string }) => {
         }}
       >
         <FieldGroup>
+          <FormAlert message={authErrorMessage(errorKind)} />
           <form.Field name="password">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="reset-password">New password</FieldLabel>
                   <Input
-                    aria-describedby={isInvalid ? "reset-password-error" : "reset-password-hint"}
+                    aria-describedby={
+                      isInvalid ? "reset-password-hint reset-password-error" : "reset-password-hint"
+                    }
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="new-password"
                     className="h-11 sm:h-10"
                     disabled={isPending}
@@ -92,12 +108,11 @@ const NewPasswordForm = ({ token }: { token: string }) => {
                     type="password"
                     value={field.state.value}
                   />
-                  {isInvalid ? (
+                  <FieldDescription id="reset-password-hint">
+                    Must be at least 12 characters long.
+                  </FieldDescription>
+                  {isInvalid && (
                     <FormFieldError errors={field.state.meta.errors} id="reset-password-error" />
-                  ) : (
-                    <FieldDescription id="reset-password-hint">
-                      Must be at least 12 characters long.
-                    </FieldDescription>
                   )}
                 </Field>
               );
@@ -106,7 +121,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
 
           <form.Field name="confirmPassword">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -114,6 +129,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
                   <Input
                     aria-describedby={isInvalid ? "reset-confirm-password-error" : undefined}
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="new-password"
                     className="h-11 sm:h-10"
                     disabled={isPending}
@@ -135,8 +151,6 @@ const NewPasswordForm = ({ token }: { token: string }) => {
               );
             }}
           </form.Field>
-
-          {errorKind !== null && <AuthErrorNotice kind={errorKind} />}
 
           <Button
             aria-busy={isPending}
