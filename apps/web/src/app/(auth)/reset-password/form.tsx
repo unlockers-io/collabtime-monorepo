@@ -51,10 +51,13 @@ const NewPasswordForm = ({ token }: { token: string }) => {
             newPassword: value.password,
             token,
           });
+
           if (result.error) {
             setErrorKind(authErrorKind(result.error));
+
             return;
           }
+
           push("/login?message=password-reset-success");
         } catch {
           setErrorKind("unknown");
@@ -84,6 +87,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
           <form.Field name="password">
             {(field) => {
               const isInvalid = !field.state.meta.isValid;
+
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="reset-password">New password</FieldLabel>
@@ -118,6 +122,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
           <form.Field name="confirmPassword">
             {(field) => {
               const isInvalid = !field.state.meta.isValid;
+
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="reset-confirm-password">Confirm password</FieldLabel>

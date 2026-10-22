@@ -7,6 +7,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { MemberInviteSection } from "./member-invite-section";
 
 const mocks = vi.hoisted(() => ({ inviteMember: vi.fn() }));
+
 vi.mock("@/lib/actions/invitation-actions", () => ({ inviteMember: mocks.inviteMember }));
 
 beforeEach(() => {
@@ -19,6 +20,7 @@ const renderSection = () => {
       <MemberInviteSection memberId="member-1" teamId="team-1" />
     </QueryClientProvider>,
   );
+
   return {
     email: screen.getByLabelText("Invite by email"),
     send: screen.getByRole("button", { name: "Send invitation" }),

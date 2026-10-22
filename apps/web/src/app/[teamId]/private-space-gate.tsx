@@ -68,28 +68,37 @@ const PrivateSpaceGate = ({
       if (!response) {
         setFormError("Could not verify the password. Please try again.");
         setIsPending(false);
+
         return;
       }
+
       if (response.status === 401) {
         setServerError("Incorrect password");
         setIsPending(false);
+
         return;
       }
+
       if (response.status === 429) {
         setFormError("Too many attempts. Try again later.");
         setIsPending(false);
+
         return;
       }
+
       if (!response.ok) {
         setFormError("Could not verify the password. Please try again.");
         setIsPending(false);
+
         return;
       }
 
       if (isAuthenticated) {
         refresh();
+
         return;
       }
+
       setAccepted(true);
       setIsPending(false);
     },
@@ -168,6 +177,7 @@ const PrivateSpaceGate = ({
                 <form.Field name="password">
                   {(field) => {
                     const isInvalid = Boolean(serverError) || !field.state.meta.isValid;
+
                     return (
                       <Field data-invalid={isInvalid || undefined}>
                         <FieldLabel htmlFor="space-password">Password</FieldLabel>

@@ -9,7 +9,9 @@ import type { TeamMember } from "@/types";
 import { EditMemberDialog } from "./edit-member-dialog";
 
 const mocks = vi.hoisted(() => ({ updateMember: vi.fn(), updateOwnMember: vi.fn() }));
+
 vi.mock("@/lib/actions/member-actions", () => mocks);
+
 vi.mock("@/lib/actions/invitation-actions", () => ({ inviteMember: vi.fn() }));
 
 beforeEach(() => {
@@ -40,6 +42,7 @@ const renderDialog = (mode: "admin" | "claim" = "admin") => {
       />
     </QueryClientProvider>,
   );
+
   return screen.getByLabelText("Full name");
 };
 

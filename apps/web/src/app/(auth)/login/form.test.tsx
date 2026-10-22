@@ -6,7 +6,9 @@ import { beforeEach, expect, it, vi } from "vitest";
 import LoginForm from "./form";
 
 const mocks = vi.hoisted(() => ({ signInEmail: vi.fn() }));
+
 vi.mock("@/lib/auth-client", () => ({ signIn: { email: mocks.signInEmail } }));
+
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
 beforeEach(() => {
@@ -18,6 +20,7 @@ const searchParams = Object.assign(Promise.resolve({}), { status: "fulfilled", v
 
 const renderLogin = () => {
   render(<LoginForm searchParams={searchParams} />);
+
   return {
     email: screen.getByLabelText("Email"),
     password: screen.getByLabelText("Password"),

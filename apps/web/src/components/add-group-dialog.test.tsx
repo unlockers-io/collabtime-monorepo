@@ -7,6 +7,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { AddGroupDialog } from "./add-group-dialog";
 
 const mocks = vi.hoisted(() => ({ createGroup: vi.fn() }));
+
 vi.mock("@/lib/actions/group-actions", () => ({ createGroup: mocks.createGroup }));
 
 beforeEach(() => {
@@ -20,6 +21,7 @@ const openDialog = async () => {
     </QueryClientProvider>,
   );
   fireEvent.click(screen.getByRole("button", { name: "Add group" }));
+
   return {
     name: await screen.findByLabelText("Group name"),
     submit: screen.getByRole("button", { name: "Create group" }),

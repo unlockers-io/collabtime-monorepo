@@ -30,12 +30,15 @@ import { SpaceAccessPasswordSchema } from "@/lib/validation";
 const savedSpaceSchema = z.object({
   space: z.object({ hasPassword: z.boolean(), isPrivate: z.boolean() }),
 });
+
 const errorSchema = z.object({ error: z.string() });
 
 type VisibilityUpdate = { password?: string; visibility: "private" | "public" };
 
 type Visibility = { hasPassword: boolean; isPrivate: boolean };
+
 type VisibilityValues = { isPrivate: boolean; password: string };
+
 type WorkspaceVisibilityDialogProps = Visibility & {
   onOpenChange: (open: boolean) => void;
   onSaved: (space: Visibility) => void;
@@ -60,17 +63,21 @@ const saveVisibility = async (
       headers: { "Content-Type": "application/json" },
       method: "PATCH",
     });
+
     if (!response.ok) {
       const data: unknown = await response.json().catch(() => null);
       const parsed = errorSchema.safeParse(data);
+
       return {
         error: parsed.success ? parsed.data.error : "Couldn't update workspace privacy",
         success: false,
       };
     }
+
     return { data: savedSpaceSchema.parse(await response.json()).space, success: true };
   } catch (error) {
     captureException(error);
+
     return { error: "Couldn't update workspace privacy. Please try again.", success: false };
   }
 };
@@ -132,7 +139,9 @@ const WorkspaceVisibilityDialog = ({
       if (!value.isPrivate || (hasPassword && value.password === "")) {
         return;
       }
+
       const result = SpaceAccessPasswordSchema.safeParse(value.password);
+
       if (!result.success) {
         ctx.addIssue({
           code: "custom",
@@ -141,7 +150,9 @@ const WorkspaceVisibilityDialog = ({
         });
       }
     });
+
   const [formError, setFormError] = useState<string | null>(null);
+
   const form = useForm({
     defaultValues: { isPrivate, password: "" },
     listeners: {
@@ -152,14 +163,19 @@ const WorkspaceVisibilityDialog = ({
     onSubmit: async ({ value }) => {
       if (value.isPrivate === isPrivate && value.password === "") {
         setFormError(NO_CHANGES);
+
         return;
       }
+
       setFormError(null);
       const result = await saveVisibility(spaceId, toVisibilityUpdate(value));
+
       if (!result.success) {
         setFormError(result.error);
+
         return;
       }
+
       onSaved(result.data);
       onOpenChange(false);
       toast.success("Workspace privacy updated");
@@ -229,6 +245,7 @@ const WorkspaceVisibilityDialog = ({
                   <form.Field name="password">
                     {(field) => {
                       const invalid = !field.state.meta.isValid;
+
                       return (
                         <Field data-invalid={invalid || undefined}>
                           <FieldLabel htmlFor="workspace-access-password">

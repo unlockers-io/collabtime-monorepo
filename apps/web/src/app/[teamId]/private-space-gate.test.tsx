@@ -17,6 +17,7 @@ const submitPassword = (status: number) => {
   const password = screen.getByLabelText("Password");
   fireEvent.change(password, { target: { value: "guess" } });
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
   return password;
 };
 

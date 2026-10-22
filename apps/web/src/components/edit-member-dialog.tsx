@@ -55,9 +55,11 @@ const SaveButtonLabel = ({ isClaim, isPending }: SaveButtonLabelProps) => {
       </span>
     );
   }
+
   if (isClaim) {
     return <>Claim profile</>;
   }
+
   return <>Save changes</>;
 };
 
@@ -73,6 +75,7 @@ const EditMemberForm = ({
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
+
   const form = useMemberForm({
     defaultValues: toMemberFormValues(member),
     listeners: {
@@ -83,22 +86,28 @@ const EditMemberForm = ({
     onSubmit: ({ formApi, value }) => {
       if (!isClaim && formApi.state.isDefaultValue) {
         setFormError(NO_CHANGES);
+
         return;
       }
+
       setFormError(null);
       startTransition(async () => {
         const input = toMemberInput(value);
         const { groupId: _groupId, ...ownInput } = input;
+
         const result = await writeTeam({
           submit: () =>
             isClaim
               ? updateOwnMember(teamId, member.id, ownInput)
               : updateMember(teamId, member.id, input),
         });
+
         if (!result.success) {
           setFormError(result.error);
+
           return;
         }
+
         toast.success(isClaim ? "Profile claimed" : "Member updated");
         onOpenChange(false);
       });

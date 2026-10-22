@@ -7,6 +7,7 @@ import { expect, it, vi } from "vitest";
 import { ImportMembersDialog } from "./import-members-dialog";
 
 const mocks = vi.hoisted(() => ({ importMembers: vi.fn() }));
+
 vi.mock("@/lib/actions/member-actions", () => ({ importMembers: mocks.importMembers }));
 
 it("keeps import enabled with no valid rows and says why on click", async () => {

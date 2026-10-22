@@ -40,10 +40,13 @@ const RecoverForm = () => {
             email: value.email,
             redirectTo: `${window.location.origin}/reset-password`,
           });
+
           if (result.error) {
             setErrorKind(authErrorKind(result.error));
+
             return;
           }
+
           setSubmittedEmail(value.email);
         } catch {
           setErrorKind("unknown");
@@ -90,6 +93,7 @@ const RecoverForm = () => {
           <form.Field name="email">
             {(field) => {
               const isInvalid = !field.state.meta.isValid;
+
               return (
                 <Field data-invalid={isInvalid || undefined}>
                   <FieldLabel htmlFor="recover-email">Email</FieldLabel>

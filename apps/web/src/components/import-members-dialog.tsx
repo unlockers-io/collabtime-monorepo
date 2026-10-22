@@ -74,6 +74,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
       setImportError(
         "No rows are ready to import. Go back and fix the rows marked in the preview.",
       );
+
       return;
     }
 
