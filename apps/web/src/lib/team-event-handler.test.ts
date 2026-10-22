@@ -14,29 +14,37 @@ const setup = () => {
     isPrivate: false,
     teamId: VALID_UUID,
   };
+
   const findSpace = vi.fn<TeamEventHandlerDeps["findSpace"]>().mockResolvedValue(space);
   const access = createTestAccessStore();
   const viewer: { userId?: string } = {};
+
   const captureAccess = vi.fn<TeamEventHandlerDeps["captureAccess"]>(async (spaceId) => ({
     canView: await captureAccessCheck(spaceId, viewer.userId, access.store),
     userId: viewer.userId,
   }));
+
   const listeners = new Set<TeamListener>();
   const release = vi.fn<() => Promise<void>>().mockResolvedValue();
+
   const acquire = vi
     .fn<TeamEventHandlerDeps["acquire"]>()
     .mockResolvedValue({ allowed: true, release });
+
   const enabled = vi.fn(() => true);
+
   const hub = {
     isReady: () => true,
     subscribe: (_teamId: string, listener: TeamListener) => {
       listeners.add(listener);
+
       return () => {
         listeners.delete(listener);
       };
     },
     waitUntilReady: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
   };
+
   const handle = createTeamEventsHandler({
     acquire,
     captureAccess,
@@ -45,9 +53,11 @@ const setup = () => {
     hub,
     log: { error: vi.fn<() => void>(), info: vi.fn<() => void>(), warn: vi.fn<() => void>() },
   });
+
   const request = new Request(`http://localhost/api/teams/${VALID_UUID}/events`, {
     headers: { "x-forwarded-for": "192.0.2.1, 192.0.2.2" },
   });
+
   return {
     access,
     acquire,
@@ -67,6 +77,7 @@ const setup = () => {
 beforeEach(() => {
   vi.stubEnv("SPACE_ACCESS_SECRET", "test-space-access-secret-with-32-characters");
 });
+
 afterEach(() => {
   vi.unstubAllEnvs();
 });
@@ -153,9 +164,11 @@ describe("team events handler", () => {
     const readyFrame = await reader.read();
     expect(new TextDecoder().decode(readyFrame.value)).toContain("event: ready");
     state.space.accessPassword = "rotated-password-hash";
+
     for (const listener of state.listeners) {
       listener({ at: Date.now(), kind: "space", teamId: VALID_UUID });
     }
+
     const revokedFrame = await reader.read();
     expect(new TextDecoder().decode(revokedFrame.value)).toContain("event: revoked");
     await expect(reader.read()).resolves.toHaveProperty("done", true);

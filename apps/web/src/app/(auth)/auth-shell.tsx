@@ -40,6 +40,7 @@ const NOTICE_ICONS = {
 
 const FormNotice = ({ children, tone }: FormNoticeProps) => {
   const Icon = NOTICE_ICONS[tone];
+
   const body = (
     <>
       <Icon
@@ -62,6 +63,7 @@ const FormNotice = ({ children, tone }: FormNoticeProps) => {
       </div>
     );
   }
+
   return (
     <output aria-live="polite" className="flex gap-2 text-sm text-pretty text-foreground">
       {body}

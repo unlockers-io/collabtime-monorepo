@@ -8,16 +8,22 @@ import {
 } from "./timezones";
 
 type TeamCommandContext = { createId: () => string };
+
 type Rejection = { error: string; ok: false };
+
 type TeamCommandOutcome<TValue> = Rejection | { ok: true; team: TeamRecord; value: TValue };
+
 type TeamCommand<TValue> = (
   team: TeamRecord,
   context: TeamCommandContext,
 ) => TeamCommandOutcome<TValue>;
 
 type MemberInput = Omit<TeamMember, "id" | "order" | "userId">;
+
 type MemberUpdate = Partial<MemberInput>;
+
 type SlotClaim = { memberId?: string; name: string; userId: string };
+
 type ClaimedSlot = { created: boolean; memberId: string };
 
 const GROUP_NOT_FOUND = "Group not found";
@@ -58,12 +64,14 @@ const reorderById = <TItem extends { id: string; order: number }>(
   ids: Array<string>,
 ): Array<TItem> | null => {
   const byId = new Map(items.map((item) => [item.id, item]));
+
   if (ids.length !== byId.size || new Set(ids).size !== ids.length) {
     return null;
   }
 
   const reordered = ids.flatMap((id, order) => {
     const item = byId.get(id);
+
     return item ? [{ ...item, order }] : [];
   });
 
@@ -77,6 +85,7 @@ const appendMembers = (
   if (team.members.length + added.length > MAX_MEMBERS_PER_TEAM) {
     return reject(`A workspace can have up to ${MAX_MEMBERS_PER_TEAM} members`);
   }
+
   if (!added.every((member) => isGroupReference(team, member.groupId))) {
     return reject(GROUP_NOT_FOUND);
   }
@@ -109,14 +118,17 @@ const updateMember =
   (memberId: string, updates: MemberUpdate): TeamCommand<TeamMember> =>
   (team) => {
     const member = findMember(team, memberId);
+
     if (member === undefined) {
       return reject(MEMBER_NOT_FOUND);
     }
+
     if (!isGroupReference(team, updates.groupId)) {
       return reject(GROUP_NOT_FOUND);
     }
 
     const updated = { ...member, ...updates };
+
     return { ok: true, team: withMember(team, updated), value: updated };
   };
 
@@ -128,17 +140,21 @@ const updateOwnMember =
   ): TeamCommand<TeamMember> =>
   (team) => {
     const member = findMember(team, memberId);
+
     if (member === undefined) {
       return reject(MEMBER_NOT_FOUND);
     }
+
     if (member.userId !== userId && isClaimed(member)) {
       return reject("You can only edit your own member record");
     }
+
     if (member.userId !== userId && ownedSlot(team, userId) !== undefined) {
       return reject("You already have a profile on this team");
     }
 
     const updated = { ...member, ...updates, userId };
+
     return { ok: true, team: withMember(team, updated), value: updated };
   };
 
@@ -146,10 +162,13 @@ const removeMember =
   (memberId: string): TeamCommand<TeamMember> =>
   (team) => {
     const member = findMember(team, memberId);
+
     if (member === undefined) {
       return reject(MEMBER_NOT_FOUND);
     }
+
     const members = team.members.filter((current) => current.id !== memberId);
+
     return { ok: true, team: { ...team, members }, value: member };
   };
 
@@ -167,6 +186,7 @@ const claimMemberSlot =
   (claim: SlotClaim): TeamCommand<ClaimedSlot> =>
   (team, { createId }) => {
     const owned = ownedSlot(team, claim.userId);
+
     if (owned) {
       return {
         ok: true,
@@ -176,8 +196,10 @@ const claimMemberSlot =
     }
 
     const target = claim.memberId === undefined ? undefined : findMember(team, claim.memberId);
+
     if (target && !isClaimed(target)) {
       const claimed = { ...target, userId: claim.userId };
+
       return {
         ok: true,
         team: withMember(team, claimed),
@@ -190,6 +212,7 @@ const claimMemberSlot =
       order: team.members.length,
       userId: claim.userId,
     });
+
     const outcome = appendMembers(team, [member]);
 
     return outcome.ok ? { ...outcome, value: { created: true, memberId: member.id } } : outcome;
@@ -203,6 +226,7 @@ const addGroup =
     }
 
     const group: TeamGroup = { id: createId(), name, order: team.groups.length };
+
     return { ok: true, team: { ...team, groups: [...team.groups, group] }, value: group };
   };
 
@@ -210,12 +234,14 @@ const updateGroup =
   (groupId: string, updates: Partial<Pick<TeamGroup, "name">>): TeamCommand<TeamGroup> =>
   (team) => {
     const group = team.groups.find((current) => current.id === groupId);
+
     if (group === undefined) {
       return reject(GROUP_NOT_FOUND);
     }
 
     const updated = { ...group, ...updates };
     const groups = team.groups.map((current) => (current.id === groupId ? updated : current));
+
     return { ok: true, team: { ...team, groups }, value: updated };
   };
 
@@ -227,14 +253,17 @@ const removeGroup =
     }
 
     const groups: Array<TeamGroup> = [];
+
     for (const group of team.groups) {
       if (group.id !== groupId) {
         groups.push({ ...group, order: groups.length });
       }
     }
+
     const members = team.members.map((member) =>
       member.groupId === groupId ? { ...member, groupId: undefined } : member,
     );
+
     return { ok: true, team: { ...team, groups, members }, value: undefined };
   };
 
@@ -268,4 +297,5 @@ const teamCommands = {
 };
 
 export { newTeamMember, teamCommands };
+
 export type { SlotClaim, TeamCommand };

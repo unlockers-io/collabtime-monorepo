@@ -21,35 +21,43 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     const owner = await prisma.user.create({
       data: { email: `owner-${randomUUID()}@example.com` },
     });
+
     users.push(owner.id);
+
     const recipient = await prisma.user.create({
       data: { email: `recipient-${randomUUID()}@example.com` },
     });
+
     users.push(recipient.id);
     const teamId = randomUUID();
     const memberId = randomUUID();
     await prisma.space.create({ data: { ownerId: owner.id, teamId } });
     const reportError = vi.fn<() => void>();
     const publish = vi.fn<(id: string) => Promise<void>>().mockResolvedValue();
+
     const teamStore = createTeamStore({
       createId: randomUUID,
       invalidateTeamName: vi.fn<() => void>(),
       reportError,
       storage: { ...postgresTeamStorage, publish },
     });
+
     const harness = { ...teamStore, readTeam: teamStore.readTeamRecord, reportError };
     await harness.createTeamContents(
       teamId,
       createTestTeamRecord({ id: teamId, members: [createTestMember({ id: memberId })] }),
     );
+
     const lifecycle = () =>
       createMembershipLifecycle({
         applyTeamCommand: harness.applyInTransaction,
         publish,
         store: prismaMembershipStore,
       });
+
     const membership = lifecycle();
     const transition = vi.fn(prismaInvitationStore.transition);
+
     const deps: InvitationDeps<Prisma.TransactionClient> = {
       appUrl: () => "https://app.example.com",
       checkRateLimit: () => Promise.resolve({ allowed: true, remaining: 49 }),
@@ -62,18 +70,24 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
       sendEmail: () => Promise.resolve({ sent: true }),
       store: { ...prismaInvitationStore, transition },
     };
+
     const service = createInvitations(deps);
+
     const access = {
       teamId,
       user: createMockSession({ email: owner.email, userId: owner.id }).user,
     };
+
     const user = createMockSession({ email: recipient.email, userId: recipient.id }).user;
     const invited = await service.invite(access, { email: user.email, memberId });
+
     if (!invited.success) {
       throw new Error(invited.error);
     }
+
     const readMembership = () =>
       prisma.membership.findUnique({ where: { userId_teamId: { teamId, userId: user.id } } });
+
     return {
       access,
       deps,
@@ -111,29 +125,35 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
       transition,
       user,
     } = await setup();
+
     const paused = Promise.withResolvers<undefined>();
     const resume = Promise.withResolvers<undefined>();
     transition.mockImplementationOnce(async (...args) => {
       paused.resolve(undefined);
       await resume.promise;
+
       return prismaInvitationStore.transition(...args);
     });
     const first = service.accept(user, id);
     await paused.promise;
+
     try {
       const probe = await prisma.$transaction(
         (transaction) => transaction.$queryRaw<Array<{ available: boolean }>>`
         SELECT pg_try_advisory_xact_lock(hashtextextended(${`team:${teamId}`}, 0)) AS available
       `,
       );
+
       expect(probe).toEqual([{ available: false }]);
     } finally {
       resume.resolve(undefined);
     }
+
     const second = createInvitations({
       ...deps,
       grantMembership: lifecycle().grantMembership,
     }).accept(user, id);
+
     const outcomes = await Promise.all([first, second]);
     expect(outcomes.filter((outcome) => outcome.success)).toHaveLength(1);
     const team = await harness.readTeam(teamId);
@@ -159,32 +179,40 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
       teamId,
       user,
     } = await setup();
+
     const paused = Promise.withResolvers<undefined>();
     const resume = Promise.withResolvers<undefined>();
     let pause = true;
+
     const applyTeamCommand: typeof harness.applyInTransaction = async (
       idToApply,
       command,
       transaction,
     ) => {
       const result = await harness.applyInTransaction(idToApply, command, transaction);
+
       if (pause) {
         pause = false;
         paused.resolve(undefined);
         await resume.promise;
       }
+
       return result;
     };
+
     const delayed = createMembershipLifecycle({
       applyTeamCommand,
       publish: vi.fn().mockResolvedValue(undefined),
       store: prismaMembershipStore,
     });
+
     const losing = createInvitations({ ...deps, grantMembership: delayed.grantMembership }).accept(
       user,
       id,
     );
+
     await paused.promise;
+
     try {
       await setTimeout(5200);
       expect(await service.accept(user, id)).toMatchObject({ success: true });
@@ -203,29 +231,36 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
   it("fences removal after its transaction times out and another server grants access", async () => {
     const { access, harness, id, memberId, membership, readMembership, service, teamId, user } =
       await setup();
+
     expect(await service.accept(user, id)).toMatchObject({ success: true });
     const paused = Promise.withResolvers<undefined>();
     const resume = Promise.withResolvers<undefined>();
     let calls = 0;
+
     const applyTeamCommand: typeof harness.applyInTransaction = async (
       idToApply,
       command,
       transaction,
     ) => {
       calls += 1;
+
       if (calls === 1) {
         paused.resolve(undefined);
         await resume.promise;
       }
+
       return harness.applyInTransaction(idToApply, command, transaction);
     };
+
     const delayed = createMembershipLifecycle({
       applyTeamCommand,
       publish: vi.fn().mockResolvedValue(undefined),
       store: prismaMembershipStore,
     });
+
     const removing = Promise.allSettled([delayed.revokeMembership({ access, memberId })]);
     await paused.promise;
+
     try {
       await setTimeout(5200);
       expect(
@@ -239,6 +274,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     } finally {
       resume.resolve(undefined);
     }
+
     expect(await removing).toMatchObject([
       {
         reason: expect.objectContaining({ message: expect.stringContaining("Transaction") }),
@@ -285,13 +321,16 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     const { harness, memberId, membership, publish, readMembership, teamId, user } = await setup();
     const entered = Promise.withResolvers<number>();
     const resume = Promise.withResolvers<undefined>();
+
     const writing = Promise.allSettled([
       membership.grantMembership({
         commit: async (grant, _memberId, transaction) => {
           await prismaMembershipStore.grant(grant, transaction);
+
           const rows = await transaction.$queryRaw<
             Array<{ pid: number }>
           >`SELECT pg_backend_pid() AS pid`;
+
           entered.resolve(rows[0]?.pid ?? 0);
           await resume.promise;
           await transaction.$queryRaw`SELECT 1`;
@@ -302,6 +341,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
         userId: user.id,
       }),
     ]);
+
     const pid = await entered.promise;
     expect(pid).toBeGreaterThan(0);
     await prisma.$queryRaw`SELECT pg_terminate_backend(${pid}::integer)`;
@@ -352,12 +392,14 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     async (decision) => {
       const { harness, id, memberId, readMembership, service, teamId, transition, user } =
         await setup();
+
       await prisma.invitation.update({
         data: { expiresAt: new Date(Date.now() + 250) },
         where: { id },
       });
       transition.mockImplementationOnce(async (...args) => {
         await setTimeout(300);
+
         return prismaInvitationStore.transition(...args);
       });
 
@@ -380,11 +422,13 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
       });
       const locked = Promise.withResolvers<undefined>();
       const release = Promise.withResolvers<undefined>();
+
       const holder = prisma.$transaction(async (transaction) => {
         await transaction.$executeRaw`SELECT "id" FROM "Invitation" WHERE "id" = ${id} FOR UPDATE`;
         locked.resolve(undefined);
         await release.promise;
       });
+
       await locked.promise;
       const acceptance = service[decision](user, id);
       await setTimeout(500);

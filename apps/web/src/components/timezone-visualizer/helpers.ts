@@ -13,9 +13,11 @@ const getEdgeAlignment = (
   if (isFirst) {
     return "flex-start";
   }
+
   if (isLast) {
     return "flex-end";
   }
+
   return "center";
 };
 
@@ -23,8 +25,10 @@ const formatDayOffset = (offset: number): string | null => {
   if (offset === 0) {
     return null;
   }
+
   const absOffset = Math.abs(offset);
   const suffix = absOffset > 1 ? "days" : "day";
+
   return offset > 0 ? `${absOffset} ${suffix} ahead` : `${absOffset} ${suffix} behind`;
 };
 
@@ -33,6 +37,7 @@ const formatNameList = (names: ReadonlyArray<string>): string => {
   if (names.length <= 1) {
     return names.join("");
   }
+
   return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 };
 

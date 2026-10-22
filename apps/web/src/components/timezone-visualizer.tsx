@@ -39,8 +39,10 @@ const TimezoneVisualizer = ({
   const setExcluded = (next: Array<string>) => {
     if (onExcludedMemberIdsChange) {
       onExcludedMemberIdsChange(next);
+
       return;
     }
+
     setLocalExcluded(next);
   };
 
@@ -66,6 +68,7 @@ const TimezoneVisualizer = ({
   });
 
   const primaryAvailable = new Set(reading.primary?.run.availableMemberIds);
+
   const hasCollapsedCounted = groupedSections.some(
     (section) => section.group !== null && collapsedSet.has(section.group.id),
   );

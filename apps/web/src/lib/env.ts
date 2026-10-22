@@ -16,6 +16,7 @@ const envSchema = z.object({
     .refine(
       (val) => {
         const email = /^.+<(?<email>[^<>\s]+)>$/v.exec(val)?.groups?.email ?? val;
+
         return z.email().safeParse(email).success;
       },
       { message: "Must be a valid email or 'Display Name <email>' format" },

@@ -63,6 +63,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
+
     if (nextOpen) {
       form.reset();
     }
@@ -102,6 +103,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
             <form.Field name="name">
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
                 return (
                   <Field data-invalid={isInvalid || undefined}>
                     <FieldLabel htmlFor="group-name">Group name</FieldLabel>

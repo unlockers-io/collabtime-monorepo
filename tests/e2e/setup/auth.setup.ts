@@ -18,20 +18,25 @@ setup("create and authenticate test user", async ({ page, request }) => {
   const signIn = await request.post(`${webUrl}/api/auth/sign-in/email`, {
     data: { email: TEST_USER.email, password: TEST_USER.password },
   });
+
   expect(signIn.status()).toBe(200);
 
   const setCookieHeaders = signIn
     .headersArray()
     .filter((h) => h.name.toLowerCase() === "set-cookie")
     .map((h) => h.value);
+
   const webHost = new URL(webUrl).hostname;
   const browserCookies = [];
+
   for (const part of setCookieHeaders) {
     const [nameValue = ""] = part.split(";");
     const eq = nameValue.indexOf("=");
+
     if (eq === -1) {
       continue;
     }
+
     browserCookies.push({
       domain: webHost,
       httpOnly: true,
@@ -42,6 +47,7 @@ setup("create and authenticate test user", async ({ page, request }) => {
       value: nameValue.slice(eq + 1).trim(),
     });
   }
+
   await page.context().addCookies(browserCookies);
 
   await page.context().storageState({ path: STORAGE_STATE_PATH });

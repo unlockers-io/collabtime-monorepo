@@ -24,11 +24,13 @@ type TeamAuthDeps = {
 const createTeamAuth = (deps: TeamAuthDeps) => {
   const findRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
     const membership = await deps.findMembership(teamId, userId);
+
     return membership !== null && isTeamRole(membership.role) ? membership.role : null;
   };
 
   const authenticate = async (): Promise<ActionResult<SessionUser>> => {
     const session = await deps.getSession();
+
     return session
       ? { data: session.user, success: true }
       : { error: "Authentication required", success: false };
@@ -41,21 +43,28 @@ const createTeamAuth = (deps: TeamAuthDeps) => {
     if (!UUIDSchema.safeParse(teamId).success) {
       return { error: "Invalid team ID", success: false };
     }
+
     const auth = await authenticate();
+
     if (!auth.success) {
       return auth;
     }
+
     try {
       const role = await findRole(teamId, auth.data.id);
+
       if (role === null) {
         return { error: "You are not a member of this team", success: false };
       }
+
       if (!allows(role)) {
         return { error: "Admin access required", success: false };
       }
+
       return { data: { teamId, user: auth.data }, success: true };
     } catch (error) {
       deps.reportError({ error, message: "Failed to authorize", route: "lib/team-auth", teamId });
+
       return { error: "Could not verify your access. Try again.", success: false };
     }
   };
@@ -78,4 +87,5 @@ const { authenticate, authorizeTeamAdmin, authorizeTeamMember } = createTeamAuth
 });
 
 export { authenticate, authorizeTeamAdmin, authorizeTeamMember, createTeamAuth };
+
 export type { SessionUser, TeamAccess };

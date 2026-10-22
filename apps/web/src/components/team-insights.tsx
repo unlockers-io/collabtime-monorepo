@@ -52,6 +52,7 @@ const StatusColumn = ({ emptyLabel, entries, groupNameById, label }: StatusColum
       <ul className="border-t border-border">
         {entries.map(({ detail, member }) => {
           const groupName = groupNameById.get(member.groupId ?? "");
+
           return (
             <li
               className="flex items-baseline justify-between gap-3 border-b border-border/50 py-1.5 text-sm"
@@ -98,6 +99,7 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): Re
       const { minutesLeft } = status;
       const endsAt = formatMinuteOfDay(nowMinute + minutesLeft);
       working.push({ detail: `until ${endsAt}`, member, minutes: minutesLeft });
+
       if (minutesLeft <= SOON_THRESHOLD_MINUTES) {
         wrappingUp.push({
           detail: `${formatDuration(minutesLeft)} left`,
@@ -105,10 +107,12 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): Re
           minutes: minutesLeft,
         });
       }
+
       continue;
     }
 
     const { minutesUntilStart } = status;
+
     if (minutesUntilStart <= SOON_THRESHOLD_MINUTES) {
       startingSoon.push({
         detail: `in ${formatDuration(minutesUntilStart)}`,

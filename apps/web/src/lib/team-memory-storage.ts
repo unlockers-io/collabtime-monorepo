@@ -5,6 +5,7 @@ import type { TeamStorage } from "./team-storage";
 const createMemoryTeamStorage = (): TeamStorage => {
   const teams = new Map<string, TeamRecord>();
   const locks = new Map<string, Promise<void>>();
+
   return {
     publish: () => Promise.resolve(),
     read: (teamId) => Promise.resolve(structuredClone(teams.get(teamId) ?? null)),
@@ -12,6 +13,7 @@ const createMemoryTeamStorage = (): TeamStorage => {
       Promise.resolve(
         teamIds.flatMap((id) => {
           const team = teams.get(id);
+
           return team ? [structuredClone(team)] : [];
         }),
       ),
@@ -21,6 +23,7 @@ const createMemoryTeamStorage = (): TeamStorage => {
       locks.set(teamId, gate.promise);
       await previous;
       const before = teams.get(teamId);
+
       try {
         return await run(undefined);
       } catch (error) {
@@ -29,9 +32,11 @@ const createMemoryTeamStorage = (): TeamStorage => {
         } else {
           teams.delete(teamId);
         }
+
         throw error;
       } finally {
         gate.resolve(undefined);
+
         if (locks.get(teamId) === gate.promise) {
           locks.delete(teamId);
         }
@@ -39,8 +44,10 @@ const createMemoryTeamStorage = (): TeamStorage => {
     },
     write: (teamId, team) => {
       teams.set(teamId, structuredClone(team));
+
       return Promise.resolve();
     },
   };
 };
+
 export { createMemoryTeamStorage };

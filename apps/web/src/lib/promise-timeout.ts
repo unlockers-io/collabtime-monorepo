@@ -12,6 +12,7 @@ const withTimeout = async <T>(
 ): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let removeAbortListener: (() => void) | undefined;
+
   try {
     return await Promise.race([
       operation,
@@ -19,13 +20,16 @@ const withTimeout = async <T>(
         const abort = () => {
           reject(new DOMException("Operation aborted", "AbortError"));
         };
+
         signal?.addEventListener("abort", abort, { once: true });
         removeAbortListener = () => {
           signal?.removeEventListener("abort", abort);
         };
+
         if (signal?.aborted === true) {
           abort();
         }
+
         timer = setTimeout(() => {
           reject(new TimeoutError());
         }, milliseconds);

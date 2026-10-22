@@ -73,8 +73,10 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
 
         if (email) {
           const inviteResult = await inviteMember(teamId, result.data.member.id, email);
+
           if (inviteResult.success) {
             void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
+
             if (inviteResult.data.emailSent) {
               toast.success(`Invitation sent to ${email}`);
             } else {

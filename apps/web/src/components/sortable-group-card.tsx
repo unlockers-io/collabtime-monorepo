@@ -22,6 +22,7 @@ type GroupDrag = { kind: "group"; props: SortableGroupCardProps };
 
 const SortableGroupCard = (props: SortableGroupCardProps) => {
   const drag: GroupDrag = { kind: "group", props };
+
   const {
     attributes,
     isDragging,
@@ -74,4 +75,5 @@ const GroupDragPreview = (props: SortableGroupCardProps) => (
 );
 
 export { GroupDragPreview, SortableGroupCard };
+
 export type { GroupDrag };

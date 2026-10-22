@@ -38,10 +38,13 @@ const useInvitations = () => {
   } = useQuery<Array<PendingInvitation>>({
     queryFn: async () => {
       const response = await fetch("/api/invitations");
+
       if (!response.ok) {
         throw new Error("Failed to fetch invitations");
       }
+
       const data = InvitationsResponseSchema.parse(await response.json());
+
       return data.invitations;
     },
     queryKey: queryKeys.invitations,
@@ -58,11 +61,13 @@ const useInvitations = () => {
 
       try {
         const result = await acceptInvitation(invitation.id);
+
         if (result.success) {
           toast.success(`Joined ${invitation.teamName}`);
         } else {
           toast.error(result.error);
         }
+
         await Promise.allSettled([
           queryClient.invalidateQueries({ queryKey: queryKeys.invitations }),
           queryClient.invalidateQueries({ queryKey: queryKeys.myTeams }),
@@ -80,6 +85,7 @@ const useInvitations = () => {
 
       try {
         const result = await declineInvitation(invitation.id);
+
         if (result.success) {
           toast.success("Invitation declined");
           await queryClient.invalidateQueries({ queryKey: queryKeys.invitations });

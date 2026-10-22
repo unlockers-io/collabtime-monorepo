@@ -23,6 +23,7 @@ const createTickStore = (intervalMs: number): TickStore => {
       if (document.visibilityState !== "visible") {
         return;
       }
+
       cachedTick = Date.now();
       callback();
     };

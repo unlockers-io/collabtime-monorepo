@@ -16,12 +16,14 @@ const memberFields = [
 
 const INITIAL_RETENTION_MS = 60 * 24 * 60 * 60 * 1000;
 const ACTIVE_RETENTION_MS = 2 * 365 * 24 * 60 * 60 * 1000;
+
 const readTeams = async (
   teamIds: Array<string>,
   transaction: Prisma.TransactionClient,
   refreshRetention = true,
 ): Promise<Array<TeamRecord>> => {
   const now = new Date();
+
   const spaces = await transaction.space.findMany({
     include: {
       groups: { orderBy: [{ order: "asc" }, { id: "asc" }] },
@@ -29,12 +31,14 @@ const readTeams = async (
     },
     where: { teamCreatedAt: { not: null }, teamExpiresAt: { gt: now }, teamId: { in: teamIds } },
   });
+
   if (refreshRetention && spaces.length > 0) {
     await transaction.space.updateMany({
       data: { teamExpiresAt: new Date(now.getTime() + ACTIVE_RETENTION_MS) },
       where: { teamExpiresAt: { gt: now }, teamId: { in: spaces.map((space) => space.teamId) } },
     });
   }
+
   return spaces.map((space) => {
     const team: TeamRecord = {
       createdAt: space.teamCreatedAt ?? "",
@@ -50,22 +54,28 @@ const readTeams = async (
           workingHoursEnd: row.workingHoursEnd,
           workingHoursStart: row.workingHoursStart,
         };
+
         if (row.groupId !== null) {
           member.groupId = row.groupId;
         }
+
         if (row.userId !== null) {
           member.userId = row.userId;
         }
+
         return member;
       }),
       name: space.name,
     };
+
     if (space.adminPasswordHash !== null) {
       team.adminPasswordHash = space.adminPasswordHash;
     }
+
     return team;
   });
 };
+
 const writeTeam = async (
   teamId: string,
   team: TeamRecord,
@@ -76,6 +86,7 @@ const writeTeam = async (
     include: { groups: true, members: true },
     where: { teamId },
   });
+
   await transaction.space.update({
     data: {
       adminPasswordHash: team.adminPasswordHash ?? null,
@@ -98,8 +109,10 @@ const writeTeam = async (
   });
   const oldGroups = new Map(previous.groups.map((group) => [group.id, group]));
   const oldMembers = new Map(previous.members.map((member) => [member.id, member]));
+
   for (const group of team.groups) {
     const old = oldGroups.get(group.id);
+
     if (!old || old.name !== group.name || old.order !== group.order) {
       await transaction.teamGroup.upsert({
         create: { ...group, teamId },
@@ -108,9 +121,11 @@ const writeTeam = async (
       });
     }
   }
+
   for (const member of team.members) {
     const data = { ...member, groupId: member.groupId ?? null, userId: member.userId ?? null };
     const old = oldMembers.get(member.id);
+
     if (!old || memberFields.some((field) => old[field] !== data[field])) {
       await transaction.teamMember.upsert({
         create: { ...data, teamId },
@@ -120,4 +135,5 @@ const writeTeam = async (
     }
   }
 };
+
 export { readTeams, writeTeam };

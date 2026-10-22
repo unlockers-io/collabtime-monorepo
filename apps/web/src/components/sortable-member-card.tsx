@@ -14,6 +14,7 @@ type MemberDrag = { kind: "member"; props: MemberCardProps };
 
 const SortableMemberCard = (props: MemberCardProps) => {
   const drag: MemberDrag = { kind: "member", props };
+
   const {
     attributes,
     isDragging,
@@ -66,4 +67,5 @@ const MemberDragPreview = (props: MemberCardProps) => (
 );
 
 export { MemberDragPreview, SortableMemberCard };
+
 export type { MemberDrag };

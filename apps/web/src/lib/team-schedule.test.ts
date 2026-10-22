@@ -8,6 +8,7 @@ import { SLOT_MINUTES, getTeamSchedule } from "./team-schedule";
 // January keeps every zone below on standard time.
 const NOW = new Date("2026-01-15T13:00:00Z");
 const VIEWER = "America/Sao_Paulo";
+
 const GROUPS: Array<TeamGroup> = [
   { id: "product", name: "Product", order: 0 },
   { id: "engineering", name: "Engineering", order: 1 },
@@ -28,9 +29,11 @@ const member = (
     workingHoursEnd,
     workingHoursStart,
   };
+
   if (groupId !== undefined) {
     base.groupId = groupId;
   }
+
   return base;
 };
 
@@ -91,10 +94,12 @@ describe("member rows", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     // On the real clock New York and Tokyo share a date.
     vi.setSystemTime(new Date("2026-03-10T14:00:00Z"));
+
     const team = [
       member("tokyo", "Asia/Tokyo", [9, 17]),
       member("ny", "America/New_York", [9, 17]),
     ];
+
     // 15:30 UTC is 00:30 on Jan 16 in Tokyo and 10:30 on Jan 15 in New York.
     const now = new Date("2026-01-15T15:30:00Z");
 
@@ -113,6 +118,7 @@ describe("member rows", () => {
     vi.setSystemTime(new Date("2026-01-15T12:00:00Z"));
     // New York has moved to daylight time; London has not.
     const now = new Date("2026-03-08T12:00:00Z");
+
     const row = rowOf(
       read([member("london", "Europe/London", [9, 17])], { now, viewer: "America/New_York" }),
       "london",
@@ -146,6 +152,7 @@ describe("shared window", () => {
       member("sp", "America/Sao_Paulo", [22, 2]),
       member("buenos-aires", "America/Argentina/Buenos_Aires", [21, 3]),
     ]);
+
     expect(reading.windows).toHaveLength(1);
     expect(minutesOf(reading.windows[0])).toEqual([22 * 60, 26 * 60]);
   });
@@ -182,6 +189,7 @@ describe("shared window", () => {
       member("sp", "America/Sao_Paulo", [9, 12]),
       member("tokyo", "Asia/Tokyo", [9, 12]),
     ]);
+
     expect(reading.windows).toEqual([]);
     expect(reading.bestSlots.some(Boolean)).toBe(false);
   });

@@ -27,6 +27,7 @@ describe("password hashing", () => {
       hashPassword("TestPassword123!"),
       hashPassword("TestPassword123!"),
     ]);
+
     expect(hash1).not.toBe(hash2);
   });
 });

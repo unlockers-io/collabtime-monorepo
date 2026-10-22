@@ -19,14 +19,17 @@ const sanitizeMemberUserId = (
   if (userId === currentUserId) {
     return userId === undefined ? {} : { userId };
   }
+
   if (userId !== undefined && userId !== "") {
     return { userId: "claimed" };
   }
+
   return {};
 };
 
 const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
   const { adminPasswordHash: _, ...publicTeam } = team;
+
   return {
     ...publicTeam,
     members: publicTeam.members.map(({ userId, ...member }) =>
@@ -36,6 +39,7 @@ const sanitizeTeam = (team: TeamRecord, currentUserId?: string): Team => {
 };
 
 type ErrorEvent = Parameters<typeof log.error>[0];
+
 type Mutation<TValue> = { team: TeamRecord; value: TValue };
 
 type MutateTeamArgs<TValue> = {
@@ -66,6 +70,7 @@ const createTeamMutator = (deps: TeamMutatorDeps): MutateTeam =>
       return { data: { team: applied.team, value: applied.value }, success: true };
     } catch (error) {
       deps.reportError({ error, message: `Failed to ${errorContext}`, route: "actions/helpers" });
+
       return { error: `Failed to ${errorContext}`, success: false };
     }
   };
@@ -90,4 +95,5 @@ const invalidUuid = (value: string, label: string): ActionFailure | null =>
   UUIDSchema.safeParse(value).success ? null : { error: `Invalid ${label}`, success: false };
 
 export { createTeamMutator, invalidUuid, mutateTeam, parsedInput, sanitizedTeam, sanitizeTeam };
+
 export type { MutateTeam, TeamMutatorDeps };

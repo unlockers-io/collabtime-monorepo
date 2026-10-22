@@ -3,6 +3,7 @@ import { teamLabel } from "../team-label";
 import { TeamNotification } from "./team-notification";
 
 type Props = { decision: "approved" | "denied"; teamName: string; teamUrl: string };
+
 const JoinRequestDecided = ({ decision, teamName, teamUrl }: Props) => (
   <TeamNotification
     heading={`Join request ${decision}`}
@@ -10,5 +11,7 @@ const JoinRequestDecided = ({ decision, teamName, teamUrl }: Props) => (
     teamUrl={teamUrl}
   />
 );
+
 export { JoinRequestDecided };
+
 export default JoinRequestDecided;

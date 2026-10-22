@@ -70,4 +70,5 @@ const InvitationEmail = ({
 };
 
 export { InvitationEmail };
+
 export default InvitationEmail;

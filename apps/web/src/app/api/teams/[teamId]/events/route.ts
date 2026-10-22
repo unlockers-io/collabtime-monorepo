@@ -12,6 +12,7 @@ const handleEvents = createTeamEventsHandler({
   captureAccess: async (spaceId) => {
     const session = await getSession();
     const userId = session?.user.id;
+
     return { canView: await captureAccessCheck(spaceId, userId), userId };
   },
   enabled: isLiveSyncEnabled,
@@ -37,6 +38,7 @@ export const GET = withEvlog(
     },
   ) => {
     const { teamId } = await params;
+
     return handleEvents(request, teamId);
   },
 );

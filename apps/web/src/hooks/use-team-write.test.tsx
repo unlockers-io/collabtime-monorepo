@@ -18,6 +18,7 @@ const makeTeam = (name: string, id = "team-1"): Team => ({
   members: [],
   name,
 });
+
 const design = { id: "group-1", name: "Design", order: 0 };
 const rename = (name: string) => (team: Team) => ({ ...team, name });
 const addDesign = (team: Team) => ({ ...team, groups: [...team.groups, design] });
@@ -32,29 +33,37 @@ const setup = (
   }),
 ) => {
   const queryKey = queryKeys.teams.detail(teamId);
+
   const queryFn = vi
     .fn<() => Promise<TeamQueryData>>()
     .mockResolvedValue({ team: makeTeam("server", teamId) });
+
   queryClient.setQueryData<TeamQueryData>(queryKey, { team: makeTeam("initial", teamId) });
+
   const unsubscribe = new QueryObserver(queryClient, { queryFn, queryKey }).subscribe(
     () => undefined,
   );
+
   const Wrapper = ({ children }: PropsWithChildren) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+
   const hook = renderHook(() => useTeamWrite(teamId), { wrapper: Wrapper });
   const cachedTeam = () => queryClient.getQueryData<TeamQueryData>(queryKey)?.team;
+
   const dispose = () => {
     hook.unmount();
     unsubscribe();
     queryClient.clear();
   };
+
   return { cachedTeam, dispose, queryClient, queryFn, write: hook.result.current };
 };
 
 beforeEach(() => {
   vi.useFakeTimers();
 });
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -69,15 +78,19 @@ describe("team writes", () => {
       const second = Promise.withResolvers<ActionResult<undefined>>();
       const refetch = Promise.withResolvers<TeamQueryData>();
       state.queryFn.mockReturnValueOnce(refetch.promise);
+
       const writingFirst = state.write({
         optimistic: rename("renamed"),
         submit: () => first.promise,
       });
+
       const writingSecond = state.write({ optimistic: addDesign, submit: () => second.promise });
       const settled = vi.fn();
+
       const finish = async () => {
         settled(await Promise.all([writingFirst, writingSecond]));
       };
+
       const writing = finish();
       await vi.advanceTimersByTimeAsync(0);
       invalidator.notify();
@@ -125,17 +138,21 @@ describe("team writes", () => {
       const state = setup();
       const first = Promise.withResolvers<ActionResult<undefined>>();
       const second = Promise.withResolvers<ActionResult<undefined>>();
+
       const writingFirst = state.write({
         optimistic: rename("renamed"),
         submit: () => first.promise,
       });
+
       const writingSecond = state.write({ optimistic: addDesign, submit: () => second.promise });
       await vi.advanceTimersByTimeAsync(0);
+
       if (rejects) {
         first.reject(new TypeError("Failed to fetch"));
       } else {
         first.resolve(failed);
       }
+
       await expect(writingFirst).resolves.toMatchObject({ success: false });
       expect(state.cachedTeam()?.groups).toEqual([design]);
       expect(state.queryFn).not.toHaveBeenCalled();
@@ -185,6 +202,7 @@ describe("team writes", () => {
     state.queryFn.mockReturnValueOnce(refetch.promise);
     const writing = state.write({ optimistic: rename("optimistic"), submit: () => submit.promise });
     const rejected = vi.fn();
+
     const finish = async () => {
       await expect(writing).resolves.toMatchObject({
         error: expect.stringContaining("Check your connection"),
@@ -192,6 +210,7 @@ describe("team writes", () => {
       });
       rejected();
     };
+
     const finished = finish();
     await vi.advanceTimersByTimeAsync(0);
     submit.reject(new Error("Network failed"));

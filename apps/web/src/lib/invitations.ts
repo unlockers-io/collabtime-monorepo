@@ -23,6 +23,7 @@ import { readTeamRecord } from "./team-store";
 import { CuidSchema, InvitationEmailSchema, normalizeEmail, UUIDSchema } from "./validation";
 
 type Person = { email: string; name: string | null };
+
 type Decision = "accepted" | "declined";
 
 type StoredInvitation = {
@@ -112,12 +113,14 @@ const invitationExpiryFrom = (now: Date): Date =>
 
 const maskEmail = (email: string): string => {
   const [local = "", domain = ""] = email.split("@");
+
   return `${local.slice(0, 1)}***@${domain}`;
 };
 
 const inviteLink = (appUrl: string, teamId: string, invitationId: string): string => {
   const url = new URL(`/${teamId}`, appUrl);
   url.searchParams.set("invite", invitationId);
+
   return url.toString();
 };
 
@@ -126,9 +129,11 @@ const recipientRefusal = (invitation: StoredInvitation, email: string, now: Date
   if (normalizeEmail(invitation.email) !== normalizeEmail(email)) {
     return "This invitation is not for you";
   }
+
   if (invitation.status !== "PENDING") {
     return NOT_PENDING_ERROR;
   }
+
   return isInvitationExpired(invitation, now) ? INVITATION_EXPIRED_ERROR : null;
 };
 
@@ -150,6 +155,7 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
       return await run();
     } catch (error) {
       deps.reportError({ ...event, error, route: "lib/invitations" });
+
       return failure(fallback);
     }
   };
@@ -167,14 +173,17 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
       INVITES_PER_USER_PER_HOUR,
       HOUR_SECONDS,
     );
+
     if (!user.allowed) {
       return false;
     }
+
     const team = await deps.checkRateLimit(
       `invite:team:${teamId}`,
       INVITES_PER_TEAM_PER_DAY,
       DAY_SECONDS,
     );
+
     return team.allowed;
   };
 
@@ -196,11 +205,15 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
     if (!CuidSchema.safeParse(invitationId).success) {
       return failure("Invalid invitation ID");
     }
+
     const invitation = await deps.store.find(invitationId);
+
     if (!invitation) {
       return failure("Invitation not found");
     }
+
     const refusal = recipientRefusal(invitation, user.email, deps.now());
+
     return refusal === null ? { data: invitation, success: true } : failure(refusal);
   };
 
@@ -211,10 +224,13 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
     if (!CuidSchema.safeParse(invitationId).success) {
       return failure("Invalid invitation ID");
     }
+
     const invitation = await deps.store.find(invitationId);
+
     if (invitation?.teamId !== access.teamId) {
       return failure("Invitation not found");
     }
+
     // Admins may revoke or renew pending invitations even after they expire.
     return invitation.status === "PENDING"
       ? { data: invitation, success: true }
@@ -224,34 +240,46 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
   const invite = (access: TeamAccess, request: { email: string; memberId: string }) =>
     guarded({ message: "Failed to invite member" }, "Failed to send invitation", async () => {
       const { teamId, user } = access;
+
       if (!UUIDSchema.safeParse(request.memberId).success) {
         return failure("Invalid member ID");
       }
+
       const email = normalizeEmail(request.email);
+
       if (!InvitationEmailSchema.safeParse(email).success) {
         return failure("Invalid email address");
       }
+
       const [team, isMember] = await Promise.all([
         deps.readTeamRecord(teamId),
         deps.isMember(teamId, email),
       ]);
+
       if (!team) {
         return failure("Team not found");
       }
+
       const slot = team.members.find((member) => member.id === request.memberId);
+
       if (!slot) {
         return failure("Member not found");
       }
+
       if (slot.userId !== undefined && slot.userId !== "") {
         return failure("This member slot is already claimed");
       }
+
       if (isMember) {
         return failure("This user is already a member of the team");
       }
+
       if (!(await allowSend(user.id, teamId))) {
         return failure(RATE_LIMITED_ERROR);
       }
+
       const expiresAt = invitationExpiryFrom(deps.now());
+
       const invitation = await deps.store.putPending({
         email,
         expiresAt,
@@ -259,7 +287,9 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
         memberId: request.memberId,
         teamId,
       });
+
       const { sent } = await sendInvitation(invitation, team.name, expiresAt);
+
       return { data: { emailSent: sent, invitationId: invitation.id }, success: true };
     });
 
@@ -269,10 +299,13 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
       STALE_ERROR,
       async () => {
         const found = await findForRecipient(user, invitationId);
+
         if (!found.success) {
           return found;
         }
+
         const invitation = found.data;
+
         const granted = await deps.grantMembership({
           commit: (membership, memberId, transaction) =>
             move(invitation, { memberId, membership, status: "ACCEPTED", transaction }),
@@ -281,10 +314,13 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
           teamId: invitation.teamId,
           userId: user.id,
         });
+
         if (!granted.ok) {
           return failure(granted.error);
         }
+
         deps.notifyInviter(invitation, user, "accepted");
+
         return { data: { teamId: invitation.teamId }, success: true };
       },
     );
@@ -295,11 +331,14 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
       STALE_ERROR,
       async () => {
         const found = await findForRecipient(user, invitationId);
+
         if (!found.success) {
           return found;
         }
+
         await move(found.data, { status: "DECLINED" });
         deps.notifyInviter(found.data, user, "declined");
+
         return { data: undefined, success: true };
       },
     );
@@ -310,10 +349,13 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
       STALE_ERROR,
       async () => {
         const found = await findForAdmin(access, invitationId);
+
         if (!found.success) {
           return found;
         }
+
         await move(found.data, { status: "REVOKED" });
+
         return { data: undefined, success: true };
       },
     );
@@ -324,19 +366,25 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
       STALE_ERROR,
       async () => {
         const found = await findForAdmin(access, invitationId);
+
         if (!found.success) {
           return found;
         }
+
         const team = await deps.readTeamRecord(access.teamId);
+
         if (!team) {
           return failure("Team not found");
         }
+
         if (!(await allowSend(access.user.id, access.teamId))) {
           return failure(RATE_LIMITED_ERROR);
         }
+
         const expiresAt = invitationExpiryFrom(deps.now());
         await move(found.data, { expiresAt, status: "PENDING" });
         const { sent } = await sendInvitation(found.data, team.name, expiresAt);
+
         return { data: { emailSent: sent }, success: true };
       },
     );
@@ -345,6 +393,7 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
   const listForTeam = (access: TeamAccess) =>
     guarded({ message: "Failed to list invitations" }, "Failed to get invitations", async () => {
       const invitations = await deps.store.listPendingForTeam(access.teamId);
+
       return { data: invitations.map(toTeamView), success: true };
     });
 
@@ -365,8 +414,10 @@ const commitRecipientDecision = async (
   if (status !== "PENDING") {
     return false;
   }
+
   // Take the row lock before checking the clock: UPDATE predicates can run before a lock wait.
   await transaction.$executeRaw`SELECT "id" FROM "Invitation" WHERE "id" = ${id} FOR UPDATE`;
+
   const count = await transaction.$executeRaw`
       UPDATE "Invitation"
       SET "status" = ${change.status}::"InvitationStatus",
@@ -375,9 +426,11 @@ const commitRecipientDecision = async (
       WHERE "id" = ${id} AND "status" = ${status}::"InvitationStatus" AND "updatedAt" = ${updatedAt}
         AND ("expiresAt" IS NULL OR "expiresAt" > clock_timestamp())
     `;
+
   if (count === 1 && change.status === "ACCEPTED") {
     await transaction.membership.upsert(membershipUpsert(change.membership));
   }
+
   return count === 1;
 };
 
@@ -404,14 +457,18 @@ const prismaInvitationStore: InvitationStore<Prisma.TransactionClient> = {
     }),
   transition: async (expected, change) => {
     const { id, status, updatedAt } = expected;
+
     if (change.status === "PENDING" || change.status === "REVOKED") {
       const nextVersion = new Date(Math.max(Date.now(), updatedAt.getTime() + 1));
+
       const { count } = await prisma.invitation.updateMany({
         data: { ...change, updatedAt: nextVersion },
         where: { id, status, updatedAt },
       });
+
       return count === 1;
     }
+
     return change.status === "ACCEPTED"
       ? commitRecipientDecision(change.transaction, expected, change)
       : prisma.$transaction((transaction) =>
@@ -445,4 +502,5 @@ export {
   openInvitationWhere,
   prismaInvitationStore,
 };
+
 export type { InvitationDeps, InvitationStore, StoredInvitation };

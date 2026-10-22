@@ -10,11 +10,13 @@ const sleep = (ms: number) =>
 
 const requireSecret = (): string => {
   const secret = process.env.BETTER_AUTH_SECRET;
+
   if (!secret) {
     throw new Error(
       "BETTER_AUTH_SECRET is required for verification.fixture (it signs the same JWT Better Auth would).",
     );
   }
+
   return secret;
 };
 
@@ -22,6 +24,7 @@ const forVerifyEmail = async (email: string): Promise<{ token: string; url: stri
   const token = await signJWT({ email: email.toLowerCase() }, requireSecret(), 3600);
   const callbackURL = encodeURIComponent("/");
   const url = `${webUrl}/api/auth/verify-email?token=${token}&callbackURL=${callbackURL}`;
+
   return { token, url };
 };
 
@@ -35,6 +38,7 @@ type ChangeEmailUrls = {
 const forChangeEmail = async (currentEmail: string, newEmail: string): Promise<ChangeEmailUrls> => {
   const secret = requireSecret();
   const callbackURL = encodeURIComponent("/");
+
   const basePayload = {
     email: currentEmail.toLowerCase(),
     updateTo: newEmail.toLowerCase(),
@@ -45,6 +49,7 @@ const forChangeEmail = async (currentEmail: string, newEmail: string): Promise<C
     secret,
     3600,
   );
+
   const verificationToken = await signJWT(
     { ...basePayload, requestType: "change-email-verification" },
     secret,
@@ -66,6 +71,7 @@ const forResetPassword = async (
   const user = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
   });
+
   if (!user) {
     throw new Error(`forResetPassword: no user with email ${email}`);
   }
@@ -86,6 +92,7 @@ const forResetPassword = async (
     if (row) {
       const token = row.identifier.replace(/^reset-password:/, "");
       const url = `${webUrl}/reset-password?token=${token}`;
+
       return { token, url };
     }
 

@@ -10,6 +10,7 @@ import {
 } from "./team-live-protocol";
 
 type AccessResult = AccessLoss | "allowed";
+
 type TeamEventStreamDeps = {
   checkAccess: () => Promise<AccessResult>;
   isReady: () => boolean;
@@ -56,6 +57,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
     if (closed) {
       return;
     }
+
     closed = true;
     work.abort();
     unsubscribe?.();
@@ -63,6 +65,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
     clearTimeout(lifetime);
     removeAbortListener?.();
     void release();
+
     if (!cancelled) {
       if (reason === "slow-consumer") {
         controller.error(new Error("Live sync consumer is too slow"));
@@ -70,6 +73,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
         controller.close();
       }
     }
+
     deps.log.info({
       ...context,
       durationMs: Date.now() - deps.startedAt,
@@ -83,21 +87,27 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
     if (closed) {
       return false;
     }
+
     if ((controller.desiredSize ?? 0) < bytes.byteLength) {
       close("slow-consumer");
+
       return false;
     }
+
     try {
       controller.enqueue(bytes);
+
       return true;
     } catch {
       close("enqueue-failed", true);
+
       return false;
     }
   };
 
   const send = (name: LiveEvent, data: Record<string, string | number> = {}) => {
     const retry = name === LIVE_EVENTS.ready ? `retry: ${RECONNECT_DELAY_MS}\n` : "";
+
     if (enqueue(encoder.encode(`${retry}event: ${name}\ndata: ${JSON.stringify(data)}\n\n`))) {
       eventsSent += 1;
     }
@@ -112,10 +122,12 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
     if (closed || checking) {
       return;
     }
+
     if (accessPending) {
       accessPending = false;
       checking = true;
       let access: AccessResult;
+
       try {
         access = await withTimeout(deps.checkAccess(), 2000, work.signal);
       } catch (error) {
@@ -123,22 +135,29 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
           deps.log.error({ ...context, error, message: "Live sync access recheck failed" });
           reconnect("access-error");
         }
+
         return;
       } finally {
         checking = false;
       }
+
       if (isClosed()) {
         return;
       }
+
       if (access !== "allowed") {
         send(access);
         close(access);
+
         return;
       }
+
       if (isAccessPending()) {
         await flush();
+
         return;
       }
+
       if (initialized) {
         send(LIVE_EVENTS.space);
       } else {
@@ -147,6 +166,7 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
         deps.log.info({ ...context, message: "Live sync opened" });
       }
     }
+
     if (initialized && contentsPending) {
       contentsPending = false;
       send(LIVE_EVENTS.change, { at: Date.now(), kind: "contents" });
@@ -157,15 +177,19 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
     if (closed) {
       return;
     }
+
     if (event.kind === "reconnect") {
       reconnect("subscriber-disconnected");
+
       return;
     }
+
     if (event.kind === "contents") {
       contentsPending = true;
     } else {
       accessPending = true;
     }
+
     void flush();
   };
 
@@ -184,20 +208,29 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
         removeAbortListener = () => {
           deps.signal.removeEventListener("abort", abort);
         };
+
         if (deps.signal.aborted) {
           abort();
+
           return;
         }
+
         unsubscribe = deps.subscribe(handleEvent);
+
         if (!deps.isReady()) {
           reconnect("subscriber-unavailable");
+
           return;
         }
+
         const remaining = deps.startedAt + STREAM_LIFETIME_MS - Date.now();
+
         if (remaining <= 0) {
           reconnect("lifetime");
+
           return;
         }
+
         heartbeat = setInterval(() => {
           if (initialized) {
             enqueue(HEARTBEAT);
@@ -222,4 +255,5 @@ const createTeamEventStream = (deps: TeamEventStreamDeps): Response => {
 };
 
 export { createTeamEventStream };
+
 export type { AccessResult, TeamEventStreamDeps };

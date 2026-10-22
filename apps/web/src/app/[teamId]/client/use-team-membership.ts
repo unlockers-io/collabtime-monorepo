@@ -20,6 +20,7 @@ const useTeamMembership = ({ initialStatus, members, teamId, userId }: Options) 
   const isAdmin = teamStatus === "ADMIN";
   const isMember = isAdmin || teamStatus === "MEMBER";
   const currentUserId = isMember ? userId : undefined;
+
   const hasClaimedProfile =
     currentUserId !== undefined &&
     currentUserId !== "" &&
@@ -27,8 +28,10 @@ const useTeamMembership = ({ initialStatus, members, teamId, userId }: Options) 
 
   const handleRequestJoin = async () => {
     setIsRequestingJoin(true);
+
     try {
       const result = await requestToJoin(teamId);
+
       if (result.success) {
         router.refresh();
         toast.success("Join request sent! The team admin will review it.");
@@ -39,6 +42,7 @@ const useTeamMembership = ({ initialStatus, members, teamId, userId }: Options) 
       captureException(error);
       toast.error("Failed to send join request");
     }
+
     setIsRequestingJoin(false);
   };
 

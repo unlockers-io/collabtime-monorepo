@@ -9,6 +9,7 @@ const readBody = (body: RequestInit["body"]) => {
   if (typeof body !== "string") {
     throw new TypeError("Expected a JSON request body");
   }
+
   return JSON.parse(body);
 };
 
@@ -25,6 +26,7 @@ const renderDialog = (isPrivate = false, hasPassword = false) => {
       spaceId="space-1"
     />,
   );
+
   return { onOpenChange, onSaved };
 };
 
@@ -32,7 +34,9 @@ const stubSave = (isPrivate: boolean) => {
   const fetchMock = vi
     .fn<typeof fetch>()
     .mockResolvedValue(Response.json({ space: { hasPassword: isPrivate, isPrivate } }));
+
   vi.stubGlobal("fetch", fetchMock);
+
   return fetchMock;
 };
 

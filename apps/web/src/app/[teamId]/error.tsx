@@ -9,6 +9,7 @@ const TeamError = ({ error, retry }: { error: Error & { digest?: string }; retry
   useEffect(() => {
     captureException(error);
   }, [error]);
+
   return <TeamUnavailable message="Please try again in a moment." onRetry={retry} />;
 };
 

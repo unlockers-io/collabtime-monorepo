@@ -27,11 +27,13 @@ import { SpaceAccessPasswordSchema } from "@/lib/validation";
 const savedSpaceSchema = z.object({
   space: z.object({ hasPassword: z.boolean(), isPrivate: z.boolean() }),
 });
+
 const errorSchema = z.object({ error: z.string() });
 
 type VisibilityUpdate = { password?: string; visibility: "private" | "public" };
 
 type Visibility = { hasPassword: boolean; isPrivate: boolean };
+
 type WorkspaceVisibilityDialogProps = Visibility & {
   onOpenChange: (open: boolean) => void;
   onSaved: (space: Visibility) => void;
@@ -96,7 +98,9 @@ const WorkspaceVisibilityDialog = ({
       if (!value.isPrivate || (hasPassword && value.password === "")) {
         return;
       }
+
       const result = SpaceAccessPasswordSchema.safeParse(value.password);
+
       if (!result.success) {
         ctx.addIssue({
           code: "custom",
@@ -105,27 +109,33 @@ const WorkspaceVisibilityDialog = ({
         });
       }
     });
+
   const form = useForm({
     defaultValues: { isPrivate, password: "" },
     onSubmit: async ({ value }) => {
       const body: VisibilityUpdate = {
         visibility: value.isPrivate ? "private" : "public",
       };
+
       if (value.isPrivate && value.password !== "") {
         body.password = value.password;
       }
+
       try {
         const response = await fetch(`/api/spaces/${spaceId}`, {
           body: JSON.stringify(body),
           headers: { "Content-Type": "application/json" },
           method: "PATCH",
         });
+
         if (!response.ok) {
           const data: unknown = await response.json().catch(() => null);
           const parsed = errorSchema.safeParse(data);
           toast.error(parsed.success ? parsed.data.error : "Couldn't update workspace privacy");
+
           return;
         }
+
         const saved = savedSpaceSchema.parse(await response.json());
         onSaved(saved.space);
         onOpenChange(false);
@@ -194,6 +204,7 @@ const WorkspaceVisibilityDialog = ({
                   <form.Field name="password">
                     {(field) => {
                       const invalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
                       return (
                         <Field data-invalid={invalid || undefined}>
                           <FieldLabel htmlFor="workspace-access-password">

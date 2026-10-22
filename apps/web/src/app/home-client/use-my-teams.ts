@@ -45,10 +45,13 @@ const useMyTeams = () => {
   } = useQuery({
     queryFn: async () => {
       const response = await fetch("/api/teams");
+
       if (!response.ok) {
         throw new Error("Failed to fetch teams");
       }
+
       const data = TeamsResponseSchema.parse(await response.json());
+
       return data.teams;
     },
     queryKey: queryKeys.myTeams,

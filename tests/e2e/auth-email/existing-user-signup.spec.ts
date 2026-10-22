@@ -21,6 +21,7 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
     const first = await request.post(`${webUrl}/api/auth/sign-up/email`, {
       data: { email, name: "Original Name", password: "FirstPassword1!" },
     });
+
     expect([200, 201]).toContain(first.status());
 
     const since = Date.now();
@@ -28,6 +29,7 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
     const second = await request.post(`${webUrl}/api/auth/sign-up/email`, {
       data: { email, name: "Different Name", password: "SecondPassword2!" },
     });
+
     expect([200, 201]).toContain(second.status());
 
     const users = await prisma.user.findMany({ where: { email } });
@@ -39,6 +41,7 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
       subject: /sign[\s-]?up|attempt|tried/i,
       to: email,
     });
+
     expect(mail.last_event).not.toBe("bounced");
   });
 });

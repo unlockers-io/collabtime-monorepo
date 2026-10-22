@@ -11,13 +11,17 @@ const readRedisServerInfo = async (): Promise<string> => {
     maxRetriesPerRequest: 1,
     retryStrategy: () => null,
   });
+
   if (redis === null) {
     throw new Error("Redis is unavailable");
   }
+
   // connect/info reject through the handler; keep connection details out of library error output.
   redis.on("error", () => {});
+
   try {
     await redis.connect();
+
     return await redis.info("server");
   } finally {
     redis.disconnect();

@@ -5,6 +5,7 @@ import { createTeamEventAdmission, type AdmissionDeps } from "./team-event-admis
 
 const setup = () => {
   const afterResponse: Array<() => Promise<void>> = [];
+
   const deps: AdmissionDeps = {
     acquire: vi.fn<AdmissionDeps["acquire"]>().mockResolvedValue(true),
     after: (callback) => {
@@ -17,6 +18,7 @@ const setup = () => {
     release: vi.fn<AdmissionDeps["release"]>().mockResolvedValue(1),
     reportError: vi.fn<() => void>(),
   };
+
   return { admit: createTeamEventAdmission(deps), afterResponse, deps };
 };
 
@@ -25,6 +27,7 @@ const member = { ip: "192.0.2.1", userId: "user-1" };
 beforeEach(() => {
   vi.useFakeTimers();
 });
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -45,10 +48,12 @@ describe("team event admission", () => {
         limit,
       );
       expect(result.allowed).toBe(true);
+
       if (result.allowed) {
         await result.release();
         await result.release();
       }
+
       expect(state.deps.release).toHaveBeenCalledExactlyOnceWith(
         `live-connections:${principal}`,
         "connection-1",
@@ -99,9 +104,11 @@ describe("team event admission", () => {
     vi.mocked(state.deps.release).mockReturnValue(releasing.promise);
     const result = await state.admit(member);
     expect(result.allowed).toBe(true);
+
     if (!result.allowed) {
       throw new Error("Expected admission");
     }
+
     expect(state.afterResponse).toHaveLength(1);
     const fromStream = result.release();
     const [respond] = state.afterResponse;
@@ -109,10 +116,12 @@ describe("team event admission", () => {
     const afterResponse = respond();
     expect(afterResponse).toBe(fromStream);
     const finished = vi.fn<() => void>();
+
     const observeCleanup = async () => {
       await afterResponse;
       finished();
     };
+
     void observeCleanup();
     await vi.advanceTimersByTimeAsync(0);
     expect(finished).not.toHaveBeenCalled();

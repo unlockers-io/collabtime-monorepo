@@ -29,6 +29,7 @@ export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metad
   // A null name is either an unnamed workspace or a dead link; only the latter 404s.
   if (teamName === null && UUIDSchema.safeParse(teamId).success) {
     const space = await prisma.space.findUnique({ select: { id: true }, where: { teamId } });
+
     if (!space) {
       return { robots, title: "Workspace not found" };
     }

@@ -35,6 +35,7 @@ const MemberTextField = ({
 }: MemberTextFieldProps) => {
   const descriptionId = `${id}-description`;
   const errorId = `${id}-error`;
+
   const describedBy = [
     description === undefined ? null : descriptionId,
     isInvalid ? errorId : null,

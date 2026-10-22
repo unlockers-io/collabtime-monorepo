@@ -29,8 +29,10 @@ const MembersGrid = ({
   const { data: invitations = [] } = usePendingTeamInvitations(teamId, isAdmin);
   useHalfMinuteTick();
   const inviteByMember = new Map<string, PendingTeamInvitation>();
+
   for (const invitation of invitations) {
     const existing = inviteByMember.get(invitation.memberId);
+
     if (
       !existing ||
       (formatExpiresIn(existing.expiresAt) === "Expired" &&

@@ -15,6 +15,7 @@ class FakeEventSource extends EventTarget {
 }
 
 const queryClient = new QueryClient();
+
 const Wrapper = ({ children }: PropsWithChildren) => (
   <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 );
@@ -28,12 +29,15 @@ afterEach(() => {
 it("connects two consumers to one source and refreshes the route on revoked", () => {
   vi.stubGlobal("EventSource", FakeEventSource);
   const refresh = vi.fn<() => void>();
+
   const first = renderHook(() => useTeamLiveUpdates({ refresh, teamId: "hook-team" }), {
     wrapper: Wrapper,
   });
+
   const second = renderHook(() => useTeamLiveUpdates({ refresh, teamId: "hook-team" }), {
     wrapper: Wrapper,
   });
+
   expect(FakeEventSource.instances).toHaveLength(1);
   const [source] = FakeEventSource.instances;
   assert(source, "expected one EventSource");
@@ -55,11 +59,13 @@ it("connects two consumers to one source and refreshes the route on revoked", ()
 
 it("does not construct EventSource when disabled", () => {
   vi.stubGlobal("EventSource", FakeEventSource);
+
   const hook = renderHook(
     () =>
       useTeamLiveUpdates({ enabled: false, refresh: vi.fn<() => void>(), teamId: "disabled-team" }),
     { wrapper: Wrapper },
   );
+
   expect(hook.result.current).toBe("offline");
   expect(FakeEventSource.instances).toHaveLength(0);
   hook.unmount();

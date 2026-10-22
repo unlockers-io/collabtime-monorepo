@@ -14,6 +14,7 @@ import {
 
 const harness = createTestTeamStore();
 const guards = createTestGuards();
+
 const { createGroup, removeGroup, reorderGroups, updateGroup } = createGroupActions({
   authorizeTeamAdmin: guards.authorizeTeamAdmin,
   mutateTeam: harness.mutateTeam,
@@ -23,9 +24,11 @@ const { seedTeam } = harness;
 
 const persistedTeam = async () => {
   const team = await harness.readTeam();
+
   if (!team) {
     throw new Error("team was not persisted");
   }
+
   return team;
 };
 
@@ -56,6 +59,7 @@ describe("createGroup", () => {
     const result = await createGroup(VALID_UUID, { name: "" });
 
     expect(result.success).toBe(false);
+
     if (!result.success) {
       expect(result.error.toLowerCase()).toContain("name");
     }
@@ -77,6 +81,7 @@ describe("createGroup", () => {
     const result = await createGroup(VALID_UUID, { name: "Design" });
 
     expect(result.success).toBe(true);
+
     if (result.success) {
       expect(result.data.group.order).toBe(2);
       expect(result.data.group.name).toBe("Design");

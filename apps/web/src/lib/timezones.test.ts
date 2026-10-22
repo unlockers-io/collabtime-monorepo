@@ -89,6 +89,7 @@ describe("fuzzyMatchTimezone", () => {
 
   it("matches by offsets on both sides of daylight saving, whatever the date", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
+
     for (const date of ["2026-01-15", "2026-07-15"]) {
       vi.setSystemTime(new Date(`${date}T12:00:00Z`));
       expect(fuzzyMatchTimezone("Australia/Adelaide")).toBe("Australia/Sydney");

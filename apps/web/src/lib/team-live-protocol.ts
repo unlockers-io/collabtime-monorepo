@@ -8,6 +8,7 @@ const LIVE_EVENTS = {
 } as const;
 
 type LiveEvent = (typeof LIVE_EVENTS)[keyof typeof LIVE_EVENTS];
+
 type AccessLoss = typeof LIVE_EVENTS.deleted | typeof LIVE_EVENTS.revoked;
 
 const ACCESS_LOSS_STATUS = { deleted: 404, revoked: 403 } as const satisfies Record<
@@ -20,6 +21,7 @@ const isAccessLossStatus = (status: number): boolean =>
 
 const RECONNECT_DELAY_MS = 2000;
 const RECONNECT_JITTER_MS = 500;
+
 // Must end before the events route's maxDuration, which must end before the admission lease.
 const STREAM_LIFETIME_MS = 285_000;
 
@@ -34,4 +36,5 @@ export {
   STREAM_LIFETIME_MS,
   teamEventsUrl,
 };
+
 export type { AccessLoss, LiveEvent };

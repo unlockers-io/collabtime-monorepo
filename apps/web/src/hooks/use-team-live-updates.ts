@@ -9,12 +9,14 @@ import { createTeamQueryInvalidator } from "@/lib/team-query-sync";
 const registry = createTeamLiveRegistry({
   checkAccess: async (url, signal) => {
     const response = await fetch(url, { cache: "no-store", method: "HEAD", signal });
+
     return response.status;
   },
   createSource: (url) => new EventSource(url),
   isVisible: () => document.visibilityState === "visible",
   onVisibilityChange: (callback) => {
     document.addEventListener("visibilitychange", callback);
+
     return () => {
       document.removeEventListener("visibilitychange", callback);
     };
@@ -35,12 +37,15 @@ const useTeamLiveUpdates = ({
   teamId: string;
 }): LiveSyncStatus => {
   const queryClient = useQueryClient();
+
   const subscribe = useCallback(
     (onStatus: () => void) => {
       if (!enabled) {
         return unsubscribeDisabled;
       }
+
       const sync = createTeamQueryInvalidator(queryClient, teamId);
+
       const release = registry.subscribe(teamId, {
         change: sync.notify,
         space: refresh,
@@ -50,6 +55,7 @@ const useTeamLiveUpdates = ({
           refresh();
         },
       });
+
       return () => {
         release();
         sync.dispose();
@@ -57,6 +63,7 @@ const useTeamLiveUpdates = ({
     },
     [enabled, queryClient, refresh, teamId],
   );
+
   const getSnapshot = useCallback(
     () => (enabled ? registry.getStatus(teamId) : "offline"),
     [enabled, teamId],

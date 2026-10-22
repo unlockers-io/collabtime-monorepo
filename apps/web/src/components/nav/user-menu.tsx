@@ -98,4 +98,5 @@ const UserMenu = ({ isSigningOut, navRole, onSignOut }: UserMenuProps) => {
 };
 
 export { UserMenu };
+
 export type { NavRole };

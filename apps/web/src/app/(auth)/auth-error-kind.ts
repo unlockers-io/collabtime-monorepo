@@ -25,11 +25,14 @@ const authErrorKind = ({ code, status }: BetterAuthError): AuthErrorKind => {
   if (status === 429) {
     return "rate-limited";
   }
+
   if (code !== undefined && isKnownCode(code)) {
     return KIND_BY_CODE[code];
   }
+
   return "unknown";
 };
 
 export { authErrorKind };
+
 export type { AuthErrorKind };

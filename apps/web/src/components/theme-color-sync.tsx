@@ -17,7 +17,9 @@ const ThemeColorSync = () => {
     if (resolvedTheme !== "dark" && resolvedTheme !== "light") {
       return;
     }
+
     const color = THEME_COLORS[resolvedTheme];
+
     for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
       meta.content = color;
     }

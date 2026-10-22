@@ -55,29 +55,37 @@ type JoinRequestDeps<TTransaction> = {
 const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransaction>) => {
   const requestToJoin = async (teamId: string): Promise<ActionResult<{ requestId: string }>> => {
     const auth = await deps.authenticate();
+
     if (!auth.success) {
       return auth;
     }
+
     const user = auth.data;
+
     try {
       const uuidResult = UUIDSchema.safeParse(teamId);
+
       if (!uuidResult.success) {
         return { error: "Invalid team ID", success: false };
       }
 
       const context = await deps.loadJoinContext(teamId, user.id);
+
       if (!context.teamExists) {
         return { error: "Team not found", success: false };
       }
+
       if (context.existingMembership) {
         return { error: "You are already a member of this team", success: false };
       }
+
       if (context.existingRequest?.status === "PENDING") {
         return { error: "You already have a pending request for this team", success: false };
       }
 
       const joinRequest = await deps.upsertRequest(teamId, user.id);
       deps.notifyAdmins(teamId, user);
+
       return { data: { requestId: joinRequest.id }, success: true };
     } catch (error) {
       deps.reportError({
@@ -85,6 +93,7 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
         message: "Failed to request to join",
         route: "actions/join-requests",
       });
+
       return { error: "Failed to submit join request", success: false };
     }
   };
@@ -94,12 +103,15 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
     requestId: string,
   ): Promise<ActionResult<JoinRequestRecord>> => {
     const joinRequest = await deps.findRequest(requestId);
+
     if (joinRequest?.teamId !== teamId) {
       return { error: "Join request not found", success: false };
     }
+
     if (joinRequest.status !== "PENDING") {
       return { error: "Join request is no longer pending", success: false };
     }
+
     return { data: joinRequest, success: true };
   };
 
@@ -108,14 +120,18 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
     requestId: string,
   ): Promise<ActionResult<{ memberId: string }>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     try {
       const found = await findPendingRequest(teamId, requestId);
+
       if (!found.success) {
         return found;
       }
+
       const joinRequest = found.data;
 
       const granted = await deps.grantMembership({
@@ -126,9 +142,11 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
         teamId: joinRequest.teamId,
         userId: joinRequest.userId,
       });
+
       if (!granted.ok) {
         return { error: granted.error, success: false };
       }
+
       deps.notifyRequester(joinRequest, "approved");
 
       return { data: { memberId: granted.memberId }, success: true };
@@ -138,6 +156,7 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
         message: "Failed to approve join request",
         route: "actions/join-requests",
       });
+
       return { error: "Failed to approve join request", success: false };
     }
   };
@@ -147,16 +166,21 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
     requestId: string,
   ): Promise<ActionResult<void>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     try {
       const found = await findPendingRequest(teamId, requestId);
+
       if (!found.success) {
         return found;
       }
+
       await deps.denyRequest(requestId);
       deps.notifyRequester(found.data, "denied");
+
       return { data: undefined, success: true };
     } catch (error) {
       deps.reportError({
@@ -164,6 +188,7 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
         message: "Failed to deny join request",
         route: "actions/join-requests",
       });
+
       return { error: "Failed to deny join request", success: false };
     }
   };
@@ -172,13 +197,16 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
     teamId: string,
   ): Promise<ActionResult<Array<PendingJoinRequestView>>> => {
     const access = await deps.authorizeTeamAdmin(teamId);
+
     if (!access.success) {
       return access;
     }
+
     try {
       const { memberUserIds, requests } = await deps.listPending(teamId);
       const existingMembers = new Set(memberUserIds);
       const data: Array<PendingJoinRequestView> = [];
+
       for (const request of requests) {
         if (!existingMembers.has(request.userId)) {
           data.push({
@@ -198,6 +226,7 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
         message: "Failed to get pending join requests",
         route: "actions/join-requests",
       });
+
       return { error: "Failed to get join requests", success: false };
     }
   };

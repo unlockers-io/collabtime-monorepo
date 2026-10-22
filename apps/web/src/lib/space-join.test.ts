@@ -15,6 +15,7 @@ const harness = createTestTeamStore();
 const findPrivateSpaces = vi.fn<SpaceJoinDeps["findPrivateSpaces"]>();
 const reportError = vi.fn<SpaceJoinDeps["reportError"]>();
 const verifyAccessToken = vi.fn<SpaceJoinDeps["verifyAccessToken"]>();
+
 const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
   findPrivateSpaces,
   grantMembership: harness.grantMembership,

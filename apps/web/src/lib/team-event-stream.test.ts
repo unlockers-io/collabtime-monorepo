@@ -16,6 +16,7 @@ const setup = (overrides: Partial<TeamEventStreamDeps> = {}) => {
   const checkAccess = vi.fn<() => Promise<AccessResult>>().mockResolvedValue("allowed");
   const release = vi.fn<() => Promise<void>>().mockResolvedValue();
   const log = { error: vi.fn<() => void>(), info: vi.fn<() => void>() };
+
   const deps: TeamEventStreamDeps = {
     checkAccess,
     isReady: () => true,
@@ -26,6 +27,7 @@ const setup = (overrides: Partial<TeamEventStreamDeps> = {}) => {
     startedAt: Date.now(),
     subscribe: (listener) => {
       listeners.add(listener);
+
       return () => {
         listeners.delete(listener);
       };
@@ -33,22 +35,26 @@ const setup = (overrides: Partial<TeamEventStreamDeps> = {}) => {
     teamId: VALID_UUID,
     ...overrides,
   };
+
   const emit = (kind: "contents" | "space" | "deleted" | "reconnect") => {
     for (const listener of listeners) {
       listener({ at: Date.now(), kind, teamId: VALID_UUID });
     }
   };
+
   return { abort, checkAccess, deps, emit, listeners, log, release };
 };
 
 const read = async (reader: ReadableStreamDefaultReader<Uint8Array>) => {
   const result = await reader.read();
+
   return result.done ? "EOF" : new TextDecoder().decode(result.value);
 };
 
 beforeEach(() => {
   vi.useFakeTimers();
 });
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -161,9 +167,11 @@ describe("team event stream", () => {
     const state = setup();
     const reader = createTeamEventStream(state.deps).body!.getReader();
     await read(reader);
+
     for (let index = 0; index < 1000; index += 1) {
       state.emit("contents");
     }
+
     await expect(reader.read()).rejects.toThrow("too slow");
     expect(state.release).toHaveBeenCalledTimes(1);
     expect(state.listeners.size).toBe(0);

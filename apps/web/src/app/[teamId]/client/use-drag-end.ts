@@ -32,6 +32,7 @@ const reorderPatch =
       ...team,
       [key]: newIds.flatMap((id, index) => {
         const item = byId.get(id);
+
         return item ? [{ ...item, order: index }] : [];
       }),
     };
@@ -40,6 +41,7 @@ const reorderPatch =
 const indexPair = (items: Array<{ id: string }>, activeId: string, overId: string) => {
   const oldIndex = items.findIndex((item) => item.id === activeId);
   const newIndex = items.findIndex((item) => item.id === overId);
+
   return oldIndex === -1 || newIndex === -1 ? null : { newIndex, oldIndex };
 };
 
@@ -53,6 +55,7 @@ const useDragEnd = ({ orderedGroups, orderedMembers, teamId }: UseDragEndArgs) =
   ) => {
     try {
       const result = await writeTeam({ optimistic, submit });
+
       if (!result.success) {
         toast.error(result.error);
       } else if (successMessage !== undefined) {
@@ -65,6 +68,7 @@ const useDragEnd = ({ orderedGroups, orderedMembers, teamId }: UseDragEndArgs) =
 
   const handleMemberDroppedOnGroup = (memberId: string, groupId: string) => {
     const member = orderedMembers.find((m) => m.id === memberId);
+
     if (!member || member.groupId === groupId) {
       return;
     }
@@ -104,23 +108,27 @@ const useDragEnd = ({ orderedGroups, orderedMembers, teamId }: UseDragEndArgs) =
     if (dragType === "member") {
       if (orderedMembers.some((m) => m.id === overId)) {
         const pair = indexPair(orderedMembers, activeId, overId);
+
         if (pair) {
           reorder(
             "members",
             arrayMove(orderedMembers, pair.oldIndex, pair.newIndex).map((m) => m.id),
           );
         }
+
         return;
       }
 
       if (orderedGroups.some((g) => g.id === overId)) {
         handleMemberDroppedOnGroup(activeId, overId);
       }
+
       return;
     }
 
     if (dragType === "group") {
       const pair = indexPair(orderedGroups, activeId, overId);
+
       if (pair) {
         reorder(
           "groups",

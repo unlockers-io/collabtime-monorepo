@@ -45,9 +45,12 @@ const GroupCard = ({
     if (!canEdit) {
       return;
     }
+
     const trimmedName = editingName.trim();
+
     if (!trimmedName || trimmedName === group.name) {
       setIsEditing(false);
+
       return;
     }
 
@@ -60,6 +63,7 @@ const GroupCard = ({
         }),
         submit: () => updateGroup(teamId, group.id, { name: trimmedName }),
       });
+
       if (!result.success) {
         toast.error(result.error);
       }
@@ -70,6 +74,7 @@ const GroupCard = ({
     if (e.nativeEvent.isComposing) {
       return;
     }
+
     if (e.key === "Enter") {
       handleSave();
     } else if (e.key === "Escape") {
@@ -81,6 +86,7 @@ const GroupCard = ({
     if (!canEdit) {
       return;
     }
+
     startTransition(async () => {
       const result = await writeTeam({
         optimistic: (team) => ({
@@ -92,6 +98,7 @@ const GroupCard = ({
         }),
         submit: () => removeGroup(teamId, group.id),
       });
+
       if (result.success) {
         setIsRemoveOpen(false);
         toast.success(`${group.name} removed`);

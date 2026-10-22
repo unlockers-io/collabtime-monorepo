@@ -58,6 +58,7 @@ export {
 export const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 export const InvitationEmailSchema = z.email("Invalid email address");
 export const CuidSchema = z.cuid2("Invalid invitation ID");
+
 export const TeamNameSchema = z
   .string()
   .trim()

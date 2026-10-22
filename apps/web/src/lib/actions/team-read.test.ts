@@ -15,6 +15,7 @@ const setup = () => {
   const access = createTestAccessStore();
   const findSpace = vi.fn<TeamReadDeps["findSpace"]>().mockResolvedValue(space);
   const getSession = vi.fn<TeamReadDeps["getSession"]>().mockResolvedValue(null);
+
   const { getPublicTeam } = createTeamReadActions({
     accessStore: access.store,
     findSpace,
@@ -22,6 +23,7 @@ const setup = () => {
     readTeamRecord: vi.fn<TeamReadDeps["readTeamRecord"]>().mockResolvedValue(team),
     reportError: vi.fn<TeamReadDeps["reportError"]>(),
   });
+
   return { access, findSpace, getPublicTeam, getSession };
 };
 

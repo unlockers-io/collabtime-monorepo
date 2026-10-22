@@ -21,11 +21,13 @@ return value
 
 const getAuthConfig = (): AuthConfig => {
   const secret = process.env.BETTER_AUTH_SECRET;
+
   if (secret === undefined || secret.length < 32) {
     throw new Error(
       "BETTER_AUTH_SECRET must be set to at least 32 characters (generate with: openssl rand -base64 32)",
     );
   }
+
   const config: AuthConfig = {
     ...envAuthConfig({ additionalAllowedHosts: ["collabtime.io", "www.collabtime.io"] }),
     extraPlugins: [nextCookies()],
@@ -35,12 +37,15 @@ const getAuthConfig = (): AuthConfig => {
     prisma,
     secret,
   };
+
   if (process.env.RESEND_API_KEY !== undefined && process.env.RESEND_API_KEY !== "") {
     config.resendApiKey = process.env.RESEND_API_KEY;
+
     if (process.env.RESEND_FROM_EMAIL !== undefined && process.env.RESEND_FROM_EMAIL !== "") {
       config.fromEmail = process.env.RESEND_FROM_EMAIL;
     }
   }
+
   if (process.env.REDIS_URL !== undefined && process.env.REDIS_URL !== "") {
     const redis = getRedis();
     config.secondaryStorage = {
@@ -49,23 +54,29 @@ const getAuthConfig = (): AuthConfig => {
       },
       get: async (key: string) => {
         const value = await redis.get(key);
+
         if (value === null) {
           return null;
         }
+
         if (typeof value === "string") {
           return value;
         }
+
         if (typeof value === "object") {
           return JSON.stringify(value);
         }
+
         return String(value);
       },
       getAndDelete: (key: string) => redis.getdel(key),
       increment: async (key: string, ttl: number) => {
         const value = await redis.eval(INCREMENT_WITH_INITIAL_TTL_SCRIPT, 1, key, ttl);
+
         if (typeof value !== "number") {
           throw new TypeError("Redis increment returned a non-numeric value");
         }
+
         return value;
       },
       set: async (key: string, value: string, ttl?: number) => {
@@ -75,15 +86,18 @@ const getAuthConfig = (): AuthConfig => {
       },
     };
   }
+
   return config;
 };
 
 const getAuth = (): Auth => {
   cachedAuth ??= createAuth(getAuthConfig());
+
   return cachedAuth;
 };
 
 type AuthSession = NonNullable<Awaited<ReturnType<Auth["api"]["getSession"]>>>;
+
 type Session = Omit<AuthSession, "user"> & {
   user: Omit<AuthSession["user"], "name"> & { name: string | null };
 };
@@ -102,6 +116,7 @@ const getSession = cache(async (): Promise<Session | null> => {
       error: error instanceof Error ? error.message : String(error),
       message: "getSession failed",
     });
+
     return null;
   }
 });

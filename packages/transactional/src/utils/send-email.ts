@@ -5,8 +5,11 @@ import { z } from "zod";
 import { createResendClient } from "../client";
 
 type ResendClient = ReturnType<typeof createResendClient>;
+
 type SendEmailPayload = Parameters<ResendClient["emails"]["send"]>[0];
+
 type SendEmailResponse = Awaited<ReturnType<ResendClient["emails"]["send"]>>;
+
 type SendEmailTransport = (apiKey: string, payload: SendEmailPayload) => Promise<SendEmailResponse>;
 
 const sanitizeTagSegment = (s: string): string =>
@@ -19,6 +22,7 @@ const sanitizeTagSegment = (s: string): string =>
 const senderAddressSchema = z.string().refine(
   (val) => {
     const email = /^.+<(?<email>[^<>\s]+)>$/v.exec(val)?.groups?.email ?? val;
+
     return z.email().safeParse(email).success;
   },
   { message: "Must be a valid email or 'Display Name <email>' format" },
@@ -137,6 +141,7 @@ const sendBatchEmails = async (
     const settledBatchData = await Promise.allSettled(
       emails.map(async ({ template, ...config }) => {
         const validatedConfig = emailConfigSchema.parse(config);
+
         const [html, text] = await Promise.all([
           render(template),
           render(template, { plainText: true }),
@@ -166,6 +171,7 @@ const sendBatchEmails = async (
     settledBatchData.forEach((result, index) => {
       if (result.status === "fulfilled") {
         batchData.push(result.value);
+
         return;
       }
 
@@ -215,4 +221,5 @@ const previewEmail = async (template: ReactElement) => {
 };
 
 export { createSendEmail, sendEmail, sendBatchEmails, previewEmail };
+
 export type { SendEmailTransport };

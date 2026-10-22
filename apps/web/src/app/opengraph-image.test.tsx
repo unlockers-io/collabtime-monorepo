@@ -11,10 +11,12 @@ it("renders a PNG from bundled fonts without any network request", async () => {
   const fetchSpy = vi
     .fn<(input: RequestInfo | URL) => Promise<Response>>()
     .mockRejectedValue(new Error("Network disabled"));
+
   vi.stubGlobal("fetch", fetchSpy);
 
   const response = renderOpengraphImage();
   const bytes = new Uint8Array(await response.arrayBuffer());
+
   const requested = fetchSpy.mock.calls.map(([input]) =>
     input instanceof Request ? input.url : input.toString(),
   );

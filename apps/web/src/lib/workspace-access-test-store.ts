@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import type { WorkspaceAccessStore } from "./workspace-access";
 
 type StoredInvitation = NonNullable<Awaited<ReturnType<WorkspaceAccessStore["findInvitation"]>>>;
+
 type StoredMembership = NonNullable<Awaited<ReturnType<WorkspaceAccessStore["findMembership"]>>>;
 
 const viewerKey = (teamId: string, userId: string) => `${teamId}:${userId}`;
@@ -26,6 +27,7 @@ const createTestAccessStore = () => {
     ),
     findJoinRequest: vi.fn<WorkspaceAccessStore["findJoinRequest"]>((teamId, userId) => {
       const status = joinRequests.get(viewerKey(teamId, userId));
+
       return Promise.resolve(status === undefined ? null : { status });
     }),
     findMembership: vi.fn<WorkspaceAccessStore["findMembership"]>((teamId, userId) =>

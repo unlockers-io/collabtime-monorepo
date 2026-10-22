@@ -74,12 +74,14 @@ describe("TeamMemberInputSchema", () => {
       ...validMember,
       groupId: "550e8400-e29b-41d4-a716-446655440000",
     });
+
     expect(result.success).toBe(true);
   });
 
   it("trims name whitespace", () => {
     const result = TeamMemberInputSchema.safeParse({ ...validMember, name: "  Alice  " });
     expect(result.success).toBe(true);
+
     if (result.success) {
       expect(result.data.name).toBe("Alice");
     }
@@ -102,6 +104,7 @@ describe("TeamGroupInputSchema", () => {
   it("trims whitespace", () => {
     const result = TeamGroupInputSchema.safeParse({ name: "  Design  " });
     expect(result.success).toBe(true);
+
     if (result.success) {
       expect(result.data.name).toBe("Design");
     }

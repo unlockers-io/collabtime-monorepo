@@ -1,4 +1,5 @@
 "use client";
+
 import { Button } from "@repo/ui/components/button";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,6 +18,7 @@ type Props = {
   revoke: typeof revokeInvitation;
   teamId: string;
 };
+
 export const InvitationControlsView = ({
   invitation,
   onSettled,
@@ -25,6 +27,7 @@ export const InvitationControlsView = ({
   teamId,
 }: Props) => {
   const [action, setAction] = useState<"resend" | "revoke" | null>(null);
+
   const run = async (next: "resend" | "revoke") => {
     setAction(next);
     await runWithCleanup(
@@ -32,6 +35,7 @@ export const InvitationControlsView = ({
         try {
           if (next === "resend") {
             const result = await resend(teamId, invitation.id);
+
             if (result.success) {
               toast.success(
                 result.data.emailSent
@@ -43,6 +47,7 @@ export const InvitationControlsView = ({
             }
           } else {
             const result = await revoke(teamId, invitation.id);
+
             if (result.success) {
               toast.success("Invitation revoked");
             } else {
@@ -59,6 +64,7 @@ export const InvitationControlsView = ({
       },
     );
   };
+
   return (
     <div aria-busy={action !== null} className="flex shrink-0 gap-2">
       <Button
@@ -88,6 +94,7 @@ export const InvitationControlsView = ({
     </div>
   );
 };
+
 export const InvitationControls = ({
   invitation,
   teamId,
@@ -96,6 +103,7 @@ export const InvitationControls = ({
   teamId: string;
 }) => {
   const queryClient = useQueryClient();
+
   return (
     <InvitationControlsView
       invitation={invitation}

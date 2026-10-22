@@ -27,6 +27,7 @@ const writeTeam = async <T>(
 ): Promise<ActionResult<T>> => {
   const queryKey = queryKeys.teams.detail(teamId);
   const mutationKey = teamMutationKey(teamId);
+
   const observer = new MutationObserver<
     ActionResult<T>,
     Error,
@@ -41,19 +42,23 @@ const writeTeam = async <T>(
       if (!optimistic) {
         return undefined;
       }
+
       // Must be awaited before the write: cancelQueries reverts to the
       // pre-fetch state, which would undo an edit applied first.
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<TeamQueryData>(queryKey);
+
       const written = queryClient.setQueryData<TeamQueryData>(
         queryKey,
         (data) => data && { team: optimistic(data.team) },
       );
+
       return { previous, written };
     },
     onSettled: (result, _error, _variables, snapshot) => {
       // A later write or fetch owns the cache once it no longer holds our patch.
       const failed = result?.success !== true;
+
       if (failed && snapshot && queryClient.getQueryData(queryKey) === snapshot.written) {
         queryClient.setQueryData(queryKey, snapshot.previous);
       }
@@ -61,10 +66,12 @@ const writeTeam = async <T>(
   });
 
   const finishWrite = beginTeamWrite(queryClient, teamId);
+
   try {
     return await observer.mutate();
   } catch (error) {
     captureException(error);
+
     return {
       error: "Could not save your changes. Check your connection and try again.",
       success: false,
@@ -78,6 +85,7 @@ const writeTeam = async <T>(
 
 const useTeamWrite = (teamId: string) => {
   const queryClient = useQueryClient();
+
   return <T>(write: TeamWrite<T>) => writeTeam(queryClient, teamId, write);
 };
 

@@ -24,9 +24,11 @@ const openLiveTeam = async (page: Page, teamId: string) => {
       }
     };
   });
+
   const responsePromise = page.waitForResponse(
     (response) => new URL(response.url()).pathname === `/api/teams/${teamId}/events`,
   );
+
   await page.goto(`/${teamId}`);
   const response = await responsePromise;
   expect(response.status()).toBe(200);
@@ -46,6 +48,7 @@ const addMember = async (page: Page, name: string) => {
 const test = base.extend<{ peer: Page; teamId: string }>({
   peer: async ({ browser, storageState, teamId }, use) => {
     const context = await browser.newContext({ storageState });
+
     try {
       const page = await context.newPage();
       await openLiveTeam(page, teamId);
@@ -81,18 +84,24 @@ for (const change of ["privacy", "password", "deletion"] as const) {
       select: { id: true },
       where: { teamId },
     });
+
     const guestContext = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+
     try {
       if (change === "password") {
         const privateSpace = await request.patch(`/api/spaces/${spaceId}`, {
           data: { password: "OriginalGuestPassword123!", visibility: "private" },
         });
+
         expect(privateSpace.status()).toBe(200);
+
         const verified = await guestContext.request.post(`/api/spaces/${spaceId}/verify-password`, {
           data: { password: "OriginalGuestPassword123!" },
         });
+
         expect(verified.status()).toBe(200);
       }
+
       const guest = await guestContext.newPage();
       await guest.clock.install();
       await openLiveTeam(guest, teamId);
@@ -106,12 +115,15 @@ for (const change of ["privacy", "password", "deletion"] as const) {
           : await request.patch(`/api/spaces/${spaceId}`, {
               data: { password: "ChangedGuestPassword123!", visibility: "private" },
             });
+
       expect(updated.status()).toBe(200);
+
       const checked = guest.waitForResponse(
         (response) =>
           response.request().method() === "HEAD" &&
           new URL(response.url()).pathname === `/api/teams/${teamId}/events`,
       );
+
       await setVisibility(guest, "visible");
       const response = await checked;
       expect(response.status()).toBe(change === "deletion" ? 404 : 403);

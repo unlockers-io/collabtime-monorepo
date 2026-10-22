@@ -8,23 +8,27 @@ const setup = () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
+
   const queryKey = queryKeys.teams.detail("team-1");
   const queryFn = vi.fn<() => Promise<string>>().mockResolvedValue("latest");
   queryClient.setQueryData(queryKey, "initial");
   const observer = new QueryObserver(queryClient, { queryFn, queryKey });
   const unsubscribe = observer.subscribe(() => undefined);
   const invalidator = createTeamQueryInvalidator(queryClient, "team-1");
+
   const dispose = () => {
     invalidator.dispose();
     unsubscribe();
     queryClient.clear();
   };
+
   return { dispose, invalidator, queryClient, queryFn, queryKey };
 };
 
 beforeEach(() => {
   vi.useFakeTimers();
 });
+
 afterEach(() => {
   vi.useRealTimers();
 });

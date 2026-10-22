@@ -7,17 +7,21 @@ import { PrismaClient } from "./generated/client";
 
 const assertLocal = (name: string, value: string): void => {
   const host = URL.canParse(value) ? new URL(value).hostname : "";
+
   if (host !== "localhost" && host !== "127.0.0.1") {
     throw new Error(`Refusing to seed: ${name} must point at localhost.`);
   }
 };
 
 assertLocal("DATABASE_URL", process.env.DATABASE_URL ?? "");
+
 assertLocal("REDIS_URL", process.env.REDIS_URL ?? "");
+
 const redis = new Redis(process.env.REDIS_URL ?? "", {
   lazyConnect: true,
   maxRetriesPerRequest: 1,
 });
+
 const TEAM_ID = "00000000-0000-4000-8000-000000000001";
 const MEMBER_ID = "00000000-0000-4000-8000-000000000002";
 
@@ -94,6 +98,7 @@ try {
     workingHoursEnd: 17,
     workingHoursStart: 9,
   };
+
   await prisma.$transaction([
     prisma.space.update({ data: { name: "Sample workspace" }, where: { teamId: TEAM_ID } }),
     prisma.teamMember.upsert({
@@ -102,26 +107,32 @@ try {
       where: { id: MEMBER_ID },
     }),
   ]);
+
   const seeded = await prisma.space.findUniqueOrThrow({
     include: { groups: { orderBy: { order: "asc" } }, members: { orderBy: { order: "asc" } } },
     where: { teamId: TEAM_ID },
   });
+
   const team = {
     createdAt: seeded.createdAt.toISOString(),
     groups: seeded.groups.map(({ id, name, order }) => ({ id, name, order })),
     id: TEAM_ID,
     members: seeded.members.map(({ groupId, teamId: _teamId, userId, ...rest }) => {
       const seededMember: typeof rest & { groupId?: string; userId?: string } = { ...rest };
+
       if (groupId !== null) {
         seededMember.groupId = groupId;
       }
+
       if (userId !== null) {
         seededMember.userId = userId;
       }
+
       return seededMember;
     }),
     name: seeded.name,
   };
+
   await redis.set(`team:${TEAM_ID}`, JSON.stringify(team), "EX", 60 * 60 * 24 * 60);
 
   console.log("Seed complete");

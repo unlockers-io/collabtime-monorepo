@@ -9,9 +9,11 @@ export const AuthGate = async ({
   searchParams?: Promise<{ redirect?: string | Array<string> }>;
 }) => {
   const session = await getSession();
+
   if (session) {
     const params = await searchParams;
     redirect(safeRedirectPath(typeof params?.redirect === "string" ? params.redirect : undefined));
   }
+
   return null;
 };

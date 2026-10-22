@@ -17,6 +17,7 @@ const setup = () => {
   const createSubscriber = vi.fn(() => subscriber);
   const reportError = vi.fn<() => void>();
   const hub = createTeamEventHub({ createSubscriber, reportError });
+
   return { createSubscriber, hub, reportError, subscriber };
 };
 
@@ -29,6 +30,7 @@ const start = async (state: ReturnType<typeof setup>) => {
 beforeEach(() => {
   vi.useFakeTimers();
 });
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -68,9 +70,11 @@ describe("team event hub", () => {
   it("dispatches only to the matching team and isolates malformed messages and listeners", async () => {
     const state = setup();
     await start(state);
+
     const broken = vi.fn(() => {
       throw new Error("listener failed");
     });
+
     const matching = vi.fn<() => void>();
     const other = vi.fn<() => void>();
     state.hub.subscribe(VALID_UUID, broken);
@@ -118,6 +122,7 @@ describe("team event hub", () => {
       createSubscriber: () => null,
       reportError: vi.fn<() => void>(),
     });
+
     expect(await hub.waitUntilReady()).toBe(false);
   });
 
@@ -143,12 +148,15 @@ describe("team event publisher", () => {
     const publish = vi
       .fn<(channel: string, message: string) => Promise<number>>()
       .mockResolvedValue(1);
+
     const enabled = vi.fn(() => true);
+
     const publisher = createTeamEventPublisher({
       enabled,
       publish,
       reportError: vi.fn<() => void>(),
     });
+
     await publisher(VALID_UUID, "contents");
     expect(publish).toHaveBeenCalledExactlyOnceWith(
       TEAM_EVENTS_CHANNEL,
@@ -161,10 +169,12 @@ describe("team event publisher", () => {
 
   it("returns after one second when publishing stalls and logs failures", async () => {
     const pending = Promise.withResolvers<number>();
+
     const publish = vi
       .fn<(channel: string, message: string) => Promise<number>>()
       .mockReturnValueOnce(pending.promise)
       .mockRejectedValue(new Error("publish failed"));
+
     const reportError = vi.fn<() => void>();
     const publisher = createTeamEventPublisher({ enabled: () => true, publish, reportError });
     const publishing = publisher(VALID_UUID, "contents");

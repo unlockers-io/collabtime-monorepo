@@ -38,6 +38,7 @@ const MemberGroupField = ({
   value,
 }: MemberGroupFieldProps) => {
   const errorId = `${id}-error`;
+
   const selectedName =
     value === NO_GROUP ? "No group" : groups.find((group) => group.id === value)?.name;
 
@@ -49,6 +50,7 @@ const MemberGroupField = ({
           if (item === null) {
             return;
           }
+
           onChange(item === NO_GROUP_ITEM ? NO_GROUP : item);
           onBlur();
         }}
