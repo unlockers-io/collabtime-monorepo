@@ -4,16 +4,17 @@ import { Button } from "@repo/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { recoverSchema } from "@/lib/form-schemas";
 
-import { AuthErrorNotice } from "../auth-error";
+import { authErrorMessage } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
 import type { AuthErrorKind } from "../auth-error-kind";
 import { AUTH_LINK_CLASS, AuthConfirmation, AuthFooter } from "../auth-shell";
@@ -22,8 +23,6 @@ const RecoverForm = () => {
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
   const [isPending, startTransition] = useTransition();
-
-  const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm({
     defaultValues: { email: "" },
@@ -51,8 +50,8 @@ const RecoverForm = () => {
         }
       });
     },
-    onSubmitInvalid: () => {
-      focusFirstInvalidField(formRef.current);
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
     },
     validationLogic: revalidateLogic(),
     validators: { onDynamic: recoverSchema },
@@ -78,15 +77,16 @@ const RecoverForm = () => {
   return (
     <>
       <ClientReadyForm
+        id={form.formId}
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
           void form.handleSubmit();
         }}
-        ref={formRef}
       >
         <FieldGroup>
+          <FormAlert message={authErrorMessage(errorKind)} />
           <form.Field name="email">
             {(field) => {
               const isInvalid = !field.state.meta.isValid;
@@ -115,8 +115,6 @@ const RecoverForm = () => {
               );
             }}
           </form.Field>
-
-          {errorKind !== null && <AuthErrorNotice kind={errorKind} />}
 
           <Button
             aria-busy={isPending}

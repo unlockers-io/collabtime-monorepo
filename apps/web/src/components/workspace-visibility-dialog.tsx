@@ -13,16 +13,18 @@ import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { Switch } from "@repo/ui/components/switch";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { captureException } from "@sentry/nextjs";
 import { revalidateLogic, useForm, useSelector } from "@tanstack/react-form";
 import { Check, Copy } from "lucide-react";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import type { ActionResult } from "@/lib/actions/types";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
 const savedSpaceSchema = z.object({
@@ -33,11 +35,44 @@ const errorSchema = z.object({ error: z.string() });
 type VisibilityUpdate = { password?: string; visibility: "private" | "public" };
 
 type Visibility = { hasPassword: boolean; isPrivate: boolean };
+type VisibilityValues = { isPrivate: boolean; password: string };
 type WorkspaceVisibilityDialogProps = Visibility & {
   onOpenChange: (open: boolean) => void;
   onSaved: (space: Visibility) => void;
   open: boolean;
   spaceId: string;
+};
+
+const NO_CHANGES = "No changes to save.";
+
+const toVisibilityUpdate = ({ isPrivate, password }: VisibilityValues): VisibilityUpdate =>
+  isPrivate && password !== ""
+    ? { password, visibility: "private" }
+    : { visibility: isPrivate ? "private" : "public" };
+
+const saveVisibility = async (
+  spaceId: string,
+  update: VisibilityUpdate,
+): Promise<ActionResult<Visibility>> => {
+  try {
+    const response = await fetch(`/api/spaces/${spaceId}`, {
+      body: JSON.stringify(update),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+    });
+    if (!response.ok) {
+      const data: unknown = await response.json().catch(() => null);
+      const parsed = errorSchema.safeParse(data);
+      return {
+        error: parsed.success ? parsed.data.error : "Couldn't update workspace privacy",
+        success: false,
+      };
+    }
+    return { data: savedSpaceSchema.parse(await response.json()).space, success: true };
+  } catch (error) {
+    captureException(error);
+    return { error: "Couldn't update workspace privacy. Please try again.", success: false };
+  }
 };
 
 const readShareUrl = () => `${window.location.origin}${window.location.pathname}`;
@@ -106,39 +141,31 @@ const WorkspaceVisibilityDialog = ({
         });
       }
     });
-  const formRef = useRef<HTMLFormElement>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const form = useForm({
     defaultValues: { isPrivate, password: "" },
-    onSubmit: async ({ value }) => {
-      const body: VisibilityUpdate = {
-        visibility: value.isPrivate ? "private" : "public",
-      };
-      if (value.isPrivate && value.password !== "") {
-        body.password = value.password;
-      }
-      try {
-        const response = await fetch(`/api/spaces/${spaceId}`, {
-          body: JSON.stringify(body),
-          headers: { "Content-Type": "application/json" },
-          method: "PATCH",
-        });
-        if (!response.ok) {
-          const data: unknown = await response.json().catch(() => null);
-          const parsed = errorSchema.safeParse(data);
-          toast.error(parsed.success ? parsed.data.error : "Couldn't update workspace privacy");
-          return;
-        }
-        const saved = savedSpaceSchema.parse(await response.json());
-        onSaved(saved.space);
-        onOpenChange(false);
-        toast.success("Workspace privacy updated");
-      } catch (error) {
-        captureException(error);
-        toast.error("Couldn't update workspace privacy. Please try again.");
-      }
+    listeners: {
+      onChange: () => {
+        setFormError(null);
+      },
     },
-    onSubmitInvalid: () => {
-      focusFirstInvalidField(formRef.current);
+    onSubmit: async ({ value }) => {
+      if (value.isPrivate === isPrivate && value.password === "") {
+        setFormError(NO_CHANGES);
+        return;
+      }
+      setFormError(null);
+      const result = await saveVisibility(spaceId, toVisibilityUpdate(value));
+      if (!result.success) {
+        setFormError(result.error);
+        return;
+      }
+      onSaved(result.data);
+      onOpenChange(false);
+      toast.success("Workspace privacy updated");
+    },
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
     },
     validationLogic: revalidateLogic(),
     validators: { onDynamic: schema },
@@ -163,15 +190,16 @@ const WorkspaceVisibilityDialog = ({
         </DialogHeader>
         <ShareLink />
         <ClientReadyForm
+          id={form.formId}
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
             event.stopPropagation();
             void form.handleSubmit();
           }}
-          ref={formRef}
         >
           <FieldGroup>
+            <FormAlert message={formError} />
             <form.Field name="isPrivate">
               {(field) => (
                 <Field className="flex-row items-center justify-between">

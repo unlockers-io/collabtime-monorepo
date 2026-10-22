@@ -4,6 +4,7 @@ import { Button } from "@repo/ui/components/button";
 import { Field, FieldDescription, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { useQueryClient } from "@tanstack/react-query";
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -35,15 +36,14 @@ export const MemberInviteSection = ({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasAttempted = useRef(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
-  const id = useId();
+  const formId = useId();
   const send = async () => {
     hasAttempted.current = true;
     const parsed = InvitationEmailSchema.safeParse(normalizeEmail(email));
     if (!parsed.success) {
       setError(INVALID_EMAIL);
-      inputRef.current?.focus();
+      focusFirstInvalidField(formId);
       return;
     }
     setPending(true);
@@ -86,18 +86,19 @@ export const MemberInviteSection = ({
       </div>
     );
   }
-  const descriptionId = `${id}-description`;
-  const errorId = `${id}-error`;
+  const inputId = `${formId}-email`;
+  const descriptionId = `${formId}-description`;
+  const errorId = `${formId}-error`;
   return (
-    <Field data-invalid={Boolean(error) || undefined}>
-      <FieldLabel htmlFor={id}>Invite by email</FieldLabel>
+    <Field data-invalid={Boolean(error) || undefined} id={formId}>
+      <FieldLabel htmlFor={inputId}>Invite by email</FieldLabel>
       <div className="flex flex-wrap gap-2">
         <Input
           aria-describedby={error === null ? descriptionId : `${descriptionId} ${errorId}`}
           aria-invalid={Boolean(error)}
           autoComplete="off"
           className="min-w-0 flex-1"
-          id={id}
+          id={inputId}
           onChange={(event) => {
             setEmail(event.target.value);
             setError(
@@ -105,7 +106,6 @@ export const MemberInviteSection = ({
             );
           }}
           placeholder="name@company.com"
-          ref={inputRef}
           type="email"
           value={email}
         />

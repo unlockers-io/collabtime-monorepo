@@ -38,7 +38,9 @@ it("checks the email when sending, then on every change", async () => {
 
   fireEvent.click(send);
   expect(await screen.findByText(error)).toBeVisible();
-  expect(email).toHaveFocus();
+  await waitFor(() => {
+    expect(email).toHaveFocus();
+  });
 
   fireEvent.change(email, { target: { value: "ada@example" } });
   expect(screen.getByText(error)).toBeVisible();

@@ -23,7 +23,9 @@ test.describe("Register", () => {
     await registerPage.goto();
     await registerPage.register(testUser.name, testUser.email, testUser.password);
 
-    await expect(page.getByText(/already exists|failed to create/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-slot="form-alert"]')).toContainText(/already exists/i, {
+      timeout: 5000,
+    });
   });
 
   test("shows validation error for empty name", async ({ page, registerPage }) => {

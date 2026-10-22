@@ -67,7 +67,9 @@ it("clears a failed sign-in on the next change", async () => {
 
   fireEvent.click(submit);
 
-  expect(await screen.findByRole("alert")).toHaveTextContent("Email or password is incorrect.");
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveAttribute("data-slot", "form-alert");
+  expect(alert).toHaveTextContent("Email or password is incorrect.");
   fireEvent.change(password, { target: { value: "right-password" } });
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });

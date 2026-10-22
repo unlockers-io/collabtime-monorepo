@@ -4,18 +4,19 @@ import { Button } from "@repo/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense, use, useRef, useState, useTransition } from "react";
+import { Suspense, use, useState, useTransition } from "react";
 
 import { signIn } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/form-schemas";
 import { safeRedirectPath } from "@/lib/redirect-validation";
 
-import { AuthErrorNotice } from "../auth-error";
+import { authErrorMessage } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
 import type { AuthErrorKind } from "../auth-error-kind";
 import { AUTH_LINK_CLASS, AuthFooter, FormNotice } from "../auth-shell";
@@ -49,7 +50,6 @@ const LoginForm = ({ searchParams }: Props) => {
   const [isPending, startTransition] = useTransition();
   const [showUnverifiedNotice, setShowUnverifiedNotice] = useState(false);
   const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
@@ -85,8 +85,8 @@ const LoginForm = ({ searchParams }: Props) => {
         }
       });
     },
-    onSubmitInvalid: () => {
-      focusFirstInvalidField(formRef.current);
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
     },
     validationLogic: revalidateLogic(),
     validators: { onDynamic: loginSchema },
@@ -95,15 +95,16 @@ const LoginForm = ({ searchParams }: Props) => {
   return (
     <>
       <ClientReadyForm
+        id={form.formId}
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
           void form.handleSubmit();
         }}
-        ref={formRef}
       >
         <FieldGroup>
+          <FormAlert message={authErrorMessage(errorKind)} />
           <form.Field name="email">
             {(field) => {
               const isInvalid = !field.state.meta.isValid;
@@ -174,7 +175,6 @@ const LoginForm = ({ searchParams }: Props) => {
               This email isn&apos;t verified yet. We just sent you a new link.
             </FormNotice>
           )}
-          {errorKind !== null && <AuthErrorNotice kind={errorKind} />}
 
           <Button
             aria-busy={isPending}

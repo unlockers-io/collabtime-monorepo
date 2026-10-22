@@ -12,9 +12,10 @@ import {
 import { FieldSeparator } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic } from "@tanstack/react-form";
-import { useRef, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { MemberFields } from "@/components/member-fields";
@@ -37,6 +38,8 @@ type EditMemberDialogProps = {
 };
 
 type EditMemberFormProps = Omit<EditMemberDialogProps, "open"> & { mode: "admin" | "claim" };
+
+const NO_CHANGES = "No changes to save.";
 
 type SaveButtonLabelProps = {
   isClaim: boolean;
@@ -69,10 +72,20 @@ const EditMemberForm = ({
   const writeTeam = useTeamWrite(teamId);
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
-  const formRef = useRef<HTMLFormElement>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const form = useMemberForm({
     defaultValues: toMemberFormValues(member),
-    onSubmit: ({ value }) => {
+    listeners: {
+      onChange: () => {
+        setFormError(null);
+      },
+    },
+    onSubmit: ({ formApi, value }) => {
+      if (!isClaim && formApi.state.isDefaultValue) {
+        setFormError(NO_CHANGES);
+        return;
+      }
+      setFormError(null);
       startTransition(async () => {
         const input = toMemberInput(value);
         const { groupId: _groupId, ...ownInput } = input;
@@ -83,15 +96,15 @@ const EditMemberForm = ({
               : updateMember(teamId, member.id, input),
         });
         if (!result.success) {
-          toast.error(result.error);
+          setFormError(result.error);
           return;
         }
         toast.success(isClaim ? "Profile claimed" : "Member updated");
         onOpenChange(false);
       });
     },
-    onSubmitInvalid: () => {
-      focusFirstInvalidField(formRef.current);
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
     },
     validationLogic: revalidateLogic(),
     validators: { onDynamic: memberFormSchema },
@@ -109,15 +122,16 @@ const EditMemberForm = ({
       </DialogHeader>
 
       <ClientReadyForm
+        id={form.formId}
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
           void form.handleSubmit();
         }}
-        ref={formRef}
       >
         <div className="flex flex-col gap-5 py-4">
+          <FormAlert message={formError} />
           <MemberFields
             fields={MEMBER_FIELDS}
             form={form}

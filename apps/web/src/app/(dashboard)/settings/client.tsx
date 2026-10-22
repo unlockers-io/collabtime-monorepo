@@ -4,12 +4,13 @@ import { Button } from "@repo/ui/components/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { captureException } from "@sentry/nextjs";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
-import { useId, useRef } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -42,10 +43,15 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
   const id = useId();
   const nameId = `${id}-name`;
   const emailId = `${id}-email`;
-  const formRef = useRef<HTMLFormElement>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const form = useForm({
     defaultValues: { name: user.name },
+    listeners: {
+      onChange: () => {
+        setFormError(null);
+      },
+    },
     onSubmit: async ({ value }) => {
       const name = value.name.trim();
       if (name === user.name) {
@@ -53,14 +59,14 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
       }
       const result = await saveName(name);
       if (!result.success) {
-        toast.error(result.error);
+        setFormError(result.error);
         return;
       }
       toast.success("Name updated");
       onSaved();
     },
-    onSubmitInvalid: () => {
-      focusFirstInvalidField(formRef.current);
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
     },
     validationLogic: revalidateLogic(),
     validators: { onDynamic: profileSchema },
@@ -77,15 +83,16 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
 
         <ClientReadyForm
           className="flex max-w-xl flex-col gap-6"
+          id={form.formId}
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
             event.stopPropagation();
             void form.handleSubmit();
           }}
-          ref={formRef}
         >
           <FieldGroup>
+            <FormAlert message={formError} />
             <form.Field name="name">
               {(field) => {
                 const isInvalid = !field.state.meta.isValid;
@@ -93,11 +100,12 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
                   <Field data-invalid={isInvalid || undefined}>
                     <FieldLabel htmlFor={nameId}>Full name</FieldLabel>
                     <Input
-                      aria-describedby={isInvalid ? `${nameId}-error` : undefined}
+                      aria-describedby={
+                        isInvalid ? `${nameId}-hint ${nameId}-error` : `${nameId}-hint`
+                      }
                       aria-invalid={isInvalid}
                       autoComplete="name"
                       id={nameId}
-                      maxLength={100}
                       onBlur={field.handleBlur}
                       onChange={(event) => {
                         field.handleChange(event.target.value);
@@ -105,6 +113,7 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
                       placeholder="Your name"
                       value={field.state.value}
                     />
+                    <FieldDescription id={`${nameId}-hint`}>Up to 100 characters.</FieldDescription>
                     {isInvalid && (
                       <FormFieldError errors={field.state.meta.errors} id={`${nameId}-error`} />
                     )}

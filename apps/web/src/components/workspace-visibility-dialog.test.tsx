@@ -105,12 +105,29 @@ describe("workspace privacy", () => {
 
   it("omits the password to retain an existing one", async () => {
     const fetchMock = stubSave(true);
-    renderDialog(true, true);
+    renderDialog(false, true);
+    fireEvent.click(screen.getByRole("switch", { name: "Private workspace" }));
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
     });
     expect(readBody(fetchMock.mock.calls[0]?.[1]?.body)).toEqual({ visibility: "private" });
+  });
+
+  it("sends nothing for an unchanged save and says so until the next change", async () => {
+    const fetchMock = stubSave(true);
+    renderDialog(true, true);
+    const save = screen.getByRole("button", { name: "Save changes" });
+    expect(save).toBeEnabled();
+
+    fireEvent.click(save);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("No changes to save.");
+    expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Workspace password"), {
+      target: { value: "GuestPassword123!" },
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("sends only public visibility when disabling privacy", async () => {
@@ -124,7 +141,7 @@ describe("workspace privacy", () => {
     expect(readBody(fetchMock.mock.calls[0]?.[1]?.body)).toEqual({ visibility: "public" });
   });
 
-  it("keeps the dialog open after a failed save", async () => {
+  it("keeps the dialog open after a failed save and reports it until the next change", async () => {
     vi.stubGlobal(
       "fetch",
       vi
@@ -132,11 +149,20 @@ describe("workspace privacy", () => {
         .mockResolvedValue(Response.json({ error: "Forbidden" }, { status: 403 })),
     );
     const { onOpenChange, onSaved } = renderDialog(true, true);
+    fireEvent.change(screen.getByLabelText("Workspace password"), {
+      target: { value: "GuestPassword123!" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Forbidden");
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
     });
     expect(onSaved).not.toHaveBeenCalled();
     expect(onOpenChange).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Workspace password"), {
+      target: { value: "OtherPassword123!" },
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

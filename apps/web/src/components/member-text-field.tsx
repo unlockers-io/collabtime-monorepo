@@ -46,6 +46,7 @@ const MemberTextField = ({
       <Input
         aria-describedby={describedBy.length > 0 ? describedBy.join(" ") : undefined}
         aria-invalid={isInvalid}
+        aria-required={required}
         autoComplete={autoComplete}
         id={id}
         inputMode={type === "email" ? "email" : undefined}
@@ -54,7 +55,6 @@ const MemberTextField = ({
           onChange(event.target.value);
         }}
         placeholder={placeholder}
-        required={required}
         type={type}
         value={value}
       />
