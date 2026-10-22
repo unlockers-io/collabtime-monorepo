@@ -45,8 +45,12 @@ This document records the defaults used across the collabtime monorepo. New code
 ## Forms
 
 - `@tanstack/react-form`, never `react-hook-form`.
-- Validate `onBlur` + `onChange` with Zod schemas.
-- Display errors with `field.state.meta.isTouched && !field.state.meta.isValid`.
+- Validate on submit, then on every change: `validationLogic: revalidateLogic()` with `validators: { onDynamic: schema }`. An error appears only after a submit attempt and clears on the keystroke that fixes it. Never validate on blur.
+- Display errors with `!field.state.meta.isValid`; the validation logic already holds them back until submit.
+- On a failed submit, move focus to the first invalid field with `onSubmitInvalid`.
+- Explain any rule people can't guess (password length, allowed characters) with a `FieldDescription` before they hit it. Live hints such as a strength meter derive from the value; they are not validator errors.
+- Server-only failures (wrong password, email taken, rate limits) arrive on submit. Return them per field from `onSubmitAsync` as `{ fields }`, or keep them in local state that clears on the next change.
+- Keep submit enabled and disable it only while `isSubmitting`. Never disable on `!canSubmit`: a disabled button can't say which field is wrong. The one exception is a form with exactly one editable field, which may also disable submit while its trimmed value is empty or unchanged.
 - Never call `field.handleChange` inside `useEffect` or `useCallback` with `field` in deps; use `field.form.setFieldValue(field.name, value)` with stable refs.
 
 ## Tooling

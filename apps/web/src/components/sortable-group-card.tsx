@@ -18,7 +18,11 @@ type SortableGroupCardProps = {
   teamId: string;
 };
 
+type GroupDrag = { kind: "group"; props: SortableGroupCardProps };
+
 const SortableGroupCard = (props: SortableGroupCardProps) => {
+  const drag: GroupDrag = { kind: "group", props };
+
   const {
     attributes,
     isDragging,
@@ -27,7 +31,7 @@ const SortableGroupCard = (props: SortableGroupCardProps) => {
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id: props.group.id });
+  } = useSortable({ data: { drag }, id: props.group.id });
 
   const style = {
     "--sortable-group-card-opacity": isDragging ? 0.5 : 1,
@@ -57,4 +61,19 @@ const SortableGroupCard = (props: SortableGroupCardProps) => {
   );
 };
 
-export { SortableGroupCard };
+const GroupDragPreview = (props: SortableGroupCardProps) => (
+  <div inert>
+    <GroupCard
+      {...props}
+      dragHandle={
+        <span className={DRAG_HANDLE_CLASS}>
+          <GripVertical className="size-4" />
+        </span>
+      }
+    />
+  </div>
+);
+
+export { GroupDragPreview, SortableGroupCard };
+
+export type { GroupDrag };

@@ -10,7 +10,11 @@ import type { MemberCardProps } from "@/components/member-card";
 const DRAG_HANDLE_CLASS =
   "flex h-8 w-6 shrink-0 cursor-grab items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 active:cursor-grabbing";
 
+type MemberDrag = { kind: "member"; props: MemberCardProps };
+
 const SortableMemberCard = (props: MemberCardProps) => {
+  const drag: MemberDrag = { kind: "member", props };
+
   const {
     attributes,
     isDragging,
@@ -19,7 +23,7 @@ const SortableMemberCard = (props: MemberCardProps) => {
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id: props.member.id });
+  } = useSortable({ data: { drag }, id: props.member.id });
 
   const style = {
     "--sortable-member-card-opacity": isDragging ? 0.5 : 1,
@@ -49,4 +53,19 @@ const SortableMemberCard = (props: MemberCardProps) => {
   );
 };
 
-export { SortableMemberCard };
+const MemberDragPreview = (props: MemberCardProps) => (
+  <div inert>
+    <MemberCard
+      {...props}
+      dragHandle={
+        <span className={DRAG_HANDLE_CLASS}>
+          <GripVertical className="size-4" />
+        </span>
+      }
+    />
+  </div>
+);
+
+export { MemberDragPreview, SortableMemberCard };
+
+export type { MemberDrag };

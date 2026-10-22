@@ -301,11 +301,9 @@ const TeamPageClient = ({
   return (
     <DndWrapper
       groups={groups}
-      hasClaimedProfile={hasClaimedProfile}
       members={members}
       onDragEnd={handleDragEnd}
       onDragTypeChange={handleDragTypeChange}
-      teamId={teamId}
     >
       {mainContent}
     </DndWrapper>

@@ -117,7 +117,7 @@ const AnswerHeadline = ({ answer, zone }: { answer: Answer; zone: string }) => (
       {answer.range !== null && (
         <>
           {" "}
-          <span className="font-mono tracking-normal whitespace-nowrap tabular-nums">
+          <span className="pr-1.5 font-mono tracking-normal whitespace-nowrap tabular-nums">
             {answer.range}
           </span>{" "}
           <span className="text-base font-medium whitespace-nowrap text-muted-foreground sm:text-lg">
