@@ -19,35 +19,34 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useRef, useState } from "react";
 
-import { GroupCard } from "@/components/group-card";
-import { MemberCard } from "@/components/member-card";
+import { GroupDragPreview, type GroupDrag } from "@/components/sortable-group-card";
+import { MemberDragPreview, type MemberDrag } from "@/components/sortable-member-card";
 import type { TeamGroup, TeamMember } from "@/types";
 
-/**
- * Holds the resolved entity, not an id plus a separate kind. The pair let
- * "id set, kind unknown" be expressed, which every read then had to guard
- * against, and it forced a second lookup on each render of a drag.
- */
-type ActiveDrag = { group: TeamGroup; kind: "group" } | { kind: "member"; member: TeamMember };
+/** The dragged card's own props, so the overlay renders exactly what the row shows. */
+type ActiveDrag = GroupDrag | MemberDrag;
+
+const isActiveDrag = (value: unknown): value is ActiveDrag =>
+  typeof value === "object" &&
+  value !== null &&
+  "props" in value &&
+  "kind" in value &&
+  (value.kind === "group" || value.kind === "member");
 
 type DndWrapperProps = {
   children: React.ReactNode;
   groups: Array<TeamGroup>;
-  hasClaimedProfile: boolean;
   members: Array<TeamMember>;
   onDragEnd: (event: DragEndEvent, dragType: "group" | "member" | null) => void;
   onDragTypeChange?: (dragType: "group" | "member" | null) => void;
-  teamId: string;
 };
 
 const DndWrapper = ({
   children,
   groups,
-  hasClaimedProfile,
   members,
   onDragEnd,
   onDragTypeChange,
-  teamId,
 }: DndWrapperProps) => {
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const droppedOnGroupRef = useRef(false);
@@ -58,20 +57,12 @@ const DndWrapper = ({
   );
 
   const handleDragStart = (event: DragStartEvent) => {
-    const id = String(event.active.id);
-
-    const member = members.find((m) => m.id === id);
-    if (member) {
-      setActiveDrag({ kind: "member", member });
-      onDragTypeChange?.("member");
+    const drag: unknown = event.active.data.current?.drag;
+    if (!isActiveDrag(drag)) {
       return;
     }
-
-    const group = groups.find((g) => g.id === id);
-    if (group) {
-      setActiveDrag({ group, kind: "group" });
-      onDragTypeChange?.("group");
-    }
+    setActiveDrag(drag);
+    onDragTypeChange?.(drag.kind);
   };
 
   const nameOf = (id: UniqueIdentifier): string => {
@@ -164,23 +155,8 @@ const DndWrapper = ({
     >
       {children}
       <DragOverlay className="bg-background" dropAnimation={dropAnimation}>
-        {activeDrag?.kind === "member" && (
-          <MemberCard
-            canEdit={false}
-            groups={groups}
-            hasClaimedProfile={hasClaimedProfile}
-            member={activeDrag.member}
-            teamId={teamId}
-          />
-        )}
-        {activeDrag?.kind === "group" && (
-          <GroupCard
-            canEdit={false}
-            group={activeDrag.group}
-            memberCount={members.filter((m) => m.groupId === activeDrag.group.id).length}
-            teamId={teamId}
-          />
-        )}
+        {activeDrag?.kind === "member" && <MemberDragPreview {...activeDrag.props} />}
+        {activeDrag?.kind === "group" && <GroupDragPreview {...activeDrag.props} />}
       </DragOverlay>
     </DndContext>
   );
