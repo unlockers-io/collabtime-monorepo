@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@repo/ui/components/dialog";
 import { Spinner } from "@repo/ui/components/spinner";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -37,10 +38,12 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [state, setState] = useState<ImportState>({ step: "upload" });
+  const [importError, setImportError] = useState<string | null>(null);
 
   const handleReset = () => {
     setCsvText("");
     setState({ step: "upload" });
+    setImportError(null);
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -68,10 +71,15 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
     const valid = rows.flatMap((row) => (row.errors.length === 0 ? [row.member] : []));
 
     if (valid.length === 0) {
+      setImportError(
+        "No rows are ready to import. Go back and fix the rows marked in the preview.",
+      );
+
       return;
     }
 
     setState({ rows, step: "importing" });
+    setImportError(null);
     const result = await writeTeam({ submit: () => importMembers(teamId, valid) });
 
     if (result.success) {
@@ -83,7 +91,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
       return;
     }
 
-    toast.error(result.error);
+    setImportError(result.error);
     setState({ rows, step: "preview" });
   };
 
@@ -108,6 +116,8 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                 nearest supported one.
               </DialogDescription>
             </DialogHeader>
+
+            <FormAlert message={importError} />
 
             {rows === null ? (
               <UploadForm
@@ -141,7 +151,6 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
                     Back
                   </Button>
                   <Button
-                    disabled={validCount === 0}
                     onClick={() => {
                       void handleImport(state.rows);
                     }}

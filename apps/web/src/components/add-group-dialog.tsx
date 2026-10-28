@@ -10,12 +10,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { Field, FieldLabel } from "@repo/ui/components/field";
+import { Field, FieldDescription, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { useForm } from "@tanstack/react-form";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -45,20 +47,31 @@ const DEFAULT_VALUES: FormValues = {
 const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
   const writeTeam = useTeamWrite(teamId);
   const [open, setOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const form = useForm({
     defaultValues: DEFAULT_VALUES,
+    listeners: {
+      onChange: () => {
+        setFormError(null);
+      },
+    },
     onSubmit: async ({ value }) => {
+      setFormError(null);
       const result = await writeTeam({ submit: () => createGroup(teamId, { name: value.name }) });
 
       if (result.success) {
         setOpen(false);
         toast.success(`Group "${value.name}" created`);
       } else {
-        toast.error(result.error);
+        setFormError(result.error);
       }
     },
-    validators: { onBlur: formSchema, onChange: formSchema, onSubmit: formSchema },
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: formSchema },
   });
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -66,6 +79,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
 
     if (nextOpen) {
       form.reset();
+      setFormError(null);
     }
   };
 
@@ -85,6 +99,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
       </DialogTrigger>
       <DialogContent>
         <ClientReadyForm
+          id={form.formId}
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
@@ -99,16 +114,19 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4">
+          <div className="flex flex-col gap-4 py-4">
+            <FormAlert message={formError} />
             <form.Field name="name">
               {(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const isInvalid = !field.state.meta.isValid;
 
                 return (
                   <Field data-invalid={isInvalid || undefined}>
                     <FieldLabel htmlFor="group-name">Group name</FieldLabel>
                     <Input
-                      aria-describedby={isInvalid ? "group-name-error" : undefined}
+                      aria-describedby={
+                        isInvalid ? "group-name-hint group-name-error" : "group-name-hint"
+                      }
                       aria-invalid={isInvalid}
                       id="group-name"
                       onBlur={field.handleBlur}
@@ -118,6 +136,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
                       placeholder="e.g. Engineering"
                       value={field.state.value}
                     />
+                    <FieldDescription id="group-name-hint">Up to 50 characters.</FieldDescription>
                     {isInvalid && (
                       <FormFieldError errors={field.state.meta.errors} id="group-name-error" />
                     )}
@@ -140,12 +159,12 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
             </Button>
             <form.Subscribe
               selector={(state) => ({
-                canSubmit: state.canSubmit,
+                isEmpty: state.values.name.trim() === "",
                 isSubmitting: state.isSubmitting,
               })}
             >
-              {({ canSubmit, isSubmitting }) => (
-                <Button disabled={isSubmitting || !canSubmit} type="submit">
+              {({ isEmpty, isSubmitting }) => (
+                <Button disabled={isEmpty || isSubmitting} type="submit">
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
                       <Spinner />

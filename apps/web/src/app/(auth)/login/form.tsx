@@ -4,8 +4,10 @@ import { Button } from "@repo/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { useForm } from "@tanstack/react-form";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, use, useState, useTransition } from "react";
@@ -14,7 +16,7 @@ import { signIn } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/form-schemas";
 import { safeRedirectPath } from "@/lib/redirect-validation";
 
-import { AuthErrorNotice } from "../auth-error";
+import { authErrorMessage } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
 import type { AuthErrorKind } from "../auth-error-kind";
 import { AUTH_LINK_CLASS, AuthFooter, FormNotice } from "../auth-shell";
@@ -51,6 +53,12 @@ const LoginForm = ({ searchParams }: Props) => {
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
+    listeners: {
+      onChange: () => {
+        setShowUnverifiedNotice(false);
+        setErrorKind(null);
+      },
+    },
     onSubmit: ({ value }) => {
       setShowUnverifiedNotice(false);
       // Clearing first re-inserts the alert, so a repeated failure is announced again.
@@ -83,12 +91,17 @@ const LoginForm = ({ searchParams }: Props) => {
         }
       });
     },
-    validators: { onSubmit: loginSchema },
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: loginSchema },
   });
 
   return (
     <>
       <ClientReadyForm
+        id={form.formId}
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -97,9 +110,10 @@ const LoginForm = ({ searchParams }: Props) => {
         }}
       >
         <FieldGroup>
+          <FormAlert message={authErrorMessage(errorKind)} />
           <form.Field name="email">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -107,6 +121,7 @@ const LoginForm = ({ searchParams }: Props) => {
                   <Input
                     aria-describedby={isInvalid ? "login-email-error" : undefined}
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="email"
                     className="h-11 sm:h-10"
                     disabled={isPending}
@@ -129,7 +144,7 @@ const LoginForm = ({ searchParams }: Props) => {
 
           <form.Field name="password">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid = !field.state.meta.isValid;
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -145,6 +160,7 @@ const LoginForm = ({ searchParams }: Props) => {
                   <Input
                     aria-describedby={isInvalid ? "login-password-error" : undefined}
                     aria-invalid={isInvalid}
+                    aria-required
                     autoComplete="current-password"
                     className="h-11 sm:h-10"
                     disabled={isPending}
@@ -169,7 +185,6 @@ const LoginForm = ({ searchParams }: Props) => {
               This email isn&apos;t verified yet. We just sent you a new link.
             </FormNotice>
           )}
-          {errorKind !== null && <AuthErrorNotice kind={errorKind} />}
 
           <Button
             aria-busy={isPending}

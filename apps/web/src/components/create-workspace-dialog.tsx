@@ -10,11 +10,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { Field, FieldLabel } from "@repo/ui/components/field";
+import { Field, FieldDescription, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
@@ -40,6 +42,11 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
 
   const form = useForm({
     defaultValues: { name: "" },
+    listeners: {
+      onChange: () => {
+        setError(null);
+      },
+    },
     onSubmit: async ({ value }) => {
       setError(null);
 
@@ -57,6 +64,9 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
       } catch {
         setError("Could not create your workspace. Please try again.");
       }
+    },
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
     },
     validationLogic: revalidateLogic(),
     validators: { onDynamic: schema },
@@ -79,9 +89,11 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
       </DialogTrigger>
       <DialogContent>
         <ClientReadyForm
+          id={form.formId}
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
+            event.stopPropagation();
             void form.handleSubmit();
           }}
         >
@@ -89,7 +101,8 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
             <DialogTitle>Name your workspace</DialogTitle>
             <DialogDescription>Choose a name your teammates will recognize.</DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="flex flex-col gap-4 py-4">
+            <FormAlert message={error} />
             <form.Field name="name">
               {(field) => {
                 const invalid = !field.state.meta.isValid;
@@ -98,17 +111,17 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
                   <Field data-invalid={invalid || undefined}>
                     <FieldLabel htmlFor={id}>Workspace name</FieldLabel>
                     <Input
-                      aria-describedby={invalid ? `${id}-error` : undefined}
+                      aria-describedby={invalid ? `${id}-hint ${id}-error` : `${id}-hint`}
                       aria-invalid={invalid}
                       autoComplete="off"
                       id={id}
-                      maxLength={100}
                       onBlur={field.handleBlur}
                       onChange={(event) => {
                         field.handleChange(event.target.value);
                       }}
                       value={field.state.value}
                     />
+                    <FieldDescription id={`${id}-hint`}>Up to 100 characters.</FieldDescription>
                     {invalid && (
                       <FormFieldError errors={field.state.meta.errors} id={`${id}-error`} />
                     )}
@@ -116,11 +129,6 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
                 );
               }}
             </form.Field>
-            {error !== null && (
-              <p className="mt-3 text-sm text-destructive" role="alert">
-                {error}
-              </p>
-            )}
           </div>
           <form.Subscribe
             selector={(state) => ({

@@ -5,14 +5,15 @@ import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
+import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
+import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { cn } from "@repo/ui/lib/utils";
-import { useForm } from "@tanstack/react-form";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { Lock, LogIn, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { InviteMismatchNotice } from "./client/invite-mismatch-notice";
@@ -39,6 +40,7 @@ const PrivateSpaceGate = ({
   const { refresh } = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
 
   const redirectTarget = returnTo ?? `/${teamId}`;
@@ -46,8 +48,15 @@ const PrivateSpaceGate = ({
 
   const form = useForm({
     defaultValues: { password: "" },
+    listeners: {
+      onChange: () => {
+        setServerError(null);
+        setFormError(null);
+      },
+    },
     onSubmit: async ({ value }) => {
       setServerError(null);
+      setFormError(null);
       setIsPending(true);
 
       const response = await fetch(`/api/spaces/${spaceId}/verify-password`, {
@@ -57,7 +66,7 @@ const PrivateSpaceGate = ({
       }).catch(() => null);
 
       if (!response) {
-        toast.error("Could not verify the password. Please try again.");
+        setFormError("Could not verify the password. Please try again.");
         setIsPending(false);
 
         return;
@@ -71,14 +80,14 @@ const PrivateSpaceGate = ({
       }
 
       if (response.status === 429) {
-        toast.error("Too many attempts. Try again later.");
+        setFormError("Too many attempts. Try again later.");
         setIsPending(false);
 
         return;
       }
 
       if (!response.ok) {
-        toast.error("Could not verify the password. Please try again.");
+        setFormError("Could not verify the password. Please try again.");
         setIsPending(false);
 
         return;
@@ -93,7 +102,11 @@ const PrivateSpaceGate = ({
       setAccepted(true);
       setIsPending(false);
     },
-    validators: { onSubmit: passwordSchema },
+    onSubmitInvalid: ({ formApi }) => {
+      focusFirstInvalidField(formApi.formId);
+    },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: passwordSchema },
   });
 
   return (
@@ -151,6 +164,7 @@ const PrivateSpaceGate = ({
               </p>
             )}
             <ClientReadyForm
+              id={form.formId}
               noValidate
               onSubmit={(e) => {
                 e.preventDefault();
@@ -159,11 +173,10 @@ const PrivateSpaceGate = ({
               }}
             >
               <FieldGroup>
+                <FormAlert message={formError} />
                 <form.Field name="password">
                   {(field) => {
-                    const isInvalid =
-                      Boolean(serverError) ||
-                      (field.state.meta.isTouched && !field.state.meta.isValid);
+                    const isInvalid = Boolean(serverError) || !field.state.meta.isValid;
 
                     return (
                       <Field data-invalid={isInvalid || undefined}>
@@ -176,7 +189,6 @@ const PrivateSpaceGate = ({
                           id="space-password"
                           onBlur={field.handleBlur}
                           onChange={(e) => {
-                            setServerError(null);
                             field.handleChange(e.target.value);
                           }}
                           type="password"

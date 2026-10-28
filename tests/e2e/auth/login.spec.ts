@@ -33,7 +33,7 @@ test.describe("Login", () => {
     await loginPage.goto();
     await loginPage.login(testUser.email, "WrongPassword999!");
 
-    await expect(page.getByRole("alert").filter({ hasText: /incorrect/i })).toBeVisible({
+    await expect(page.locator('[data-slot="form-alert"]')).toContainText(/incorrect/i, {
       timeout: 5000,
     });
   });

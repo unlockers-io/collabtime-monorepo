@@ -30,11 +30,9 @@ test("CSV import keeps rows and becomes retryable after a transport failure", as
   await page.getByRole("button", { exact: true, name: "Preview" }).click();
   const restoreNetwork = await rejectSubmission(page, "Retry Alice");
   await page.getByRole("button", { exact: true, name: "Import 1 member" }).click();
-  await expect(
-    page.getByText("Could not save your changes. Check your connection and try again.", {
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.locator('[data-slot="form-alert"]')).toHaveText(
+    "Could not save your changes. Check your connection and try again.",
+  );
   await expect(page.getByRole("dialog").getByText("Retry Alice", { exact: true })).toBeVisible();
   const retry = page.getByRole("button", { exact: true, name: "Import 1 member" });
   await expect(retry).toBeEnabled();
@@ -53,12 +51,15 @@ test("add group keeps the form usable after a transport failure", async ({ homeP
   await page.keyboard.press("Tab");
   const restoreNetwork = await rejectSubmission(page, "Retry Group");
   await page.getByRole("button", { exact: true, name: "Create group" }).click();
-  await expect(
-    page.getByText("Could not save your changes. Check your connection and try again.", {
-      exact: true,
-    }),
-  ).toBeVisible();
+  const formAlert = page.locator('[data-slot="form-alert"]');
+  await expect(formAlert).toHaveText(
+    "Could not save your changes. Check your connection and try again.",
+  );
   await expect(page.getByLabel("Group name")).toHaveValue("Retry Group");
+  await page.getByLabel("Group name").press("End");
+  await page.getByLabel("Group name").press("Backspace");
+  await expect(formAlert).toBeHidden();
+  await page.getByLabel("Group name").press("p");
   const retry = page.getByRole("button", { exact: true, name: "Create group" });
   await expect(retry).toBeEnabled();
   await restoreNetwork();
