@@ -1,6 +1,7 @@
 ---
 title: 'Auth forms stop re-rendering their fields in jsdom while use(searchParams) suspends'
 severity: 'minor'
+issue: 'unlockers-io/collabtime-monorepo#336'
 ---
 
 ## Expected Behavior
