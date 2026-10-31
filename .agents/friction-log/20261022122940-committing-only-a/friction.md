@@ -1,6 +1,7 @@
 ---
 title: 'Committing only a frog entry fails the pre-commit hook'
 severity: 'minor'
+issue: 'unlockers-io/collabtime-monorepo#337'
 ---
 
 ## Expected Behavior
