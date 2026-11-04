@@ -3,7 +3,7 @@ import { holdScripts } from "../helpers/hold-scripts";
 
 test.describe("Settings profile form", () => {
   test("keeps the form disabled until it hydrates", async ({ page }) => {
-    const nameInput = page.getByLabel("Full name");
+    const nameInput = page.getByRole("textbox", { name: "Full name" });
 
     const releaseScripts = await holdScripts(page);
     await page.goto("/settings", { waitUntil: "commit" });
