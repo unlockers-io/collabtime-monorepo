@@ -67,11 +67,6 @@
       "registrySha256": "3ad65962485f464592201cb90017b3d52a5c9fe272ce41ee049485b4c42e0d76",
       "sha256": "8fb33b270fb4f4f9cb6d583ff2f476ff485adf022d6c14c55a150285b50475b5"
     },
-    "src/components/skeleton.tsx": {
-      "registry": "skeleton",
-      "registrySha256": "85692a09912f518ffd64c540dfcf098fe748a807baf288c107cf8126496cf886",
-      "sha256": "55d659662f00299161830eee84a8a469f8b87340cd0ea489fa7e3946ae700050"
-    },
     "src/components/sonner.tsx": {
       "registry": "sonner",
       "registrySha256": "831967f80f645ac3908b356a44748698a9ceed1c6a51b232dd5e87c52a54d7c3",
