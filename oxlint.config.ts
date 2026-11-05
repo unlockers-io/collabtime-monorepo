@@ -81,6 +81,7 @@ export default defineConfig({
     },
   ],
   rules: {
+    "react/no-unknown-property": ["error", { ignore: ["skullet-block"] }],
     "shadcn/no-restyle": [
       "error",
       {
