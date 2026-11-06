@@ -24,7 +24,6 @@ describe("sendTransactionalEmail", () => {
       },
       {
         apiKey: "re_test",
-        defaultReplyTo: "support@collabtime.io",
         from: "Custom <c@collabtime.io>",
       },
     );
@@ -32,7 +31,6 @@ describe("sendTransactionalEmail", () => {
     expect(sendEmailMock).toHaveBeenCalledOnce();
     expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
       apiKey: "re_test",
-      defaultReplyTo: "support@collabtime.io",
       from: "Custom <c@collabtime.io>",
       subject: "Welcome to Collabtime, Ada! Please verify your email",
       tags: [

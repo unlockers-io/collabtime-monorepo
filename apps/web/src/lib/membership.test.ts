@@ -160,7 +160,7 @@ describe("revokeMembership", () => {
     });
 
     expect(granted.ok).toBe(true);
-    expect(harness.publish).toHaveBeenCalledExactlyOnceWith(VALID_UUID);
+    expect(harness.publish).toHaveBeenCalledExactlyOnceWith(VALID_UUID, ["contents", "space"]);
     harness.publish.mockClear();
     harness.membershipStore.revoke.mockRejectedValueOnce(new Error("rollback"));
     await expect(harness.revokeMembership({ access, memberId: VALID_UUID_2 })).rejects.toThrow(

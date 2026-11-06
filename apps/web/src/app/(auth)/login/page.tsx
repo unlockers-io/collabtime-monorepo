@@ -14,7 +14,10 @@ const metadata: Metadata = {
   title: "Welcome back",
 };
 
-type SearchParams = Promise<{ message?: string | Array<string>; redirect?: string }>;
+type SearchParams = Promise<{
+  message?: string | Array<string>;
+  redirect?: string | Array<string>;
+}>;
 
 type Props = {
   searchParams: SearchParams;

@@ -4,7 +4,8 @@ import { randomUUID } from "node:crypto";
 import { Redis } from "ioredis";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ACQUIRE_LEASE, LEASE_SECONDS } from "./team-event-admission";
+import { ACQUIRE_LEASE } from "./team-event-admission";
+import { LEASE_SECONDS } from "./team-live-protocol";
 
 const url = process.env.LIVE_SYNC_TEST_REDIS_URL;
 

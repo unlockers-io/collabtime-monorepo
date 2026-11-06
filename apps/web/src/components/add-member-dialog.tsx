@@ -16,20 +16,18 @@ import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormAlert } from "@repo/ui/compositions/form-alert";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { MemberFields } from "@/components/member-fields";
-import { MemberTextField } from "@/components/member-text-field";
-import { bindField, MEMBER_FIELDS, useMemberForm } from "@/hooks/use-member-form";
+import { TextField } from "@/components/text-field";
+import { invitationSentMessage, useInvitationWrites } from "@/hooks/use-invitation-writes";
+import { MEMBER_FIELDS, useMemberForm } from "@/hooks/use-member-form";
 import { useTeamWrite } from "@/hooks/use-team-write";
-import { inviteMember } from "@/lib/actions/invitation-actions";
-import { addMember } from "@/lib/actions/member-actions";
+import { bindField } from "@/lib/bind-field";
 import { addMemberFormSchema, NO_GROUP, toMemberInput } from "@/lib/member-input";
 import type { AddMemberFormValues } from "@/lib/member-input";
-import { queryKeys } from "@/lib/query-keys";
 import {
   DEFAULT_WORKING_HOURS_END,
   DEFAULT_WORKING_HOURS_START,
@@ -51,8 +49,8 @@ type AddMemberFormProps = {
 };
 
 const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMemberFormProps) => {
-  const queryClient = useQueryClient();
-  const writeTeam = useTeamWrite(teamId);
+  const write = useTeamWrite(teamId);
+  const invitations = useInvitationWrites(teamId);
   const [formError, setFormError] = useState<string | null>(null);
 
   const [defaultValues] = useState<AddMemberFormValues>(() => ({
@@ -75,23 +73,17 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
     onSubmit: async ({ value }) => {
       setFormError(null);
       const { email } = value;
-      const result = await writeTeam({ submit: () => addMember(teamId, toMemberInput(value)) });
+      const result = await write.change("addMember", toMemberInput(value));
 
       if (result.success) {
         onOpenChange(false);
         toast.success(`${value.name} added to team`);
 
         if (email) {
-          const inviteResult = await inviteMember(teamId, result.data.member.id, email);
+          const inviteResult = await invitations.invite(result.data.memberId, email);
 
           if (inviteResult.success) {
-            void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
-
-            if (inviteResult.data.emailSent) {
-              toast.success(`Invitation sent to ${email}`);
-            } else {
-              toast.success(`Invitation created for ${email} (email was not delivered)`);
-            }
+            toast.success(invitationSentMessage(email, inviteResult.data.emailSent));
           } else {
             toast.error(inviteResult.error);
           }
@@ -132,7 +124,7 @@ const AddMemberForm = ({ groups, isFirstMember, onOpenChange, teamId }: AddMembe
 
         <form.Field name="email">
           {(field) => (
-            <MemberTextField
+            <TextField
               {...bindField(field)}
               autoComplete="off"
               description="We'll email a link so they can claim this profile."

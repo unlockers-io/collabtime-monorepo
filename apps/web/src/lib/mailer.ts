@@ -24,6 +24,8 @@ const getMailerConfig = (): MailerConfig | null => {
     : null;
 };
 
+export { getMailerConfig };
+
 export const createAppMailer =
   ({ getConfig, report, send }: MailerDeps) =>
   async (email: TransactionalEmail): Promise<{ sent: boolean }> => {

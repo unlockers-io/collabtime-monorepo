@@ -13,7 +13,7 @@ afterEach(() => {
 
 const submitPassword = (status: number) => {
   vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status })));
-  render(<PrivateSpaceGate isAuthenticated spaceId="space-1" teamId="team-1" />);
+  render(<PrivateSpaceGate isAuthenticated returnTo="/team-1" spaceId="space-1" />);
   const password = screen.getByLabelText("Password");
   fireEvent.change(password, { target: { value: "guess" } });
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));

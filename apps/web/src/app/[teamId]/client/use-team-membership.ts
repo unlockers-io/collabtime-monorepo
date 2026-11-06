@@ -3,30 +3,41 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import type { NavRole } from "@/components/nav/user-menu";
 import { requestToJoin } from "@/lib/actions/join-requests";
-import type { TeamMember, TeamStatus } from "@/types";
+import type { TeamMember } from "@/types";
+
+import type { TeamPageViewer } from "../viewer";
 
 type Options = {
-  initialStatus: TeamStatus;
   members: Array<TeamMember>;
   teamId: string;
-  userId: string | undefined;
+  viewer: TeamPageViewer;
 };
 
-const useTeamMembership = ({ initialStatus, members, teamId, userId }: Options) => {
+const navRoleOf = ({ status, userId }: TeamPageViewer): NavRole => {
+  if (status === "ADMIN") {
+    return "admin";
+  }
+
+  if (status === "MEMBER") {
+    return "member";
+  }
+
+  return userId === null ? "guest" : "account";
+};
+
+const useTeamMembership = ({ members, teamId, viewer }: Options) => {
   const router = useRouter();
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
-  const teamStatus = initialStatus;
-  const isAdmin = teamStatus === "ADMIN";
-  const isMember = isAdmin || teamStatus === "MEMBER";
-  const currentUserId = isMember ? userId : undefined;
+  const isAdmin = viewer.status === "ADMIN";
+  const isMember = isAdmin || viewer.status === "MEMBER";
+  const currentUserId = isMember ? (viewer.userId ?? undefined) : undefined;
 
   const hasClaimedProfile =
-    currentUserId !== undefined &&
-    currentUserId !== "" &&
-    members.some((member) => member.userId === currentUserId);
+    currentUserId !== undefined && members.some((member) => member.userId === currentUserId);
 
-  const handleRequestJoin = async () => {
+  const requestJoin = async () => {
     setIsRequestingJoin(true);
 
     try {
@@ -48,13 +59,17 @@ const useTeamMembership = ({ initialStatus, members, teamId, userId }: Options) 
 
   return {
     currentUserId,
-    handleRequestJoin,
     hasClaimedProfile,
     isAdmin,
     isMember,
     isRequestingJoin,
-    teamStatus,
+    navRole: navRoleOf(viewer),
+    requestJoin,
   };
 };
 
+type TeamMembership = ReturnType<typeof useTeamMembership>;
+
 export { useTeamMembership };
+
+export type { TeamMembership };

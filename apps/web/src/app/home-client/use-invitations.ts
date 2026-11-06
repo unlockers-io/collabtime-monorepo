@@ -4,22 +4,10 @@ import { captureException } from "@sentry/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOptimistic, useTransition } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 
 import { acceptInvitation, declineInvitation } from "@/lib/actions/invitation-actions";
+import { type PendingInvitation, PendingInvitationsResponseSchema } from "@/lib/home-lists";
 import { queryKeys } from "@/lib/query-keys";
-import type { PendingInvitation } from "@/types";
-
-const InvitationSchema = z.object({
-  expiresAt: z.string().nullable(),
-  id: z.string(),
-  inviterName: z.string(),
-  memberId: z.string(),
-  teamId: z.string(),
-  teamName: z.string(),
-});
-
-const InvitationsResponseSchema = z.object({ invitations: z.array(InvitationSchema) });
 
 const withoutInvitation = (
   current: Array<PendingInvitation>,
@@ -43,7 +31,7 @@ const useInvitations = () => {
         throw new Error("Failed to fetch invitations");
       }
 
-      const data = InvitationsResponseSchema.parse(await response.json());
+      const data = PendingInvitationsResponseSchema.parse(await response.json());
 
       return data.invitations;
     },

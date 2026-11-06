@@ -5,10 +5,8 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 
 import { useTeamWrite } from "@/hooks/use-team-write";
-import { reorderGroups } from "@/lib/actions/group-actions";
-import { reorderMembers, updateMember } from "@/lib/actions/member-actions";
 import type { ActionResult } from "@/lib/actions/types";
-import type { Team, TeamGroup, TeamMember } from "@/types";
+import type { TeamGroup, TeamMember } from "@/types";
 
 type UseDragEndArgs = {
   orderedGroups: Array<TeamGroup>;
@@ -16,27 +14,15 @@ type UseDragEndArgs = {
   teamId: string;
 };
 
-type Orderable = { id: string; order: number };
+const report = async (writing: Promise<ActionResult<undefined>>, successMessage?: string) => {
+  const result = await writing;
 
-/**
- * Member and group reordering differ only in which collection they touch. Ids
- * the cache no longer knows are dropped rather than fabricated, since the cache
- * can move on while a drag is in flight.
- */
-const reorderPatch =
-  (key: "groups" | "members", newIds: Array<string>) =>
-  (team: Team): Team => {
-    const byId = new Map<string, Orderable>(team[key].map((item) => [item.id, item]));
-
-    return {
-      ...team,
-      [key]: newIds.flatMap((id, index) => {
-        const item = byId.get(id);
-
-        return item ? [{ ...item, order: index }] : [];
-      }),
-    };
-  };
+  if (!result.success) {
+    toast.error(result.error);
+  } else if (successMessage !== undefined) {
+    toast.success(successMessage);
+  }
+};
 
 const indexPair = (items: Array<{ id: string }>, activeId: string, overId: string) => {
   const oldIndex = items.findIndex((item) => item.id === activeId);
@@ -46,25 +32,7 @@ const indexPair = (items: Array<{ id: string }>, activeId: string, overId: strin
 };
 
 const useDragEnd = ({ orderedGroups, orderedMembers, teamId }: UseDragEndArgs) => {
-  const writeTeam = useTeamWrite(teamId);
-
-  const write = async (
-    optimistic: (team: Team) => Team,
-    submit: () => Promise<ActionResult<unknown>>,
-    successMessage?: string,
-  ) => {
-    try {
-      const result = await writeTeam({ optimistic, submit });
-
-      if (!result.success) {
-        toast.error(result.error);
-      } else if (successMessage !== undefined) {
-        toast.success(successMessage);
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the change");
-    }
-  };
+  const write = useTeamWrite(teamId);
 
   const handleMemberDroppedOnGroup = (memberId: string, groupId: string) => {
     const member = orderedMembers.find((m) => m.id === memberId);
@@ -75,19 +43,9 @@ const useDragEnd = ({ orderedGroups, orderedMembers, teamId }: UseDragEndArgs) =
 
     const groupName = orderedGroups.find((g) => g.id === groupId)?.name ?? "group";
 
-    void write(
-      (team) => ({
-        ...team,
-        members: team.members.map((m) => (m.id === memberId ? { ...m, groupId } : m)),
-      }),
-      () => updateMember(teamId, memberId, { groupId }),
+    void report(
+      write.change("updateMember", { memberId, updates: { groupId } }),
       `${member.name} added to ${groupName}`,
-    );
-  };
-
-  const reorder = (key: "groups" | "members", newIds: Array<string>) => {
-    void write(reorderPatch(key, newIds), () =>
-      key === "members" ? reorderMembers(teamId, newIds) : reorderGroups(teamId, newIds),
     );
   };
 
@@ -110,9 +68,10 @@ const useDragEnd = ({ orderedGroups, orderedMembers, teamId }: UseDragEndArgs) =
         const pair = indexPair(orderedMembers, activeId, overId);
 
         if (pair) {
-          reorder(
-            "members",
-            arrayMove(orderedMembers, pair.oldIndex, pair.newIndex).map((m) => m.id),
+          void report(
+            write.change("reorderMembers", {
+              memberIds: arrayMove(orderedMembers, pair.oldIndex, pair.newIndex).map((m) => m.id),
+            }),
           );
         }
 
@@ -130,9 +89,10 @@ const useDragEnd = ({ orderedGroups, orderedMembers, teamId }: UseDragEndArgs) =
       const pair = indexPair(orderedGroups, activeId, overId);
 
       if (pair) {
-        reorder(
-          "groups",
-          arrayMove(orderedGroups, pair.oldIndex, pair.newIndex).map((g) => g.id),
+        void report(
+          write.change("reorderGroups", {
+            groupIds: arrayMove(orderedGroups, pair.oldIndex, pair.newIndex).map((g) => g.id),
+          }),
         );
       }
     }

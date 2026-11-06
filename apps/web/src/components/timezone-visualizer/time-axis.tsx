@@ -2,7 +2,7 @@
 
 import { cn } from "@repo/ui/lib/utils";
 
-import { formatHour } from "@/lib/utils";
+import { formatHour } from "@/lib/timezones";
 
 import { HOURS_IN_DAY, MOBILE_TIME_AXIS_HOURS, TIME_AXIS_HOURS, getEdgeAlignment } from "./helpers";
 

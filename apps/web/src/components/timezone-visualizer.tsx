@@ -4,7 +4,7 @@ import { TooltipProvider } from "@repo/ui/components/tooltip";
 import { useState } from "react";
 
 import { getTeamSchedule } from "@/lib/team-schedule";
-import { useHalfMinuteTick } from "@/lib/use-tick";
+import { useNow } from "@/lib/use-tick";
 import { useViewerTimezone } from "@/lib/use-viewer-timezone";
 import type { TeamGroup, TeamMember } from "@/types";
 
@@ -47,13 +47,12 @@ const TimezoneVisualizer = ({
   };
 
   const viewerTimezone = useViewerTimezone();
-  const tick = useHalfMinuteTick();
+  const now = useNow();
 
-  if (members.length === 0 || !viewerTimezone || tick === 0) {
+  if (members.length === 0 || viewerTimezone === null || now === null) {
     return null;
   }
 
-  const now = new Date(tick);
   const memberIds = new Set(members.map((member) => member.id));
   const excludedSet = new Set(excludedIds.filter((id) => memberIds.has(id)));
   const collapsedSet = new Set(collapsedGroupIds);

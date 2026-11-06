@@ -3,19 +3,18 @@
 import { Button } from "@repo/ui/components/button";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Spinner } from "@repo/ui/components/spinner";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Bell, Check, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useTeamWrite } from "@/hooks/use-team-write";
 import {
   approveJoinRequest,
   denyJoinRequest,
   getPendingJoinRequests,
 } from "@/lib/actions/join-requests";
-import type { ActionResult } from "@/lib/actions/types";
 import { queryKeys } from "@/lib/query-keys";
-import { runWithCleanup } from "@/lib/run-with-cleanup";
 
 type JoinRequestsPanelProps = {
   teamId: string;
@@ -30,7 +29,6 @@ type JoinRequest = {
 type RowAction = "approve" | "deny" | null;
 
 type JoinRequestRowProps = {
-  onSettled: () => void;
   request: JoinRequest;
   teamId: string;
 };
@@ -40,39 +38,25 @@ type JoinRequestRowProps = {
  * only describe one row, so starting a second action cleared the first row's
  * spinner and re-enabled its buttons mid-flight, allowing a duplicate submit.
  */
-const JoinRequestRow = ({ onSettled, request, teamId }: JoinRequestRowProps) => {
+const JoinRequestRow = ({ request, teamId }: JoinRequestRowProps) => {
+  const write = useTeamWrite(teamId);
   const [action, setAction] = useState<RowAction>(null);
 
   const run = async (next: Exclude<RowAction, null>) => {
     setAction(next);
 
-    const successMessage = next === "approve" ? "Request approved" : "Request denied";
+    const result =
+      next === "approve"
+        ? await write.run(() => approveJoinRequest(teamId, request.id))
+        : await write.run(() => denyJoinRequest(teamId, request.id));
 
-    const failureMessage =
-      next === "approve" ? "Failed to approve request" : "Failed to deny request";
+    setAction(null);
 
-    await runWithCleanup(
-      async () => {
-        try {
-          const result: ActionResult<unknown> =
-            next === "approve"
-              ? await approveJoinRequest(teamId, request.id)
-              : await denyJoinRequest(teamId, request.id);
-
-          if (result.success) {
-            toast.success(successMessage);
-          } else {
-            toast.error(result.error);
-          }
-        } catch {
-          toast.error(failureMessage);
-        }
-      },
-      () => {
-        setAction(null);
-        onSettled();
-      },
-    );
+    if (result.success) {
+      toast.success(next === "approve" ? "Request approved" : "Request denied");
+    } else {
+      toast.error(result.error);
+    }
   };
 
   const isBusy = action !== null;
@@ -118,7 +102,6 @@ const JoinRequestRow = ({ onSettled, request, teamId }: JoinRequestRowProps) => 
 
 const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const queryClient = useQueryClient();
 
   const { data: requests = [], isLoading } = useQuery({
     queryFn: async () => {
@@ -130,12 +113,8 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
 
       return result.data;
     },
-    queryKey: queryKeys.joinRequests(teamId),
+    queryKey: queryKeys.team.joinRequests(teamId),
   });
-
-  const invalidateRequests = () => {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.joinRequests(teamId) });
-  };
 
   const handleToggle = () => {
     setIsExpanded((prev) => !prev);
@@ -182,12 +161,7 @@ const JoinRequestsPanel = ({ teamId }: JoinRequestsPanelProps) => {
           <ScrollArea className="max-h-64">
             <ul aria-live="polite" className="divide-y divide-border">
               {requests.map((request) => (
-                <JoinRequestRow
-                  key={request.id}
-                  onSettled={invalidateRequests}
-                  request={request}
-                  teamId={teamId}
-                />
+                <JoinRequestRow key={request.id} request={request} teamId={teamId} />
               ))}
             </ul>
           </ScrollArea>

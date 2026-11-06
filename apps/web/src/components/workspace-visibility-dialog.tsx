@@ -14,7 +14,6 @@ import { Input } from "@repo/ui/components/input";
 import { Switch } from "@repo/ui/components/switch";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormAlert } from "@repo/ui/compositions/form-alert";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { captureException } from "@sentry/nextjs";
@@ -24,14 +23,16 @@ import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { TextField } from "@/components/text-field";
 import type { ActionResult } from "@/lib/actions/types";
+import { readApiError } from "@/lib/api-error";
+import { bindField } from "@/lib/bind-field";
+import { SPACE_PASSWORD_LENGTH } from "@/lib/limits";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
 
 const savedSpaceSchema = z.object({
   space: z.object({ hasPassword: z.boolean(), isPrivate: z.boolean() }),
 });
-
-const errorSchema = z.object({ error: z.string() });
 
 type VisibilityUpdate = { password?: string; visibility: "private" | "public" };
 
@@ -65,11 +66,8 @@ const saveVisibility = async (
     });
 
     if (!response.ok) {
-      const data: unknown = await response.json().catch(() => null);
-      const parsed = errorSchema.safeParse(data);
-
       return {
-        error: parsed.success ? parsed.data.error : "Couldn't update workspace privacy",
+        error: await readApiError(response, "Couldn't update workspace privacy"),
         success: false,
       };
     }
@@ -243,45 +241,21 @@ const WorkspaceVisibilityDialog = ({
               {(privateWorkspace) =>
                 privateWorkspace && (
                   <form.Field name="password">
-                    {(field) => {
-                      const invalid = !field.state.meta.isValid;
-
-                      return (
-                        <Field data-invalid={invalid || undefined}>
-                          <FieldLabel htmlFor="workspace-access-password">
-                            Workspace password
-                          </FieldLabel>
-                          <Input
-                            aria-describedby={
-                              invalid
-                                ? "workspace-password-help workspace-access-password-error"
-                                : "workspace-password-help"
-                            }
-                            aria-invalid={invalid}
-                            autoComplete="new-password"
-                            disabled={isSaving}
-                            id="workspace-access-password"
-                            onBlur={field.handleBlur}
-                            onChange={(event) => {
-                              field.handleChange(event.target.value);
-                            }}
-                            type="password"
-                            value={field.state.value}
-                          />
-                          <p className="text-sm text-muted-foreground" id="workspace-password-help">
-                            {hasPassword
-                              ? "Leave blank to keep current password."
-                              : "Set a password to share with guests (8–128 characters)."}
-                          </p>
-                          {invalid && (
-                            <FormFieldError
-                              errors={field.state.meta.errors}
-                              id="workspace-access-password-error"
-                            />
-                          )}
-                        </Field>
-                      );
-                    }}
+                    {(field) => (
+                      <TextField
+                        {...bindField(field)}
+                        autoComplete="new-password"
+                        description={
+                          hasPassword
+                            ? "Leave blank to keep current password."
+                            : `Set a password to share with guests (${SPACE_PASSWORD_LENGTH.min}–${SPACE_PASSWORD_LENGTH.max} characters).`
+                        }
+                        disabled={isSaving}
+                        id="workspace-access-password"
+                        label="Workspace password"
+                        type="password"
+                      />
+                    )}
                   </form.Field>
                 )
               }

@@ -9,8 +9,7 @@ import { UUIDSchema } from "./validation";
 const TEAM_EVENTS_CHANNEL = "collabtime:team-events";
 
 const TeamEventSchema = z.object({
-  at: z.number(),
-  kind: z.enum(["contents", "space", "deleted"]),
+  kind: z.enum(["contents", "space"]),
   teamId: UUIDSchema,
 });
 
@@ -227,7 +226,7 @@ const createTeamEventPublisher = (deps: TeamEventPublisherDeps) => {
         return;
       }
 
-      const message = JSON.stringify({ at: Date.now(), kind, teamId });
+      const message = JSON.stringify({ kind, teamId });
       await withTimeout(deps.publish(TEAM_EVENTS_CHANNEL, message), 1000);
     } catch (error) {
       deps.reportError({
@@ -278,4 +277,6 @@ export {
   TEAM_EVENTS_CHANNEL,
 };
 
-export type { TeamEvent, TeamHubEvent, TeamListener };
+type TeamEventKind = TeamEvent["kind"];
+
+export type { TeamEvent, TeamEventKind, TeamHubEvent, TeamListener };

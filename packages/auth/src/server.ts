@@ -7,6 +7,8 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import type { BetterAuthPlugin } from "better-auth/types";
 
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./password";
+
 type SecondaryStorage = {
   delete: (key: string) => Promise<void>;
   get: (key: string) => Promise<string | null>;
@@ -22,13 +24,11 @@ type AuthLifecycleContext = {
 type AuthConfig = {
   allowedHosts: Array<string>;
   extraPlugins?: Array<BetterAuthPlugin>;
-  fromEmail?: string;
+  mailer: MailerConfig | null;
   onSessionCreated?: (userId: string, ctx: AuthLifecycleContext) => Promise<void>;
   onUserCreated?: (userId: string, ctx: AuthLifecycleContext) => Promise<void>;
   prisma: PrismaClient;
   rateLimitEnabled?: boolean;
-  resendApiKey?: string;
-  resendReplyTo?: string;
   secondaryStorage?: SecondaryStorage;
   secret: string;
   trustedOrigins?: Array<string>;
@@ -39,23 +39,16 @@ const createAuth = (config: AuthConfig) => {
   const {
     allowedHosts,
     extraPlugins = [],
-    fromEmail = "Collabtime <noreply@email.collabtime.io>",
+    mailer,
     onSessionCreated,
     onUserCreated,
     prisma,
     rateLimitEnabled = false,
-    resendApiKey,
-    resendReplyTo,
     secondaryStorage,
     secret,
     trustedOrigins = [],
     useSecureCookies = false,
   } = config;
-
-  const mailer: MailerConfig | null =
-    resendApiKey !== undefined && resendApiKey !== ""
-      ? { apiKey: resendApiKey, defaultReplyTo: resendReplyTo, from: fromEmail }
-      : null;
 
   return betterAuth({
     account: {
@@ -112,8 +105,8 @@ const createAuth = (config: AuthConfig) => {
 
     emailAndPassword: {
       enabled: true,
-      maxPasswordLength: 128,
-      minPasswordLength: 12,
+      maxPasswordLength: PASSWORD_MAX_LENGTH,
+      minPasswordLength: PASSWORD_MIN_LENGTH,
       onExistingUserSignUp: mailer
         ? async ({ user }, request) => {
             const origin = request?.headers.get("origin") ?? "";

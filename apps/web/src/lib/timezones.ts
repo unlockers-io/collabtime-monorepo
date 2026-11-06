@@ -150,6 +150,8 @@ const formatUtcOffset = (timezone: string, at: Date): string => {
     : `UTC${sign}${hours}:${minutes.toString().padStart(2, "0")}`;
 };
 
+const formatHour = (hour: number): string => formatMinuteOfDay(hour * 60);
+
 const formatTimezoneCity = (timezone: string): string =>
   timezone.split("/").pop()?.replaceAll("_", " ") ?? timezone;
 
@@ -162,27 +164,60 @@ type WorkingHours = {
   workingHoursStart: number;
 };
 
-/** An end hour earlier than the start hour runs past midnight. */
-const getWorkingMinutes = ({
+/** A span of the day in minutes; it may run past midnight. */
+type WorkingWindow = { lengthMinutes: number; startMinute: number };
+
+/**
+ * Working hours are whole hours in the member's own zone. An end before the
+ * start runs past midnight, and an end equal to the start means all day.
+ */
+const workingWindow = ({
   workingHoursEnd,
   workingHoursStart,
-}: Omit<WorkingHours, "timezone">): number =>
-  ((workingHoursEnd - workingHoursStart + 24) % 24) * 60;
+}: Omit<WorkingHours, "timezone">): WorkingWindow => ({
+  lengthMinutes: ((workingHoursEnd - workingHoursStart + 24) % 24 || 24) * 60,
+  startMinute: workingHoursStart * 60,
+});
+
+const isWithinWindow = ({ lengthMinutes, startMinute }: WorkingWindow, minute: number): boolean =>
+  wrapMinutes(minute - startMinute) < lengthMinutes;
+
+type WindowPosition =
+  | { kind: "now"; minutesLeft: number }
+  | { kind: "later"; minutesUntil: number };
+
+const windowPosition = (window: WorkingWindow, minute: number): WindowPosition => {
+  const sinceStart = wrapMinutes(minute - window.startMinute);
+
+  return sinceStart < window.lengthMinutes
+    ? { kind: "now", minutesLeft: window.lengthMinutes - sinceStart }
+    : { kind: "later", minutesUntil: wrapMinutes(-sinceStart) };
+};
+
+const isAllDay = (window: WorkingWindow): boolean => window.lengthMinutes === MINUTES_IN_DAY;
+
+const formatWindow = (window: WorkingWindow): string =>
+  isAllDay(window)
+    ? "All day"
+    : formatMinuteRange(window.startMinute, window.startMinute + window.lengthMinutes);
 
 type MemberStatus =
+  | { kind: "all-day" }
   | { kind: "off"; minutesUntilStart: number }
   | { kind: "working"; minutesLeft: number };
 
 const getMemberStatus = (member: WorkingHours, at: Date): MemberStatus => {
-  const sinceStart = wrapMinutes(
-    getMinuteOfDay(member.timezone, at) - member.workingHoursStart * 60,
-  );
+  const window = workingWindow(member);
 
-  const lengthMinutes = getWorkingMinutes(member);
+  if (isAllDay(window)) {
+    return { kind: "all-day" };
+  }
 
-  return sinceStart < lengthMinutes
-    ? { kind: "working", minutesLeft: lengthMinutes - sinceStart }
-    : { kind: "off", minutesUntilStart: wrapMinutes(-sinceStart) };
+  const position = windowPosition(window, getMinuteOfDay(member.timezone, at));
+
+  return position.kind === "now"
+    ? { kind: "working", minutesLeft: position.minutesLeft }
+    : { kind: "off", minutesUntilStart: position.minutesUntil };
 };
 
 const formatDuration = (minutes: number): string => {
@@ -280,20 +315,24 @@ export {
   DEFAULT_WORKING_HOURS_START,
   MINUTES_IN_DAY,
   formatDuration,
+  formatHour,
   formatMinuteOfDay,
   formatMinuteRange,
   formatTimezoneCity,
   formatTimezoneLabel,
   formatUtcOffset,
+  formatWindow,
   fuzzyMatchTimezone,
   getMemberStatus,
   getMinuteOfDay,
   getOffsetMinutes,
   getUserTimezone,
   getViewerTimezone,
-  getWorkingMinutes,
   isCommonTimezone,
+  isWithinWindow,
+  windowPosition,
+  workingWindow,
   wrapMinutes,
 };
 
-export type { CommonTimezone, MemberStatus };
+export type { CommonTimezone, MemberStatus, WorkingWindow };

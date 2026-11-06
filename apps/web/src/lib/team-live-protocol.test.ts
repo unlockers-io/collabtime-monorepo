@@ -4,11 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import { maxDuration } from "@/app/api/teams/[teamId]/events/route";
 
 import { VALID_UUID } from "./actions/test-helpers";
-import { LEASE_SECONDS } from "./team-event-admission";
 import { createTeamEventStream, type AccessResult } from "./team-event-stream";
 import type { TeamEvent, TeamListener } from "./team-events";
 import { createTeamLiveRegistry, type LiveObserver } from "./team-live-connection";
-import { STREAM_LIFETIME_MS, teamEventsUrl } from "./team-live-protocol";
+import { LEASE_SECONDS, STREAM_LIFETIME_MS, teamEventsUrl } from "./team-live-protocol";
 
 class StreamEventSource extends EventTarget {
   readonly #reader: ReadableStreamDefaultReader<string>;
@@ -89,7 +88,7 @@ const setup = () => {
 
   const emit = (kind: TeamEvent["kind"]) => {
     for (const listener of listeners) {
-      listener({ at: Date.now(), kind, teamId: VALID_UUID });
+      listener({ kind, teamId: VALID_UUID });
     }
   };
 
@@ -106,7 +105,7 @@ const observer = (): LiveObserver => ({
 describe("team live protocol", () => {
   it.each([
     ["space", "revoked"],
-    ["deleted", "deleted"],
+    ["space", "deleted"],
   ] as const)(
     "carries server frames to client observers until a %s event ends access as %s",
     async (kind, access) => {

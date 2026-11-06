@@ -1,6 +1,4 @@
-import { QueryClient, QueryClientProvider, QueryObserver } from "@tanstack/react-query";
-import { renderHook } from "@testing-library/react";
-import type { PropsWithChildren } from "react";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ActionResult } from "@/lib/actions/types";
@@ -8,8 +6,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { createTeamQueryInvalidator } from "@/lib/team-query-sync";
 import type { Team } from "@/types";
 
-import type { TeamQueryData } from "./use-team-query";
-import { useTeamWrite } from "./use-team-write";
+import { writeTeam } from "./use-team-write";
 
 const makeTeam = (name: string, id = "team-1"): Team => ({
   createdAt: "2026-01-01T00:00:00.000Z",
@@ -32,32 +29,30 @@ const setup = (
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   }),
 ) => {
-  const queryKey = queryKeys.teams.detail(teamId);
+  const queryKey = queryKeys.team.contents(teamId);
 
-  const queryFn = vi
-    .fn<() => Promise<TeamQueryData>>()
-    .mockResolvedValue({ team: makeTeam("server", teamId) });
+  const queryFn = vi.fn<() => Promise<Team>>().mockResolvedValue(makeTeam("server", teamId));
 
-  queryClient.setQueryData<TeamQueryData>(queryKey, { team: makeTeam("initial", teamId) });
+  queryClient.setQueryData<Team>(queryKey, makeTeam("initial", teamId));
 
   const unsubscribe = new QueryObserver(queryClient, { queryFn, queryKey }).subscribe(
     () => undefined,
   );
 
-  const Wrapper = ({ children }: PropsWithChildren) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-
-  const hook = renderHook(() => useTeamWrite(teamId), { wrapper: Wrapper });
-  const cachedTeam = () => queryClient.getQueryData<TeamQueryData>(queryKey)?.team;
+  const cachedTeam = () => queryClient.getQueryData<Team>(queryKey);
 
   const dispose = () => {
-    hook.unmount();
     unsubscribe();
     queryClient.clear();
   };
 
-  return { cachedTeam, dispose, queryClient, queryFn, write: hook.result.current };
+  return {
+    cachedTeam,
+    dispose,
+    queryClient,
+    queryFn,
+    write: <T,>(write: Parameters<typeof writeTeam<T>>[2]) => writeTeam(queryClient, teamId, write),
+  };
 };
 
 beforeEach(() => {
@@ -76,7 +71,7 @@ describe("team writes", () => {
       const invalidator = createTeamQueryInvalidator(state.queryClient, "team-1");
       const first = Promise.withResolvers<ActionResult<undefined>>();
       const second = Promise.withResolvers<ActionResult<undefined>>();
-      const refetch = Promise.withResolvers<TeamQueryData>();
+      const refetch = Promise.withResolvers<Team>();
       state.queryFn.mockReturnValueOnce(refetch.promise);
 
       const writingFirst = state.write({
@@ -102,7 +97,7 @@ describe("team writes", () => {
       expect(state.queryFn).toHaveBeenCalledTimes(1);
       expect(state.cachedTeam()?.groups).toEqual([design]);
       expect(settled).not.toHaveBeenCalled();
-      refetch.resolve({ team: makeTeam("canonical") });
+      refetch.resolve(makeTeam("canonical"));
       await writing;
       await vi.advanceTimersByTimeAsync(1000);
       expect(settled).toHaveBeenCalledWith([firstResult, succeeded]);
@@ -165,7 +160,7 @@ describe("team writes", () => {
 
   it("restores the previous team when a lone write fails", async () => {
     const state = setup();
-    const refetch = Promise.withResolvers<TeamQueryData>();
+    const refetch = Promise.withResolvers<Team>();
     state.queryFn.mockReturnValueOnce(refetch.promise);
     const submit = Promise.withResolvers<ActionResult<undefined>>();
     const writing = state.write({ optimistic: rename("optimistic"), submit: () => submit.promise });
@@ -174,7 +169,7 @@ describe("team writes", () => {
     submit.resolve(failed);
     await vi.advanceTimersByTimeAsync(0);
     expect(state.cachedTeam()?.name).toBe("initial");
-    refetch.resolve({ team: makeTeam("server") });
+    refetch.resolve(makeTeam("server"));
     await expect(writing).resolves.toEqual(failed);
     expect(state.cachedTeam()?.name).toBe("server");
     state.dispose();
@@ -198,7 +193,7 @@ describe("team writes", () => {
   it("rolls back a thrown submission and awaits the canonical refresh before returning a failure", async () => {
     const state = setup();
     const submit = Promise.withResolvers<ActionResult<undefined>>();
-    const refetch = Promise.withResolvers<TeamQueryData>();
+    const refetch = Promise.withResolvers<Team>();
     state.queryFn.mockReturnValueOnce(refetch.promise);
     const writing = state.write({ optimistic: rename("optimistic"), submit: () => submit.promise });
     const rejected = vi.fn();
@@ -218,7 +213,7 @@ describe("team writes", () => {
     expect(state.cachedTeam()?.name).toBe("initial");
     expect(state.queryFn).toHaveBeenCalledTimes(1);
     expect(rejected).not.toHaveBeenCalled();
-    refetch.resolve({ team: makeTeam("canonical") });
+    refetch.resolve(makeTeam("canonical"));
     await finished;
     expect(rejected).toHaveBeenCalledOnce();
     expect(state.cachedTeam()?.name).toBe("canonical");
@@ -260,14 +255,14 @@ describe("team writes", () => {
   it("fetches again for a live event arriving during the canonical refresh", async () => {
     const state = setup();
     const invalidator = createTeamQueryInvalidator(state.queryClient, "team-1");
-    const refetch = Promise.withResolvers<TeamQueryData>();
+    const refetch = Promise.withResolvers<Team>();
     state.queryFn.mockReturnValueOnce(refetch.promise);
     const writing = state.write({ submit: submitSuccess });
     await vi.advanceTimersByTimeAsync(0);
     invalidator.notify();
     await vi.advanceTimersByTimeAsync(250);
     expect(state.queryFn).toHaveBeenCalledTimes(1);
-    refetch.resolve({ team: makeTeam("before-live-event") });
+    refetch.resolve(makeTeam("before-live-event"));
     await writing;
     await vi.advanceTimersByTimeAsync(0);
     expect(state.queryFn).toHaveBeenCalledTimes(2);
@@ -278,17 +273,17 @@ describe("team writes", () => {
 
   it("replaces an older fetch when a new write wave finishes", async () => {
     const state = setup();
-    const older = Promise.withResolvers<TeamQueryData>();
-    const latest = Promise.withResolvers<TeamQueryData>();
+    const older = Promise.withResolvers<Team>();
+    const latest = Promise.withResolvers<Team>();
     state.queryFn.mockReturnValueOnce(older.promise).mockReturnValueOnce(latest.promise);
     const first = state.write({ submit: submitSuccess });
     await vi.advanceTimersByTimeAsync(0);
     const second = state.write({ submit: submitSuccess });
     await vi.advanceTimersByTimeAsync(0);
     expect(state.queryFn).toHaveBeenCalledTimes(2);
-    latest.resolve({ team: makeTeam("latest") });
+    latest.resolve(makeTeam("latest"));
     await Promise.all([first, second]);
-    older.resolve({ team: makeTeam("stale") });
+    older.resolve(makeTeam("stale"));
     await vi.advanceTimersByTimeAsync(0);
     expect(state.cachedTeam()?.name).toBe("latest");
     state.dispose();

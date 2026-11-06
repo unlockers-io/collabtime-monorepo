@@ -15,7 +15,7 @@ import {
   getMemberStatus,
   getMinuteOfDay,
 } from "@/lib/timezones";
-import { useHalfMinuteTick } from "@/lib/use-tick";
+import { useNow } from "@/lib/use-tick";
 import { useViewerTimezone } from "@/lib/use-viewer-timezone";
 import type { TeamGroup, TeamMember } from "@/types";
 
@@ -79,13 +79,12 @@ const byMinutes = (a: StatusEntry, b: StatusEntry) => a.minutes - b.minutes;
 
 const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): ReactNode => {
   const viewerTimezone = useViewerTimezone();
-  const tick = useHalfMinuteTick();
+  const now = useNow();
 
-  if (members.length === 0 || !viewerTimezone || tick === 0) {
+  if (members.length === 0 || viewerTimezone === null || now === null) {
     return null;
   }
 
-  const now = new Date(tick);
   const nowMinute = getMinuteOfDay(viewerTimezone, now);
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
   const working: Array<StatusEntry> = [];
@@ -94,6 +93,12 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): Re
 
   for (const member of members) {
     const status = getMemberStatus(member, now);
+
+    if (status.kind === "all-day") {
+      working.push({ detail: "all day", member, minutes: Number.MAX_SAFE_INTEGER });
+
+      continue;
+    }
 
     if (status.kind === "working") {
       const { minutesLeft } = status;

@@ -17,5 +17,5 @@ export const usePendingTeamInvitations = (teamId: string, enabled = true) =>
 
       return result.data;
     },
-    queryKey: queryKeys.teamInvitations(teamId),
+    queryKey: queryKeys.team.invitations(teamId),
   });

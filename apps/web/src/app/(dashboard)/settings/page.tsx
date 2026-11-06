@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { getSession } from "@/lib/auth-server";
+import { withRedirect } from "@/lib/redirect-validation";
 
 import { SettingsClient } from "./client";
 
@@ -16,17 +17,13 @@ const SettingsContent = async () => {
   const session = await getSession();
 
   if (!session) {
-    redirect("/login");
+    redirect(withRedirect("/login", "/settings"));
   }
 
   return (
     <SettingsClient
       key={session.user.name ?? ""}
-      user={{
-        email: session.user.email,
-        id: session.user.id,
-        name: session.user.name ?? "",
-      }}
+      user={{ email: session.user.email, name: session.user.name ?? "" }}
     />
   );
 };

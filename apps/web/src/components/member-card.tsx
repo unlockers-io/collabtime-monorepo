@@ -16,7 +16,6 @@ import {
 } from "@repo/ui/components/tooltip";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { cn } from "@repo/ui/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
 import { Hand, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { type ReactNode, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -24,18 +23,18 @@ import { toast } from "sonner";
 import { ConfirmRemoveDialog } from "@/components/confirm-remove-dialog";
 import { EditMemberDialog } from "@/components/edit-member-dialog";
 import { useTeamWrite } from "@/hooks/use-team-write";
-import { removeMember } from "@/lib/actions/member-actions";
-import { formatExpiresIn } from "@/lib/invitation-expiry";
-import { queryKeys } from "@/lib/query-keys";
+import { isExpired } from "@/lib/invitation-expiry";
+import { isClaimed } from "@/lib/team-commands";
 import {
   formatDuration,
-  formatMinuteRange,
   formatTimezoneCity,
   formatTimezoneLabel,
+  formatWindow,
   getMemberStatus,
+  workingWindow,
 } from "@/lib/timezones";
 import type { MemberStatus } from "@/lib/timezones";
-import { useHalfMinuteTick } from "@/lib/use-tick";
+import { useNow } from "@/lib/use-tick";
 import type { PendingTeamInvitation, TeamGroup, TeamMember } from "@/types";
 
 export type MemberCardProps = {
@@ -50,10 +49,15 @@ export type MemberCardProps = {
   teamId: string;
 };
 
-const formatStatus = (status: MemberStatus): string =>
-  status.kind === "working"
+const formatStatus = (status: MemberStatus): string => {
+  if (status.kind === "all-day") {
+    return "Working · all day";
+  }
+
+  return status.kind === "working"
     ? `Working · ${formatDuration(status.minutesLeft)} left`
     : `Off · starts in ${formatDuration(status.minutesUntilStart)}`;
+};
 
 type MemberActionsProps = {
   memberName: string;
@@ -97,13 +101,16 @@ const MemberActions = ({ memberName, onEdit, onRemove }: MemberActionsProps) => 
 const getGroupName = (member: TeamMember, groups: Array<TeamGroup>) =>
   groups.find((group) => group.id === member.groupId)?.name;
 
-const hasAccount = (member: TeamMember) => member.userId !== undefined && member.userId !== "";
-
 /** The invitation worth showing: only for an unclaimed profile, and only while it can be accepted. */
-const getLiveInvite = (member: TeamMember, pendingInvite?: PendingTeamInvitation) =>
-  !hasAccount(member) &&
+const getLiveInvite = (
+  member: TeamMember,
+  pendingInvite: PendingTeamInvitation | undefined,
+  now: Date | null,
+) =>
+  !isClaimed(member) &&
   pendingInvite !== undefined &&
-  formatExpiresIn(pendingInvite.expiresAt) !== "Expired"
+  now !== null &&
+  !isExpired(pendingInvite.expiresAt, now)
     ? pendingInvite
     : undefined;
 
@@ -165,7 +172,7 @@ const MemberSchedule = ({ member, now }: { member: TeamMember; now: Date | null 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs sm:flex-col sm:items-end">
       <span className="font-mono text-foreground tabular-nums">
-        {formatMinuteRange(member.workingHoursStart * 60, member.workingHoursEnd * 60)}
+        {formatWindow(workingWindow(member))}
         <span className="font-sans text-muted-foreground"> local</span>
       </span>
       {status !== null && (
@@ -174,7 +181,7 @@ const MemberSchedule = ({ member, now }: { member: TeamMember; now: Date | null 
             aria-hidden
             className={cn(
               "size-1.5 shrink-0",
-              status.kind === "working" ? "bg-foreground" : "border border-muted-foreground",
+              status.kind === "off" ? "border border-muted-foreground" : "bg-foreground",
             )}
           />
           <span className="font-mono tabular-nums">{formatStatus(status)}</span>
@@ -195,21 +202,14 @@ const MemberAdminControls = ({
   pendingInvite,
   teamId,
 }: MemberAdminControlsProps) => {
-  const queryClient = useQueryClient();
-  const writeTeam = useTeamWrite(teamId);
+  const write = useTeamWrite(teamId);
   const [isPending, startTransition] = useTransition();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
 
   const handleRemove = () => {
     startTransition(async () => {
-      const result = await writeTeam({
-        optimistic: (team) => ({
-          ...team,
-          members: team.members.filter((m) => m.id !== member.id),
-        }),
-        submit: () => removeMember(teamId, member.id),
-      });
+      const result = await write.change("removeMember", { memberId: member.id });
 
       if (!result.success) {
         toast.error(result.error);
@@ -219,11 +219,10 @@ const MemberAdminControls = ({
 
       setIsRemoveOpen(false);
       toast.success(`${member.name} removed`);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
     });
   };
 
-  const consequence = hasAccount(member)
+  const consequence = isClaimed(member)
     ? "They leave the timeline and lose access to this workspace."
     : "They leave the timeline and any pending invitation is cancelled.";
 
@@ -301,10 +300,9 @@ const MemberCard = ({
   pendingInvite,
   teamId,
 }: MemberCardProps) => {
-  const tick = useHalfMinuteTick();
-  const now = tick === 0 ? null : new Date(tick);
+  const now = useNow();
   const hasCurrentUser = currentUserId !== undefined && currentUserId !== "";
-  const canClaim = hasCurrentUser && !hasAccount(member) && !hasClaimedProfile;
+  const canClaim = hasCurrentUser && !isClaimed(member) && !hasClaimedProfile;
 
   return (
     <div className="flex items-start gap-2 py-2.5 text-sm sm:items-center sm:gap-3">
@@ -317,7 +315,7 @@ const MemberCard = ({
         <MemberIdentity
           groupName={getGroupName(member, groups)}
           isOwnProfile={hasCurrentUser && member.userId === currentUserId}
-          liveInvite={getLiveInvite(member, pendingInvite)}
+          liveInvite={getLiveInvite(member, pendingInvite, now)}
           member={member}
           now={now}
         />

@@ -10,11 +10,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { Field, FieldDescription, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormAlert } from "@repo/ui/compositions/form-alert";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
@@ -22,8 +19,11 @@ import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { z } from "zod";
 
+import { TextField } from "@/components/text-field";
 import { createTeam } from "@/lib/actions/team-create";
 import type { ActionResult } from "@/lib/actions/types";
+import { bindField } from "@/lib/bind-field";
+import { TEAM_NAME_MAX_LENGTH, upToCharacters } from "@/lib/limits";
 import { getUserTimezone } from "@/lib/timezones";
 import { TeamNameSchema } from "@/lib/validation";
 
@@ -104,30 +104,15 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
           <div className="flex flex-col gap-4 py-4">
             <FormAlert message={error} />
             <form.Field name="name">
-              {(field) => {
-                const invalid = !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={invalid || undefined}>
-                    <FieldLabel htmlFor={id}>Workspace name</FieldLabel>
-                    <Input
-                      aria-describedby={invalid ? `${id}-hint ${id}-error` : `${id}-hint`}
-                      aria-invalid={invalid}
-                      autoComplete="off"
-                      id={id}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => {
-                        field.handleChange(event.target.value);
-                      }}
-                      value={field.state.value}
-                    />
-                    <FieldDescription id={`${id}-hint`}>Up to 100 characters.</FieldDescription>
-                    {invalid && (
-                      <FormFieldError errors={field.state.meta.errors} id={`${id}-error`} />
-                    )}
-                  </Field>
-                );
-              }}
+              {(field) => (
+                <TextField
+                  {...bindField(field)}
+                  autoComplete="off"
+                  description={upToCharacters(TEAM_NAME_MAX_LENGTH)}
+                  id={id}
+                  label="Workspace name"
+                />
+              )}
             </form.Field>
           </div>
           <form.Subscribe

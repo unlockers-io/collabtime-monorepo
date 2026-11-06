@@ -5,7 +5,6 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/compon
 import { Input } from "@repo/ui/components/input";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormAlert } from "@repo/ui/compositions/form-alert";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { captureException } from "@sentry/nextjs";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
@@ -16,20 +15,16 @@ import { z } from "zod";
 
 import { PageHeader } from "@/components/page-header";
 import { SectionCard, SectionCardHeader, SectionCardTitle } from "@/components/section-card";
+import { TextField } from "@/components/text-field";
 import type { ActionResult } from "@/lib/actions/types";
 import { authClient } from "@/lib/auth-client";
+import { bindField } from "@/lib/bind-field";
+import { ACCOUNT_NAME_HINT, accountNameSchema } from "@/lib/form-schemas";
 
-const profileSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Name is required")
-    .max(100, "Name must be 100 characters or less"),
-});
+const profileSchema = z.object({ name: accountNameSchema });
 
 type SettingsUser = {
   email: string;
-  id: string;
   name: string;
 };
 
@@ -99,33 +94,16 @@ const SettingsView = ({ onSaved, saveName, user }: SettingsViewProps) => {
           <FieldGroup>
             <FormAlert message={formError} />
             <form.Field name="name">
-              {(field) => {
-                const isInvalid = !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor={nameId}>Full name</FieldLabel>
-                    <Input
-                      aria-describedby={
-                        isInvalid ? `${nameId}-hint ${nameId}-error` : `${nameId}-hint`
-                      }
-                      aria-invalid={isInvalid}
-                      autoComplete="name"
-                      id={nameId}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => {
-                        field.handleChange(event.target.value);
-                      }}
-                      placeholder="Your name"
-                      value={field.state.value}
-                    />
-                    <FieldDescription id={`${nameId}-hint`}>Up to 100 characters.</FieldDescription>
-                    {isInvalid && (
-                      <FormFieldError errors={field.state.meta.errors} id={`${nameId}-error`} />
-                    )}
-                  </Field>
-                );
-              }}
+              {(field) => (
+                <TextField
+                  {...bindField(field)}
+                  autoComplete="name"
+                  description={ACCOUNT_NAME_HINT}
+                  id={nameId}
+                  label="Full name"
+                  placeholder="Your name"
+                />
+              )}
             </form.Field>
 
             <Field>

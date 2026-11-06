@@ -9,10 +9,9 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
+import { cn } from "@repo/ui/lib/utils";
 import { LogIn, LogOut, Settings, Shield, User } from "lucide-react";
 import Link from "next/link";
-
-import { cn } from "@/lib/utils";
 
 /**
  * Shared by the desktop and mobile menus so the two cannot disagree. Replaces an
@@ -27,6 +26,9 @@ const ROLE_LABELS = {
   guest: { description: "View only", title: "Guest" },
   member: { description: "View only", title: "Member" },
 } satisfies Record<NavRole, { description: string | null; title: string }>;
+
+const signOutLabel = (isSigningOut: boolean): string =>
+  isSigningOut ? "Signing out…" : "Sign out";
 
 // Named navRole, not role: a literal `role="account"` on a component reads as an
 // ARIA role to jsx-a11y.
@@ -88,7 +90,7 @@ const UserMenu = ({ isSigningOut, navRole, onSignOut }: UserMenuProps) => {
               onClick={onSignOut}
             >
               <LogOut className="size-4" />
-              {isSigningOut ? "Signing out..." : "Sign out"}
+              {signOutLabel(isSigningOut)}
             </DropdownMenuItem>
           </>
         )}
@@ -97,6 +99,6 @@ const UserMenu = ({ isSigningOut, navRole, onSignOut }: UserMenuProps) => {
   );
 };
 
-export { UserMenu };
+export { ROLE_LABELS, signOutLabel, UserMenu };
 
 export type { NavRole };

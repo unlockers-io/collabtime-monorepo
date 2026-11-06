@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  PasswordSchema,
   TeamNameSchema,
-  normalizeEmail,
   InvitationEmailSchema,
   CuidSchema,
   TeamGroupInputSchema,
@@ -111,30 +109,10 @@ describe("TeamGroupInputSchema", () => {
   });
 });
 
-describe("PasswordSchema", () => {
-  it("accepts valid password", () => {
-    expect(PasswordSchema.safeParse("validpass").success).toBe(true);
-  });
-
-  it("rejects password shorter than 6 characters", () => {
-    expect(PasswordSchema.safeParse("short").success).toBe(false);
-  });
-
-  it("rejects password longer than 100 characters", () => {
-    expect(PasswordSchema.safeParse("a".repeat(101)).success).toBe(false);
-  });
-
-  it("accepts minimum length password", () => {
-    expect(PasswordSchema.safeParse("123456").success).toBe(true);
-  });
-});
-
 it("validates invitation IDs, email and workspace names", () => {
   expect(CuidSchema.safeParse("cmf12345678901234567890123").success).toBe(true);
   expect(CuidSchema.safeParse("550e8400-e29b-41d4-a716-446655440000").success).toBe(false);
-  expect(InvitationEmailSchema.parse(normalizeEmail(" Person@Example.com "))).toBe(
-    "person@example.com",
-  );
+  expect(InvitationEmailSchema.parse(" Person@Example.com ")).toBe("person@example.com");
   expect(InvitationEmailSchema.safeParse("invalid@").success).toBe(false);
   expect(TeamNameSchema.parse("  Team  ")).toBe("Team");
   expect(TeamNameSchema.safeParse(" ").success).toBe(false);

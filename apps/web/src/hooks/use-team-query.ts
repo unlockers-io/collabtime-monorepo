@@ -6,12 +6,8 @@ import { getPublicTeam } from "@/lib/actions/team-read";
 import { queryKeys } from "@/lib/query-keys";
 import type { Team } from "@/types";
 
-type TeamQueryData = {
-  team: Team;
-};
-
-const useTeamQuery = ({ isLive = false, teamId }: { isLive?: boolean; teamId: string }) =>
-  useQuery<TeamQueryData>({
+const useTeamQuery = ({ isLive, teamId }: { isLive: boolean; teamId: string }) =>
+  useQuery<Team>({
     queryFn: async () => {
       const result = await getPublicTeam(teamId);
 
@@ -19,13 +15,11 @@ const useTeamQuery = ({ isLive = false, teamId }: { isLive?: boolean; teamId: st
         throw new Error(result.error);
       }
 
-      return { team: result.data.team };
+      return result.data;
     },
-    queryKey: queryKeys.teams.detail(teamId),
+    queryKey: queryKeys.team.contents(teamId),
     refetchInterval: isLive ? 5 * 60 * 1000 : 20 * 1000,
     refetchIntervalInBackground: false,
   });
-
-export type { TeamQueryData };
 
 export { useTeamQuery };

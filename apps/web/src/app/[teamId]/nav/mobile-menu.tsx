@@ -1,26 +1,24 @@
 "use client";
 
 import { Button, buttonVariants } from "@repo/ui/components/button";
-import { Check, Copy, Lock, LogIn, LogOut, Settings, Shield, Trash2, User } from "lucide-react";
+import { cn } from "@repo/ui/lib/utils";
+import { Lock, LogIn, LogOut, Settings, Shield, Trash2, User } from "lucide-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import Link from "next/link";
 
 import { CurrentTimeDisplay } from "@/components/current-time-display";
 import { ModeToggle } from "@/components/mode-toggle";
-import { cn } from "@/lib/utils";
+import { type NavRole, ROLE_LABELS, signOutLabel } from "@/components/nav/user-menu";
 
-import type { NavRole } from "./user-menu";
-
-type MobileMenuRole = Exclude<NavRole, "account">;
+import { CopyLinkButton } from "./copy-link-button";
+import type { OwnerActions } from "./workspace-menu";
 
 type MobileMenuProps = {
   onClose: () => void;
   onCopy: () => void;
-  onDeleteWorkspace: () => void;
-  onEditVisibility?: () => void;
   onSignOut: () => void;
-  permissions: { canDeleteWorkspace: boolean; canEditVisibility?: boolean };
-  role: MobileMenuRole;
+  owner: OwnerActions | null;
+  role: NavRole;
   state: { hasCopied: boolean; isOpen: boolean; isSigningOut: boolean };
 };
 
@@ -38,16 +36,10 @@ const FADE_MOTION = {
   transition: { duration: 0 },
 };
 
-const ROLE_SUMMARY = {
-  admin: "Admin · full access",
-  guest: "Guest · view only",
-  member: "Member · view only",
-} satisfies Record<MobileMenuRole, string>;
-
-const RoleSummary = ({ role }: { role: MobileMenuRole }) => (
+const RoleSummary = ({ role }: { role: NavRole }) => (
   <p className="flex items-center gap-2 px-2.5 text-xs text-muted-foreground">
     {role === "admin" ? <Shield className="size-3.5" /> : <User className="size-3.5" />}
-    {ROLE_SUMMARY[role]}
+    {[ROLE_LABELS[role].title, ROLE_LABELS[role].description].filter(Boolean).join(" · ")}
   </p>
 );
 
@@ -88,7 +80,7 @@ const AccountLinks = ({
       >
         <span className="flex items-center gap-2">
           <LogOut className="size-4" />
-          {isSigningOut ? "Signing out…" : "Sign out"}
+          {signOutLabel(isSigningOut)}
         </span>
       </Button>
     </>
@@ -98,10 +90,8 @@ const AccountLinks = ({
 const MobileMenu = ({
   onClose,
   onCopy,
-  onDeleteWorkspace,
-  onEditVisibility,
   onSignOut,
-  permissions: { canDeleteWorkspace, canEditVisibility = false },
+  owner,
   role,
   state: { hasCopied, isOpen, isSigningOut },
 }: MobileMenuProps) => {
@@ -122,46 +112,41 @@ const MobileMenu = ({
             <RoleSummary role={role} />
 
             <div className="flex flex-col gap-1">
-              <Button
-                className="justify-start"
-                onClick={() => {
+              <CopyLinkButton
+                hasCopied={hasCopied}
+                onCopy={() => {
                   onCopy();
                   onClose();
                 }}
                 variant="ghost"
-              >
-                <span className="flex items-center gap-2">
-                  {hasCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                  {hasCopied ? "Copied" : "Copy link"}
-                </span>
-              </Button>
-              {canEditVisibility && (
-                <Button
-                  className="justify-start"
-                  onClick={() => {
-                    onEditVisibility?.();
-                    onClose();
-                  }}
-                  variant="ghost"
-                >
-                  <Lock aria-hidden className="size-4" />
-                  Sharing &amp; privacy
-                </Button>
-              )}
-              {canDeleteWorkspace && (
-                <Button
-                  className="justify-start"
-                  onClick={() => {
-                    onDeleteWorkspace();
-                    onClose();
-                  }}
-                  variant="ghost"
-                >
-                  <span className="flex items-center gap-2">
-                    <Trash2 className="size-4" />
-                    Delete workspace…
-                  </span>
-                </Button>
+              />
+              {owner && (
+                <>
+                  <Button
+                    className="justify-start"
+                    onClick={() => {
+                      owner.onEditVisibility();
+                      onClose();
+                    }}
+                    variant="ghost"
+                  >
+                    <Lock aria-hidden className="size-4" />
+                    Sharing &amp; privacy
+                  </Button>
+                  <Button
+                    className="justify-start"
+                    onClick={() => {
+                      owner.onDeleteWorkspace();
+                      onClose();
+                    }}
+                    variant="ghost"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Trash2 className="size-4" />
+                      Delete workspace…
+                    </span>
+                  </Button>
+                </>
               )}
             </div>
 
@@ -188,5 +173,3 @@ const MobileMenu = ({
 };
 
 export { MobileMenu };
-
-export type { MobileMenuRole };

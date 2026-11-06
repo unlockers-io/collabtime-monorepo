@@ -82,7 +82,7 @@ describe("team event hub", () => {
     state.hub.subscribe(VALID_UUID_2, other);
     state.subscriber.emit("message", TEAM_EVENTS_CHANNEL, "not JSON");
     state.subscriber.emit("message", TEAM_EVENTS_CHANNEL, JSON.stringify({ teamId: VALID_UUID }));
-    const event = { at: 1, kind: "contents", teamId: VALID_UUID };
+    const event = { kind: "contents", teamId: VALID_UUID };
     state.subscriber.emit("message", "other-channel", JSON.stringify(event));
     state.subscriber.emit("message", TEAM_EVENTS_CHANNEL, JSON.stringify(event));
     expect(matching).toHaveBeenCalledExactlyOnceWith(event);
@@ -160,10 +160,10 @@ describe("team event publisher", () => {
     await publisher(VALID_UUID, "contents");
     expect(publish).toHaveBeenCalledExactlyOnceWith(
       TEAM_EVENTS_CHANNEL,
-      JSON.stringify({ at: Date.now(), kind: "contents", teamId: VALID_UUID }),
+      JSON.stringify({ kind: "contents", teamId: VALID_UUID }),
     );
     enabled.mockReturnValue(false);
-    await publisher(VALID_UUID, "deleted");
+    await publisher(VALID_UUID, "space");
     expect(publish).toHaveBeenCalledTimes(1);
   });
 

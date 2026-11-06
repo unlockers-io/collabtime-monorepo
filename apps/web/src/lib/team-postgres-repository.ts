@@ -1,4 +1,4 @@
-import type { Prisma } from "@repo/db";
+import { ACTIVE_TEAM_RETENTION_MS, INITIAL_TEAM_RETENTION_MS, type Prisma } from "@repo/db";
 
 import type { TeamMember, TeamRecord } from "@/types";
 
@@ -13,9 +13,6 @@ const memberFields = [
   "workingHoursEnd",
   "workingHoursStart",
 ] as const;
-
-const INITIAL_RETENTION_MS = 60 * 24 * 60 * 60 * 1000;
-const ACTIVE_RETENTION_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 
 const readTeams = async (
   teamIds: Array<string>,
@@ -34,7 +31,7 @@ const readTeams = async (
 
   if (refreshRetention && spaces.length > 0) {
     await transaction.space.updateMany({
-      data: { teamExpiresAt: new Date(now.getTime() + ACTIVE_RETENTION_MS) },
+      data: { teamExpiresAt: new Date(now.getTime() + ACTIVE_TEAM_RETENTION_MS) },
       where: { teamExpiresAt: { gt: now }, teamId: { in: spaces.map((space) => space.teamId) } },
     });
   }
@@ -96,7 +93,9 @@ const writeTeam = async (
         expiresAt ??
         new Date(
           Date.now() +
-            (previous.teamCreatedAt === null ? INITIAL_RETENTION_MS : ACTIVE_RETENTION_MS),
+            (previous.teamCreatedAt === null
+              ? INITIAL_TEAM_RETENTION_MS
+              : ACTIVE_TEAM_RETENTION_MS),
         ),
     },
     where: { teamId },

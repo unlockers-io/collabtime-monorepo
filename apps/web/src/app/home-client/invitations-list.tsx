@@ -7,8 +7,9 @@ import { Check, X } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 
 import { SectionCard, SectionCardHeader, SectionCardTitle } from "@/components/section-card";
-import { formatExpiresIn } from "@/lib/invitation-expiry";
-import type { PendingInvitation } from "@/types";
+import type { PendingInvitation } from "@/lib/home-lists";
+import { expirySuffix } from "@/lib/invitation-expiry";
+import { useNow } from "@/lib/use-tick";
 
 type InvitationsListProps = {
   invitations: Array<PendingInvitation>;
@@ -19,6 +20,7 @@ type InvitationsListProps = {
 
 const InvitationsList = ({ invitations, isPending, onAccept, onDecline }: InvitationsListProps) => {
   const ready = useClientReady();
+  const now = useNow();
 
   if (invitations.length === 0) {
     return null;
@@ -48,7 +50,7 @@ const InvitationsList = ({ invitations, isPending, onAccept, onDecline }: Invita
                 </span>
                 <span className="text-xs text-muted-foreground">
                   Invited by {invitation.inviterName}
-                  {invitation.expiresAt !== null && ` · ${formatExpiresIn(invitation.expiresAt)}`}
+                  {expirySuffix(invitation.expiresAt, now)}
                 </span>
               </div>
               <div className="flex shrink-0 items-center gap-1">

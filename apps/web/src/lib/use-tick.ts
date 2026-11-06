@@ -3,59 +3,80 @@
 import { useSyncExternalStore } from "react";
 
 type TickStore = {
-  getServerSnapshot: () => number;
   getSnapshot: () => number;
-  subscribe: (callback: () => void) => () => void;
+  subscribe: (listener: () => void) => () => void;
 };
 
-const getServerSnapshot = () => 0;
-
+/** One interval per store, shared by every subscriber, so they all read the same instant. */
 const createTickStore = (intervalMs: number): TickStore => {
-  let cachedTick = Date.now();
+  let now = Date.now();
+  const listeners = new Set<() => void>();
+  let stop: (() => void) | null = null;
 
-  const subscribe = (callback: () => void) => {
-    const interval = setInterval(() => {
-      cachedTick = Date.now();
-      callback();
-    }, intervalMs);
+  const tick = () => {
+    now = Date.now();
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") {
-        return;
-      }
-
-      cachedTick = Date.now();
-      callback();
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
+    for (const listener of listeners) {
+      listener();
+    }
   };
 
-  const getSnapshot = () => cachedTick;
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      tick();
+    }
+  };
 
-  return { getServerSnapshot, getSnapshot, subscribe };
+  return {
+    getSnapshot: () => now,
+    subscribe: (listener) => {
+      if (listeners.size === 0) {
+        now = Date.now();
+        const interval = setInterval(tick, intervalMs);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        stop = () => {
+          clearInterval(interval);
+          document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
+      }
+
+      listeners.add(listener);
+
+      return () => {
+        listeners.delete(listener);
+
+        if (listeners.size === 0) {
+          stop?.();
+          stop = null;
+        }
+      };
+    },
+  };
 };
+
+const getServerSnapshot = (): null => null;
 
 const secondTickStore = createTickStore(1000);
 const halfMinuteTickStore = createTickStore(30_000);
 
-const useSecondTick = (): number =>
-  useSyncExternalStore(
-    secondTickStore.subscribe,
-    secondTickStore.getSnapshot,
-    secondTickStore.getServerSnapshot,
-  );
+/** The current time in ms, or null before hydration. */
+const useSecondTick = (): number | null =>
+  useSyncExternalStore(secondTickStore.subscribe, secondTickStore.getSnapshot, getServerSnapshot);
 
-const useHalfMinuteTick = (): number =>
+/** The current time in ms, or null before hydration. */
+const useHalfMinuteTick = (): number | null =>
   useSyncExternalStore(
     halfMinuteTickStore.subscribe,
     halfMinuteTickStore.getSnapshot,
-    halfMinuteTickStore.getServerSnapshot,
+    getServerSnapshot,
   );
 
-export { useHalfMinuteTick, useSecondTick };
+/** The current time on the half-minute clock, or null before hydration. */
+const useNow = (): Date | null => {
+  const tick = useHalfMinuteTick();
+
+  return tick === null ? null : new Date(tick);
+};
+
+export { useHalfMinuteTick, useNow, useSecondTick };

@@ -5,10 +5,10 @@ import { useSyncExternalStore } from "react";
 import { getViewerTimezone } from "@/lib/timezones";
 
 const subscribe = () => () => {};
-const getServerTimezone = () => "";
+const getServerTimezone = (): null => null;
 
-/** The browser's timezone, or an empty string until rendered on the client. */
-const useViewerTimezone = (): string =>
+/** The browser's timezone, or null before hydration. */
+const useViewerTimezone = (): string | null =>
   useSyncExternalStore(subscribe, getViewerTimezone, getServerTimezone);
 
 export { useViewerTimezone };

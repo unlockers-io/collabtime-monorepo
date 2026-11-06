@@ -35,7 +35,7 @@ const lifecycle = (
   store: MembershipStore<undefined>,
 ) =>
   createMembershipLifecycle({
-    applyTeamCommand: harness.applyInTransaction,
+    applyInTransaction: harness.applyInTransaction,
     publish: harness.publish,
     store,
   });

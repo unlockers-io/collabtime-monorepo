@@ -1,20 +1,17 @@
 import { randomUUID } from "node:crypto";
 
 import { prisma } from "@repo/db";
-import { hashPassword } from "better-auth/crypto";
 import { Redis } from "ioredis";
 
+import { createVerifiedUser } from "../support/users";
 import { webUrl } from "../urls";
 
 import { expect, test as base } from "./auth.fixture";
 
 const PASSWORD = "WorkspaceTestPassword123!";
 
-const test = base.extend<{ createdTeamIds: Array<string> }>({
-  createdTeamIds: async ({}, use) => {
-    await use([]);
-  },
-  storageState: async ({ createdTeamIds, playwright }, use) => {
+const test = base.extend({
+  storageState: async ({ playwright }, use) => {
     const redisUrl = process.env.REDIS_URL;
 
     if (!redisUrl) {
@@ -23,18 +20,7 @@ const test = base.extend<{ createdTeamIds: Array<string> }>({
 
     const id = randomUUID();
     const email = `e2e-workspace-${id}@collabtime.localhost`;
-    const password = await hashPassword(PASSWORD);
-    await prisma.user.create({
-      data: {
-        accounts: {
-          create: { accountId: id, issuer: "local:credential", password, providerId: "credential" },
-        },
-        email,
-        emailVerified: true,
-        id,
-        name: "Workspace Test User",
-      },
-    });
+    await createVerifiedUser({ email, id, name: "Workspace Test User", password: PASSWORD });
 
     const api = await playwright.request.newContext({
       baseURL: webUrl,
@@ -54,18 +40,8 @@ const test = base.extend<{ createdTeamIds: Array<string> }>({
       try {
         await api.post("/api/auth/sign-out", { data: {} });
 
-        const spaces = await prisma.space.findMany({
-          select: { teamId: true },
-          where: { ownerId: id },
-        });
-
         await prisma.user.delete({ where: { id } });
-        await redis.del(
-          `live-connections:user:${id}`,
-          `ratelimit:live-open:user:${id}`,
-          ...spaces.map(({ teamId }) => `team:${teamId}`),
-          ...createdTeamIds.map((teamId) => `team:${teamId}`),
-        );
+        await redis.del(`live-connections:user:${id}`, `ratelimit:live-open:user:${id}`);
       } finally {
         redis.disconnect();
         await api.dispose();

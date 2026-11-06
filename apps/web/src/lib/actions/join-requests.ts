@@ -7,7 +7,7 @@ import { log } from "@/lib/observability";
 import { authenticate, authorizeTeamAdmin } from "@/lib/team-auth";
 
 import { grantMembership, membershipUpsert } from "../membership";
-import { teamNotifier } from "../team-notifier";
+import { teamNotifier } from "../team-notifications";
 import { readTeamRecord } from "../team-store";
 
 import { createJoinRequestActions } from "./join-requests-core";

@@ -4,24 +4,10 @@ import { captureException } from "@sentry/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOptimistic, useTransition } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 
+import { readApiError } from "@/lib/api-error";
+import { type MyTeam, MyTeamsResponseSchema } from "@/lib/home-lists";
 import { queryKeys } from "@/lib/query-keys";
-
-import type { MyTeam } from "./types";
-
-const errorBodySchema = z.object({ error: z.string() });
-
-const TeamSchema = z.object({
-  archivedAt: z.string().nullable(),
-  memberCount: z.number(),
-  role: z.string(),
-  spaceId: z.string().nullable(),
-  teamId: z.string(),
-  teamName: z.string(),
-});
-
-const TeamsResponseSchema = z.object({ teams: z.array(TeamSchema) });
 
 type ArchiveUpdate = {
   archivedAt: string | null;
@@ -50,7 +36,7 @@ const useMyTeams = () => {
         throw new Error("Failed to fetch teams");
       }
 
-      const data = TeamsResponseSchema.parse(await response.json());
+      const data = MyTeamsResponseSchema.parse(await response.json());
 
       return data.teams;
     },
@@ -77,9 +63,7 @@ const useMyTeams = () => {
           toast.success(archive ? "Workspace archived" : "Workspace restored");
           await queryClient.invalidateQueries({ queryKey: queryKeys.myTeams });
         } else {
-          const body: unknown = await response.json().catch(() => null);
-          const parsed = errorBodySchema.safeParse(body);
-          toast.error(parsed.success ? parsed.data.error : "Failed to update workspace");
+          toast.error(await readApiError(response, "Failed to update workspace"));
         }
       } catch (error) {
         captureException(error);

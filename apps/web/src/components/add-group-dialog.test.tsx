@@ -6,9 +6,9 @@ import { beforeEach, expect, it, vi } from "vitest";
 
 import { AddGroupDialog } from "./add-group-dialog";
 
-const mocks = vi.hoisted(() => ({ createGroup: vi.fn() }));
+const mocks = vi.hoisted(() => ({ changeTeam: vi.fn() }));
 
-vi.mock("@/lib/actions/group-actions", () => ({ createGroup: mocks.createGroup }));
+vi.mock("@/lib/actions/team-change", () => mocks);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -42,11 +42,11 @@ it("explains the length limit up front and checks it only once creation is attem
   await waitFor(() => {
     expect(name).toHaveFocus();
   });
-  expect(mocks.createGroup).not.toHaveBeenCalled();
+  expect(mocks.changeTeam).not.toHaveBeenCalled();
 });
 
 it("reports a failed write in the form alert and clears it on the next change", async () => {
-  mocks.createGroup.mockResolvedValue({ error: "Group limit reached", success: false });
+  mocks.changeTeam.mockResolvedValue({ error: "Group limit reached", success: false });
   const { name, submit } = await openDialog();
   fireEvent.change(name, { target: { value: "Design" } });
 

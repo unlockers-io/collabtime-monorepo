@@ -6,8 +6,7 @@ import { log } from "./observability";
 import { TimeoutError, withTimeout } from "./promise-timeout";
 import { getRedis } from "./redis";
 import { checkRateLimit } from "./space-rate-limit";
-
-const LEASE_SECONDS = 360;
+import { LEASE_SECONDS } from "./team-live-protocol";
 
 const ACQUIRE_LEASE = `
   local time = redis.call("TIME")
@@ -132,6 +131,6 @@ const acquireTeamEventConnection = createTeamEventAdmission({
   reportError: log.error,
 });
 
-export { ACQUIRE_LEASE, acquireTeamEventConnection, createTeamEventAdmission, LEASE_SECONDS };
+export { ACQUIRE_LEASE, acquireTeamEventConnection, createTeamEventAdmission };
 
 export type { Admission, AdmissionDeps, AdmissionViewer };

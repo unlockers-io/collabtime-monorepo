@@ -5,8 +5,8 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { MemberCard } from "@/components/member-card";
 import { SortableMemberCard } from "@/components/sortable-member-card";
 import { usePendingTeamInvitations } from "@/hooks/use-pending-team-invitations";
-import { formatExpiresIn } from "@/lib/invitation-expiry";
-import { useHalfMinuteTick } from "@/lib/use-tick";
+import { isExpired } from "@/lib/invitation-expiry";
+import { useNow } from "@/lib/use-tick";
 import type { PendingTeamInvitation, TeamGroup, TeamMember } from "@/types";
 
 type MembersGridProps = {
@@ -27,7 +27,7 @@ const MembersGrid = ({
   teamId,
 }: MembersGridProps) => {
   const { data: invitations = [] } = usePendingTeamInvitations(teamId, isAdmin);
-  useHalfMinuteTick();
+  const now = useNow();
   const inviteByMember = new Map<string, PendingTeamInvitation>();
 
   for (const invitation of invitations) {
@@ -35,8 +35,7 @@ const MembersGrid = ({
 
     if (
       !existing ||
-      (formatExpiresIn(existing.expiresAt) === "Expired" &&
-        formatExpiresIn(invitation.expiresAt) !== "Expired")
+      (now !== null && isExpired(existing.expiresAt, now) && !isExpired(invitation.expiresAt, now))
     ) {
       inviteByMember.set(invitation.memberId, invitation);
     }

@@ -1,4 +1,5 @@
-import { type InvitationStore, isInvitationOpen, type StoredInvitation } from "./invitations";
+import { isInvitationOpen } from "./invitation-expiry";
+import type { InvitationStore, StoredInvitation } from "./invitations";
 import type { MembershipStore } from "./membership";
 
 const newestFirst = (left: StoredInvitation, right: StoredInvitation): number =>

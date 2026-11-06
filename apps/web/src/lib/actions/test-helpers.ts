@@ -10,10 +10,9 @@ import type { TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
 
 import { createMembershipLifecycle, type MembershipStore } from "../membership";
 import { createMemoryMembershipStore } from "../membership-memory-store";
+import type { TeamEventKind } from "../team-events";
 import { createMemoryTeamStorage } from "../team-memory-storage";
 import { createTeamStore, type TeamStoreDeps } from "../team-store";
-
-import { createTeamMutator } from "./helpers";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 const VALID_UUID_2 = "660e8400-e29b-41d4-a716-446655440001";
@@ -106,13 +105,15 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
   const applyTeamCommand: typeof store.applyTeamCommand = (teamId, command) =>
     store.applyTeamCommand(teamId, command);
 
-  const publish = vi.fn<(teamId: string) => Promise<void>>().mockResolvedValue();
+  const publish = vi
+    .fn<(teamId: string, kinds: Array<TeamEventKind>) => Promise<void>>()
+    .mockResolvedValue();
 
   const applyInTransaction: typeof store.applyInTransaction = (teamId, command, transaction) =>
     store.applyInTransaction(teamId, command, transaction);
 
   const { grantMembership, revokeMembership } = createMembershipLifecycle({
-    applyTeamCommand: applyInTransaction,
+    applyInTransaction,
     publish,
     store: membershipStore,
   });
@@ -127,7 +128,6 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
     invalidateTeamName,
     invitationsRevoked: (memberId: string) => memberships.invitationsRevoked(VALID_UUID, memberId),
     membershipStore,
-    mutateTeam: createTeamMutator({ applyTeamCommand, reportError }),
     publish,
     readTeam: (teamId = VALID_UUID) => store.readTeamRecord(teamId),
     reportError,

@@ -8,6 +8,7 @@ import {
   toMemberInput,
 } from "./member-input";
 import type { MemberFormValues } from "./member-input";
+import { TeamMemberInputSchema } from "./validation";
 
 const GROUP_ID = "550e8400-e29b-41d4-a716-446655440000";
 
@@ -71,9 +72,10 @@ describe("toMemberInput", () => {
     expect(toMemberInput({ ...values, groupId: GROUP_ID }).groupId).toBe(GROUP_ID);
   });
 
-  it("trims the name and title", () => {
+  it("submits a trimmed name and title, and rejects a name of only spaces", () => {
     const input = toMemberInput({ ...values, name: "  Alice  ", title: " Engineer " });
-    expect(input).toMatchObject({ name: "Alice", title: "Engineer" });
+    expect(TeamMemberInputSchema.parse(input)).toMatchObject({ name: "Alice", title: "Engineer" });
+    expect(TeamMemberInputSchema.safeParse({ ...input, name: "   " }).success).toBe(false);
   });
 });
 

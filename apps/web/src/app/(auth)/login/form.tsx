@@ -1,28 +1,24 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
-import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
-import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
-import { FormAlert } from "@repo/ui/compositions/form-alert";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense, use, useState, useTransition } from "react";
+import { Suspense, use, useState } from "react";
 
+import { TextField } from "@/components/text-field";
 import { signIn } from "@/lib/auth-client";
+import { bindField } from "@/lib/bind-field";
 import { loginSchema } from "@/lib/form-schemas";
-import { safeRedirectPath } from "@/lib/redirect-validation";
+import { type RedirectParam, safeRedirectPath, withRedirect } from "@/lib/redirect-validation";
 
 import { authErrorMessage } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
-import type { AuthErrorKind } from "../auth-error-kind";
+import { AuthForm } from "../auth-form";
 import { AUTH_LINK_CLASS, AuthFooter, FormNotice } from "../auth-shell";
+import { focusInvalidField, useAuthSubmit } from "../use-auth-submit";
 
 type Props = {
-  searchParams: Promise<{ redirect?: string }>;
+  searchParams: Promise<{ redirect?: RedirectParam }>;
 };
 
 const SignUpLinkFallback = () => (
@@ -36,10 +32,7 @@ const SignUpLink = ({ searchParams }: Props) => {
   const redirect = safeRedirectPath(redirectParam);
 
   return (
-    <Link
-      className={AUTH_LINK_CLASS}
-      href={redirect === "/" ? "/register" : `/register?redirect=${encodeURIComponent(redirect)}`}
-    >
+    <Link className={AUTH_LINK_CLASS} href={withRedirect("/register", redirect)}>
       Sign up
     </Link>
   );
@@ -47,155 +40,100 @@ const SignUpLink = ({ searchParams }: Props) => {
 
 const LoginForm = ({ searchParams }: Props) => {
   const { push, refresh } = useRouter();
-  const [isPending, startTransition] = useTransition();
   const [showUnverifiedNotice, setShowUnverifiedNotice] = useState(false);
-  const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
+  const auth = useAuthSubmit();
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
     listeners: {
       onChange: () => {
         setShowUnverifiedNotice(false);
-        setErrorKind(null);
+        auth.clearError();
       },
     },
     onSubmit: ({ value }) => {
       setShowUnverifiedNotice(false);
-      // Clearing first re-inserts the alert, so a repeated failure is announced again.
-      setErrorKind(null);
-      startTransition(async () => {
-        try {
-          const { redirect: redirectParam } = await searchParams;
+      auth.submit(async () => {
+        const [{ redirect: redirectParam }, result] = await Promise.all([
+          searchParams,
+          signIn.email({ email: value.email, password: value.password }),
+        ]);
 
-          const result = await signIn.email({
-            email: value.email,
-            password: value.password,
-          });
+        if (result.error?.code === "EMAIL_NOT_VERIFIED") {
+          setShowUnverifiedNotice(true);
 
-          if (result.error) {
-            if (result.error.code === "EMAIL_NOT_VERIFIED") {
-              setShowUnverifiedNotice(true);
-
-              return;
-            }
-
-            setErrorKind(authErrorKind(result.error));
-
-            return;
-          }
-
-          push(safeRedirectPath(redirectParam));
-          refresh();
-        } catch {
-          setErrorKind("unknown");
+          return null;
         }
+
+        if (result.error) {
+          return authErrorKind(result.error);
+        }
+
+        push(safeRedirectPath(redirectParam));
+        refresh();
+
+        return null;
       });
     },
-    onSubmitInvalid: ({ formApi }) => {
-      focusFirstInvalidField(formApi.formId);
-    },
+    onSubmitInvalid: focusInvalidField,
     validationLogic: revalidateLogic(),
     validators: { onDynamic: loginSchema },
   });
 
   return (
     <>
-      <ClientReadyForm
-        id={form.formId}
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void form.handleSubmit();
-        }}
+      <AuthForm
+        alert={authErrorMessage(auth.errorKind)}
+        form={form}
+        isPending={auth.isPending}
+        pendingLabel="Signing in…"
+        submitLabel="Sign in"
       >
-        <FieldGroup>
-          <FormAlert message={authErrorMessage(errorKind)} />
-          <form.Field name="email">
-            {(field) => {
-              const isInvalid = !field.state.meta.isValid;
-
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="login-email">Email</FieldLabel>
-                  <Input
-                    aria-describedby={isInvalid ? "login-email-error" : undefined}
-                    aria-invalid={isInvalid}
-                    aria-required
-                    autoComplete="email"
-                    className="h-11 sm:h-10"
-                    disabled={isPending}
-                    id="login-email"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    placeholder="you@example.com"
-                    type="email"
-                    value={field.state.value}
-                  />
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="login-email-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <form.Field name="password">
-            {(field) => {
-              const isInvalid = !field.state.meta.isValid;
-
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <FieldLabel htmlFor="login-password">Password</FieldLabel>
-                    <Link
-                      className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                      href="/recover"
-                    >
-                      Forgot your password?
-                    </Link>
-                  </div>
-                  <Input
-                    aria-describedby={isInvalid ? "login-password-error" : undefined}
-                    aria-invalid={isInvalid}
-                    aria-required
-                    autoComplete="current-password"
-                    className="h-11 sm:h-10"
-                    disabled={isPending}
-                    id="login-password"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    type="password"
-                    value={field.state.value}
-                  />
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="login-password-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          {showUnverifiedNotice && (
-            <FormNotice tone="neutral">
-              This email isn&apos;t verified yet. We just sent you a new link.
-            </FormNotice>
+        <form.Field name="email">
+          {(field) => (
+            <TextField
+              {...bindField(field)}
+              autoComplete="email"
+              disabled={auth.isPending}
+              id="login-email"
+              label="Email"
+              placeholder="you@example.com"
+              required
+              touch
+              type="email"
+            />
           )}
+        </form.Field>
 
-          <Button
-            aria-busy={isPending}
-            className="h-11 w-full sm:h-10"
-            disabled={isPending}
-            type="submit"
-          >
-            {isPending ? "Signing in…" : "Sign in"}
-          </Button>
-        </FieldGroup>
-      </ClientReadyForm>
+        <form.Field name="password">
+          {(field) => (
+            <TextField
+              {...bindField(field)}
+              autoComplete="current-password"
+              disabled={auth.isPending}
+              id="login-password"
+              label="Password"
+              labelAside={
+                <Link
+                  className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  href="/recover"
+                >
+                  Forgot your password?
+                </Link>
+              }
+              required
+              touch
+              type="password"
+            />
+          )}
+        </form.Field>
+
+        {showUnverifiedNotice && (
+          <FormNotice tone="neutral">
+            This email isn&apos;t verified yet. We just sent you a new link.
+          </FormNotice>
+        )}
+      </AuthForm>
 
       <AuthFooter>
         Don&apos;t have an account?{" "}

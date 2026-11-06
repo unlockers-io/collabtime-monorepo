@@ -3,22 +3,21 @@ import { canViewWorkspace } from "@/lib/workspace-access";
 import type { WorkspaceAccessStore, WorkspaceSpace } from "@/lib/workspace-access";
 import type { Team } from "@/types";
 
-import type { readTeamRecord } from "../team-store";
+import type { readPublicTeam } from "../public-team";
 import { UUIDSchema } from "../validation";
 
-import { sanitizeTeam } from "./helpers";
 import type { ActionErrorEvent, ActionResult } from "./types";
 
 type TeamReadDeps = {
   accessStore: WorkspaceAccessStore;
   findSpace: (teamId: string) => Promise<WorkspaceSpace | null>;
   getSession: typeof getSession;
-  readTeamRecord: typeof readTeamRecord;
+  readPublicTeam: typeof readPublicTeam;
   reportError: (event: ActionErrorEvent) => void;
 };
 
 const createTeamReadActions = (deps: TeamReadDeps) => {
-  const getPublicTeam = async (teamId: string): Promise<ActionResult<{ team: Team }>> => {
+  const getPublicTeam = async (teamId: string): Promise<ActionResult<Team>> => {
     try {
       const uuidResult = UUIDSchema.safeParse(teamId);
 
@@ -39,13 +38,9 @@ const createTeamReadActions = (deps: TeamReadDeps) => {
         return { error: "This team is private", success: false };
       }
 
-      const team = await deps.readTeamRecord(teamId);
+      const team = await deps.readPublicTeam(teamId, userId);
 
-      if (!team) {
-        return { error: "Team not found", success: false };
-      }
-
-      return { data: { team: sanitizeTeam(team, userId) }, success: true };
+      return team ? { data: team, success: true } : { error: "Team not found", success: false };
     } catch (error) {
       deps.reportError({
         error,

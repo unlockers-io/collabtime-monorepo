@@ -52,28 +52,12 @@ const loadOwnedSpace = async (spaceId: string): Promise<OwnedSpaceResult> => {
 const spaceResponse = (space: Space): NextResponse =>
   NextResponse.json({
     space: {
-      ...space,
-      accessPassword: undefined,
       hasPassword: Boolean(space.accessPassword),
+      id: space.id,
+      isPrivate: space.isPrivate,
+      teamId: space.teamId,
     },
   });
-
-export const GET = withEvlog(async (_request: Request, { params }: Params) => {
-  try {
-    const { spaceId } = await params;
-    const owned = await loadOwnedSpace(spaceId);
-
-    if (!owned.ok) {
-      return owned.response;
-    }
-
-    return spaceResponse(owned.space);
-  } catch (error) {
-    log.error({ error, message: "Space operation failed", route: "/api/spaces/[spaceId]" });
-
-    return NextResponse.json({ error: "Failed to fetch space" }, { status: 500 });
-  }
-});
 
 export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
   try {
@@ -143,7 +127,7 @@ export const DELETE = withEvlog(async (_request: Request, { params }: Params) =>
       where: { id: spaceId },
     });
 
-    await publishTeamEvent(owned.space.teamId, "deleted");
+    await publishTeamEvent(owned.space.teamId, "space");
     revalidateTag(teamNameTag(owned.space.teamId), { expire: 0 });
 
     return NextResponse.json({ success: true });

@@ -1,61 +1,44 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
-import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
-import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
-import { FormAlert } from "@repo/ui/compositions/form-alert";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 
+import { TextField } from "@/components/text-field";
 import { authClient } from "@/lib/auth-client";
+import { bindField } from "@/lib/bind-field";
 import { recoverSchema } from "@/lib/form-schemas";
 
 import { authErrorMessage } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
-import type { AuthErrorKind } from "../auth-error-kind";
+import { AuthForm } from "../auth-form";
 import { AUTH_LINK_CLASS, AuthConfirmation, AuthFooter } from "../auth-shell";
+import { focusInvalidField, useAuthSubmit } from "../use-auth-submit";
 
 const RecoverForm = () => {
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
-  const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const auth = useAuthSubmit();
 
   const form = useForm({
     defaultValues: { email: "" },
-    listeners: {
-      onChange: () => {
-        setErrorKind(null);
-      },
-    },
+    listeners: { onChange: auth.clearError },
     onSubmit: ({ value }) => {
-      // Clearing first re-inserts the alert, so a repeated failure is announced again.
-      setErrorKind(null);
-      startTransition(async () => {
-        try {
-          const result = await authClient.requestPasswordReset({
-            email: value.email,
-            redirectTo: `${window.location.origin}/reset-password`,
-          });
+      auth.submit(async () => {
+        const result = await authClient.requestPasswordReset({
+          email: value.email,
+          redirectTo: new URL("/reset-password", window.location.origin).toString(),
+        });
 
-          if (result.error) {
-            setErrorKind(authErrorKind(result.error));
-
-            return;
-          }
-
-          setSubmittedEmail(value.email);
-        } catch {
-          setErrorKind("unknown");
+        if (result.error) {
+          return authErrorKind(result.error);
         }
+
+        setSubmittedEmail(value.email);
+
+        return null;
       });
     },
-    onSubmitInvalid: ({ formApi }) => {
-      focusFirstInvalidField(formApi.formId);
-    },
+    onSubmitInvalid: focusInvalidField,
     validationLogic: revalidateLogic(),
     validators: { onDynamic: recoverSchema },
   });
@@ -79,58 +62,29 @@ const RecoverForm = () => {
 
   return (
     <>
-      <ClientReadyForm
-        id={form.formId}
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void form.handleSubmit();
-        }}
+      <AuthForm
+        alert={authErrorMessage(auth.errorKind)}
+        form={form}
+        isPending={auth.isPending}
+        pendingLabel="Sending…"
+        submitLabel="Send reset link"
       >
-        <FieldGroup>
-          <FormAlert message={authErrorMessage(errorKind)} />
-          <form.Field name="email">
-            {(field) => {
-              const isInvalid = !field.state.meta.isValid;
-
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="recover-email">Email</FieldLabel>
-                  <Input
-                    aria-describedby={isInvalid ? "recover-email-error" : undefined}
-                    aria-invalid={isInvalid}
-                    aria-required
-                    autoComplete="email"
-                    className="h-11 sm:h-10"
-                    disabled={isPending}
-                    id="recover-email"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    placeholder="you@example.com"
-                    type="email"
-                    value={field.state.value}
-                  />
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="recover-email-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <Button
-            aria-busy={isPending}
-            className="h-11 w-full sm:h-10"
-            disabled={isPending}
-            type="submit"
-          >
-            {isPending ? "Sending…" : "Send reset link"}
-          </Button>
-        </FieldGroup>
-      </ClientReadyForm>
+        <form.Field name="email">
+          {(field) => (
+            <TextField
+              {...bindField(field)}
+              autoComplete="email"
+              disabled={auth.isPending}
+              id="recover-email"
+              label="Email"
+              placeholder="you@example.com"
+              required
+              touch
+              type="email"
+            />
+          )}
+        </form.Field>
+      </AuthForm>
 
       <AuthFooter>
         Remembered your password?{" "}
