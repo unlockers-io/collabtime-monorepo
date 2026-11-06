@@ -1,41 +1,22 @@
-import { Redis } from "ioredis";
+import { prisma } from "@repo/db";
 
+import { assertLocalDatabase } from "../support/assert-local";
+import { E2E_USER } from "../support/users";
+
+// Workspaces the shared user creates would otherwise pile up until it hits the per-user limit.
 const cleanup = async () => {
-  const url = process.env.REDIS_URL;
-
-  if (!url) {
-    return;
-  }
-
-  const redis = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
+  assertLocalDatabase();
 
   try {
-    let cursor = "0";
-    const keysToDelete: Array<string> = [];
+    const { count } = await prisma.space.deleteMany({
+      where: { owner: { email: E2E_USER.email } },
+    });
 
-    do {
-      const [nextCursor, keys] = await redis.scan(cursor, "MATCH", "team:*", "COUNT", 100);
-      cursor = nextCursor;
-
-      const entries = await Promise.all(
-        keys.map(async (key) => ({ key, value: await redis.get(key) })),
-      );
-
-      for (const { key, value } of entries) {
-        if (value?.includes("e2e-test@collabtime")) {
-          keysToDelete.push(key);
-        }
-      }
-    } while (cursor !== "0");
-
-    if (keysToDelete.length > 0) {
-      await redis.del(...keysToDelete);
-      console.log(`[E2E Cleanup] Deleted ${keysToDelete.length} Redis key(s)`);
+    if (count > 0) {
+      console.log(`[E2E Cleanup] Deleted ${count} workspace(s) owned by ${E2E_USER.email}`);
     }
-  } catch (error) {
-    console.error("[E2E Cleanup] Failed to clean up:", error);
   } finally {
-    await redis.quit();
+    await prisma.$disconnect();
   }
 };
 

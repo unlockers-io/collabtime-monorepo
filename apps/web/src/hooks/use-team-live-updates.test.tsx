@@ -56,17 +56,3 @@ it("connects two consumers to one source and refreshes the route on revoked", ()
   second.unmount();
   expect(source.close).toHaveBeenCalledTimes(1);
 });
-
-it("does not construct EventSource when disabled", () => {
-  vi.stubGlobal("EventSource", FakeEventSource);
-
-  const hook = renderHook(
-    () =>
-      useTeamLiveUpdates({ enabled: false, refresh: vi.fn<() => void>(), teamId: "disabled-team" }),
-    { wrapper: Wrapper },
-  );
-
-  expect(hook.result.current).toBe("offline");
-  expect(FakeEventSource.instances).toHaveLength(0);
-  hook.unmount();
-});

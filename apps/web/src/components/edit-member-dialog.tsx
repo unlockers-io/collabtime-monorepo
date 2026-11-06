@@ -21,8 +21,8 @@ import { toast } from "sonner";
 import { MemberFields } from "@/components/member-fields";
 import { MEMBER_FIELDS, useMemberForm } from "@/hooks/use-member-form";
 import { useTeamWrite } from "@/hooks/use-team-write";
-import { updateMember, updateOwnMember } from "@/lib/actions/member-actions";
 import { memberFormSchema, toMemberFormValues, toMemberInput } from "@/lib/member-input";
+import { isClaimed } from "@/lib/team-commands";
 import type { PendingTeamInvitation, TeamGroup, TeamMember } from "@/types";
 
 import { MemberInviteSection } from "./member-invite-section";
@@ -71,7 +71,7 @@ const EditMemberForm = ({
   pendingInvite,
   teamId,
 }: EditMemberFormProps) => {
-  const writeTeam = useTeamWrite(teamId);
+  const write = useTeamWrite(teamId);
   const isClaim = mode === "claim";
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
@@ -92,15 +92,11 @@ const EditMemberForm = ({
 
       setFormError(null);
       startTransition(async () => {
-        const input = toMemberInput(value);
-        const { groupId: _groupId, ...ownInput } = input;
+        const change = { memberId: member.id, updates: toMemberInput(value) };
 
-        const result = await writeTeam({
-          submit: () =>
-            isClaim
-              ? updateOwnMember(teamId, member.id, ownInput)
-              : updateMember(teamId, member.id, input),
-        });
+        const result = await (isClaim
+          ? write.change("updateOwnMember", change)
+          : write.change("updateMember", change));
 
         if (!result.success) {
           setFormError(result.error);
@@ -148,7 +144,7 @@ const EditMemberForm = ({
             idPrefix="edit"
           />
 
-          {!isClaim && (member.userId === undefined || member.userId === "") && (
+          {!isClaim && !isClaimed(member) && (
             <>
               <FieldSeparator />
               <MemberInviteSection

@@ -6,8 +6,8 @@ import { Mail, ChevronDown, ChevronUp } from "lucide-react";
 import { useId, useState } from "react";
 
 import { usePendingTeamInvitations } from "@/hooks/use-pending-team-invitations";
-import { formatExpiresIn } from "@/lib/invitation-expiry";
-import { useHalfMinuteTick } from "@/lib/use-tick";
+import { expirySuffix } from "@/lib/invitation-expiry";
+import { useNow } from "@/lib/use-tick";
 import type { TeamMember, PendingTeamInvitation } from "@/types";
 
 import { InvitationControls } from "./invitation-controls";
@@ -25,7 +25,7 @@ export const PendingInvitationsPanelView = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const id = useId();
-  useHalfMinuteTick();
+  const now = useNow();
 
   if (invitations.length === 0) {
     return null;
@@ -68,7 +68,7 @@ export const PendingInvitationsPanelView = ({
                   <p className="text-xs text-muted-foreground">
                     {members.find((member) => member.id === invitation.memberId)?.name ??
                       "Removed member"}
-                    {invitation.expiresAt !== null && ` · ${formatExpiresIn(invitation.expiresAt)}`}
+                    {expirySuffix(invitation.expiresAt, now)}
                   </p>
                 </div>
                 {renderControls(invitation)}

@@ -7,6 +7,7 @@ import type { PendingTeamInvitation, TeamRecord } from "@/types";
 
 import { getAppUrl } from "./app-url";
 import { displayName } from "./display-name";
+import { isExpired } from "./invitation-expiry";
 import { INVITATION_TTL_DAYS, INVITES_PER_TEAM_PER_DAY, INVITES_PER_USER_PER_HOUR } from "./limits";
 import { sendAppEmail } from "./mailer";
 import {
@@ -18,7 +19,8 @@ import {
 import { log } from "./observability";
 import { checkRateLimit } from "./space-rate-limit";
 import type { SessionUser, TeamAccess } from "./team-auth";
-import { teamNotifier } from "./team-notifier";
+import { isClaimed } from "./team-commands";
+import { teamNotifier } from "./team-notifications";
 import { readTeamRecord } from "./team-store";
 import { CuidSchema, InvitationEmailSchema, normalizeEmail, UUIDSchema } from "./validation";
 
@@ -94,15 +96,6 @@ const STALE_ERROR = "Could not update this invitation. Refresh and try again.";
 
 const failure = (error: string): Failure => ({ error, success: false });
 
-const isInvitationExpired = (invitation: { expiresAt: Date | null }, now: Date): boolean =>
-  invitation.expiresAt !== null && invitation.expiresAt <= now;
-
-/** Pending and unexpired; legacy invitations without an expiry stay open. */
-const isInvitationOpen = (
-  invitation: { expiresAt: Date | null; status: string },
-  now: Date,
-): boolean => invitation.status === "PENDING" && !isInvitationExpired(invitation, now);
-
 const openInvitationWhere = (now: Date) => ({
   OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
   status: "PENDING" as const,
@@ -110,12 +103,6 @@ const openInvitationWhere = (now: Date) => ({
 
 const invitationExpiryFrom = (now: Date): Date =>
   new Date(now.getTime() + INVITATION_TTL_DAYS * DAY_SECONDS * 1000);
-
-const maskEmail = (email: string): string => {
-  const [local = "", domain = ""] = email.split("@");
-
-  return `${local.slice(0, 1)}***@${domain}`;
-};
 
 const inviteLink = (appUrl: string, teamId: string, invitationId: string): string => {
   const url = new URL(`/${teamId}`, appUrl);
@@ -134,7 +121,7 @@ const recipientRefusal = (invitation: StoredInvitation, email: string, now: Date
     return NOT_PENDING_ERROR;
   }
 
-  return isInvitationExpired(invitation, now) ? INVITATION_EXPIRED_ERROR : null;
+  return isExpired(invitation.expiresAt, now) ? INVITATION_EXPIRED_ERROR : null;
 };
 
 const toTeamView = (invitation: StoredInvitation): PendingTeamInvitation => ({
@@ -245,15 +232,15 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
         return failure("Invalid member ID");
       }
 
-      const email = normalizeEmail(request.email);
+      const email = InvitationEmailSchema.safeParse(request.email);
 
-      if (!InvitationEmailSchema.safeParse(email).success) {
+      if (!email.success) {
         return failure("Invalid email address");
       }
 
       const [team, isMember] = await Promise.all([
         deps.readTeamRecord(teamId),
-        deps.isMember(teamId, email),
+        deps.isMember(teamId, email.data),
       ]);
 
       if (!team) {
@@ -266,7 +253,7 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
         return failure("Member not found");
       }
 
-      if (slot.userId !== undefined && slot.userId !== "") {
+      if (isClaimed(slot)) {
         return failure("This member slot is already claimed");
       }
 
@@ -281,7 +268,7 @@ const createInvitations = <TTransaction>(deps: InvitationDeps<TTransaction>) => 
       const expiresAt = invitationExpiryFrom(deps.now());
 
       const invitation = await deps.store.putPending({
-        email,
+        email: email.data,
         expiresAt,
         invitedBy: user,
         memberId: request.memberId,
@@ -497,8 +484,6 @@ export {
   createInvitations,
   INVITATION_EXPIRED_ERROR,
   invitations,
-  isInvitationOpen,
-  maskEmail,
   openInvitationWhere,
   prismaInvitationStore,
 };

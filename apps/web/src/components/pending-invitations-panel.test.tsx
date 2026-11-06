@@ -17,19 +17,12 @@ it("keeps expired invitations visible and exposes resend and revoke after expans
 
   const resend = vi.fn().mockResolvedValue({ data: { emailSent: true }, success: true });
   const revoke = vi.fn().mockResolvedValue({ data: undefined, success: true });
-  const onSettled = vi.fn<() => void>();
   render(
     <PendingInvitationsPanelView
       invitations={[invitation]}
       members={[]}
       renderControls={(item) => (
-        <InvitationControlsView
-          invitation={item}
-          onSettled={onSettled}
-          resend={resend}
-          revoke={revoke}
-          teamId="team"
-        />
+        <InvitationControlsView invitation={item} resend={resend} revoke={revoke} />
       )}
     />,
   );
@@ -38,27 +31,23 @@ it("keeps expired invitations visible and exposes resend and revoke after expans
   expect(screen.getByText(/Removed member · Expired/)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: /Resend invitation/ }));
   await waitFor(() => {
-    expect(onSettled).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: /Revoke invitation/ })).toBeEnabled();
   });
-  expect(resend).toHaveBeenCalledWith("team", "invite");
+  expect(resend).toHaveBeenCalledWith("invite");
   fireEvent.click(screen.getByRole("button", { name: /Revoke invitation/ }));
   await waitFor(() => {
-    expect(onSettled).toHaveBeenCalledTimes(2);
+    expect(revoke).toHaveBeenCalledWith("invite");
   });
-  expect(revoke).toHaveBeenCalledWith("team", "invite");
 });
 
 it("disables both row actions during delivery and restores them on failure", async () => {
   const deferred = Promise.withResolvers<{ error: string; success: false }>();
   const resend = vi.fn(() => deferred.promise);
-  const onSettled = vi.fn<() => void>();
   render(
     <InvitationControlsView
       invitation={{ email: "friend@example.com", id: "invite" }}
-      onSettled={onSettled}
       resend={resend}
       revoke={vi.fn()}
-      teamId="team"
     />,
   );
   fireEvent.click(screen.getByRole("button", { name: /Resend invitation/ }));
@@ -67,5 +56,4 @@ it("disables both row actions during delivery and restores them on failure", asy
   await waitFor(() => {
     expect(screen.getByRole("button", { name: /Resend invitation/ })).toBeEnabled();
   });
-  expect(onSettled).toHaveBeenCalledOnce();
 });

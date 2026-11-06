@@ -13,9 +13,8 @@ import { Spinner } from "@repo/ui/components/spinner";
 import { captureException } from "@sentry/nextjs";
 import { useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 
-const errorBodySchema = z.object({ error: z.string() });
+import { readApiError } from "@/lib/api-error";
 
 type DeleteWorkspaceDialogProps = {
   onDeleted?: () => void | Promise<void>;
@@ -49,9 +48,7 @@ const DeleteWorkspaceDialog = ({
         onOpenChange(false);
         await onDeleted?.();
       } else {
-        const body: unknown = await response.json().catch(() => null);
-        const parsed = errorBodySchema.safeParse(body);
-        toast.error(parsed.success ? parsed.data.error : "Failed to delete workspace");
+        toast.error(await readApiError(response, "Failed to delete workspace"));
       }
     } catch (error) {
       captureException(error);

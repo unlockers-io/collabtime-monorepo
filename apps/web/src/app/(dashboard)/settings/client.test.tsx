@@ -7,7 +7,7 @@ import type { ActionResult } from "@/lib/actions/types";
 
 import { SettingsView } from "./client";
 
-const user = { email: "ada@example.com", id: "user-1", name: "Ada" };
+const user = { email: "ada@example.com", name: "Ada" };
 
 const renderSettings = (result: ActionResult<null>) => {
   const saveName = vi.fn<(name: string) => Promise<ActionResult<null>>>().mockResolvedValue(result);

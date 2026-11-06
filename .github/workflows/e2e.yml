@@ -91,7 +91,7 @@ jobs:
         run: node .github/ci/ci.mjs run e2e -- pnpm --filter @repo/web exec vitest run src/lib/membership.postgres.test.ts src/lib/team-postgres-repository.postgres.test.ts
       - run: pnpm build
       - name: Seed E2E test user
-        run: pnpm --filter @repo/web exec tsx scripts/ensure-e2e-user.ts
+        run: pnpm exec tsx tests/e2e/scripts/ensure-e2e-user.ts
       - name: Read Playwright version
         id: playwright
         run: echo "version=$(pnpm exec playwright --version | cut -d ' ' -f 2)" >> "$GITHUB_OUTPUT"

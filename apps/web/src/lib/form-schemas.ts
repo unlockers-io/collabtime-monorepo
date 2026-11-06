@@ -1,34 +1,55 @@
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@repo/auth/password";
 import { z } from "zod";
 
+import { upToCharacters } from "./limits";
+
+const ACCOUNT_NAME_MAX_LENGTH = 100;
+
+const emailSchema = z.email("Please enter a valid email");
+
+const newPasswordSchema = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+  .max(PASSWORD_MAX_LENGTH, "Password is too long");
+
+const accountNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Name is required")
+  .max(ACCOUNT_NAME_MAX_LENGTH, `Name must be ${ACCOUNT_NAME_MAX_LENGTH} characters or less`);
+
 const loginSchema = z.object({
-  email: z.email("Please enter a valid email"),
+  email: emailSchema,
   password: z.string().min(1, "Password is required"),
 });
 
 const signupSchema = z.object({
-  email: z.email("Please enter a valid email"),
-  name: z.string().min(1, "Name is required").max(100, "Name is too long"),
-  password: z
-    .string()
-    .min(12, "Password must be at least 12 characters")
-    .max(128, "Password is too long"),
+  email: emailSchema,
+  name: accountNameSchema,
+  password: newPasswordSchema,
 });
 
-const recoverSchema = z.object({
-  email: z.email("Please enter a valid email"),
-});
+const recoverSchema = z.object({ email: emailSchema });
 
 const resetPasswordSchema = z
   .object({
     confirmPassword: z.string().min(1, "Please confirm your password"),
-    password: z
-      .string()
-      .min(12, "Password must be at least 12 characters")
-      .max(128, "Password is too long"),
+    password: newPasswordSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
 
-export { loginSchema, recoverSchema, resetPasswordSchema, signupSchema };
+const ACCOUNT_NAME_HINT = upToCharacters(ACCOUNT_NAME_MAX_LENGTH);
+const NEW_PASSWORD_HINT = `Must be at least ${PASSWORD_MIN_LENGTH} characters long.`;
+
+export {
+  ACCOUNT_NAME_HINT,
+  accountNameSchema,
+  loginSchema,
+  NEW_PASSWORD_HINT,
+  recoverSchema,
+  resetPasswordSchema,
+  signupSchema,
+};

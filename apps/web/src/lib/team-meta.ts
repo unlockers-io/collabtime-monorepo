@@ -1,14 +1,9 @@
 import { cacheLife, cacheTag } from "next/cache";
 
+import { normalizeTeamName } from "@/lib/display-name";
 import { log } from "@/lib/observability";
 import { readTeamSummary, teamNameTag } from "@/lib/team-store";
 import { UUIDSchema } from "@/lib/validation";
-
-const normalizeTeamName = (name: string | undefined): string | null => {
-  const trimmed = name?.trim() ?? "";
-
-  return trimmed.length > 0 ? trimmed : null;
-};
 
 const readCachedTeamName = async (teamId: string): Promise<string | null> => {
   "use cache";
@@ -38,4 +33,4 @@ const getTeamName = async (teamId: string): Promise<string | null> => {
   }
 };
 
-export { getTeamName, normalizeTeamName };
+export { getTeamName };

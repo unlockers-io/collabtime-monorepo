@@ -1,13 +1,17 @@
-import { NO_GROUP, toMemberInput } from "@/lib/member-input";
 import type { MemberInput } from "@/lib/member-input";
-import { fuzzyMatchTimezone } from "@/lib/timezones";
+import {
+  DEFAULT_WORKING_HOURS_END,
+  DEFAULT_WORKING_HOURS_START,
+  fuzzyMatchTimezone,
+} from "@/lib/timezones";
 import { TeamMemberInputSchema } from "@/lib/validation";
 
 type ParsedRow = {
   errors: Array<string>;
   index: number;
-  member: MemberInput;
+  member: Omit<MemberInput, "timezone"> & { timezone: string };
   rawTimezone: string;
+  valid: MemberInput | null;
 };
 
 const TEMPLATE_CSV = [
@@ -63,10 +67,42 @@ const parseCSVLine = (line: string, sep: string): Array<string> => {
   return cells;
 };
 
-const parseHour = (cell: string) => (cell ? Math.trunc(Number(cell)) : Number.NaN);
+const parseHour = (cell: string | undefined, fallback: number) => {
+  if (cell === undefined) {
+    return fallback;
+  }
+
+  return cell ? Math.trunc(Number(cell)) : Number.NaN;
+};
 
 const describeTimezoneError = (rawTimezone: string) =>
   rawTimezone ? `Unknown timezone: "${rawTimezone}"` : "Timezone is required";
+
+type RowCells = Record<"end" | "name" | "start" | "timezone" | "title", string | undefined>;
+
+const toParsedRow = (index: number, cells: RowCells): ParsedRow => {
+  const rawTimezone = cells.timezone ?? "";
+
+  const member = {
+    name: (cells.name ?? "").trim(),
+    timezone: fuzzyMatchTimezone(rawTimezone) ?? rawTimezone,
+    title: (cells.title ?? "").trim(),
+    workingHoursEnd: parseHour(cells.end, DEFAULT_WORKING_HOURS_END),
+    workingHoursStart: parseHour(cells.start, DEFAULT_WORKING_HOURS_START),
+  };
+
+  const result = TeamMemberInputSchema.safeParse(member);
+
+  if (result.success) {
+    return { errors: [], index, member, rawTimezone, valid: result.data };
+  }
+
+  const errors = result.error.issues.map((issue) =>
+    issue.path[0] === "timezone" ? describeTimezoneError(rawTimezone) : issue.message,
+  );
+
+  return { errors, index, member, rawTimezone, valid: null };
+};
 
 const parseCSV = (text: string): Array<ParsedRow> => {
   const lines = text.split(/\r?\n/v).filter((l) => l.trim());
@@ -123,29 +159,15 @@ const parseCSV = (text: string): Array<ParsedRow> => {
       continue;
     }
 
-    const rawTimezone = cells[tzIdx] ?? "";
-
-    const member = toMemberInput({
-      groupId: NO_GROUP,
-      name: cells[nameIdx] ?? "",
-      timezone: fuzzyMatchTimezone(rawTimezone) ?? rawTimezone,
-      title: cells[titleIdx] ?? "",
-      workingHoursEnd: parseHour(cells[endIdx] ?? "17"),
-      workingHoursStart: parseHour(cells[startIdx] ?? "9"),
-    });
-
-    const result = TeamMemberInputSchema.safeParse(member);
-
-    rows.push({
-      errors: result.success
-        ? []
-        : result.error.issues.map((issue) =>
-            issue.path[0] === "timezone" ? describeTimezoneError(rawTimezone) : issue.message,
-          ),
-      index: offset + 1,
-      member,
-      rawTimezone,
-    });
+    rows.push(
+      toParsedRow(offset + 1, {
+        end: cells[endIdx],
+        name: cells[nameIdx],
+        start: cells[startIdx],
+        timezone: cells[tzIdx],
+        title: cells[titleIdx],
+      }),
+    );
   }
 
   return rows;

@@ -8,9 +8,9 @@ import type { TeamMember } from "@/types";
 
 import { EditMemberDialog } from "./edit-member-dialog";
 
-const mocks = vi.hoisted(() => ({ updateMember: vi.fn(), updateOwnMember: vi.fn() }));
+const mocks = vi.hoisted(() => ({ changeTeam: vi.fn() }));
 
-vi.mock("@/lib/actions/member-actions", () => mocks);
+vi.mock("@/lib/actions/team-change", () => mocks);
 
 vi.mock("@/lib/actions/invitation-actions", () => ({ inviteMember: vi.fn() }));
 
@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 
 const member: TeamMember = {
-  id: "member-1",
+  id: "6f1c1c3e-6a3b-4b8f-9f55-0a3c2d1e4b7a",
   name: "Ada",
   order: 0,
   timezone: "Europe/London",
@@ -56,24 +56,28 @@ it("sends nothing for an unchanged save and says so until the next change", asyn
     expect(formAlertText()).toBe("No changes to save.");
   });
   expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
-  expect(mocks.updateMember).not.toHaveBeenCalled();
+  expect(mocks.changeTeam).not.toHaveBeenCalled();
 
   fireEvent.change(name, { target: { value: "Ada Lovelace" } });
   expect(formAlertText()).toBeUndefined();
 });
 
 it("claims an unchanged profile, since claiming is the change", async () => {
-  mocks.updateOwnMember.mockResolvedValue({ data: member, success: true });
+  mocks.changeTeam.mockResolvedValue({ data: undefined, success: true });
   renderDialog("claim");
   fireEvent.click(screen.getByRole("button", { name: "Claim profile" }));
 
   await waitFor(() => {
-    expect(mocks.updateOwnMember).toHaveBeenCalledOnce();
+    expect(mocks.changeTeam).toHaveBeenCalledExactlyOnceWith(
+      "team-1",
+      "updateOwnMember",
+      expect.objectContaining({ memberId: member.id }),
+    );
   });
 });
 
 it("reports a failed save in the form alert", async () => {
-  mocks.updateMember.mockResolvedValue({ error: "Member not found", success: false });
+  mocks.changeTeam.mockResolvedValue({ error: "Member not found", success: false });
   const name = renderDialog();
   expect(name).toHaveAccessibleDescription("Up to 100 characters.");
   fireEvent.change(name, { target: { value: "Ada Lovelace" } });

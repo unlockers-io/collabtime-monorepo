@@ -6,26 +6,21 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useTeamWrite } from "@/hooks/use-team-write";
-import { createOwnMemberSlot } from "@/lib/actions/member-actions";
 import { runWithCleanup } from "@/lib/run-with-cleanup";
 
 export const AddOwnProfileButton = ({ teamId }: { teamId: string }) => {
   const [pending, setPending] = useState(false);
-  const writeTeam = useTeamWrite(teamId);
+  const write = useTeamWrite(teamId);
   const ready = useClientReady();
 
   const add = async () => {
     setPending(true);
     await runWithCleanup(
       async () => {
-        try {
-          const result = await writeTeam({ submit: () => createOwnMemberSlot(teamId) });
+        const result = await write.change("claimOwnSlot", {});
 
-          if (!result.success) {
-            toast.error(result.error);
-          }
-        } catch {
-          toast.error("Could not add your profile. Try again.");
+        if (!result.success) {
+          toast.error(result.error);
         }
       },
       () => {

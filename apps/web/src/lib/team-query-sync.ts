@@ -3,7 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { queryKeys } from "./query-keys";
 
 const createTeamCoordinator = (queryClient: QueryClient, teamId: string) => {
-  const queryKey = queryKeys.teams.detail(teamId);
+  const queryKey = queryKeys.team.all(teamId);
   let writes = 0;
   let subscribers = 0;
   let pending = false;
@@ -18,7 +18,7 @@ const createTeamCoordinator = (queryClient: QueryClient, teamId: string) => {
   const refresh = () => {
     clearPending();
 
-    return queryClient.invalidateQueries({ exact: true, queryKey });
+    return queryClient.invalidateQueries({ queryKey });
   };
 
   const flush = () => {
@@ -26,7 +26,7 @@ const createTeamCoordinator = (queryClient: QueryClient, teamId: string) => {
       return;
     }
 
-    if (queryClient.isFetching({ exact: true, queryKey }) === 0) {
+    if (queryClient.isFetching({ queryKey }) === 0) {
       void refresh();
     }
   };

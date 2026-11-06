@@ -5,89 +5,48 @@ import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
 import { cache } from "react";
 
+import { getEnv } from "./env";
+import { getMailerConfig } from "./mailer";
 import { log } from "./observability";
-import { getRedis } from "./redis";
+import { getRedis, incrementWithExpiry, isRedisConfigured } from "./redis";
 import { joinPrivateSpacesFromCookies } from "./space-join";
 
 let cachedAuth: Auth | null = null;
 
-const INCREMENT_WITH_INITIAL_TTL_SCRIPT = `
-local value = redis.call("INCR", KEYS[1])
-if value == 1 and tonumber(ARGV[1]) > 0 then
-  redis.call("EXPIRE", KEYS[1], ARGV[1])
-end
-return value
-`;
+const redisSecondaryStorage = (): NonNullable<AuthConfig["secondaryStorage"]> => {
+  const redis = getRedis();
+
+  return {
+    delete: async (key: string) => {
+      await redis.del(key);
+    },
+    get: (key: string) => redis.get(key),
+    getAndDelete: (key: string) => redis.getdel(key),
+    increment: incrementWithExpiry,
+    set: async (key: string, value: string, ttl?: number) => {
+      await (ttl !== undefined && ttl !== 0 ? redis.setex(key, ttl, value) : redis.set(key, value));
+    },
+  };
+};
 
 const getAuthConfig = (): AuthConfig => {
-  const secret = process.env.BETTER_AUTH_SECRET;
+  const secret = getEnv("BETTER_AUTH_SECRET");
 
-  if (secret === undefined || secret.length < 32) {
-    throw new Error(
-      "BETTER_AUTH_SECRET must be set to at least 32 characters (generate with: openssl rand -base64 32)",
-    );
+  if (secret === undefined) {
+    throw new Error("BETTER_AUTH_SECRET must be set (generate with: openssl rand -base64 32)");
   }
 
-  const config: AuthConfig = {
+  return {
     ...envAuthConfig({ additionalAllowedHosts: ["collabtime.io", "www.collabtime.io"] }),
     extraPlugins: [nextCookies()],
+    mailer: getMailerConfig(),
     onSessionCreated: (userId, { cookieHeader }) =>
       joinPrivateSpacesFromCookies(userId, cookieHeader),
     onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
     prisma,
+    secondaryStorage: isRedisConfigured() ? redisSecondaryStorage() : undefined,
     secret,
   };
-
-  if (process.env.RESEND_API_KEY !== undefined && process.env.RESEND_API_KEY !== "") {
-    config.resendApiKey = process.env.RESEND_API_KEY;
-
-    if (process.env.RESEND_FROM_EMAIL !== undefined && process.env.RESEND_FROM_EMAIL !== "") {
-      config.fromEmail = process.env.RESEND_FROM_EMAIL;
-    }
-  }
-
-  if (process.env.REDIS_URL !== undefined && process.env.REDIS_URL !== "") {
-    const redis = getRedis();
-    config.secondaryStorage = {
-      delete: async (key: string) => {
-        await redis.del(key);
-      },
-      get: async (key: string) => {
-        const value = await redis.get(key);
-
-        if (value === null) {
-          return null;
-        }
-
-        if (typeof value === "string") {
-          return value;
-        }
-
-        if (typeof value === "object") {
-          return JSON.stringify(value);
-        }
-
-        return String(value);
-      },
-      getAndDelete: (key: string) => redis.getdel(key),
-      increment: async (key: string, ttl: number) => {
-        const value = await redis.eval(INCREMENT_WITH_INITIAL_TTL_SCRIPT, 1, key, ttl);
-
-        if (typeof value !== "number") {
-          throw new TypeError("Redis increment returned a non-numeric value");
-        }
-
-        return value;
-      },
-      set: async (key: string, value: string, ttl?: number) => {
-        await (ttl !== undefined && ttl !== 0
-          ? redis.setex(key, ttl, value)
-          : redis.set(key, value));
-      },
-    };
-  }
-
-  return config;
 };
 
 const getAuth = (): Auth => {

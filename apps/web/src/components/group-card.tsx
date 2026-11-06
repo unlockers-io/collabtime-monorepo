@@ -8,8 +8,8 @@ import { type ReactNode, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { ConfirmRemoveDialog } from "@/components/confirm-remove-dialog";
+import { useInlineRename } from "@/hooks/use-inline-rename";
 import { useTeamWrite } from "@/hooks/use-team-write";
-import { removeGroup, updateGroup } from "@/lib/actions/group-actions";
 import type { TeamGroup } from "@/types";
 
 type GroupCardProps = {
@@ -30,74 +30,23 @@ const GroupCard = ({
   memberCount,
   teamId,
 }: GroupCardProps) => {
-  const writeTeam = useTeamWrite(teamId);
+  const write = useTeamWrite(teamId);
   const [isPending, startTransition] = useTransition();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingName, setEditingName] = useState("");
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
 
-  const handleStartEditing = () => {
-    setEditingName(group.name);
-    setIsEditing(true);
-  };
-
-  const handleSave = () => {
-    if (!canEdit) {
-      return;
-    }
-
-    const trimmedName = editingName.trim();
-
-    if (!trimmedName || trimmedName === group.name) {
-      setIsEditing(false);
-
-      return;
-    }
-
-    setIsEditing(false);
+  const rename = useInlineRename(group.name, (name) => {
     startTransition(async () => {
-      const result = await writeTeam({
-        optimistic: (team) => ({
-          ...team,
-          groups: team.groups.map((g) => (g.id === group.id ? { ...g, name: trimmedName } : g)),
-        }),
-        submit: () => updateGroup(teamId, group.id, { name: trimmedName }),
-      });
+      const result = await write.change("updateGroup", { groupId: group.id, name });
 
       if (!result.success) {
         toast.error(result.error);
       }
     });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.nativeEvent.isComposing) {
-      return;
-    }
-
-    if (e.key === "Enter") {
-      handleSave();
-    } else if (e.key === "Escape") {
-      setIsEditing(false);
-    }
-  };
+  });
 
   const handleRemove = () => {
-    if (!canEdit) {
-      return;
-    }
-
     startTransition(async () => {
-      const result = await writeTeam({
-        optimistic: (team) => ({
-          ...team,
-          groups: team.groups.filter((g) => g.id !== group.id),
-          members: team.members.map((m) =>
-            m.groupId === group.id ? { ...m, groupId: undefined } : m,
-          ),
-        }),
-        submit: () => removeGroup(teamId, group.id),
-      });
+      const result = await write.change("removeGroup", { groupId: group.id });
 
       if (result.success) {
         setIsRemoveOpen(false);
@@ -108,28 +57,15 @@ const GroupCard = ({
     });
   };
 
-  const editInput = (
-    <Input
-      aria-label={`Rename ${group.name}`}
-      autoFocus
-      onBlur={handleSave}
-      onChange={(e) => {
-        setEditingName(e.target.value);
-      }}
-      onFocus={(e) => {
-        e.currentTarget.select();
-      }}
-      onKeyDown={handleKeyDown}
-      type="text"
-      value={editingName}
-    />
+  const editInput = rename.inputProps && (
+    <Input {...rename.inputProps} aria-label={`Rename ${group.name}`} autoFocus type="text" />
   );
 
   const groupName = canEdit ? (
     <button
       aria-label={`Rename ${group.name}`}
       className="group/name flex min-w-0 items-center gap-1.5 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-      onClick={handleStartEditing}
+      onClick={rename.handleStart}
       type="button"
     >
       <span className="truncate font-medium text-foreground">{group.name}</span>
@@ -149,7 +85,7 @@ const GroupCard = ({
       >
         {dragHandle}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          {canEdit && isEditing ? editInput : groupName}
+          {canEdit && editInput !== null ? editInput : groupName}
           <span className="font-mono text-xs text-muted-foreground tabular-nums">
             {memberCount} {memberCount === 1 ? "member" : "members"}
           </span>

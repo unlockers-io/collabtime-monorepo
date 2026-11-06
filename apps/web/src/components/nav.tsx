@@ -1,248 +1,59 @@
 "use client";
 
-import { Badge } from "@repo/ui/components/badge";
-import { Button, buttonVariants } from "@repo/ui/components/button";
-import { useClientReady } from "@repo/ui/hooks/use-client-ready";
+import { buttonVariants } from "@repo/ui/components/button";
 import { cn } from "@repo/ui/lib/utils";
-import { Archive, Globe, Lock, LogIn, Menu, X } from "lucide-react";
+import { LogIn } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { toast } from "sonner";
 
 import { useSignOut } from "@/hooks/use-sign-out";
 import { APP_REPO_URL } from "@/lib/constants";
 
-import { CurrentTimeDisplay } from "./current-time-display";
 import { GithubIcon } from "./github-icon";
 import { ModeToggle } from "./mode-toggle";
-import { CopyLinkButton } from "./nav/copy-link-button";
 import { Logo } from "./nav/logo";
-import { MobileMenu } from "./nav/mobile-menu";
-import type { MobileMenuRole } from "./nav/mobile-menu";
-import { TeamTitle } from "./nav/team-title";
 import { UserMenu } from "./nav/user-menu";
-import { WorkspaceMenu } from "./nav/workspace-menu";
 
-type NavProps = { isAuthenticated: boolean } & (
-  | { variant?: "default" | "centered" }
-  | {
-      canDeleteWorkspace?: boolean;
-      isAdmin: boolean;
-      isArchived?: boolean;
-      isEditingName: boolean;
-      isPrivate?: boolean;
-      onCancelEdit: () => void;
-      onDeleteWorkspace?: () => void;
-      onEditName: () => void;
-      onEditVisibility?: () => void;
-      onNameChange: (name: string) => void;
-      onSaveName: () => void;
-      teamName: string;
-      variant: "team";
-    }
-);
+type NavProps = { isAuthenticated: boolean };
 
-type NavViewProps = NavProps & {
-  signOut: ReturnType<typeof useSignOut>;
-};
+type NavViewProps = NavProps & { signOut: ReturnType<typeof useSignOut> };
 
-const TeamNav = (props: Extract<NavViewProps, { variant: "team" }>) => {
-  const { isAuthenticated } = props;
-  const [hasCopied, setHasCopied] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const ready = useClientReady();
-  const { handleSignOut, isSigningOut } = props.signOut;
-
-  const handleCopyLink = async () => {
-    try {
-      // Invitation hints stay out of shared links; a counted-people view stays in.
-      const url = new URL(window.location.href);
-      url.searchParams.delete("invite");
-      await navigator.clipboard.writeText(url.toString());
-      setHasCopied(true);
-      toast.success("Link copied");
-      setTimeout(() => {
-        setHasCopied(false);
-      }, 2000);
-    } catch {
-      toast.error("Failed to copy link");
-    }
-  };
-
-  const {
-    canDeleteWorkspace = false,
-    isAdmin,
-    isArchived = false,
-    isEditingName,
-    isPrivate = false,
-    onCancelEdit,
-    onDeleteWorkspace,
-    onEditName,
-    onEditVisibility,
-    onNameChange,
-    onSaveName,
-    teamName,
-  } = props;
-
-  const handleDeleteWorkspace = () => {
-    onDeleteWorkspace?.();
-  };
-
-  const signedInRole: MobileMenuRole = isAuthenticated ? "member" : "guest";
-  const navRole: MobileMenuRole = isAdmin ? "admin" : signedInRole;
-
-  return (
-    <header className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3">
-        <Logo />
-
-        <div className="hidden items-center gap-2 sm:flex">
-          <CurrentTimeDisplay />
-          <CopyLinkButton
-            hasCopied={hasCopied}
-            onCopy={() => {
-              void handleCopyLink();
-            }}
-          />
-          <ModeToggle />
-          {canDeleteWorkspace && (
-            <WorkspaceMenu
-              onDeleteWorkspace={handleDeleteWorkspace}
-              onEditVisibility={onEditVisibility}
-            />
-          )}
-          <UserMenu
-            isSigningOut={isSigningOut}
-            navRole={navRole}
-            onSignOut={() => {
-              void handleSignOut();
-            }}
-          />
-        </div>
-
-        <div className="flex items-center gap-2 sm:hidden">
-          <Button
-            aria-controls="mobile-menu"
-            aria-expanded={mobileMenuOpen}
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            disabled={!ready}
-            onClick={() => {
-              setMobileMenuOpen(!mobileMenuOpen);
-            }}
-            size="icon-lg"
-            variant="outline"
-          >
-            {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-        <TeamTitle
-          isAdmin={isAdmin}
-          isEditing={isEditingName}
-          onCancel={onCancelEdit}
-          onChange={onNameChange}
-          onEdit={onEditName}
-          onSave={onSaveName}
-          teamName={teamName}
+const NavView = ({ isAuthenticated, signOut }: NavViewProps) => (
+  <header className="mx-auto flex w-full max-w-450 items-center justify-between px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
+    <Logo />
+    <div className="flex items-center gap-2">
+      {!isAuthenticated && (
+        <a
+          aria-label="View on GitHub"
+          className={cn(buttonVariants({ size: "icon", variant: "ghost" }))}
+          href={APP_REPO_URL}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <GithubIcon />
+        </a>
+      )}
+      <ModeToggle />
+      {isAuthenticated ? (
+        <UserMenu
+          isSigningOut={signOut.isSigningOut}
+          navRole="account"
+          onSignOut={() => {
+            void signOut.handleSignOut();
+          }}
         />
-        {isPrivate ? (
-          <Badge variant="secondary">
-            <Lock aria-hidden />
-            Private
-          </Badge>
-        ) : (
-          <Badge title="Anyone with the link can view" variant="outline">
-            <Globe aria-hidden />
-            Public
-          </Badge>
-        )}
-        {isArchived && (
-          <Badge variant="secondary">
-            <Archive />
-            Archived
-          </Badge>
-        )}
-      </div>
-
-      <MobileMenu
-        onClose={() => {
-          setMobileMenuOpen(false);
-        }}
-        onCopy={() => {
-          void handleCopyLink();
-        }}
-        onDeleteWorkspace={handleDeleteWorkspace}
-        onEditVisibility={onEditVisibility}
-        onSignOut={() => {
-          void handleSignOut();
-        }}
-        permissions={{
-          canDeleteWorkspace,
-          canEditVisibility: canDeleteWorkspace && Boolean(onEditVisibility),
-        }}
-        role={navRole}
-        state={{ hasCopied, isOpen: mobileMenuOpen, isSigningOut }}
-      />
-    </header>
-  );
-};
-
-const NavView = (props: NavViewProps) => {
-  const { isAuthenticated } = props;
-  const { handleSignOut, isSigningOut } = props.signOut;
-
-  if (props.variant === "centered") {
-    return (
-      <header className="flex items-center justify-center px-4 py-8 sm:px-6">
-        <Logo />
-      </header>
-    );
-  }
-
-  if (props.variant === "team") {
-    return <TeamNav {...props} />;
-  }
-
-  return (
-    <header className="mx-auto flex w-full max-w-450 items-center justify-between px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
-      <Logo />
-      <div className="flex items-center gap-2">
-        {!isAuthenticated && (
-          <a
-            aria-label="View on GitHub"
-            className={cn(buttonVariants({ size: "icon", variant: "ghost" }))}
-            href={APP_REPO_URL}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <GithubIcon />
-          </a>
-        )}
-        <ModeToggle />
-        {isAuthenticated ? (
-          <UserMenu
-            isSigningOut={isSigningOut}
-            navRole="account"
-            onSignOut={() => {
-              void handleSignOut();
-            }}
-          />
-        ) : (
-          <Link
-            aria-label="Sign in"
-            className={cn(buttonVariants({ variant: "outline" }))}
-            href="/login"
-          >
-            <LogIn aria-hidden className="size-4 sm:hidden" />
-            <span className="max-sm:hidden">Sign in</span>
-          </Link>
-        )}
-      </div>
-    </header>
-  );
-};
+      ) : (
+        <Link
+          aria-label="Sign in"
+          className={cn(buttonVariants({ variant: "outline" }))}
+          href="/login"
+        >
+          <LogIn aria-hidden className="size-4 sm:hidden" />
+          <span className="max-sm:hidden">Sign in</span>
+        </Link>
+      )}
+    </div>
+  </header>
+);
 
 const Nav = (props: NavProps) => {
   const signOut = useSignOut();

@@ -25,14 +25,11 @@ const registry = createTeamLiveRegistry({
 });
 
 const getServerSnapshot = (): LiveSyncStatus => "offline";
-const unsubscribeDisabled = () => undefined;
 
 const useTeamLiveUpdates = ({
-  enabled = true,
   refresh,
   teamId,
 }: {
-  enabled?: boolean;
   refresh: () => void;
   teamId: string;
 }): LiveSyncStatus => {
@@ -40,10 +37,6 @@ const useTeamLiveUpdates = ({
 
   const subscribe = useCallback(
     (onStatus: () => void) => {
-      if (!enabled) {
-        return unsubscribeDisabled;
-      }
-
       const sync = createTeamQueryInvalidator(queryClient, teamId);
 
       const release = registry.subscribe(teamId, {
@@ -61,13 +54,10 @@ const useTeamLiveUpdates = ({
         sync.dispose();
       };
     },
-    [enabled, queryClient, refresh, teamId],
+    [queryClient, refresh, teamId],
   );
 
-  const getSnapshot = useCallback(
-    () => (enabled ? registry.getStatus(teamId) : "offline"),
-    [enabled, teamId],
-  );
+  const getSnapshot = useCallback(() => registry.getStatus(teamId), [teamId]);
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 };

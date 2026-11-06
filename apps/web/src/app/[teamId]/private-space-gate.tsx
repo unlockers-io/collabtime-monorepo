@@ -1,12 +1,10 @@
 "use client";
 
 import { Button, buttonVariants } from "@repo/ui/components/button";
-import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
+import { Field, FieldGroup } from "@repo/ui/components/field";
 import { Spinner } from "@repo/ui/components/spinner";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormAlert } from "@repo/ui/compositions/form-alert";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { cn } from "@repo/ui/lib/utils";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
@@ -15,6 +13,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
+
+import { TextField } from "@/components/text-field";
+import { bindField } from "@/lib/bind-field";
+import { withRedirect } from "@/lib/redirect-validation";
 
 import { InviteMismatchNotice } from "./client/invite-mismatch-notice";
 
@@ -25,9 +27,8 @@ const passwordSchema = z.object({
 type PrivateSpaceGateProps = {
   inviteMismatch?: { invitedEmailMasked: string };
   isAuthenticated: boolean;
-  returnTo?: string;
+  returnTo: string;
   spaceId: string;
-  teamId: string;
 };
 
 const PrivateSpaceGate = ({
@@ -35,16 +36,12 @@ const PrivateSpaceGate = ({
   isAuthenticated,
   returnTo,
   spaceId,
-  teamId,
 }: PrivateSpaceGateProps) => {
   const { refresh } = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
-
-  const redirectTarget = returnTo ?? `/${teamId}`;
-  const withRedirect = (path: string) => `${path}?redirect=${encodeURIComponent(redirectTarget)}`;
 
   const form = useForm({
     defaultValues: { password: "" },
@@ -124,17 +121,17 @@ const PrivateSpaceGate = ({
           </p>
         </div>
 
-        {inviteMismatch && <InviteMismatchNotice {...inviteMismatch} returnTo={redirectTarget} />}
+        {inviteMismatch && <InviteMismatchNotice {...inviteMismatch} returnTo={returnTo} />}
 
         {accepted ? (
           <div className="flex flex-col gap-2">
-            <Link className={cn(buttonVariants())} href={withRedirect("/register")}>
+            <Link className={cn(buttonVariants())} href={withRedirect("/register", returnTo)}>
               <UserPlus aria-hidden className="mr-2 size-4" />
               Create account to join
             </Link>
             <Link
               className={cn(buttonVariants({ variant: "outline" }))}
-              href={withRedirect("/login")}
+              href={withRedirect("/login", returnTo)}
             >
               <LogIn aria-hidden className="mr-2 size-4" />
               Sign in to join
@@ -153,11 +150,17 @@ const PrivateSpaceGate = ({
           <div>
             {!isAuthenticated && (
               <p className="mb-5 text-center text-sm">
-                <Link className="underline underline-offset-4" href={withRedirect("/login")}>
+                <Link
+                  className="underline underline-offset-4"
+                  href={withRedirect("/login", returnTo)}
+                >
                   Sign in
                 </Link>
                 {" or "}
-                <Link className="underline underline-offset-4" href={withRedirect("/register")}>
+                <Link
+                  className="underline underline-offset-4"
+                  href={withRedirect("/register", returnTo)}
+                >
                   sign up
                 </Link>
                 {" to accept an invitation or access your workspace."}
@@ -176,35 +179,19 @@ const PrivateSpaceGate = ({
                 <FormAlert message={formError} />
                 <form.Field name="password">
                   {(field) => {
-                    const isInvalid = Boolean(serverError) || !field.state.meta.isValid;
+                    const hasServerError = serverError !== null && serverError !== "";
 
                     return (
-                      <Field data-invalid={isInvalid || undefined}>
-                        <FieldLabel htmlFor="space-password">Password</FieldLabel>
-                        <Input
-                          aria-describedby={isInvalid ? "space-password-error" : undefined}
-                          aria-invalid={isInvalid}
-                          autoComplete="current-password"
-                          disabled={isPending}
-                          id="space-password"
-                          onBlur={field.handleBlur}
-                          onChange={(e) => {
-                            field.handleChange(e.target.value);
-                          }}
-                          type="password"
-                          value={field.state.value}
-                        />
-                        {serverError !== null && serverError !== "" ? (
-                          <FormFieldError errors={[serverError]} id="space-password-error" />
-                        ) : (
-                          isInvalid && (
-                            <FormFieldError
-                              errors={field.state.meta.errors}
-                              id="space-password-error"
-                            />
-                          )
-                        )}
-                      </Field>
+                      <TextField
+                        {...bindField(field)}
+                        autoComplete="current-password"
+                        disabled={isPending}
+                        errors={hasServerError ? [serverError] : field.state.meta.errors}
+                        id="space-password"
+                        isInvalid={hasServerError || !field.state.meta.isValid}
+                        label="Password"
+                        type="password"
+                      />
                     );
                   }}
                 </form.Field>

@@ -7,7 +7,8 @@
   "exports": {
     "./server": "./src/server.ts",
     "./client": "./src/client.ts",
-    "./env-config": "./src/env-config.ts"
+    "./env-config": "./src/env-config.ts",
+    "./password": "./src/password.ts"
   },
   "scripts": {
     "lint": "oxlint src",

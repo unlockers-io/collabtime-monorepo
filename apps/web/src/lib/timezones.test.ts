@@ -10,7 +10,10 @@ import {
   getMemberStatus,
   getMinuteOfDay,
   getOffsetMinutes,
-  getWorkingMinutes,
+  formatHour,
+  formatWindow,
+  isWithinWindow,
+  workingWindow,
 } from "./timezones";
 
 // A January date keeps these free of daylight-saving shifts in every zone used.
@@ -29,10 +32,34 @@ describe("getOffsetMinutes", () => {
   });
 });
 
-describe("getWorkingMinutes", () => {
+describe("workingWindow", () => {
   it("runs an end hour earlier than the start past midnight", () => {
-    expect(getWorkingMinutes({ workingHoursEnd: 17, workingHoursStart: 9 })).toBe(8 * 60);
-    expect(getWorkingMinutes({ workingHoursEnd: 6, workingHoursStart: 22 })).toBe(8 * 60);
+    expect(workingWindow({ workingHoursEnd: 17, workingHoursStart: 9 })).toEqual({
+      lengthMinutes: 8 * 60,
+      startMinute: 9 * 60,
+    });
+    expect(workingWindow({ workingHoursEnd: 6, workingHoursStart: 22 }).lengthMinutes).toBe(8 * 60);
+  });
+
+  it("treats an end equal to the start as all day", () => {
+    const allDay = workingWindow({ workingHoursEnd: 9, workingHoursStart: 9 });
+
+    expect(allDay.lengthMinutes).toBe(24 * 60);
+    expect(isWithinWindow(allDay, 3 * 60)).toBe(true);
+    expect(formatWindow(allDay)).toBe("All day");
+    expect(
+      getMemberStatus({ ...allDay, timezone: "UTC", workingHoursEnd: 9, workingHoursStart: 9 }, AT),
+    ).toEqual({
+      kind: "all-day",
+    });
+  });
+});
+
+describe("formatHour", () => {
+  it("pads hours to two digits", () => {
+    expect(formatHour(0)).toBe("00:00");
+    expect(formatHour(9)).toBe("09:00");
+    expect(formatHour(23)).toBe("23:00");
   });
 });
 

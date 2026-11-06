@@ -9,12 +9,12 @@ import {
 } from "@repo/ui/components/dropdown-menu";
 import { Lock, MoreHorizontal, Trash2 } from "lucide-react";
 
-type WorkspaceMenuProps = {
+type OwnerActions = {
   onDeleteWorkspace: () => void;
-  onEditVisibility?: () => void;
+  onEditVisibility: () => void;
 };
 
-const WorkspaceMenu = ({ onDeleteWorkspace, onEditVisibility }: WorkspaceMenuProps) => (
+const WorkspaceMenu = ({ onDeleteWorkspace, onEditVisibility }: OwnerActions) => (
   <DropdownMenu>
     <DropdownMenuTrigger
       render={<Button aria-label="Workspace actions" size="icon" variant="outline" />}
@@ -22,12 +22,10 @@ const WorkspaceMenu = ({ onDeleteWorkspace, onEditVisibility }: WorkspaceMenuPro
       <MoreHorizontal className="size-4" />
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" className="w-48">
-      {onEditVisibility && (
-        <DropdownMenuItem onClick={onEditVisibility}>
-          <Lock />
-          Sharing &amp; privacy
-        </DropdownMenuItem>
-      )}
+      <DropdownMenuItem onClick={onEditVisibility}>
+        <Lock />
+        Sharing &amp; privacy
+      </DropdownMenuItem>
       <DropdownMenuItem onClick={onDeleteWorkspace} variant="destructive">
         <Trash2 />
         Delete workspace
@@ -37,3 +35,5 @@ const WorkspaceMenu = ({ onDeleteWorkspace, onEditVisibility }: WorkspaceMenuPro
 );
 
 export { WorkspaceMenu };
+
+export type { OwnerActions };

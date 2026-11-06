@@ -5,23 +5,23 @@ import { Field, FieldDescription, FieldLabel } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
-import { useQueryClient } from "@tanstack/react-query";
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { inviteMember } from "@/lib/actions/invitation-actions";
+import { invitationSentMessage, useInvitationWrites } from "@/hooks/use-invitation-writes";
 import { formatExpiresIn } from "@/lib/invitation-expiry";
-import { queryKeys } from "@/lib/query-keys";
 import { runWithCleanup } from "@/lib/run-with-cleanup";
-import { InvitationEmailSchema, normalizeEmail } from "@/lib/validation";
+import { useNow } from "@/lib/use-tick";
+import { InvitationEmailSchema } from "@/lib/validation";
 import type { PendingTeamInvitation } from "@/types";
 
 import { InvitationControls } from "./invitation-controls";
 
-const INVALID_EMAIL = "Enter a valid email address";
+const emailError = (email: string): string | null => {
+  const parsed = InvitationEmailSchema.safeParse(email);
 
-const isValidEmail = (email: string) =>
-  InvitationEmailSchema.safeParse(normalizeEmail(email)).success;
+  return parsed.success ? null : (parsed.error.issues[0]?.message ?? null);
+};
 
 export const MemberInviteSection = ({
   memberId,
@@ -36,15 +36,16 @@ export const MemberInviteSection = ({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasAttempted = useRef(false);
-  const queryClient = useQueryClient();
+  const invitations = useInvitationWrites(teamId);
   const formId = useId();
+  const now = useNow();
 
   const send = async () => {
     hasAttempted.current = true;
-    const parsed = InvitationEmailSchema.safeParse(normalizeEmail(email));
+    const parsed = InvitationEmailSchema.safeParse(email);
 
     if (!parsed.success) {
-      setError(INVALID_EMAIL);
+      setError(parsed.error.issues[0]?.message ?? null);
       focusFirstInvalidField(formId);
 
       return;
@@ -54,26 +55,17 @@ export const MemberInviteSection = ({
     setError(null);
     await runWithCleanup(
       async () => {
-        try {
-          const result = await inviteMember(teamId, memberId, parsed.data);
+        const result = await invitations.invite(memberId, parsed.data);
 
-          if (!result.success) {
-            setError(result.error);
+        if (!result.success) {
+          setError(result.error);
 
-            return;
-          }
-
-          toast.success(
-            result.data.emailSent
-              ? `Invitation sent to ${parsed.data}`
-              : `Invitation created for ${parsed.data} (email was not delivered)`,
-          );
-          setEmail("");
-          hasAttempted.current = false;
-          await queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
-        } catch {
-          setError("Could not send the invitation. Try again.");
+          return;
         }
+
+        toast.success(invitationSentMessage(parsed.data, result.data.emailSent));
+        setEmail("");
+        hasAttempted.current = false;
       },
       () => {
         setPending(false);
@@ -82,14 +74,12 @@ export const MemberInviteSection = ({
   };
 
   if (pendingInvite) {
+    const expiry = formatExpiresIn(pendingInvite.expiresAt, now);
+
     return (
       <div className="flex flex-col gap-3">
         <p className="text-sm break-all">Invited {pendingInvite.email}</p>
-        {pendingInvite.expiresAt !== null && (
-          <p className="text-xs text-muted-foreground">
-            {formatExpiresIn(pendingInvite.expiresAt)}
-          </p>
-        )}
+        {expiry !== null && <p className="text-xs text-muted-foreground">{expiry}</p>}
         <InvitationControls invitation={pendingInvite} teamId={teamId} />
       </div>
     );
@@ -111,9 +101,7 @@ export const MemberInviteSection = ({
           id={inputId}
           onChange={(event) => {
             setEmail(event.target.value);
-            setError(
-              hasAttempted.current && !isValidEmail(event.target.value) ? INVALID_EMAIL : null,
-            );
+            setError(hasAttempted.current ? emailError(event.target.value) : null);
           }}
           placeholder="name@company.com"
           type="email"

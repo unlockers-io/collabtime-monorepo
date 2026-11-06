@@ -13,7 +13,7 @@ const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: Promise<{ redirect?: string }>;
+  searchParams: Promise<{ redirect?: string | Array<string> }>;
 };
 
 const Page = ({ searchParams }: Props) => (

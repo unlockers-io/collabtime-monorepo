@@ -6,7 +6,13 @@ import { ChevronRight } from "lucide-react";
 
 import { SLOTS_PER_HOUR } from "@/lib/team-schedule";
 import type { MemberRow } from "@/lib/team-schedule";
-import { formatMinuteRange, formatTimezoneCity, formatUtcOffset } from "@/lib/timezones";
+import {
+  formatMinuteRange,
+  formatTimezoneCity,
+  formatUtcOffset,
+  formatWindow,
+  workingWindow,
+} from "@/lib/timezones";
 import type { TeamGroup } from "@/types";
 
 import { HOURS_IN_DAY, formatDayOffset } from "./helpers";
@@ -90,12 +96,8 @@ const describeRow = (
 ): string => {
   const { interval, member } = row;
 
-  const yourTime = formatMinuteRange(
-    interval.startMinute,
-    interval.startMinute + interval.lengthMinutes,
-  );
-
-  const localTime = formatMinuteRange(member.workingHoursStart * 60, member.workingHoursEnd * 60);
+  const yourTime = formatWindow(interval);
+  const localTime = formatWindow(workingWindow(member));
 
   const parts = [
     `Works ${yourTime} your time (${localTime} in ${formatTimezoneCity(member.timezone)}, ${formatUtcOffset(member.timezone, now)}).`,

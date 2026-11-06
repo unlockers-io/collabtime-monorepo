@@ -14,7 +14,9 @@ import { m } from "motion/react";
 import Link from "next/link";
 import { useId } from "react";
 
-import type { MyTeam, WorkspaceToDelete } from "./types";
+import type { MyTeam } from "@/lib/home-lists";
+
+import type { WorkspaceToDelete } from "./types";
 
 const memberCountLabel = (count: number): string => {
   if (count === 0) {
@@ -43,7 +45,6 @@ const WorkspaceRow = ({
 }: WorkspaceRowProps) => {
   const detailsId = useId();
   const ready = useClientReady();
-  const name = team.teamName || "Untitled workspace";
   const { spaceId } = team;
 
   return (
@@ -67,7 +68,7 @@ const WorkspaceRow = ({
           href={`/${team.teamId}`}
           prefetch={!isArchived}
         >
-          {name}
+          {team.teamName}
         </Link>
         <p className="text-xs text-muted-foreground" id={detailsId}>
           {memberCountLabel(team.memberCount)}
@@ -83,7 +84,11 @@ const WorkspaceRow = ({
           <DropdownMenuTrigger
             disabled={!ready}
             render={
-              <Button aria-label={`More actions for ${name}`} size="icon-sm" variant="ghost" />
+              <Button
+                aria-label={`More actions for ${team.teamName}`}
+                size="icon-sm"
+                variant="ghost"
+              />
             }
           >
             <MoreHorizontal className="size-4" />
@@ -98,7 +103,7 @@ const WorkspaceRow = ({
               {isArchived ? <ArchiveRestore /> : <Archive />}
               {isArchived ? "Unarchive" : "Archive"}
             </DropdownMenuItem>
-            {spaceId !== null && spaceId !== "" && (
+            {spaceId !== null && (
               <DropdownMenuItem
                 onClick={() => {
                   onRequestDelete({ spaceId, teamName: team.teamName });

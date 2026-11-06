@@ -6,7 +6,9 @@ import { ChevronDown } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import { useId, useState } from "react";
 
-import type { MyTeam, WorkspaceToDelete } from "./types";
+import type { MyTeam } from "@/lib/home-lists";
+
+import type { WorkspaceToDelete } from "./types";
 import { WorkspaceRow } from "./workspace-row";
 
 type ArchivedTeamsListProps = {

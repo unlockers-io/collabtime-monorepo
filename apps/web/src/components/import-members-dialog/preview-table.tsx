@@ -10,8 +10,7 @@ import {
 import { CheckCircle, XCircle } from "lucide-react";
 
 import { getTimezoneOption } from "@/components/timezone-field-options";
-import { isCommonTimezone } from "@/lib/timezones";
-import { formatHour } from "@/lib/utils";
+import { formatHour, isCommonTimezone } from "@/lib/timezones";
 
 import type { ParsedRow } from "./parse-csv";
 
@@ -67,7 +66,7 @@ const PreviewTable = ({ invalidCount, rows, validCount }: PreviewTableProps) => 
             </thead>
             <tbody>
               {rows.map((row) => {
-                const isValid = row.errors.length === 0;
+                const isValid = row.valid !== null;
 
                 return (
                   <tr

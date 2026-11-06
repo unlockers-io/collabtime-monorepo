@@ -1,7 +1,12 @@
+import { prisma } from "@repo/db";
 import type { TransactionalEmail } from "@repo/transactional";
 
 import type { ActionErrorEvent } from "./actions/types";
+import { getAppUrl } from "./app-url";
 import { displayName } from "./display-name";
+import { sendAppEmail } from "./mailer";
+import { log } from "./observability";
+import { getTeamName } from "./team-meta";
 
 type Person = { email: string; name: string | null };
 
@@ -90,3 +95,18 @@ export const createTeamNotifier = (deps: NotifierDeps) => {
       ]),
   };
 };
+
+export const teamNotifier = createTeamNotifier({
+  appUrl: getAppUrl,
+  listTeamAdmins: async (teamId) => {
+    const memberships = await prisma.membership.findMany({
+      select: { user: { select: { email: true, name: true } } },
+      where: { archivedAt: null, role: "ADMIN", teamId },
+    });
+
+    return memberships.map((membership) => membership.user);
+  },
+  readTeamName: getTeamName,
+  reportError: log.error,
+  sendEmail: sendAppEmail,
+});

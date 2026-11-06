@@ -17,7 +17,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useTeamWrite } from "@/hooks/use-team-write";
-import { importMembers } from "@/lib/actions/member-actions";
 
 import type { ParsedRow } from "./import-members-dialog/parse-csv";
 import { parseCSV } from "./import-members-dialog/parse-csv";
@@ -34,7 +33,7 @@ type ImportState =
   | { rows: Array<ParsedRow>; step: "importing" };
 
 const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
-  const writeTeam = useTeamWrite(teamId);
+  const write = useTeamWrite(teamId);
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [state, setState] = useState<ImportState>({ step: "upload" });
@@ -68,7 +67,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   };
 
   const handleImport = async (rows: Array<ParsedRow>) => {
-    const valid = rows.flatMap((row) => (row.errors.length === 0 ? [row.member] : []));
+    const valid = rows.flatMap((row) => (row.valid ? [row.valid] : []));
 
     if (valid.length === 0) {
       setImportError(
@@ -80,7 +79,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
 
     setState({ rows, step: "importing" });
     setImportError(null);
-    const result = await writeTeam({ submit: () => importMembers(teamId, valid) });
+    const result = await write.change("importMembers", { members: valid });
 
     if (result.success) {
       toast.success(
@@ -96,7 +95,7 @@ const ImportMembersDialog = ({ teamId }: ImportMembersDialogProps) => {
   };
 
   const rows = state.step === "upload" ? null : state.rows;
-  const validCount = rows?.filter((r) => r.errors.length === 0).length ?? 0;
+  const validCount = rows?.filter((r) => r.valid !== null).length ?? 0;
   const invalidCount = (rows?.length ?? 0) - validCount;
 
   return (

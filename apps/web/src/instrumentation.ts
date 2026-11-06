@@ -1,6 +1,7 @@
 import "zod/compile";
 
 import { defineNodeInstrumentation } from "@repo/observability/next/instrumentation";
+import { captureRequestError } from "@sentry/nextjs";
 
 const evlog = defineNodeInstrumentation(() => import("./lib/observability"));
 
@@ -34,6 +35,9 @@ const register = async () => {
   }
 };
 
-const onRequestError = evlog.onRequestError;
+const onRequestError = async (...args: Parameters<typeof evlog.onRequestError>) => {
+  captureRequestError(...args);
+  await evlog.onRequestError(...args);
+};
 
 export { onRequestError, register };

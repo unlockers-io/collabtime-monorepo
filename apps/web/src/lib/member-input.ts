@@ -19,7 +19,7 @@ type MemberFormValues = z.input<typeof memberFormSchema>;
 
 type AddMemberFormValues = z.input<typeof addMemberFormSchema>;
 
-type MemberInput = Omit<TeamMember, "id" | "order" | "userId">;
+type MemberInput = z.input<typeof TeamMemberInputSchema>;
 
 type MemberDraft = Omit<MemberInput, "groupId"> & { groupId: string };
 
@@ -41,9 +41,9 @@ const toMemberInput = ({
   workingHoursStart,
 }: MemberDraft): MemberInput => ({
   groupId: groupId === NO_GROUP ? undefined : groupId,
-  name: name.trim(),
+  name,
   timezone,
-  title: title.trim(),
+  title,
   workingHoursEnd,
   workingHoursStart,
 });

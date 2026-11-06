@@ -3,8 +3,9 @@
 import { AnimatePresence } from "motion/react";
 
 import { SectionCard, SectionCardHeader, SectionCardTitle } from "@/components/section-card";
+import type { MyTeam } from "@/lib/home-lists";
 
-import type { MyTeam, WorkspaceToDelete } from "./types";
+import type { WorkspaceToDelete } from "./types";
 import { WorkspaceRow } from "./workspace-row";
 
 type TeamsListProps = {

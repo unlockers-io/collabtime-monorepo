@@ -17,7 +17,6 @@ describe("parseCSV", () => {
         errors: [],
         index: 1,
         member: {
-          groupId: undefined,
           name: "Alice Johnson",
           timezone: "America/New_York",
           title: "Engineering Lead",
@@ -25,12 +24,18 @@ describe("parseCSV", () => {
           workingHoursStart: 9,
         },
         rawTimezone: "America/New_York",
+        valid: {
+          name: "Alice Johnson",
+          timezone: "America/New_York",
+          title: "Engineering Lead",
+          workingHoursEnd: 17,
+          workingHoursStart: 9,
+        },
       },
       {
         errors: [],
         index: 2,
         member: {
-          groupId: undefined,
           name: "Smith, Bob",
           timezone: "Europe/London",
           title: "",
@@ -38,6 +43,13 @@ describe("parseCSV", () => {
           workingHoursStart: 8,
         },
         rawTimezone: "Europe/London",
+        valid: {
+          name: "Smith, Bob",
+          timezone: "Europe/London",
+          title: "",
+          workingHoursEnd: 16,
+          workingHoursStart: 8,
+        },
       },
     ]);
   });

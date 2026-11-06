@@ -4,11 +4,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { MyTeam, PendingInvitation } from "@/lib/home-lists";
 import { queryKeys } from "@/lib/query-keys";
-import type { PendingInvitation } from "@/types";
 
 import { HomeLists } from "./lists";
-import type { MyTeam } from "./types";
 
 vi.mock("@/lib/actions/invitation-actions", () => ({
   acceptInvitation: vi.fn(),
@@ -152,7 +151,6 @@ it("shows invitation expiry on the dashboard", async () => {
               expiresAt,
               id: "invite",
               inviterName: "Owner",
-              memberId: "slot",
               teamId: "team",
               teamName: "Platform",
             },

@@ -33,7 +33,7 @@ pnpm install
 cp apps/web/.env.example apps/web/.env
 ```
 
-Generate `BETTER_AUTH_SECRET` with `openssl rand -base64 32`. The example database and Redis URLs point at the local Docker stack. Create `packages/db/.env` with the same `DATABASE_URL` and `REDIS_URL` for Prisma and the seed.
+Generate `BETTER_AUTH_SECRET` with `openssl rand -base64 32`. The example database and Redis URLs point at the local Docker stack. Create `packages/db/.env` with the same `DATABASE_URL` for Prisma and the seed.
 
 ```bash
 docker compose up -d
@@ -45,7 +45,7 @@ pnpm dev
 
 Postgres listens on port 5433 and Redis on 6379. Open <https://collabtime.web.localhost>; worktrees prefix the hostname automatically. Run `portless get collabtime.web` to find this checkout's URL.
 
-The optional seed creates `test@collabtime.dev` / `TestPassword123!` and a sample workspace at `/00000000-0000-4000-8000-000000000001`. It only accepts localhost database and Redis URLs and can be run repeatedly.
+The optional seed creates `test@collabtime.dev` / `TestPassword123!` and a sample workspace at `/00000000-0000-4000-8000-000000000001`. It only accepts a localhost database URL and can be run repeatedly.
 
 ## Environment
 

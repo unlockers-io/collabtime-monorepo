@@ -33,7 +33,10 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     const memberId = randomUUID();
     await prisma.space.create({ data: { ownerId: owner.id, teamId } });
     const reportError = vi.fn<() => void>();
-    const publish = vi.fn<(id: string) => Promise<void>>().mockResolvedValue();
+
+    const publish = vi
+      .fn<(id: string, kinds?: Array<string>) => Promise<void>>()
+      .mockResolvedValue();
 
     const teamStore = createTeamStore({
       createId: randomUUID,
@@ -50,7 +53,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
 
     const lifecycle = () =>
       createMembershipLifecycle({
-        applyTeamCommand: harness.applyInTransaction,
+        applyInTransaction: harness.applyInTransaction,
         publish,
         store: prismaMembershipStore,
       });
@@ -201,7 +204,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     };
 
     const delayed = createMembershipLifecycle({
-      applyTeamCommand,
+      applyInTransaction: applyTeamCommand,
       publish: vi.fn().mockResolvedValue(undefined),
       store: prismaMembershipStore,
     });
@@ -253,7 +256,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     };
 
     const delayed = createMembershipLifecycle({
-      applyTeamCommand,
+      applyInTransaction: applyTeamCommand,
       publish: vi.fn().mockResolvedValue(undefined),
       store: prismaMembershipStore,
     });

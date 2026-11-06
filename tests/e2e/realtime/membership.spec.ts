@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { prisma } from "@repo/db";
-import { hashPassword } from "better-auth/crypto";
 
 import { expect, test } from "../fixtures/workspace.fixture";
+import { createVerifiedUser } from "../support/users";
 import { webUrl } from "../urls";
 
 const PASSWORD = "MembershipTestPassword123!";
@@ -12,22 +12,7 @@ const PASSWORD = "MembershipTestPassword123!";
 const createPeer = async (browser: Browser) => {
   const id = randomUUID();
   const email = `e2e-membership-${id}@collabtime.localhost`;
-  await prisma.user.create({
-    data: {
-      accounts: {
-        create: {
-          accountId: id,
-          issuer: "local:credential",
-          password: await hashPassword(PASSWORD),
-          providerId: "credential",
-        },
-      },
-      email,
-      emailVerified: true,
-      id,
-      name: "Live Peer",
-    },
-  });
+  await createVerifiedUser({ email, id, name: "Live Peer", password: PASSWORD });
 
   const context = await browser.newContext({
     baseURL: webUrl,

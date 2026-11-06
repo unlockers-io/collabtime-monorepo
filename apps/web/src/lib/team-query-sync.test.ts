@@ -9,7 +9,7 @@ const setup = () => {
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
 
-  const queryKey = queryKeys.teams.detail("team-1");
+  const queryKey = queryKeys.team.contents("team-1");
   const queryFn = vi.fn<() => Promise<string>>().mockResolvedValue("latest");
   queryClient.setQueryData(queryKey, "initial");
   const observer = new QueryObserver(queryClient, { queryFn, queryKey });

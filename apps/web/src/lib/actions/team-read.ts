@@ -6,7 +6,7 @@ import { getSession } from "@/lib/auth-server";
 import { log } from "@/lib/observability";
 import { workspaceAccessStore } from "@/lib/workspace-access";
 
-import { readTeamRecord } from "../team-store";
+import { readPublicTeam } from "../public-team";
 
 import { createTeamReadActions } from "./team-read-core";
 
@@ -18,7 +18,7 @@ const teamReadActions = createTeamReadActions({
       where: { teamId },
     }),
   getSession,
-  readTeamRecord,
+  readPublicTeam,
   reportError: log.error,
 });
 

@@ -6,9 +6,9 @@ import { expect, it, vi } from "vitest";
 
 import { ImportMembersDialog } from "./import-members-dialog";
 
-const mocks = vi.hoisted(() => ({ importMembers: vi.fn() }));
+const mocks = vi.hoisted(() => ({ changeTeam: vi.fn() }));
 
-vi.mock("@/lib/actions/member-actions", () => ({ importMembers: mocks.importMembers }));
+vi.mock("@/lib/actions/team-change", () => mocks);
 
 it("keeps import enabled with no valid rows and says why on click", async () => {
   render(
@@ -27,5 +27,5 @@ it("keeps import enabled with no valid rows and says why on click", async () => 
   fireEvent.click(submit);
 
   expect(await screen.findByRole("alert")).toHaveTextContent("No rows are ready to import");
-  expect(mocks.importMembers).not.toHaveBeenCalled();
+  expect(mocks.changeTeam).not.toHaveBeenCalled();
 });
