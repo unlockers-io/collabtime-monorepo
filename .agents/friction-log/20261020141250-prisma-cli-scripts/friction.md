@@ -1,6 +1,7 @@
 ---
 title: 'Prisma CLI scripts leave their external PostgreSQL pool open'
 severity: 'minor'
+issue: 'unlockers-io/collabtime-monorepo#327'
 ---
 
 ## Expected Behavior
