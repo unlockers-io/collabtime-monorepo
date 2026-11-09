@@ -1,42 +1,24 @@
 "use client";
 
-import { Clock, FolderKanban, Users } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { AddGroupDialog } from "@/components/add-group-dialog";
-import { AddMemberDialog } from "@/components/add-member-dialog";
 import { DeleteWorkspaceDialog } from "@/components/delete-workspace-dialog";
-import { ImportMembersDialog } from "@/components/import-members-dialog";
-import { Nav } from "@/components/nav";
-import {
-  SectionCard,
-  SectionCardContent,
-  SectionCardCount,
-  SectionCardFooter,
-  SectionCardHeader,
-  SectionCardTitle,
-} from "@/components/section-card";
-import { TeamInsights } from "@/components/team-insights";
-import { TimezoneVisualizer } from "@/components/timezone-visualizer";
-import { ViewerZoneNote } from "@/components/timezone-visualizer/viewer-zone-note";
 import { WorkspaceVisibilityDialog } from "@/components/workspace-visibility-dialog";
 import { useTeamLiveUpdates } from "@/hooks/use-team-live-updates";
 import { useTeamQuery } from "@/hooks/use-team-query";
 import type { TeamStatus } from "@/types";
 
-import { GroupsGrid } from "./client/groups-grid";
-import { MembersGrid } from "./client/members-grid";
-import { MembershipActions } from "./client/membership-actions";
 import { useCollapsedGroups } from "./client/use-collapsed-groups";
 import { useDragEnd } from "./client/use-drag-end";
 import { useExcludedMembers } from "./client/use-excluded-members";
 import { useTeamMembership } from "./client/use-team-membership";
 import { useTeamNameEdit } from "./client/use-team-name-edit";
-import Loading from "./loading";
+import { TeamSkeleton } from "./team-skeleton";
 import { TeamUnavailable } from "./team-unavailable";
+import { TeamWorkspace } from "./team-workspace";
 
 const DndWrapper = dynamic(
   async () => {
@@ -44,7 +26,7 @@ const DndWrapper = dynamic(
 
     return Component;
   },
-  { ssr: false },
+  { loading: () => <TeamSkeleton />, ssr: false },
 );
 
 type TeamPageClientProps = {
@@ -139,120 +121,54 @@ const TeamPageClient = ({
   const isLoaded = Boolean(teamData?.team);
 
   const mainContent = (
-    <div className="min-h-dvh w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-12">
-      <main className="mx-auto flex w-full max-w-450 flex-col gap-10" id="main">
-        <Nav
-          canDeleteWorkspace={spaceId !== null}
-          isAdmin={isAdmin}
-          isArchived={isArchived}
-          isAuthenticated={isAuthenticated}
-          isEditingName={isEditingName}
-          isPrivate={isPrivate}
-          onCancelEdit={handleCancelEditName}
-          onDeleteWorkspace={() => {
+    <>
+      <TeamWorkspace
+        activeDragType={activeDragType}
+        collapsedGroupIds={collapsedGroupIds}
+        currentUserId={currentUserId}
+        excludedMemberIds={excludedMemberIds}
+        groups={groups}
+        membership={{
+          hasClaimedProfile,
+          invitationId,
+          inviteMismatch,
+          inviterName,
+          isAdmin,
+          isAuthenticated,
+          isMember,
+          isRequestingJoin,
+          members,
+          onRequestJoin: () => {
+            void handleRequestJoin();
+          },
+          returnTo,
+          teamId,
+          teamName,
+          teamStatus,
+        }}
+        nav={{
+          canDeleteWorkspace: spaceId !== null,
+          isAdmin,
+          isArchived,
+          isAuthenticated,
+          isEditingName,
+          isPrivate,
+          onCancelEdit: handleCancelEditName,
+          onDeleteWorkspace: () => {
             setIsDeleteWorkspaceOpen(true);
-          }}
-          onEditName={handleStartEditName}
-          onEditVisibility={() => {
+          },
+          onEditName: handleStartEditName,
+          onEditVisibility: () => {
             setIsVisibilityOpen(true);
-          }}
-          onNameChange={setEditingTeamName}
-          onSaveName={handleSaveName}
-          teamName={displayName}
-          variant="team"
-        />
-
-        {members.length > 0 && (
-          <SectionCard>
-            <SectionCardHeader>
-              <SectionCardTitle description={<ViewerZoneNote />} icon={Clock}>
-                Working hours
-              </SectionCardTitle>
-            </SectionCardHeader>
-            <SectionCardContent>
-              <TimezoneVisualizer
-                collapsedGroupIds={collapsedGroupIds}
-                excludedMemberIds={excludedMemberIds}
-                groups={groups}
-                members={orderedMembers}
-                onExcludedMemberIdsChange={setExcludedMemberIds}
-                onToggleGroupCollapse={toggleGroupCollapse}
-              />
-            </SectionCardContent>
-          </SectionCard>
-        )}
-
-        {members.length > 0 && <TeamInsights groups={groups} members={orderedMembers} />}
-
-        <div className="grid grid-cols-1 items-start gap-10 xl:grid-cols-team [&>*]:min-w-0">
-          <SectionCard>
-            <SectionCardHeader>
-              <SectionCardTitle icon={Users}>Team members</SectionCardTitle>
-              <SectionCardCount>{members.length}</SectionCardCount>
-            </SectionCardHeader>
-            <SectionCardContent className="flex flex-col gap-4">
-              <MembersGrid
-                currentUserId={currentUserId}
-                groups={groups}
-                hasClaimedProfile={hasClaimedProfile}
-                isAdmin={isAdmin}
-                orderedMembers={orderedMembers}
-                teamId={teamId}
-              />
-
-              <MembershipActions
-                hasClaimedProfile={hasClaimedProfile}
-                invitationId={invitationId}
-                inviteMismatch={inviteMismatch}
-                inviterName={inviterName}
-                isAdmin={isAdmin}
-                isAuthenticated={isAuthenticated}
-                isMember={isMember}
-                isRequestingJoin={isRequestingJoin}
-                members={members}
-                onRequestJoin={() => {
-                  void handleRequestJoin();
-                }}
-                returnTo={returnTo}
-                teamId={teamId}
-                teamName={teamName}
-                teamStatus={teamStatus}
-              />
-            </SectionCardContent>
-            {isAdmin && (
-              <SectionCardFooter className="justify-end">
-                <ImportMembersDialog teamId={teamId} />
-                <AddMemberDialog
-                  groups={groups}
-                  isFirstMember={members.length === 0}
-                  teamId={teamId}
-                />
-              </SectionCardFooter>
-            )}
-          </SectionCard>
-
-          <SectionCard>
-            <SectionCardHeader>
-              <SectionCardTitle icon={FolderKanban}>Groups</SectionCardTitle>
-              <SectionCardCount>{groups.length}</SectionCardCount>
-            </SectionCardHeader>
-            <SectionCardContent>
-              <GroupsGrid
-                activeDragType={activeDragType}
-                isAdmin={isAdmin}
-                members={members}
-                orderedGroups={orderedGroups}
-                teamId={teamId}
-              />
-            </SectionCardContent>
-            {isAdmin && (
-              <SectionCardFooter className="justify-end">
-                <AddGroupDialog teamId={teamId} />
-              </SectionCardFooter>
-            )}
-          </SectionCard>
-        </div>
-      </main>
+          },
+          onNameChange: setEditingTeamName,
+          onSaveName: handleSaveName,
+          teamName: displayName,
+          variant: "team",
+        }}
+        onExcludedMemberIdsChange={setExcludedMemberIds}
+        onToggleGroupCollapse={toggleGroupCollapse}
+      />
 
       {spaceId !== null && isVisibilityOpen && (
         <WorkspaceVisibilityDialog
@@ -275,7 +191,7 @@ const TeamPageClient = ({
           teamName={displayName}
         />
       )}
-    </div>
+    </>
   );
 
   if (teamError && !isLoaded) {
@@ -291,7 +207,7 @@ const TeamPageClient = ({
   }
 
   if (!isLoaded) {
-    return <Loading />;
+    return <TeamSkeleton />;
   }
 
   if (!isAdmin) {

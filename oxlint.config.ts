@@ -81,12 +81,12 @@ export default defineConfig({
     },
   ],
   rules: {
+    "react/no-unknown-property": ["error", { ignore: ["skullet-block"] }],
     "shadcn/no-restyle": [
       "error",
       {
         allow: ["layout"],
         contracts: [
-          { allow: ["layout", "shape", "color"], pattern: "^Skeleton$" },
           { allow: ["layout", "spacing"], pattern: "^Card$" },
           { allow: ["layout", "gap-*"], pattern: "^(DialogTitle|DropdownMenuItem|ScrollArea)$" },
           {

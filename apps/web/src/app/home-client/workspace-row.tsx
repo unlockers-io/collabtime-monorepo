@@ -29,6 +29,7 @@ type WorkspaceRowProps = {
   isArchivePending: boolean;
   onRequestDelete: (workspace: WorkspaceToDelete) => void;
   onToggleArchive: (team: MyTeam) => void;
+  prefetch?: boolean;
   team: MyTeam;
 };
 
@@ -39,6 +40,7 @@ const WorkspaceRow = ({
   isArchivePending,
   onRequestDelete,
   onToggleArchive,
+  prefetch = !isArchived,
   team,
 }: WorkspaceRowProps) => {
   const detailsId = useId();
@@ -65,7 +67,7 @@ const WorkspaceRow = ({
               : "font-display text-xl font-semibold tracking-display text-foreground",
           )}
           href={`/${team.teamId}`}
-          prefetch={!isArchived}
+          prefetch={prefetch}
         >
           {name}
         </Link>
