@@ -1,6 +1,7 @@
 ---
 title: 'Local seed scripts do not find REDIS_URL or DATABASE_URL in apps/web/.env'
 severity: 'minor'
+issue: 'unlockers-io/collabtime-monorepo#342'
 ---
 
 ## Expected Behavior

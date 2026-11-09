@@ -1,6 +1,7 @@
 ---
 title: 'The seeded team never loads because db:seed writes it to Redis and leaves the Space retention columns null'
 severity: 'minor'
+issue: 'unlockers-io/collabtime-monorepo#343'
 ---
 
 ### Expected Behavior
