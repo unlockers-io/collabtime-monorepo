@@ -3,7 +3,7 @@
 import { Button } from "@repo/ui/components/button";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 
-import { signOutLabel } from "@/components/nav/user-menu";
+import { signOutLabel } from "@/components/nav/nav-role";
 import { useSignOut } from "@/hooks/use-sign-out";
 import { withRedirect } from "@/lib/redirect-validation";
 

@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import type { NavRole } from "@/components/nav/user-menu";
+import type { NavRole } from "@/components/nav/nav-role";
 import { requestToJoin } from "@/lib/actions/join-requests";
 import type { TeamMember } from "@/types";
 

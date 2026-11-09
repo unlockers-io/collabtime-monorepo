@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import { CurrentTimeDisplay } from "@/components/current-time-display";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Logo } from "@/components/nav/logo";
-import { type NavRole, UserMenu } from "@/components/nav/user-menu";
+import type { NavRole } from "@/components/nav/nav-role";
+import { UserMenu } from "@/components/nav/user-menu";
 import { useSignOut } from "@/hooks/use-sign-out";
 
 import { CopyLinkButton } from "./nav/copy-link-button";

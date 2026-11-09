@@ -8,7 +8,7 @@ import Link from "next/link";
 
 import { CurrentTimeDisplay } from "@/components/current-time-display";
 import { ModeToggle } from "@/components/mode-toggle";
-import { type NavRole, ROLE_LABELS, signOutLabel } from "@/components/nav/user-menu";
+import { type NavRole, ROLE_LABELS, signOutLabel } from "@/components/nav/nav-role";
 
 import { CopyLinkButton } from "./copy-link-button";
 import type { OwnerActions } from "./workspace-menu";
