@@ -1,8 +1,7 @@
-import { Skeleton } from "@repo/ui/components/skeleton";
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { SkeletonSuspense } from "skullet/react";
 
-import ResetPasswordForm from "@/app/(auth)/reset-password/form";
+import ResetPasswordForm, { NewPasswordForm } from "@/app/(auth)/reset-password/form";
 
 import { AuthPage } from "../auth-shell";
 
@@ -12,25 +11,11 @@ const metadata: Metadata = {
   title: "Reset your password",
 };
 
-const FormSkeleton = () => (
-  <div aria-busy="true" className="flex flex-col gap-5">
-    <div className="flex flex-col gap-2">
-      <Skeleton className="h-4 w-28 rounded-none" />
-      <Skeleton className="h-11 w-full sm:h-10" />
-    </div>
-    <div className="flex flex-col gap-2">
-      <Skeleton className="h-4 w-36 rounded-none" />
-      <Skeleton className="h-11 w-full sm:h-10" />
-    </div>
-    <Skeleton className="h-11 w-full sm:h-10" />
-  </div>
-);
-
 const Page = () => (
   <AuthPage description="Choose a new password for your account." title="Reset your password">
-    <Suspense fallback={<FormSkeleton />}>
+    <SkeletonSuspense label="Loading the reset form" skeleton={<NewPasswordForm token="sample" />}>
       <ResetPasswordForm />
-    </Suspense>
+    </SkeletonSuspense>
   </AuthPage>
 );
 

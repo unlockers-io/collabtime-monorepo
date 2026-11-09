@@ -2,10 +2,10 @@
 
 import { TooltipProvider } from "@repo/ui/components/tooltip";
 import { useState } from "react";
+import { Skeleton } from "skullet/react";
 
 import { getTeamSchedule } from "@/lib/team-schedule";
-import { useNow } from "@/lib/use-tick";
-import { useViewerTimezone } from "@/lib/use-viewer-timezone";
+import { useViewerClock } from "@/lib/use-viewer-clock";
 import type { TeamGroup, TeamMember } from "@/types";
 
 import { CurrentTimeIndicator } from "./timezone-visualizer/current-time-indicator";
@@ -46,10 +46,9 @@ const TimezoneVisualizer = ({
     setLocalExcluded(next);
   };
 
-  const viewerTimezone = useViewerTimezone();
-  const now = useNow();
+  const { isKnown, now, viewerTimezone } = useViewerClock();
 
-  if (members.length === 0 || viewerTimezone === null || now === null) {
+  if (members.length === 0) {
     return null;
   }
 
@@ -81,81 +80,83 @@ const TimezoneVisualizer = ({
   };
 
   return (
-    <TooltipProvider delay={120}>
-      <div className="flex flex-col gap-6">
-        <SharedWindowSummary
-          hasCollapsedGroups={hasCollapsedCounted}
-          hasExplicitExclusions={excludedSet.size > 0}
-          now={now}
-          onCountEveryone={() => {
-            setExcluded([]);
-          }}
-          reading={reading}
-          rows={rows}
-          viewerTimezone={viewerTimezone}
-        />
+    <Skeleton label="Loading working hours" loading={!isKnown}>
+      <TooltipProvider delay={120}>
+        <div className="flex flex-col gap-6">
+          <SharedWindowSummary
+            hasCollapsedGroups={hasCollapsedCounted}
+            hasExplicitExclusions={excludedSet.size > 0}
+            now={now}
+            onCountEveryone={() => {
+              setExcluded([]);
+            }}
+            reading={reading}
+            rows={rows}
+            viewerTimezone={viewerTimezone}
+          />
 
-        <div className="flex flex-col gap-3">
-          <TimeAxis />
+          <div className="flex flex-col gap-3">
+            <TimeAxis />
 
-          <div className="relative flex flex-col">
-            <CurrentTimeIndicator nowMinute={nowMinute} />
+            <div className="relative flex flex-col">
+              <CurrentTimeIndicator nowMinute={nowMinute} />
 
-            {groupedSections.map((section) => {
-              const sectionGroup = section.group;
-              const isCollapsed = sectionGroup ? collapsedSet.has(sectionGroup.id) : false;
+              {groupedSections.map((section) => {
+                const sectionGroup = section.group;
+                const isCollapsed = sectionGroup ? collapsedSet.has(sectionGroup.id) : false;
 
-              return (
-                <div
-                  className="flex flex-col gap-3 border-b border-border/50 py-4 first:pt-0 last:border-b-0 last:pb-0"
-                  key={sectionGroup?.id ?? "ungrouped"}
-                >
-                  {sectionGroup && (
-                    <GroupHeader
-                      group={sectionGroup}
-                      isCollapsed={isCollapsed}
-                      onToggle={() => onToggleGroupCollapse?.(sectionGroup.id)}
-                      rowCount={section.rows.length}
-                    />
-                  )}
+                return (
+                  <div
+                    className="flex flex-col gap-3 border-b border-border/50 py-4 first:pt-0 last:border-b-0 last:pb-0"
+                    key={sectionGroup?.id ?? "ungrouped"}
+                  >
+                    {sectionGroup && (
+                      <GroupHeader
+                        group={sectionGroup}
+                        isCollapsed={isCollapsed}
+                        onToggle={() => onToggleGroupCollapse?.(sectionGroup.id)}
+                        rowCount={section.rows.length}
+                      />
+                    )}
 
-                  {!sectionGroup && groups.length > 0 && (
-                    <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                      <span>Ungrouped</span>
-                      <span className="font-mono tabular-nums">{section.rows.length}</span>
-                    </p>
-                  )}
+                    {!sectionGroup && groups.length > 0 && (
+                      <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <span>Ungrouped</span>
+                        <span className="font-mono tabular-nums">{section.rows.length}</span>
+                      </p>
+                    )}
 
-                  {!isCollapsed && (
-                    <div
-                      className="flex flex-col gap-3"
-                      id={sectionGroup ? `tz-group-${sectionGroup.id}` : undefined}
-                    >
-                      {section.rows.map((row) => (
-                        <MemberTimelineRow
-                          bestSlots={reading.bestSlots}
-                          isInBestWindow={primaryAvailable.has(row.member.id)}
-                          key={row.member.id}
-                          now={now}
-                          onToggleCounted={toggleCounted}
-                          row={row}
-                          viewerTimezone={viewerTimezone}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    {!isCollapsed && (
+                      <div
+                        className="flex flex-col gap-3"
+                        id={sectionGroup ? `tz-group-${sectionGroup.id}` : undefined}
+                      >
+                        {section.rows.map((row) => (
+                          <MemberTimelineRow
+                            bestSlots={reading.bestSlots}
+                            isInBestWindow={primaryAvailable.has(row.member.id)}
+                            key={row.member.id}
+                            now={now}
+                            onToggleCounted={toggleCounted}
+                            row={row}
+                            viewerTimezone={viewerTimezone}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        <Legend
-          hasExcluded={rows.some((row) => !row.isCounted)}
-          showsSharedWindow={reading.windows.length > 0}
-        />
-      </div>
-    </TooltipProvider>
+          <Legend
+            hasExcluded={rows.some((row) => !row.isCounted)}
+            showsSharedWindow={reading.windows.length > 0}
+          />
+        </div>
+      </TooltipProvider>
+    </Skeleton>
   );
 };
 

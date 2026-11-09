@@ -53,7 +53,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
   });
 
   return (
-    <>
+    <div className="flex flex-col gap-10">
       <AuthForm
         alert={authErrorMessage(auth.errorKind)}
         form={form}
@@ -94,7 +94,7 @@ const NewPasswordForm = ({ token }: { token: string }) => {
       </AuthForm>
 
       <BackToSignIn />
-    </>
+    </div>
   );
 };
 
@@ -103,7 +103,7 @@ const ResetPasswordForm = () => {
 
   if (token === null || token === "") {
     return (
-      <>
+      <div className="flex flex-col gap-10">
         <div className="flex flex-col gap-6">
           <FormNotice tone="neutral">
             This reset link is incomplete or has expired. Request a new one to continue.
@@ -113,11 +113,13 @@ const ResetPasswordForm = () => {
           </Link>
         </div>
         <BackToSignIn />
-      </>
+      </div>
     );
   }
 
   return <NewPasswordForm token={token} />;
 };
+
+export { NewPasswordForm };
 
 export default ResetPasswordForm;

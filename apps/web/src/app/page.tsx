@@ -13,6 +13,7 @@ import { QueryProvider } from "@/providers/query-provider";
 
 import { HomeShell } from "./home-client";
 import { HomeLists } from "./home-client/lists";
+import { WorkspacesSkeleton } from "./home-client/workspaces-skeleton";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -71,9 +72,9 @@ const HomeContent = async () => {
 
   return (
     <HomeShell>
-      <Suspense fallback={null}>
+      <WorkspacesSkeleton>
         <HomeData email={session.user.email} userId={session.user.id} />
-      </Suspense>
+      </WorkspacesSkeleton>
     </HomeShell>
   );
 };

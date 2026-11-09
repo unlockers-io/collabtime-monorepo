@@ -1,5 +1,13 @@
 @import "@repo/ui/globals.css";
 
+/* Skullet reads these instead of its own prefers-color-scheme defaults, so it follows the .dark class. */
+:root {
+  --skullet-base: var(--muted);
+  --skullet-highlight: var(--background);
+  --skullet-animation: pulse;
+  --skullet-radius: 0;
+}
+
 @layer base {
   a {
     text-underline-offset: 0.22em;

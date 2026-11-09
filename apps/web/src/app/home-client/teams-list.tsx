@@ -12,10 +12,17 @@ type TeamsListProps = {
   isArchivePending: boolean;
   onArchive: (team: MyTeam) => void;
   onRequestDelete: (workspace: WorkspaceToDelete) => void;
+  prefetch?: boolean;
   teams: Array<MyTeam>;
 };
 
-const TeamsList = ({ isArchivePending, onArchive, onRequestDelete, teams }: TeamsListProps) => {
+const TeamsList = ({
+  isArchivePending,
+  onArchive,
+  onRequestDelete,
+  prefetch,
+  teams,
+}: TeamsListProps) => {
   if (teams.length === 0) {
     return null;
   }
@@ -34,6 +41,7 @@ const TeamsList = ({ isArchivePending, onArchive, onRequestDelete, teams }: Team
               key={team.teamId}
               onRequestDelete={onRequestDelete}
               onToggleArchive={onArchive}
+              prefetch={prefetch}
               team={team}
             />
           ))}

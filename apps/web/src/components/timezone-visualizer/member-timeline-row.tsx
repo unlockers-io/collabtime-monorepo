@@ -50,7 +50,7 @@ const HourCell = ({ bestSlots, city, hour, row }: HourCellProps) => {
           const slot = hour * SLOTS_PER_HOUR + quarter;
 
           return (
-            <span
+            <div
               className={cn(
                 "h-full flex-1",
                 getSlotClass(row.slots[slot] ?? false, bestSlots[slot] ?? false, row.isCounted),
@@ -192,7 +192,7 @@ const MemberTimelineRow = ({
         {describeRow(row, { hasBestWindow, isInBestWindow, now, viewerTimezone })}
       </span>
 
-      <div aria-hidden className="flex h-8 flex-1 gap-px">
+      <div aria-hidden className="flex h-8 flex-1 gap-px" skullet-block="">
         {HOURS.map((hour) => (
           <HourCell bestSlots={bestSlots} city={city} hour={hour} key={hour} row={row} />
         ))}

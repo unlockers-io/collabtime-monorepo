@@ -2,6 +2,7 @@
 
 import { Users } from "lucide-react";
 import type { ReactNode } from "react";
+import { Skeleton } from "skullet/react";
 
 import {
   SectionCard,
@@ -15,8 +16,7 @@ import {
   getMemberStatus,
   getMinuteOfDay,
 } from "@/lib/timezones";
-import { useNow } from "@/lib/use-tick";
-import { useViewerTimezone } from "@/lib/use-viewer-timezone";
+import { useViewerClock } from "@/lib/use-viewer-clock";
 import type { TeamGroup, TeamMember } from "@/types";
 
 const SOON_THRESHOLD_MINUTES = 2 * 60;
@@ -78,10 +78,9 @@ const StatusColumn = ({ emptyLabel, entries, groupNameById, label }: StatusColum
 const byMinutes = (a: StatusEntry, b: StatusEntry) => a.minutes - b.minutes;
 
 const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): ReactNode => {
-  const viewerTimezone = useViewerTimezone();
-  const now = useNow();
+  const { isKnown, now, viewerTimezone } = useViewerClock();
 
-  if (members.length === 0 || viewerTimezone === null || now === null) {
+  if (members.length === 0) {
     return null;
   }
 
@@ -133,26 +132,28 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): Re
         <SectionCardTitle icon={Users}>Team status</SectionCardTitle>
       </SectionCardHeader>
       <SectionCardContent>
-        <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-          <StatusColumn
-            emptyLabel="No one is working right now."
-            entries={working.toSorted(byMinutes).toReversed()}
-            groupNameById={groupNameById}
-            label="Working now"
-          />
-          <StatusColumn
-            emptyLabel="No one starts in the next 2 hours."
-            entries={startingSoon.toSorted(byMinutes)}
-            groupNameById={groupNameById}
-            label="Starting soon"
-          />
-          <StatusColumn
-            emptyLabel="No one finishes in the next 2 hours."
-            entries={wrappingUp.toSorted(byMinutes)}
-            groupNameById={groupNameById}
-            label="Wrapping up"
-          />
-        </div>
+        <Skeleton label="Loading team status" loading={!isKnown}>
+          <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+            <StatusColumn
+              emptyLabel="No one is working right now."
+              entries={working.toSorted(byMinutes).toReversed()}
+              groupNameById={groupNameById}
+              label="Working now"
+            />
+            <StatusColumn
+              emptyLabel="No one starts in the next 2 hours."
+              entries={startingSoon.toSorted(byMinutes)}
+              groupNameById={groupNameById}
+              label="Starting soon"
+            />
+            <StatusColumn
+              emptyLabel="No one finishes in the next 2 hours."
+              entries={wrappingUp.toSorted(byMinutes)}
+              groupNameById={groupNameById}
+              label="Wrapping up"
+            />
+          </div>
+        </Skeleton>
       </SectionCardContent>
     </SectionCard>
   );
