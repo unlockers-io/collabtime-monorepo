@@ -1,6 +1,7 @@
 ---
 title: 'Local Playwright runs against a production build fail sign-in with 429 unless CI is set'
 severity: 'minor'
+issue: 'unlockers-io/collabtime-monorepo#341'
 ---
 
 ## Expected Behavior
