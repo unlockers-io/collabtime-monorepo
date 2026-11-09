@@ -57,13 +57,12 @@ const test = base.extend<{ peer: Page; teamId: string }>({
       await context.close();
     }
   },
-  teamId: async ({ createdTeamIds, homePage, page }, use) => {
+  teamId: async ({ homePage, page }, use) => {
     await homePage.goto();
     await homePage.createWorkspace();
     await expect(page).toHaveURL(/\/[a-f0-9-]+/, { timeout: 10_000 });
     await expect(page.getByRole("button", { name: /add team member/i })).toBeVisible();
     const id = new URL(page.url()).pathname.slice(1);
-    createdTeamIds.push(id);
     await use(id);
   },
 });

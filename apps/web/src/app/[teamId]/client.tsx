@@ -9,16 +9,15 @@ import { DeleteWorkspaceDialog } from "@/components/delete-workspace-dialog";
 import { WorkspaceVisibilityDialog } from "@/components/workspace-visibility-dialog";
 import { useTeamLiveUpdates } from "@/hooks/use-team-live-updates";
 import { useTeamQuery } from "@/hooks/use-team-query";
-import type { TeamStatus } from "@/types";
 
 import { useCollapsedGroups } from "./client/use-collapsed-groups";
 import { useDragEnd } from "./client/use-drag-end";
 import { useExcludedMembers } from "./client/use-excluded-members";
 import { useTeamMembership } from "./client/use-team-membership";
-import { useTeamNameEdit } from "./client/use-team-name-edit";
 import { TeamSkeleton } from "./team-skeleton";
 import { TeamUnavailable } from "./team-unavailable";
 import { TeamWorkspace } from "./team-workspace";
+import type { TeamPageOwner, TeamPageViewer } from "./viewer";
 
 const DndWrapper = dynamic(
   async () => {
@@ -30,34 +29,14 @@ const DndWrapper = dynamic(
 );
 
 type TeamPageClientProps = {
-  hasPassword?: boolean;
-  invitationId?: string;
-  inviteMismatch?: { invitedEmailMasked: string };
-  inviterName?: string;
-  isArchived: boolean;
-  isAuthenticated: boolean;
   isPrivate: boolean;
+  owner: TeamPageOwner | null;
   returnTo: string;
-  spaceId: string | null;
   teamId: string;
-  teamStatus: TeamStatus;
-  userId?: string;
+  viewer: TeamPageViewer;
 };
 
-const TeamPageClient = ({
-  hasPassword = false,
-  invitationId,
-  inviteMismatch,
-  inviterName,
-  isArchived,
-  isAuthenticated,
-  isPrivate,
-  returnTo,
-  spaceId,
-  teamId,
-  teamStatus: initialStatus,
-  userId,
-}: TeamPageClientProps) => {
+const TeamPageClient = ({ isPrivate, owner, returnTo, teamId, viewer }: TeamPageClientProps) => {
   const { push, refresh } = useRouter();
   const [isVisibilityOpen, setIsVisibilityOpen] = useState(false);
   const [activeDragType, setActiveDragType] = useState<"group" | "member" | null>(null);
@@ -82,29 +61,12 @@ const TeamPageClient = ({
     toast.dismiss("team-query-error");
   }, [teamError]);
 
-  const members = teamData?.team.members ?? [];
-  const groups = teamData?.team.groups ?? [];
+  const members = teamData?.members ?? [];
+  const groups = teamData?.groups ?? [];
 
-  const {
-    currentUserId,
-    handleRequestJoin,
-    hasClaimedProfile,
-    isAdmin,
-    isMember,
-    isRequestingJoin,
-    teamStatus,
-  } = useTeamMembership({ initialStatus, members, teamId, userId });
-
-  const teamName = teamData?.team.name ?? "";
-
-  const {
-    displayName,
-    handleCancelEditName,
-    handleSaveName,
-    handleStartEditName,
-    isEditingName,
-    setEditingTeamName,
-  } = useTeamNameEdit({ isAdmin, teamId, teamName });
+  const membership = useTeamMembership({ members, teamId, viewer });
+  const { isAdmin } = membership;
+  const teamName = teamData?.name ?? "";
 
   const { collapsedGroupIds, toggleGroupCollapse } = useCollapsedGroups(members, groups);
   const { excludedMemberIds, setExcludedMemberIds } = useExcludedMembers();
@@ -118,77 +80,55 @@ const TeamPageClient = ({
     setActiveDragType(dragType);
   };
 
-  const isLoaded = Boolean(teamData?.team);
+  const isLoaded = teamData !== undefined;
 
   const mainContent = (
     <>
       <TeamWorkspace
         activeDragType={activeDragType}
         collapsedGroupIds={collapsedGroupIds}
-        currentUserId={currentUserId}
         excludedMemberIds={excludedMemberIds}
         groups={groups}
-        membership={{
-          hasClaimedProfile,
-          invitationId,
-          inviteMismatch,
-          inviterName,
-          isAdmin,
-          isAuthenticated,
-          isMember,
-          isRequestingJoin,
-          members,
-          onRequestJoin: () => {
-            void handleRequestJoin();
-          },
-          returnTo,
-          teamId,
-          teamName,
-          teamStatus,
-        }}
-        nav={{
-          canDeleteWorkspace: spaceId !== null,
-          isAdmin,
-          isArchived,
-          isAuthenticated,
-          isEditingName,
-          isPrivate,
-          onCancelEdit: handleCancelEditName,
-          onDeleteWorkspace: () => {
-            setIsDeleteWorkspaceOpen(true);
-          },
-          onEditName: handleStartEditName,
-          onEditVisibility: () => {
-            setIsVisibilityOpen(true);
-          },
-          onNameChange: setEditingTeamName,
-          onSaveName: handleSaveName,
-          teamName: displayName,
-          variant: "team",
-        }}
+        isPrivate={isPrivate}
+        members={members}
+        membership={membership}
         onExcludedMemberIdsChange={setExcludedMemberIds}
         onToggleGroupCollapse={toggleGroupCollapse}
+        owner={
+          owner && {
+            onDeleteWorkspace: () => {
+              setIsDeleteWorkspaceOpen(true);
+            },
+            onEditVisibility: () => {
+              setIsVisibilityOpen(true);
+            },
+          }
+        }
+        returnTo={returnTo}
+        teamId={teamId}
+        teamName={teamName}
+        viewer={viewer}
       />
 
-      {spaceId !== null && isVisibilityOpen && (
+      {owner && isVisibilityOpen && (
         <WorkspaceVisibilityDialog
-          hasPassword={hasPassword}
+          hasPassword={owner.hasPassword}
           isPrivate={isPrivate}
           onOpenChange={setIsVisibilityOpen}
           onSaved={refresh}
           open={isVisibilityOpen}
-          spaceId={spaceId}
+          spaceId={owner.spaceId}
         />
       )}
-      {spaceId !== null && (
+      {owner && (
         <DeleteWorkspaceDialog
           onDeleted={() => {
             push("/");
           }}
           onOpenChange={setIsDeleteWorkspaceOpen}
           open={isDeleteWorkspaceOpen}
-          spaceId={spaceId}
-          teamName={displayName}
+          spaceId={owner.spaceId}
+          teamName={teamName}
         />
       )}
     </>

@@ -4,7 +4,7 @@ import type { TeamAccess } from "@/lib/team-auth";
 import type { TeamMember, TeamRole } from "@/types";
 
 import { type SlotClaim, teamCommands } from "./team-commands";
-import { publishTeamEvent } from "./team-events";
+import { publishTeamEvent, type TeamEventKind } from "./team-events";
 import { withTeamTransaction } from "./team-storage";
 import {
   applyInTransaction,
@@ -26,8 +26,8 @@ type MembershipStore<TTransaction> = {
 };
 
 type MembershipDeps<TTransaction> = {
-  applyTeamCommand: ApplyTeamCommand<TTransaction>;
-  publish: (teamId: string) => Promise<void>;
+  applyInTransaction: ApplyTeamCommand<TTransaction>;
+  publish: (teamId: string, kinds: Array<TeamEventKind>) => Promise<void>;
   store: MembershipStore<TTransaction>;
 };
 
@@ -64,7 +64,7 @@ const createMembershipLifecycle = <TTransaction>(deps: MembershipDeps<TTransacti
         return undefined;
       }
 
-      const claimed = await deps.applyTeamCommand(
+      const claimed = await deps.applyInTransaction(
         grant.teamId,
         teamCommands.claimMemberSlot({ ...request.slot, userId: grant.userId }),
         transaction,
@@ -81,8 +81,10 @@ const createMembershipLifecycle = <TTransaction>(deps: MembershipDeps<TTransacti
       return { memberId: claimed.value.memberId, ok: true as const };
     });
 
-    if (result === undefined || result.ok) {
-      await deps.publish(grant.teamId);
+    if (result === undefined) {
+      await deps.publish(grant.teamId, ["space"]);
+    } else if (result.ok) {
+      await deps.publish(grant.teamId, ["contents", "space"]);
     }
 
     return result;
@@ -95,7 +97,7 @@ const createMembershipLifecycle = <TTransaction>(deps: MembershipDeps<TTransacti
     const { teamId } = access;
 
     const result = await deps.store.lock(teamId, async (transaction) => {
-      const found = await deps.applyTeamCommand(
+      const found = await deps.applyInTransaction(
         teamId,
         teamCommands.removeMember(memberId),
         transaction,
@@ -115,7 +117,7 @@ const createMembershipLifecycle = <TTransaction>(deps: MembershipDeps<TTransacti
     });
 
     if (result.ok) {
-      await deps.publish(teamId);
+      await deps.publish(teamId, ["contents", "space"]);
     }
 
     return result;
@@ -142,8 +144,10 @@ const prismaMembershipStore: MembershipStore<Prisma.TransactionClient> = {
 };
 
 const { grantMembership, revokeMembership } = createMembershipLifecycle({
-  applyTeamCommand: applyInTransaction,
-  publish: (teamId) => publishTeamEvent(teamId, "space"),
+  applyInTransaction,
+  publish: async (teamId, kinds) => {
+    await Promise.all(kinds.map((kind) => publishTeamEvent(teamId, kind)));
+  },
   store: prismaMembershipStore,
 });
 

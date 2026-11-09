@@ -15,7 +15,6 @@ import { sendEmail } from "./send-email";
 
 type MailerConfig = {
   apiKey: string;
-  defaultReplyTo?: string;
   from?: string;
 };
 
@@ -198,7 +197,6 @@ const createTransactionalEmailSender =
 
     return deliver({
       apiKey: config.apiKey,
-      defaultReplyTo: config.defaultReplyTo,
       from,
       subject,
       tags: buildTags(email),

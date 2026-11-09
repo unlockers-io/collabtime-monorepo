@@ -2,13 +2,8 @@ import { mkdir } from "node:fs/promises";
 
 import { expect, test as setup } from "@playwright/test";
 
+import { E2E_USER } from "../support/users";
 import { webUrl } from "../urls";
-
-const TEST_USER = {
-  email: "e2e-test@collabtime.localhost",
-  name: "E2E Test User",
-  password: "TestPassword123!",
-};
 
 const STORAGE_STATE_PATH = "tests/e2e/.auth/user.json";
 
@@ -16,7 +11,7 @@ setup("create and authenticate test user", async ({ page, request }) => {
   await mkdir("tests/e2e/.auth", { recursive: true });
 
   const signIn = await request.post(`${webUrl}/api/auth/sign-in/email`, {
-    data: { email: TEST_USER.email, password: TEST_USER.password },
+    data: { email: E2E_USER.email, password: E2E_USER.password },
   });
 
   expect(signIn.status()).toBe(200);
@@ -52,5 +47,3 @@ setup("create and authenticate test user", async ({ page, request }) => {
 
   await page.context().storageState({ path: STORAGE_STATE_PATH });
 });
-
-export { TEST_USER };

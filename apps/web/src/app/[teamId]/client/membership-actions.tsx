@@ -4,26 +4,43 @@ import { JoinRequestsPanel } from "@/components/join-requests-panel";
 import { PendingInvitationsPanel } from "@/components/pending-invitations-panel";
 import type { TeamMember } from "@/types";
 
+import type { TeamPageViewer } from "../viewer";
+
 import { AddOwnProfileButton } from "./add-own-profile-button";
 import { JoinPrompt } from "./join-prompt";
-import type { JoinPromptProps } from "./join-prompt";
+import type { TeamMembership } from "./use-team-membership";
 
-type Props = JoinPromptProps & {
-  hasClaimedProfile: boolean;
-  isAdmin: boolean;
-  isMember: boolean;
+type Props = {
   members: Array<TeamMember>;
+  membership: TeamMembership;
+  returnTo: string;
+  teamId: string;
+  teamName: string;
+  viewer: TeamPageViewer;
 };
 
 export const MembershipActions = ({
-  hasClaimedProfile,
-  isAdmin,
-  isMember,
   members,
-  ...props
+  membership,
+  returnTo,
+  teamId,
+  teamName,
+  viewer,
 }: Props) => {
+  const { hasClaimedProfile, isAdmin, isMember } = membership;
+
   if (!isAdmin && !isMember) {
-    return <JoinPrompt {...props} />;
+    return (
+      <JoinPrompt
+        isRequestingJoin={membership.isRequestingJoin}
+        onRequestJoin={() => {
+          void membership.requestJoin();
+        }}
+        returnTo={returnTo}
+        teamName={teamName}
+        viewer={viewer}
+      />
+    );
   }
 
   return (
@@ -33,13 +50,13 @@ export const MembershipActions = ({
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">Your profile isn&apos;t on this team yet</p>
-          <AddOwnProfileButton teamId={props.teamId} />
+          <AddOwnProfileButton teamId={teamId} />
         </div>
       )}
       {isAdmin && (
         <>
-          <JoinRequestsPanel teamId={props.teamId} />
-          <PendingInvitationsPanel members={members} teamId={props.teamId} />
+          <JoinRequestsPanel teamId={teamId} />
+          <PendingInvitationsPanel members={members} teamId={teamId} />
         </>
       )}
     </div>

@@ -14,16 +14,16 @@ const mocks = vi.hoisted(() => ({
   clientProps: vi.fn(),
   findSpace: vi.fn(),
   gateProps: vi.fn(),
-  getPublicTeam: vi.fn(),
   getSession: vi.fn(),
   notFound: vi.fn(),
+  readPublicTeam: vi.fn(),
 }));
 
 vi.mock("@repo/db", () => ({ prisma: { space: { findUnique: mocks.findSpace } } }));
 
 vi.mock("@/lib/auth-server", () => ({ getSession: mocks.getSession }));
 
-vi.mock("@/lib/actions/team-read", () => ({ getPublicTeam: mocks.getPublicTeam }));
+vi.mock("@/lib/public-team", () => ({ readPublicTeam: mocks.readPublicTeam }));
 
 vi.mock("@/lib/team-meta", () => ({ getTeamName: vi.fn() }));
 
@@ -43,10 +43,10 @@ vi.mock("@/providers/query-provider", () => ({
 }));
 
 vi.mock("./client", () => ({
-  TeamPageClient: (props: { teamStatus: string }) => {
+  TeamPageClient: (props: { viewer: { status: string } }) => {
     mocks.clientProps(props);
 
-    return <p>Workspace: {props.teamStatus}</p>;
+    return <p>Workspace: {props.viewer.status}</p>;
   },
 }));
 
@@ -85,7 +85,7 @@ beforeEach(() => {
   access = createTestAccessStore();
   mocks.findSpace.mockResolvedValue(privateSpace);
   mocks.getSession.mockResolvedValue(createMockSession());
-  mocks.getPublicTeam.mockResolvedValue({ error: "Unavailable", success: false });
+  mocks.readPublicTeam.mockResolvedValue(null);
   mocks.notFound.mockImplementation(() => {
     throw new Error("Not found");
   });
@@ -97,7 +97,7 @@ describe("workspace access", () => {
     await renderPage();
     expect(screen.getByRole("button", { name: "Accept invitation" })).toBeVisible();
     expect(screen.queryByText("Password gate")).toBeNull();
-    expect(mocks.getPublicTeam).not.toHaveBeenCalled();
+    expect(mocks.readPublicTeam).not.toHaveBeenCalled();
   });
 
   it("does not expose private content to a signed-out visitor", async () => {
@@ -105,14 +105,14 @@ describe("workspace access", () => {
     await renderPage();
     expect(screen.getByText("Password gate")).toBeVisible();
     expect(access.store.findInvitation).not.toHaveBeenCalled();
-    expect(mocks.getPublicTeam).not.toHaveBeenCalled();
+    expect(mocks.readPublicTeam).not.toHaveBeenCalled();
   });
 
   it("keeps a signed-in outsider at the gate", async () => {
     access.addInvitation({ status: "DECLINED", teamId: TEAM_ID });
     await renderPage();
     expect(screen.getByText("Password gate")).toBeVisible();
-    expect(mocks.getPublicTeam).not.toHaveBeenCalled();
+    expect(mocks.readPublicTeam).not.toHaveBeenCalled();
   });
 
   it("opens a private workspace to members with one membership read", async () => {
@@ -120,7 +120,7 @@ describe("workspace access", () => {
     access.addInvitation({ teamId: TEAM_ID });
     await renderPage();
     expect(screen.getByText("Workspace: MEMBER")).toBeVisible();
-    expect(mocks.getPublicTeam).toHaveBeenCalledWith(TEAM_ID);
+    expect(mocks.readPublicTeam).toHaveBeenCalledWith(TEAM_ID, "user-123");
     expect(access.store.findMembership).toHaveBeenCalledOnce();
   });
 
@@ -130,9 +130,10 @@ describe("workspace access", () => {
     await renderPage();
     expect(mocks.clientProps).toHaveBeenCalledWith(
       expect.objectContaining({
-        invitationId: "invite-1",
-        inviterName: "Owner",
-        teamStatus: "INVITED",
+        viewer: expect.objectContaining({
+          invitation: { id: "invite-1", inviterName: "Owner" },
+          status: "INVITED",
+        }),
       }),
     );
   });
@@ -140,13 +141,11 @@ describe("workspace access", () => {
   it("hands password and deletion controls to the owner only", async () => {
     mocks.findSpace.mockResolvedValue({ ...privateSpace, isPrivate: false });
     await renderPage();
-    expect(mocks.clientProps).toHaveBeenLastCalledWith(
-      expect.objectContaining({ hasPassword: undefined, spaceId: null }),
-    );
+    expect(mocks.clientProps).toHaveBeenLastCalledWith(expect.objectContaining({ owner: null }));
     mocks.getSession.mockResolvedValue(createMockSession({ userId: "owner" }));
     await renderPage();
     expect(mocks.clientProps).toHaveBeenLastCalledWith(
-      expect.objectContaining({ hasPassword: true, spaceId: "space-1" }),
+      expect.objectContaining({ owner: { hasPassword: true, spaceId: "space-1" } }),
     );
   });
 
@@ -172,8 +171,10 @@ describe("invitation hints", () => {
     await renderPage(HINT);
     expect(mocks.clientProps).toHaveBeenCalledWith(
       expect.objectContaining({
-        inviteMismatch: { invitedEmailMasked: "f***@example.com" },
         returnTo: `/${TEAM_ID}?invite=${HINT}`,
+        viewer: expect.objectContaining({
+          inviteMismatch: { invitedEmailMasked: "f***@example.com" },
+        }),
       }),
     );
   });
@@ -181,7 +182,10 @@ describe("invitation hints", () => {
   it("ignores malformed and repeated hint parameters", async () => {
     await renderPage([HINT, HINT]);
     expect(mocks.clientProps).toHaveBeenCalledWith(
-      expect.objectContaining({ inviteMismatch: undefined, returnTo: `/${TEAM_ID}` }),
+      expect.objectContaining({
+        returnTo: `/${TEAM_ID}`,
+        viewer: expect.objectContaining({ inviteMismatch: undefined }),
+      }),
     );
   });
 

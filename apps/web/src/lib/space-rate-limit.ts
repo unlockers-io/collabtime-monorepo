@@ -1,4 +1,4 @@
-import { getRedis, isRedisConfigured } from "@/lib/redis";
+import { incrementWithExpiry, isRedisConfigured } from "@/lib/redis";
 
 type RateLimitResult = { allowed: boolean; remaining: number };
 
@@ -6,14 +6,6 @@ type RateLimitDeps = {
   increment: (key: string, windowSeconds: number) => Promise<number>;
   isRedisConfigured: () => boolean;
 };
-
-const INCR_WITH_EXPIRE = `
-  local count = redis.call("INCR", KEYS[1])
-  if count == 1 then
-    redis.call("EXPIRE", KEYS[1], ARGV[1])
-  end
-  return count
-`;
 
 const createRateLimiter = (deps: RateLimitDeps) => {
   return async (key: string, max: number, windowSeconds: number): Promise<RateLimitResult> => {
@@ -33,10 +25,6 @@ const createRateLimiter = (deps: RateLimitDeps) => {
   };
 };
 
-const checkRateLimit = createRateLimiter({
-  increment: async (key, windowSeconds) =>
-    Number(await getRedis().eval(INCR_WITH_EXPIRE, 1, key, String(windowSeconds))),
-  isRedisConfigured,
-});
+const checkRateLimit = createRateLimiter({ increment: incrementWithExpiry, isRedisConfigured });
 
 export { checkRateLimit, createRateLimiter };

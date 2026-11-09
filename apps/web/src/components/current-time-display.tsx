@@ -18,7 +18,7 @@ const CurrentTimeDisplay = () => {
   const viewerTimezone = useViewerTimezone();
   const tick = useSecondTick();
 
-  if (!viewerTimezone || tick === 0) {
+  if (viewerTimezone === null || tick === null) {
     return (
       <div className={CLOCK_CLASS}>
         <Clock className="size-4 shrink-0 text-muted-foreground" />

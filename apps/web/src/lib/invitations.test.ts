@@ -12,13 +12,13 @@ import {
   VALID_UUID,
   VALID_UUID_2,
 } from "./actions/test-helpers";
+import { maskEmail } from "./display-name";
+import { isInvitationOpen } from "./invitation-expiry";
 import { createMemoryInvitationStore } from "./invitation-memory-store";
 import {
   createInvitations,
   INVITATION_EXPIRED_ERROR,
   type InvitationDeps,
-  isInvitationOpen,
-  maskEmail,
   openInvitationWhere,
   type StoredInvitation,
 } from "./invitations";

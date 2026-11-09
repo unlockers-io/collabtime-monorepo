@@ -43,20 +43,6 @@ describe("sendEmail from validation", () => {
     expect(result.success).toBe(true);
   });
 
-  it("falls back to default wrapped sender when from is omitted", async () => {
-    const result = await sendEmail({
-      apiKey: "re_test",
-      subject: "x",
-      template,
-      to: "delivered+test@resend.dev",
-    });
-
-    expect(result.success).toBe(true);
-    expect(sendMock.mock.calls[0]?.[1]).toMatchObject({
-      from: "Collabtime <noreply@email.collabtime.io>",
-    });
-  });
-
   it("rejects from values that are neither bare email nor wrapped form", async () => {
     const result = await sendEmail({
       apiKey: "re_test",

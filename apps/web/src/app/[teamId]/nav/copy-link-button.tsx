@@ -7,22 +7,14 @@ import { Check, Copy } from "lucide-react";
 type CopyLinkButtonProps = {
   hasCopied: boolean;
   onCopy: () => void;
-  onMobileClose?: () => void;
+  variant: "ghost" | "outline";
 };
 
-const CopyLinkButton = ({ hasCopied, onCopy, onMobileClose }: CopyLinkButtonProps) => {
+const CopyLinkButton = ({ hasCopied, onCopy, variant }: CopyLinkButtonProps) => {
   const ready = useClientReady();
 
   return (
-    <Button
-      className="justify-start"
-      disabled={!ready}
-      onClick={() => {
-        onCopy();
-        onMobileClose?.();
-      }}
-      variant="outline"
-    >
+    <Button className="justify-start" disabled={!ready} onClick={onCopy} variant={variant}>
       <span className="flex items-center gap-2">
         {hasCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
         {hasCopied ? "Copied" : "Copy link"}

@@ -1,8 +1,10 @@
 import type { authenticate } from "@/lib/team-auth";
 import type { TeamMember, TeamRecord } from "@/types";
 
+import { displayName } from "../display-name";
 import { MAX_TEAMS_PER_USER } from "../limits";
-import { TeamNameSchema } from "../validation";
+import { DEFAULT_MEMBER_TIMEZONE } from "../timezones";
+import { TeamNameSchema, TimezoneSchema } from "../validation";
 
 import type { ActionErrorEvent, ActionResult } from "./types";
 
@@ -47,7 +49,14 @@ const createTeamAction = (deps: TeamCreateDeps) => {
 
       const teamId = deps.createId();
 
-      const creator = deps.createMember({ name: user.name ?? "", timezone, userId: user.id });
+      const zone = TimezoneSchema.safeParse(timezone);
+
+      const creator = deps.createMember({
+        name: displayName(user.name, user.email),
+        timezone: zone.success ? zone.data : DEFAULT_MEMBER_TIMEZONE,
+        userId: user.id,
+      });
+
       await deps.persistTeam(user.id, {
         createdAt: deps.now().toISOString(),
         groups: [],

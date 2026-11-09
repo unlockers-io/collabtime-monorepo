@@ -3,7 +3,7 @@ import type { log } from "./observability";
 import type { Admission, AdmissionViewer } from "./team-event-admission";
 import { createTeamEventStream, type AccessResult } from "./team-event-stream";
 import type { TeamListener } from "./team-events";
-import { ACCESS_LOSS_STATUS } from "./team-live-protocol";
+import { ACCESS_LOSS_STATUS, TEAM_EVENTS_ROUTE } from "./team-live-protocol";
 import { UUIDSchema } from "./validation";
 import type { AccessCheck, WorkspaceSpace } from "./workspace-access";
 
@@ -27,7 +27,7 @@ const errorResponse = (error: string, status: number) => Response.json({ error }
 const createTeamEventsHandler = (deps: TeamEventHandlerDeps) => {
   return async (request: Request, teamId: string): Promise<Response> => {
     const startedAt = Date.now();
-    const context = { route: "/api/teams/[teamId]/events", teamId };
+    const context = { route: TEAM_EVENTS_ROUTE, teamId };
 
     if (!UUIDSchema.safeParse(teamId).success) {
       return errorResponse("Invalid team ID", 400);

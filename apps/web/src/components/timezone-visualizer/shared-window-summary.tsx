@@ -2,7 +2,7 @@
 
 import { cn } from "@repo/ui/lib/utils";
 
-import { SLOT_MINUTES } from "@/lib/team-schedule";
+import { MIN_PEOPLE_TO_OVERLAP, SLOT_MINUTES } from "@/lib/team-schedule";
 import type { MemberRow, SharedWindowReading, SlotRun, WindowTiming } from "@/lib/team-schedule";
 import { formatDuration, formatMinuteRange, formatUtcOffset } from "@/lib/timezones";
 
@@ -32,11 +32,11 @@ const readAnswer = (reading: SharedWindowReading, rows: ReadonlyArray<MemberRow>
   const total = rows.length;
   const empty = { detail: null, range: null, timing: null };
 
-  if (total < 2) {
+  if (total < MIN_PEOPLE_TO_OVERLAP) {
     return { ...empty, headline: "Add a teammate to see where your working hours overlap." };
   }
 
-  if (reading.countedCount < 2) {
+  if (reading.countedCount < MIN_PEOPLE_TO_OVERLAP) {
     return { ...empty, headline: "Count at least two people to find a shared window." };
   }
 
@@ -70,7 +70,7 @@ const readAnswer = (reading: SharedWindowReading, rows: ReadonlyArray<MemberRow>
 };
 
 const isCountingSome = (reading: SharedWindowReading, rows: ReadonlyArray<MemberRow>) =>
-  rows.length >= 2 && reading.countedCount < rows.length;
+  rows.length >= MIN_PEOPLE_TO_OVERLAP && reading.countedCount < rows.length;
 
 const readNotes = (
   reading: SharedWindowReading,
@@ -197,7 +197,7 @@ const SharedWindowSummary = ({
       <SummaryNotes
         notes={readNotes(reading, rows, hasCollapsedGroups)}
         onCountEveryone={canCountEveryone ? onCountEveryone : undefined}
-        showHint={rows.length >= 2}
+        showHint={rows.length >= MIN_PEOPLE_TO_OVERLAP}
       />
     </section>
   );

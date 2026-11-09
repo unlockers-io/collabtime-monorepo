@@ -166,7 +166,7 @@ describe("team events handler", () => {
     state.space.accessPassword = "rotated-password-hash";
 
     for (const listener of state.listeners) {
-      listener({ at: Date.now(), kind: "space", teamId: VALID_UUID });
+      listener({ kind: "space", teamId: VALID_UUID });
     }
 
     const revokedFrame = await reader.read();

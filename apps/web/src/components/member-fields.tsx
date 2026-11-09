@@ -2,13 +2,15 @@
 
 import { FieldSeparator } from "@repo/ui/components/field";
 
-import { bindField, withFieldGroup } from "@/hooks/use-member-form";
+import { withFieldGroup } from "@/hooks/use-member-form";
+import { bindField } from "@/lib/bind-field";
+import { MEMBER_NAME_MAX_LENGTH, MEMBER_TITLE_MAX_LENGTH, upToCharacters } from "@/lib/limits";
 import type { MemberFormValues } from "@/lib/member-input";
 import type { TeamGroup } from "@/types";
 
 import { HourSelectField } from "./hour-select-field";
 import { MemberGroupField } from "./member-group-field";
-import { MemberTextField } from "./member-text-field";
+import { TextField } from "./text-field";
 import { TimezoneField } from "./timezone-field";
 import { WorkingHoursFieldset } from "./working-hours-fieldset";
 
@@ -23,9 +25,9 @@ const MemberFields = withFieldGroup<MemberFormValues, unknown, MemberFieldsProps
       <div className="grid gap-4 sm:grid-cols-2">
         <group.Field name="name">
           {(field) => (
-            <MemberTextField
+            <TextField
               {...bindField(field)}
-              description="Up to 100 characters."
+              description={upToCharacters(MEMBER_NAME_MAX_LENGTH)}
               id={`${idPrefix}-name`}
               label="Full name"
               placeholder="Jane Doe"
@@ -36,9 +38,9 @@ const MemberFields = withFieldGroup<MemberFormValues, unknown, MemberFieldsProps
 
         <group.Field name="title">
           {(field) => (
-            <MemberTextField
+            <TextField
               {...bindField(field)}
-              description="Up to 100 characters."
+              description={upToCharacters(MEMBER_TITLE_MAX_LENGTH)}
               id={`${idPrefix}-title`}
               label="Title (optional)"
               placeholder="e.g. Product designer"

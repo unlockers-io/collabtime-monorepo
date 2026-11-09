@@ -24,16 +24,21 @@ const RECONNECT_JITTER_MS = 500;
 
 // Must end before the events route's maxDuration, which must end before the admission lease.
 const STREAM_LIFETIME_MS = 285_000;
+const LEASE_SECONDS = 360;
+
+const TEAM_EVENTS_ROUTE = "/api/teams/[teamId]/events";
 
 const teamEventsUrl = (teamId: string): string => `/api/teams/${teamId}/events`;
 
 export {
   ACCESS_LOSS_STATUS,
   isAccessLossStatus,
+  LEASE_SECONDS,
   LIVE_EVENTS,
   RECONNECT_DELAY_MS,
   RECONNECT_JITTER_MS,
   STREAM_LIFETIME_MS,
+  TEAM_EVENTS_ROUTE,
   teamEventsUrl,
 };
 

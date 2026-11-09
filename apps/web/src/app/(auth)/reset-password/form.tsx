@@ -1,25 +1,22 @@
 "use client";
 
-import { Button, buttonVariants } from "@repo/ui/components/button";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
-import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
-import { FormAlert } from "@repo/ui/compositions/form-alert";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
+import { buttonVariants } from "@repo/ui/components/button";
 import { cn } from "@repo/ui/lib/utils";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
 
+import { TextField } from "@/components/text-field";
 import { authClient } from "@/lib/auth-client";
-import { resetPasswordSchema } from "@/lib/form-schemas";
+import { bindField } from "@/lib/bind-field";
+import { NEW_PASSWORD_HINT, resetPasswordSchema } from "@/lib/form-schemas";
 
 import { authErrorMessage } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
-import type { AuthErrorKind } from "../auth-error-kind";
+import { AuthForm } from "../auth-form";
 import { AUTH_LINK_CLASS, AuthFooter, FormNotice } from "../auth-shell";
+import { PASSWORD_RESET_NOTICE_URL } from "../login/login-notice";
+import { focusInvalidField, useAuthSubmit } from "../use-auth-submit";
 
 const BackToSignIn = () => (
   <AuthFooter>
@@ -32,136 +29,69 @@ const BackToSignIn = () => (
 
 const NewPasswordForm = ({ token }: { token: string }) => {
   const { push } = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
+  const auth = useAuthSubmit();
 
   const form = useForm({
     defaultValues: { confirmPassword: "", password: "" },
-    listeners: {
-      onChange: () => {
-        setErrorKind(null);
-      },
-    },
+    listeners: { onChange: auth.clearError },
     onSubmit: ({ value }) => {
-      // Clearing first re-inserts the alert, so a repeated failure is announced again.
-      setErrorKind(null);
-      startTransition(async () => {
-        try {
-          const result = await authClient.resetPassword({
-            newPassword: value.password,
-            token,
-          });
+      auth.submit(async () => {
+        const result = await authClient.resetPassword({ newPassword: value.password, token });
 
-          if (result.error) {
-            setErrorKind(authErrorKind(result.error));
-
-            return;
-          }
-
-          push("/login?message=password-reset-success");
-        } catch {
-          setErrorKind("unknown");
+        if (result.error) {
+          return authErrorKind(result.error);
         }
+
+        push(PASSWORD_RESET_NOTICE_URL);
+
+        return null;
       });
     },
-    onSubmitInvalid: ({ formApi }) => {
-      focusFirstInvalidField(formApi.formId);
-    },
+    onSubmitInvalid: focusInvalidField,
     validationLogic: revalidateLogic(),
     validators: { onDynamic: resetPasswordSchema },
   });
 
   return (
     <div className="flex flex-col gap-10">
-      <ClientReadyForm
-        id={form.formId}
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void form.handleSubmit();
-        }}
+      <AuthForm
+        alert={authErrorMessage(auth.errorKind)}
+        form={form}
+        isPending={auth.isPending}
+        pendingLabel="Resetting…"
+        submitLabel="Reset password"
       >
-        <FieldGroup>
-          <FormAlert message={authErrorMessage(errorKind)} />
-          <form.Field name="password">
-            {(field) => {
-              const isInvalid = !field.state.meta.isValid;
+        <form.Field name="password">
+          {(field) => (
+            <TextField
+              {...bindField(field)}
+              autoComplete="new-password"
+              description={NEW_PASSWORD_HINT}
+              disabled={auth.isPending}
+              id="reset-password"
+              label="New password"
+              required
+              touch
+              type="password"
+            />
+          )}
+        </form.Field>
 
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="reset-password">New password</FieldLabel>
-                  <Input
-                    aria-describedby={
-                      isInvalid ? "reset-password-hint reset-password-error" : "reset-password-hint"
-                    }
-                    aria-invalid={isInvalid}
-                    aria-required
-                    autoComplete="new-password"
-                    className="h-11 sm:h-10"
-                    disabled={isPending}
-                    id="reset-password"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    type="password"
-                    value={field.state.value}
-                  />
-                  <FieldDescription id="reset-password-hint">
-                    Must be at least 12 characters long.
-                  </FieldDescription>
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="reset-password-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <form.Field name="confirmPassword">
-            {(field) => {
-              const isInvalid = !field.state.meta.isValid;
-
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="reset-confirm-password">Confirm password</FieldLabel>
-                  <Input
-                    aria-describedby={isInvalid ? "reset-confirm-password-error" : undefined}
-                    aria-invalid={isInvalid}
-                    aria-required
-                    autoComplete="new-password"
-                    className="h-11 sm:h-10"
-                    disabled={isPending}
-                    id="reset-confirm-password"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    type="password"
-                    value={field.state.value}
-                  />
-                  {isInvalid && (
-                    <FormFieldError
-                      errors={field.state.meta.errors}
-                      id="reset-confirm-password-error"
-                    />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <Button
-            aria-busy={isPending}
-            className="h-11 w-full sm:h-10"
-            disabled={isPending}
-            type="submit"
-          >
-            {isPending ? "Resetting…" : "Reset password"}
-          </Button>
-        </FieldGroup>
-      </ClientReadyForm>
+        <form.Field name="confirmPassword">
+          {(field) => (
+            <TextField
+              {...bindField(field)}
+              autoComplete="new-password"
+              disabled={auth.isPending}
+              id="reset-confirm-password"
+              label="Confirm password"
+              required
+              touch
+              type="password"
+            />
+          )}
+        </form.Field>
+      </AuthForm>
 
       <BackToSignIn />
     </div>

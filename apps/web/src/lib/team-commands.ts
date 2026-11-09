@@ -42,7 +42,7 @@ const newTeamMember = (id: string, overrides: Partial<TeamMember> = {}): TeamMem
   ...overrides,
 });
 
-const isClaimed = (member: TeamMember): boolean =>
+const isClaimed = (member: Pick<TeamMember, "userId">): boolean =>
   member.userId !== undefined && member.userId !== "";
 
 const isGroupReference = (team: TeamRecord, groupId: string | undefined): boolean =>
@@ -296,6 +296,6 @@ const teamCommands = {
   updateOwnMember,
 };
 
-export { newTeamMember, teamCommands };
+export { isClaimed, newTeamMember, teamCommands };
 
 export type { SlotClaim, TeamCommand };

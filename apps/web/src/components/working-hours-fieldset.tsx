@@ -20,7 +20,8 @@ const WorkingHoursFieldset = ({ children, timezone }: WorkingHoursFieldsetProps)
     <FieldSet>
       <FieldLegend variant="label">Working hours</FieldLegend>
       <FieldDescription>
-        {city === null ? "In the member's timezone." : `In the member's timezone (${city}).`}
+        {city === null ? "In the member's timezone." : `In the member's timezone (${city}).`} The
+        same start and end hour means all day.
       </FieldDescription>
       <div className="grid grid-cols-2 gap-4">{children}</div>
     </FieldSet>

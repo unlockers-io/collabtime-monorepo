@@ -26,7 +26,7 @@ export default defineConfig({
     {
       files: [
         "apps/web/src/components/group-card.tsx",
-        "apps/web/src/components/nav/team-title.tsx",
+        "apps/web/src/app/[[]teamId]/nav/team-title.tsx",
       ],
       rules: {
         "jsx-a11y/no-autofocus": "off",
@@ -74,7 +74,7 @@ export default defineConfig({
       },
     },
     {
-      files: ["tests/e2e/teardown/**/*.ts"],
+      files: ["tests/e2e/scripts/**/*.ts", "tests/e2e/teardown/**/*.ts"],
       rules: {
         "no-console": "off",
       },

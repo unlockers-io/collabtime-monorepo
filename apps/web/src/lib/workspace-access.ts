@@ -1,12 +1,13 @@
 import crypto from "node:crypto";
 
+import { envAuthConfig } from "@repo/auth/env-config";
 import { prisma } from "@repo/db";
 import { cookies } from "next/headers";
-import { cache } from "react";
 import { z } from "zod";
 
-import { displayName } from "@/lib/display-name";
-import { isInvitationOpen, maskEmail } from "@/lib/invitations";
+import { displayName, maskEmail } from "@/lib/display-name";
+import { getEnv } from "@/lib/env";
+import { isInvitationOpen } from "@/lib/invitation-expiry";
 import { log } from "@/lib/observability";
 import { normalizeEmail } from "@/lib/validation";
 import { isTeamRole } from "@/types";
@@ -61,15 +62,15 @@ type AccessCheck = (space: WorkspaceSpace) => Promise<boolean>;
 let warnedAboutFallback = false;
 
 const getSigningSecret = (): string => {
-  const dedicated = process.env.SPACE_ACCESS_SECRET;
+  const dedicated = getEnv("SPACE_ACCESS_SECRET");
 
-  if (dedicated !== undefined && dedicated !== "") {
+  if (dedicated !== undefined) {
     return dedicated;
   }
 
-  const fallback = process.env.BETTER_AUTH_SECRET;
+  const fallback = getEnv("BETTER_AUTH_SECRET");
 
-  if (fallback === undefined || fallback === "") {
+  if (fallback === undefined) {
     throw new Error("Missing SPACE_ACCESS_SECRET or BETTER_AUTH_SECRET environment variable");
   }
 
@@ -177,7 +178,7 @@ const issueAccessCookie = (spaceId: string, accessPasswordHash: string) => ({
   maxAge: TOKEN_TTL_SECONDS,
   name: accessCookieName(spaceId),
   sameSite: "lax" as const,
-  secure: process.env.WEB_APP_URL?.startsWith("https://") === true,
+  secure: envAuthConfig().useSecureCookies,
   value: createAccessToken(spaceId, accessPasswordHash),
 });
 
@@ -235,13 +236,11 @@ const workspaceAccessStore: WorkspaceAccessStore = {
       select: { status: true },
       where: { userId_teamId: { teamId, userId } },
     }),
-  // Per render: the page and getPublicTeam both ask for the same viewer's membership.
-  findMembership: cache((teamId: string, userId: string) =>
+  findMembership: (teamId, userId) =>
     prisma.membership.findUnique({
       select: { archivedAt: true, role: true },
       where: { userId_teamId: { teamId, userId } },
     }),
-  ),
   getToken: async (spaceId) => {
     const cookieStore = await cookies();
 
@@ -377,4 +376,4 @@ export {
   workspaceAccessStore,
 };
 
-export type { AccessCheck, WorkspaceAccessStore, WorkspaceSpace };
+export type { AccessCheck, Viewer, WorkspaceAccessStore, WorkspaceSpace };

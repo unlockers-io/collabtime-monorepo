@@ -20,7 +20,7 @@ const setup = () => {
     accessStore: access.store,
     findSpace,
     getSession,
-    readTeamRecord: vi.fn<TeamReadDeps["readTeamRecord"]>().mockResolvedValue(team),
+    readPublicTeam: vi.fn<TeamReadDeps["readPublicTeam"]>().mockResolvedValue(team),
     reportError: vi.fn<TeamReadDeps["reportError"]>(),
   });
 
@@ -55,7 +55,7 @@ describe("getPublicTeam", () => {
     const state = setup();
     state.access.setToken(space.id, issueAccessCookie(space.id, "hash").value);
 
-    expect(await state.getPublicTeam(VALID_UUID)).toEqual({ data: { team }, success: true });
+    expect(await state.getPublicTeam(VALID_UUID)).toEqual({ data: team, success: true });
   });
 
   it("blocks signed-in non-members of a private team", async () => {
@@ -73,7 +73,7 @@ describe("getPublicTeam", () => {
     state.getSession.mockResolvedValue(createMockSession());
     state.access.addMembership(VALID_UUID, "user-123");
 
-    expect(await state.getPublicTeam(VALID_UUID)).toEqual({ data: { team }, success: true });
+    expect(await state.getPublicTeam(VALID_UUID)).toEqual({ data: team, success: true });
     expect(state.access.store.findMembership).toHaveBeenCalledOnce();
   });
 
@@ -84,7 +84,7 @@ describe("getPublicTeam", () => {
 
     const result = await state.getPublicTeam(VALID_UUID);
 
-    expect(result).toEqual({ data: { team }, success: true });
+    expect(result).toEqual({ data: team, success: true });
     expect(result.success && result.data).not.toHaveProperty("role");
     expect(state.access.store.findMembership).not.toHaveBeenCalled();
   });

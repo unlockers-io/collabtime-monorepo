@@ -4,8 +4,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { AcceptWorkspaceInvitation } from "@/components/accept-workspace-invitation";
-import { getPublicTeam } from "@/lib/actions/team-read";
 import { getSession } from "@/lib/auth-server";
+import { workspaceName } from "@/lib/display-name";
+import { readPublicTeam } from "@/lib/public-team";
 import { createQueryClient } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
 import { getTeamName } from "@/lib/team-meta";
@@ -38,7 +39,7 @@ export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metad
   return {
     description: `Working hours and overlap view for ${teamName ?? "your team"}.`,
     robots,
-    title: teamName ?? "Untitled workspace",
+    title: workspaceName(teamName),
   };
 };
 
@@ -59,7 +60,6 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
   }
 
   const viewer = await resolveViewer({ inviteHint: invite.data, session, space });
-  const teamName = (await getTeamName(teamId)) ?? "Untitled workspace";
 
   if (space.isPrivate && viewer.invitation !== undefined) {
     return (
@@ -72,7 +72,7 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
           <AcceptWorkspaceInvitation
             invitationId={viewer.invitation.id}
             inviterName={viewer.invitation.inviterName}
-            teamName={teamName}
+            teamName={workspaceName(await getTeamName(teamId))}
           />
         </div>
       </main>
@@ -86,33 +86,33 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
         isAuthenticated={Boolean(session)}
         returnTo={returnTo}
         spaceId={space.id}
-        teamId={teamId}
       />
     );
   }
 
   const queryClient = createQueryClient();
-  const teamResult = await getPublicTeam(teamId);
+  const team = await readPublicTeam(teamId, session?.user.id);
 
-  if (teamResult.success) {
-    queryClient.setQueryData(queryKeys.teams.detail(teamId), { team: teamResult.data.team });
+  if (team) {
+    queryClient.setQueryData(queryKeys.team.contents(teamId), team);
   }
 
   return (
     <QueryProvider dehydratedState={dehydrate(queryClient)}>
       <TeamPageClient
-        hasPassword={viewer.isOwner ? Boolean(space.accessPassword) : undefined}
-        invitationId={viewer.invitation?.id}
-        inviteMismatch={viewer.inviteMismatch}
-        inviterName={viewer.invitation?.inviterName}
-        isArchived={viewer.isArchived}
-        isAuthenticated={Boolean(session)}
         isPrivate={space.isPrivate}
+        owner={
+          viewer.isOwner ? { hasPassword: Boolean(space.accessPassword), spaceId: space.id } : null
+        }
         returnTo={returnTo}
-        spaceId={viewer.isOwner ? space.id : null}
         teamId={teamId}
-        teamStatus={viewer.status}
-        userId={session?.user.id}
+        viewer={{
+          invitation: viewer.invitation,
+          inviteMismatch: viewer.inviteMismatch,
+          isArchived: viewer.isArchived,
+          status: viewer.status,
+          userId: session?.user.id ?? null,
+        }}
       />
     </QueryProvider>
   );

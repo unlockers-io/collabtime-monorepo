@@ -23,16 +23,16 @@ test.describe("Private space password self-join", () => {
     await expect(ownerPage).toHaveURL(/\/[a-f0-9-]{36}$/u, { timeout: 15_000 });
     const teamId = new URL(ownerPage.url()).pathname.slice(1);
 
-    const spacesResponse = await owner.request.get(`${webUrl}/api/spaces`);
+    const teamsResponse = await owner.request.get(`${webUrl}/api/teams`);
 
-    const { spaces } = (await spacesResponse.json()) as {
-      spaces: Array<{ id: string; teamId: string }>;
+    const { teams } = (await teamsResponse.json()) as {
+      teams: Array<{ spaceId: string | null; teamId: string }>;
     };
 
-    const space = spaces.find((s) => s.teamId === teamId);
-    expect(space).toBeTruthy();
+    const spaceId = teams.find((team) => team.teamId === teamId)?.spaceId;
+    expect(spaceId).toBeTruthy();
 
-    const patch = await owner.request.patch(`${webUrl}/api/spaces/${space?.id}`, {
+    const patch = await owner.request.patch(`${webUrl}/api/spaces/${spaceId}`, {
       data: { password: SPACE_PASSWORD, visibility: "private" },
     });
 

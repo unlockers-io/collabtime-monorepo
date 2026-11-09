@@ -2,67 +2,49 @@
 
 import { Button } from "@repo/ui/components/button";
 import { Spinner } from "@repo/ui/components/spinner";
-import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { resendInvitation, revokeInvitation } from "@/lib/actions/invitation-actions";
-import { queryKeys } from "@/lib/query-keys";
-import { runWithCleanup } from "@/lib/run-with-cleanup";
+import { useInvitationWrites } from "@/hooks/use-invitation-writes";
+
+type InvitationWrites = ReturnType<typeof useInvitationWrites>;
 
 type Props = {
   invitation: { email: string; id: string };
-  onSettled: () => void;
-  resend: typeof resendInvitation;
-  revoke: typeof revokeInvitation;
-  teamId: string;
+  resend: InvitationWrites["resend"];
+  revoke: InvitationWrites["revoke"];
 };
 
-export const InvitationControlsView = ({
-  invitation,
-  onSettled,
-  resend,
-  revoke,
-  teamId,
-}: Props) => {
+export const InvitationControlsView = ({ invitation, resend, revoke }: Props) => {
   const [action, setAction] = useState<"resend" | "revoke" | null>(null);
 
   const run = async (next: "resend" | "revoke") => {
     setAction(next);
-    await runWithCleanup(
-      async () => {
-        try {
-          if (next === "resend") {
-            const result = await resend(teamId, invitation.id);
 
-            if (result.success) {
-              toast.success(
-                result.data.emailSent
-                  ? `Invitation sent to ${invitation.email}`
-                  : "Invitation renewed, but email was not delivered",
-              );
-            } else {
-              toast.error(result.error);
-            }
-          } else {
-            const result = await revoke(teamId, invitation.id);
+    if (next === "resend") {
+      const result = await resend(invitation.id);
 
-            if (result.success) {
-              toast.success("Invitation revoked");
-            } else {
-              toast.error(result.error);
-            }
-          }
-        } catch {
-          toast.error("Could not update the invitation. Please try again.");
-        }
-      },
-      () => {
-        setAction(null);
-        onSettled();
-      },
-    );
+      if (result.success) {
+        toast.success(
+          result.data.emailSent
+            ? `Invitation sent to ${invitation.email}`
+            : "Invitation renewed, but email was not delivered",
+        );
+      } else {
+        toast.error(result.error);
+      }
+    } else {
+      const result = await revoke(invitation.id);
+
+      if (result.success) {
+        toast.success("Invitation revoked");
+      } else {
+        toast.error(result.error);
+      }
+    }
+
+    setAction(null);
   };
 
   return (
@@ -102,17 +84,7 @@ export const InvitationControls = ({
   invitation: { email: string; id: string };
   teamId: string;
 }) => {
-  const queryClient = useQueryClient();
+  const { resend, revoke } = useInvitationWrites(teamId);
 
-  return (
-    <InvitationControlsView
-      invitation={invitation}
-      onSettled={() => {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.teamInvitations(teamId) });
-      }}
-      resend={resendInvitation}
-      revoke={revokeInvitation}
-      teamId={teamId}
-    />
-  );
+  return <InvitationControlsView invitation={invitation} resend={resend} revoke={revoke} />;
 };

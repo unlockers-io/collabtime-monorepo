@@ -2,8 +2,9 @@
 
 import { SkeletonSuspense } from "skullet/react";
 
+import type { MyTeam } from "@/lib/home-lists";
+
 import { TeamsList } from "./teams-list";
-import type { MyTeam } from "./types";
 
 const SAMPLE_TEAMS: Array<MyTeam> = [
   {

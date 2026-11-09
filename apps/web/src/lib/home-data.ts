@@ -2,10 +2,11 @@ import { prisma } from "@repo/db";
 
 import { readTeamSummaries } from "@/lib/team-store";
 
-import { displayName } from "./display-name";
+import { displayName, workspaceName } from "./display-name";
+import type { MyTeam, PendingInvitation } from "./home-lists";
 import { invitations } from "./invitations";
 
-const getMyTeams = async (userId: string) => {
+const getMyTeams = async (userId: string): Promise<Array<MyTeam>> => {
   const memberships = await prisma.membership.findMany({
     orderBy: { createdAt: "desc" },
     where: { userId },
@@ -13,7 +14,7 @@ const getMyTeams = async (userId: string) => {
 
   const teamIds = memberships.map((membership) => membership.teamId);
 
-  const [summariesResult, ownedSpacesResult] = await Promise.allSettled([
+  const [summaries, ownedSpaces] = await Promise.all([
     readTeamSummaries(teamIds),
     prisma.space.findMany({
       select: { id: true, teamId: true },
@@ -21,20 +22,10 @@ const getMyTeams = async (userId: string) => {
     }),
   ]);
 
-  if (summariesResult.status === "rejected") {
-    throw summariesResult.reason;
-  }
-
-  if (ownedSpacesResult.status === "rejected") {
-    throw ownedSpacesResult.reason;
-  }
-
-  const ownedSpaceByTeamId = new Map(
-    ownedSpacesResult.value.map((space) => [space.teamId, space.id]),
-  );
+  const ownedSpaceByTeamId = new Map(ownedSpaces.map((space) => [space.teamId, space.id]));
 
   return memberships.flatMap((membership) => {
-    const summary = summariesResult.value.get(membership.teamId);
+    const summary = summaries.get(membership.teamId);
 
     if (summary === undefined) {
       return [];
@@ -47,26 +38,23 @@ const getMyTeams = async (userId: string) => {
         role: membership.role,
         spaceId: ownedSpaceByTeamId.get(membership.teamId) ?? null,
         teamId: membership.teamId,
-        teamName: summary.name,
+        teamName: workspaceName(summary.name),
       },
     ];
   });
 };
 
-const getPendingInvitations = async (email: string) => {
+const getPendingInvitations = async (email: string): Promise<Array<PendingInvitation>> => {
   const open = await invitations.listOpenForEmail(email);
   const summaries = await readTeamSummaries(open.map((invitation) => invitation.teamId));
 
   return open.map((invitation) => {
-    const name = summaries.get(invitation.teamId)?.name ?? "";
-
     return {
       expiresAt: invitation.expiresAt?.toISOString() ?? null,
       id: invitation.id,
       inviterName: displayName(invitation.invitedBy.name, invitation.invitedBy.email),
-      memberId: invitation.memberId,
       teamId: invitation.teamId,
-      teamName: name === "" ? "Untitled workspace" : name,
+      teamName: workspaceName(summaries.get(invitation.teamId)?.name),
     };
   });
 };

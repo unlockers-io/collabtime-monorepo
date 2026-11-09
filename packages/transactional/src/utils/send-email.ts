@@ -1,14 +1,13 @@
 import type { ReactElement } from "react";
 import { render } from "react-email";
+import { Resend } from "resend";
 import { z } from "zod";
 
-import { createResendClient } from "../client";
+import { senderAddressSchema } from "../sender";
 
-type ResendClient = ReturnType<typeof createResendClient>;
+type SendEmailPayload = Parameters<Resend["emails"]["send"]>[0];
 
-type SendEmailPayload = Parameters<ResendClient["emails"]["send"]>[0];
-
-type SendEmailResponse = Awaited<ReturnType<ResendClient["emails"]["send"]>>;
+type SendEmailResponse = Awaited<ReturnType<Resend["emails"]["send"]>>;
 
 type SendEmailTransport = (apiKey: string, payload: SendEmailPayload) => Promise<SendEmailResponse>;
 
@@ -17,16 +16,6 @@ const sanitizeTagSegment = (s: string): string =>
     .replaceAll(/[^\-A-Za-z0-9_]+/gv, "-")
     .replaceAll(/^-+|-+$/gv, "")
     .slice(0, 256);
-
-// Accepts bare email or RFC 5322 "Display Name <email>"; z.email() alone rejects the bracketed form.
-const senderAddressSchema = z.string().refine(
-  (val) => {
-    const email = /^.+<(?<email>[^<>\s]+)>$/v.exec(val)?.groups?.email ?? val;
-
-    return z.email().safeParse(email).success;
-  },
-  { message: "Must be a valid email or 'Display Name <email>' format" },
-);
 
 const recipientSchema = z.union([z.email(), z.array(z.email())]);
 
@@ -43,7 +32,7 @@ const tagSchema = z.object({
 const emailConfigSchema = z.object({
   bcc: recipientSchema.optional(),
   cc: recipientSchema.optional(),
-  from: senderAddressSchema.default("Collabtime <noreply@email.collabtime.io>"),
+  from: senderAddressSchema,
   replyTo: senderAddressSchema.optional(),
   subject: z.string(),
   tags: z
@@ -57,28 +46,15 @@ type EmailConfig = z.input<typeof emailConfigSchema>;
 
 type SendEmailOptions = EmailConfig & {
   apiKey: string;
-  defaultReplyTo?: string;
   template: ReactElement;
 };
 
-type PreparedEmailPayload = {
-  bcc?: EmailConfig["bcc"];
-  cc?: EmailConfig["cc"];
-  from: string;
-  html: string;
-  replyTo?: string;
-  subject: string;
-  tags?: EmailConfig["tags"];
-  text: string;
-  to: EmailConfig["to"];
-};
-
 const resendTransport: SendEmailTransport = (apiKey, payload) =>
-  createResendClient(apiKey).emails.send(payload);
+  new Resend(apiKey).emails.send(payload);
 
 const createSendEmail =
   (send: SendEmailTransport) =>
-  async ({ apiKey, defaultReplyTo, template, ...config }: SendEmailOptions) => {
+  async ({ apiKey, template, ...config }: SendEmailOptions) => {
     if (!apiKey) {
       throw new Error("API key is required for sending emails");
     }
@@ -93,10 +69,7 @@ const createSendEmail =
         cc: validatedConfig.cc,
         from: validatedConfig.from,
         html,
-        replyTo:
-          validatedConfig.replyTo !== undefined && validatedConfig.replyTo !== ""
-            ? validatedConfig.replyTo
-            : defaultReplyTo,
+        replyTo: validatedConfig.replyTo,
         subject: validatedConfig.subject,
         tags: validatedConfig.tags,
         text,
@@ -122,104 +95,6 @@ const createSendEmail =
 
 const sendEmail = createSendEmail(resendTransport);
 
-const sendBatchEmails = async (
-  emails: Array<SendEmailOptions>,
-  apiKey: string,
-  defaultReplyTo?: string,
-) => {
-  if (!apiKey) {
-    throw new Error("API key is required for sending emails");
-  }
-
-  if (emails.length > 100) {
-    throw new Error("Batch size cannot exceed 100 emails");
-  }
-
-  try {
-    const resend = createResendClient(apiKey);
-
-    const settledBatchData = await Promise.allSettled(
-      emails.map(async ({ template, ...config }) => {
-        const validatedConfig = emailConfigSchema.parse(config);
-
-        const [html, text] = await Promise.all([
-          render(template),
-          render(template, { plainText: true }),
-        ]);
-
-        return {
-          bcc: validatedConfig.bcc,
-          cc: validatedConfig.cc,
-          from: validatedConfig.from,
-          html,
-          replyTo:
-            validatedConfig.replyTo !== undefined && validatedConfig.replyTo !== ""
-              ? validatedConfig.replyTo
-              : defaultReplyTo,
-          subject: validatedConfig.subject,
-          tags: validatedConfig.tags,
-          text,
-          to: validatedConfig.to,
-        };
-      }),
-    );
-
-    const batchData: Array<PreparedEmailPayload> = [];
-    const rejectionReasons: Array<unknown> = [];
-    const rejectionMessages: Array<string> = [];
-
-    settledBatchData.forEach((result, index) => {
-      if (result.status === "fulfilled") {
-        batchData.push(result.value);
-
-        return;
-      }
-
-      rejectionReasons.push(result.reason);
-
-      const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
-      rejectionMessages.push(`email index ${index}: ${reason}`);
-    });
-
-    if (rejectionReasons.length > 0) {
-      throw new AggregateError(
-        rejectionReasons,
-        `Failed to prepare ${rejectionReasons.length} email(s): ${rejectionMessages.join("; ")}`,
-      );
-    }
-
-    const result = await resend.batch.send(batchData);
-
-    if (result.error) {
-      const error = resendErrorSchema.safeParse(result.error).data;
-      throw new Error(
-        `Resend failed to queue batch: ${error?.name ?? "unknown_error"} - ${error?.message ?? "No message"}`,
-      );
-    }
-
-    return {
-      data: result.data,
-      error: null,
-      success: true,
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : "Failed to send batch emails",
-      success: false,
-    };
-  }
-};
-
-const previewEmail = async (template: ReactElement) => {
-  const [html, text] = await Promise.all([render(template), render(template, { plainText: true })]);
-
-  return {
-    html,
-    text,
-  };
-};
-
-export { createSendEmail, sendEmail, sendBatchEmails, previewEmail };
+export { createSendEmail, sendEmail };
 
 export type { SendEmailTransport };

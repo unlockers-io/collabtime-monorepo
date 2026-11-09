@@ -8,37 +8,30 @@ import { LogIn, UserPlus } from "lucide-react";
 import Link from "next/link";
 
 import { AcceptWorkspaceInvitation } from "@/components/accept-workspace-invitation";
-import type { TeamStatus } from "@/types";
+import { withRedirect } from "@/lib/redirect-validation";
+
+import type { TeamPageViewer } from "../viewer";
 
 import { InviteMismatchNotice } from "./invite-mismatch-notice";
 
-export type JoinPromptProps = {
-  invitationId?: string;
-  inviteMismatch?: { invitedEmailMasked: string };
-  inviterName?: string;
-  isAuthenticated: boolean;
+type JoinPromptProps = {
   isRequestingJoin: boolean;
   onRequestJoin: () => void;
   returnTo: string;
-  teamId: string;
-  teamName?: string;
-  teamStatus: TeamStatus;
+  teamName: string;
+  viewer: TeamPageViewer;
 };
 
 const JoinPrompt = ({
-  invitationId,
-  inviteMismatch,
-  inviterName,
-  isAuthenticated,
   isRequestingJoin,
   onRequestJoin,
   returnTo,
   teamName,
-  teamStatus,
+  viewer: { invitation, inviteMismatch, status, userId },
 }: JoinPromptProps) => {
   const ready = useClientReady();
 
-  if (!isAuthenticated) {
+  if (userId === null) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-pretty text-muted-foreground">
@@ -47,13 +40,13 @@ const JoinPrompt = ({
         <div className="flex flex-wrap gap-2">
           <Link
             className={cn(buttonVariants({ size: "sm" }))}
-            href={`/register?redirect=${encodeURIComponent(returnTo)}`}
+            href={withRedirect("/register", returnTo)}
           >
             Create account
           </Link>
           <Link
             className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
-            href={`/login?redirect=${encodeURIComponent(returnTo)}`}
+            href={withRedirect("/login", returnTo)}
           >
             <LogIn className="mr-2 size-4" />
             Sign in
@@ -63,12 +56,12 @@ const JoinPrompt = ({
     );
   }
 
-  if (teamStatus === "INVITED" && invitationId !== undefined) {
+  if (status === "INVITED" && invitation !== undefined) {
     return (
       <div>
         <AcceptWorkspaceInvitation
-          invitationId={invitationId}
-          inviterName={inviterName}
+          invitationId={invitation.id}
+          inviterName={invitation.inviterName}
           teamName={teamName}
         />
       </div>
@@ -80,11 +73,11 @@ const JoinPrompt = ({
       {inviteMismatch && <InviteMismatchNotice {...inviteMismatch} returnTo={returnTo} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {teamStatus === "PENDING"
+          {status === "PENDING"
             ? "Your join request is pending admin approval."
             : "Work on this team? Ask an admin to let you in."}
         </p>
-        {teamStatus !== "PENDING" && (
+        {status !== "PENDING" && (
           <Button
             disabled={!ready || isRequestingJoin}
             onClick={onRequestJoin}

@@ -7,6 +7,8 @@ type LoginNoticeProps = {
 // Exact match only: the query string is user-controlled, so its text is never rendered.
 const PASSWORD_RESET_SUCCESS = "password-reset-success";
 
+const PASSWORD_RESET_NOTICE_URL = `/login?message=${PASSWORD_RESET_SUCCESS}`;
+
 const LoginNotice = async ({ searchParams }: LoginNoticeProps) => {
   const { message } = await searchParams;
 
@@ -21,4 +23,4 @@ const LoginNotice = async ({ searchParams }: LoginNoticeProps) => {
   );
 };
 
-export { LoginNotice };
+export { LoginNotice, PASSWORD_RESET_NOTICE_URL };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeTeamName } from "./team-meta";
+import { normalizeTeamName } from "./display-name";
 
 describe("normalizeTeamName", () => {
   it("trims the stored name", () => {

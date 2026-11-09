@@ -2,7 +2,10 @@ import {
   MINUTES_IN_DAY,
   getMinuteOfDay,
   getOffsetMinutes,
-  getWorkingMinutes,
+  isWithinWindow,
+  windowPosition,
+  workingWindow,
+  type WorkingWindow,
   wrapMinutes,
 } from "@/lib/timezones";
 import type { TeamGroup, TeamMember } from "@/types";
@@ -13,14 +16,12 @@ const SLOT_MINUTES = 15;
 const SLOTS_PER_HOUR = 60 / SLOT_MINUTES;
 const SLOTS_IN_DAY = MINUTES_IN_DAY / SLOT_MINUTES;
 
-type WorkingInterval = {
-  lengthMinutes: number;
-  startMinute: number;
-};
+/** A shared window needs at least this many people working at once. */
+const MIN_PEOPLE_TO_OVERLAP = 2;
 
 type MemberRow = {
   dayOffset: number;
-  interval: WorkingInterval;
+  interval: WorkingWindow;
   isCounted: boolean;
   member: TeamMember;
   /** How far the member's clock runs ahead of the viewer's. */
@@ -69,11 +70,8 @@ const EMPTY_SLOTS: ReadonlyArray<boolean> = Object.freeze(
   Array.from<boolean>({ length: SLOTS_IN_DAY }).fill(false),
 );
 
-const toSlots = ({ lengthMinutes, startMinute }: WorkingInterval): Array<boolean> =>
-  Array.from(
-    { length: SLOTS_IN_DAY },
-    (_, slot) => wrapMinutes(slot * SLOT_MINUTES - startMinute) < lengthMinutes,
-  );
+const toSlots = (interval: WorkingWindow): Array<boolean> =>
+  Array.from({ length: SLOTS_IN_DAY }, (_, slot) => isWithinWindow(interval, slot * SLOT_MINUTES));
 
 type KeyedRun = SlotRun & { key: string };
 
@@ -116,17 +114,14 @@ const toRuns = (keys: ReadonlyArray<string | null>): Array<KeyedRun> => {
 };
 
 const getTiming = (run: SlotRun, nowMinute: number): WindowTiming => {
-  const startMinute = run.startSlot * SLOT_MINUTES;
-  const lengthMinutes = run.lengthSlots * SLOT_MINUTES;
-  const sinceStart = wrapMinutes(nowMinute - startMinute);
+  const position = windowPosition(
+    { lengthMinutes: run.lengthSlots * SLOT_MINUTES, startMinute: run.startSlot * SLOT_MINUTES },
+    nowMinute,
+  );
 
-  if (sinceStart < lengthMinutes) {
-    return { kind: "now", minutesLeft: lengthMinutes - sinceStart };
-  }
-
-  const minutesUntil = wrapMinutes(startMinute - nowMinute);
-
-  return { isTomorrow: nowMinute + minutesUntil >= MINUTES_IN_DAY, kind: "later", minutesUntil };
+  return position.kind === "now"
+    ? position
+    : { ...position, isTomorrow: nowMinute + position.minutesUntil >= MINUTES_IN_DAY };
 };
 
 /** The run happening now, otherwise the soonest one to start. */
@@ -161,7 +156,7 @@ const readGroupCoverage = (
     return rows.length > 0 ? [rows] : [];
   });
 
-  if (groupRows.length < 2) {
+  if (groupRows.length < MIN_PEOPLE_TO_OVERLAP) {
     return null;
   }
 
@@ -191,7 +186,7 @@ const readSharedWindow = (
 ): SharedWindowReading => {
   const counted = rows.filter((row) => row.isCounted);
 
-  if (counted.length < 2) {
+  if (counted.length < MIN_PEOPLE_TO_OVERLAP) {
     return { ...EMPTY_READING, countedCount: counted.length };
   }
 
@@ -203,7 +198,7 @@ const readSharedWindow = (
   const peak = Math.max(...counts);
   const groupCoverage = readGroupCoverage(counted, groupIds, nowMinute);
 
-  if (peak < 2) {
+  if (peak < MIN_PEOPLE_TO_OVERLAP) {
     return { ...EMPTY_READING, countedCount: counted.length, groupCoverage };
   }
 
@@ -285,10 +280,8 @@ const getTeamSchedule = ({
   const rows: Array<MemberRow> = members.map((member) => {
     const shiftMinutes = getOffsetMinutes(member.timezone, now) - viewerOffset;
 
-    const interval = {
-      lengthMinutes: getWorkingMinutes(member),
-      startMinute: wrapMinutes(member.workingHoursStart * 60 - shiftMinutes),
-    };
+    const local = workingWindow(member);
+    const interval = { ...local, startMinute: wrapMinutes(local.startMinute - shiftMinutes) };
 
     const isInCollapsedGroup =
       !isUngrouped(member, groupIds) && collapsedGroupIds.has(member.groupId ?? "");
@@ -311,6 +304,6 @@ const getTeamSchedule = ({
   };
 };
 
-export { SLOTS_PER_HOUR, SLOT_MINUTES, getTeamSchedule, isUngrouped };
+export { MIN_PEOPLE_TO_OVERLAP, SLOTS_PER_HOUR, SLOT_MINUTES, getTeamSchedule, isUngrouped };
 
 export type { MemberRow, SharedWindowReading, SlotRun, WindowTiming };

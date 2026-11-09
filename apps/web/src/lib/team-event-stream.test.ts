@@ -36,9 +36,9 @@ const setup = (overrides: Partial<TeamEventStreamDeps> = {}) => {
     ...overrides,
   };
 
-  const emit = (kind: "contents" | "space" | "deleted" | "reconnect") => {
+  const emit = (kind: "contents" | "space" | "reconnect") => {
     for (const listener of listeners) {
-      listener({ at: Date.now(), kind, teamId: VALID_UUID });
+      listener({ kind, teamId: VALID_UUID });
     }
   };
 
@@ -67,9 +67,7 @@ describe("team event stream", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-cache, no-transform");
     expect(response.headers.get("X-Accel-Buffering")).toBe("no");
     const reader = response.body!.getReader();
-    expect(await read(reader)).toBe(
-      `retry: 2000\nevent: ready\ndata: {"teamId":"${VALID_UUID}"}\n\n`,
-    );
+    expect(await read(reader)).toBe("event: ready\ndata: {}\n\n");
     state.emit("contents");
     expect(await read(reader)).toContain("event: change\ndata:");
     await vi.advanceTimersByTimeAsync(25_000);

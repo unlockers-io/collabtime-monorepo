@@ -1,9 +1,9 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
-import { Redis } from "ioredis";
 import { Pool } from "pg";
 
 import { PrismaClient } from "./generated/client";
+import { ACTIVE_TEAM_RETENTION_MS } from "./team-retention";
 
 const assertLocal = (name: string, value: string): void => {
   const host = URL.canParse(value) ? new URL(value).hostname : "";
@@ -14,13 +14,6 @@ const assertLocal = (name: string, value: string): void => {
 };
 
 assertLocal("DATABASE_URL", process.env.DATABASE_URL ?? "");
-
-assertLocal("REDIS_URL", process.env.REDIS_URL ?? "");
-
-const redis = new Redis(process.env.REDIS_URL ?? "", {
-  lazyConnect: true,
-  maxRetriesPerRequest: 1,
-});
 
 const TEAM_ID = "00000000-0000-4000-8000-000000000001";
 const MEMBER_ID = "00000000-0000-4000-8000-000000000002";
@@ -99,41 +92,24 @@ try {
     workingHoursStart: 9,
   };
 
+  // The app only reads contents whose creation is recorded and whose retention hasn't lapsed.
+  const teamExpiresAt = new Date(space.createdAt.getTime() + ACTIVE_TEAM_RETENTION_MS);
+
   await prisma.$transaction([
-    prisma.space.update({ data: { name: "Sample workspace" }, where: { teamId: TEAM_ID } }),
+    prisma.space.update({
+      data: {
+        name: "Sample workspace",
+        teamCreatedAt: space.createdAt.toISOString(),
+        teamExpiresAt,
+      },
+      where: { teamId: TEAM_ID },
+    }),
     prisma.teamMember.upsert({
       create: { ...member, teamId: TEAM_ID },
       update: member,
       where: { id: MEMBER_ID },
     }),
   ]);
-
-  const seeded = await prisma.space.findUniqueOrThrow({
-    include: { groups: { orderBy: { order: "asc" } }, members: { orderBy: { order: "asc" } } },
-    where: { teamId: TEAM_ID },
-  });
-
-  const team = {
-    createdAt: seeded.createdAt.toISOString(),
-    groups: seeded.groups.map(({ id, name, order }) => ({ id, name, order })),
-    id: TEAM_ID,
-    members: seeded.members.map(({ groupId, teamId: _teamId, userId, ...rest }) => {
-      const seededMember: typeof rest & { groupId?: string; userId?: string } = { ...rest };
-
-      if (groupId !== null) {
-        seededMember.groupId = groupId;
-      }
-
-      if (userId !== null) {
-        seededMember.userId = userId;
-      }
-
-      return seededMember;
-    }),
-    name: seeded.name,
-  };
-
-  await redis.set(`team:${TEAM_ID}`, JSON.stringify(team), "EX", 60 * 60 * 24 * 60);
 
   console.log("Seed complete");
   console.log(`  User: test@collabtime.dev / TestPassword123!`);
@@ -142,7 +118,6 @@ try {
   console.error("Seed failed:", error);
   throw error;
 } finally {
-  redis.disconnect();
   await prisma.$disconnect();
   await pool.end();
 }

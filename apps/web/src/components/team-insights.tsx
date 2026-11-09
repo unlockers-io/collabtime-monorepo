@@ -93,6 +93,12 @@ const TeamInsights = ({ groups = EMPTY_GROUPS, members }: TeamInsightsProps): Re
   for (const member of members) {
     const status = getMemberStatus(member, now);
 
+    if (status.kind === "all-day") {
+      working.push({ detail: "all day", member, minutes: Number.MAX_SAFE_INTEGER });
+
+      continue;
+    }
+
     if (status.kind === "working") {
       const { minutesLeft } = status;
       const endsAt = formatMinuteOfDay(nowMinute + minutesLeft);

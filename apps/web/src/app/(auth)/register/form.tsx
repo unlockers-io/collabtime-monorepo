@@ -1,28 +1,24 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
-import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
-import { FormAlert } from "@repo/ui/compositions/form-alert";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
-import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense, use, useState, useTransition } from "react";
+import { Suspense, use, useState } from "react";
 
+import { TextField } from "@/components/text-field";
 import { signUp } from "@/lib/auth-client";
-import { signupSchema } from "@/lib/form-schemas";
-import { safeRedirectPath } from "@/lib/redirect-validation";
+import { bindField } from "@/lib/bind-field";
+import { ACCOUNT_NAME_HINT, NEW_PASSWORD_HINT, signupSchema } from "@/lib/form-schemas";
+import { type RedirectParam, safeRedirectPath, withRedirect } from "@/lib/redirect-validation";
 
 import { authErrorMessage } from "../auth-error";
 import { authErrorKind } from "../auth-error-kind";
-import type { AuthErrorKind } from "../auth-error-kind";
+import { AuthForm } from "../auth-form";
 import { AUTH_LINK_CLASS, AuthConfirmation, AuthFooter } from "../auth-shell";
+import { focusInvalidField, useAuthSubmit } from "../use-auth-submit";
 
 type Props = {
-  searchParams: Promise<{ redirect?: string }>;
+  searchParams: Promise<{ redirect?: RedirectParam }>;
 };
 
 const SignInLinkFallback = () => (
@@ -36,10 +32,7 @@ const SignInLink = ({ searchParams }: Props) => {
   const redirect = safeRedirectPath(redirectParam);
 
   return (
-    <Link
-      className={AUTH_LINK_CLASS}
-      href={redirect === "/" ? "/login" : `/login?redirect=${encodeURIComponent(redirect)}`}
-    >
+    <Link className={AUTH_LINK_CLASS} href={withRedirect("/login", redirect)}>
       Sign in
     </Link>
   );
@@ -47,56 +40,43 @@ const SignInLink = ({ searchParams }: Props) => {
 
 const RegisterForm = ({ searchParams }: Props) => {
   const { push, refresh } = useRouter();
-  const [isPending, startTransition] = useTransition();
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
-  const [errorKind, setErrorKind] = useState<AuthErrorKind | null>(null);
+  const auth = useAuthSubmit();
 
   const form = useForm({
     defaultValues: { email: "", name: "", password: "" },
-    listeners: {
-      onChange: () => {
-        setErrorKind(null);
-      },
-    },
+    listeners: { onChange: auth.clearError },
     onSubmit: ({ value }) => {
-      // Clearing first re-inserts the alert, so a repeated failure is announced again.
-      setErrorKind(null);
-      startTransition(async () => {
-        try {
-          const { redirect: redirectParam } = await searchParams;
-          const redirect = safeRedirectPath(redirectParam);
+      auth.submit(async () => {
+        const { redirect: redirectParam } = await searchParams;
+        const redirect = safeRedirectPath(redirectParam);
 
-          const result = await signUp.email({
-            callbackURL: redirect,
-            email: value.email,
-            name: value.name,
-            password: value.password,
-          });
+        const result = await signUp.email({
+          callbackURL: redirect,
+          email: value.email,
+          name: value.name.trim(),
+          password: value.password,
+        });
 
-          if (result.error) {
-            setErrorKind(authErrorKind(result.error));
-
-            return;
-          }
-
-          const sessionToken = result.data.token;
-
-          if (sessionToken === null || sessionToken === "") {
-            setSentToEmail(value.email);
-
-            return;
-          }
-
-          push(redirect);
-          refresh();
-        } catch {
-          setErrorKind("unknown");
+        if (result.error) {
+          return authErrorKind(result.error);
         }
+
+        const sessionToken = result.data.token;
+
+        if (sessionToken === null || sessionToken === "") {
+          setSentToEmail(value.email);
+
+          return null;
+        }
+
+        push(redirect);
+        refresh();
+
+        return null;
       });
     },
-    onSubmitInvalid: ({ formApi }) => {
-      focusFirstInvalidField(formApi.formId);
-    },
+    onSubmitInvalid: focusInvalidField,
     validationLogic: revalidateLogic(),
     validators: { onDynamic: signupSchema },
   });
@@ -119,128 +99,60 @@ const RegisterForm = ({ searchParams }: Props) => {
 
   return (
     <>
-      <ClientReadyForm
-        id={form.formId}
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void form.handleSubmit();
-        }}
+      <AuthForm
+        alert={authErrorMessage(auth.errorKind, { signInLink })}
+        form={form}
+        isPending={auth.isPending}
+        pendingLabel="Creating account…"
+        submitLabel="Create account"
       >
-        <FieldGroup>
-          <FormAlert message={authErrorMessage(errorKind, { signInLink })} />
-          <form.Field name="name">
-            {(field) => {
-              const isInvalid = !field.state.meta.isValid;
+        <form.Field name="name">
+          {(field) => (
+            <TextField
+              {...bindField(field)}
+              autoComplete="name"
+              description={ACCOUNT_NAME_HINT}
+              disabled={auth.isPending}
+              id="register-name"
+              label="Full name"
+              required
+              touch
+            />
+          )}
+        </form.Field>
 
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="register-name">Full name</FieldLabel>
-                  <Input
-                    aria-describedby={
-                      isInvalid ? "register-name-hint register-name-error" : "register-name-hint"
-                    }
-                    aria-invalid={isInvalid}
-                    aria-required
-                    autoComplete="name"
-                    className="h-11 sm:h-10"
-                    disabled={isPending}
-                    id="register-name"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    type="text"
-                    value={field.state.value}
-                  />
-                  <FieldDescription id="register-name-hint">Up to 100 characters.</FieldDescription>
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="register-name-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
+        <form.Field name="email">
+          {(field) => (
+            <TextField
+              {...bindField(field)}
+              autoComplete="email"
+              disabled={auth.isPending}
+              id="register-email"
+              label="Email"
+              placeholder="you@example.com"
+              required
+              touch
+              type="email"
+            />
+          )}
+        </form.Field>
 
-          <form.Field name="email">
-            {(field) => {
-              const isInvalid = !field.state.meta.isValid;
-
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="register-email">Email</FieldLabel>
-                  <Input
-                    aria-describedby={isInvalid ? "register-email-error" : undefined}
-                    aria-invalid={isInvalid}
-                    aria-required
-                    autoComplete="email"
-                    className="h-11 sm:h-10"
-                    disabled={isPending}
-                    id="register-email"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    placeholder="you@example.com"
-                    type="email"
-                    value={field.state.value}
-                  />
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="register-email-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <form.Field name="password">
-            {(field) => {
-              const isInvalid = !field.state.meta.isValid;
-
-              return (
-                <Field data-invalid={isInvalid || undefined}>
-                  <FieldLabel htmlFor="register-password">Password</FieldLabel>
-                  <Input
-                    aria-describedby={
-                      isInvalid
-                        ? "register-password-hint register-password-error"
-                        : "register-password-hint"
-                    }
-                    aria-invalid={isInvalid}
-                    aria-required
-                    autoComplete="new-password"
-                    className="h-11 sm:h-10"
-                    disabled={isPending}
-                    id="register-password"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    type="password"
-                    value={field.state.value}
-                  />
-                  <FieldDescription id="register-password-hint">
-                    Must be at least 12 characters long.
-                  </FieldDescription>
-                  {isInvalid && (
-                    <FormFieldError errors={field.state.meta.errors} id="register-password-error" />
-                  )}
-                </Field>
-              );
-            }}
-          </form.Field>
-
-          <Button
-            aria-busy={isPending}
-            className="h-11 w-full sm:h-10"
-            disabled={isPending}
-            type="submit"
-          >
-            {isPending ? "Creating account…" : "Create account"}
-          </Button>
-        </FieldGroup>
-      </ClientReadyForm>
+        <form.Field name="password">
+          {(field) => (
+            <TextField
+              {...bindField(field)}
+              autoComplete="new-password"
+              description={NEW_PASSWORD_HINT}
+              disabled={auth.isPending}
+              id="register-password"
+              label="Password"
+              required
+              touch
+              type="password"
+            />
+          )}
+        </form.Field>
+      </AuthForm>
 
       <AuthFooter>Already have an account? {signInLink}</AuthFooter>
     </>

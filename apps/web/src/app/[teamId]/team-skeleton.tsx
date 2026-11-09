@@ -6,8 +6,6 @@ import { DEMO_GROUPS, DEMO_MEMBERS } from "@/components/landing/demo-team";
 
 import { TeamWorkspace } from "./team-workspace";
 
-const SAMPLE_TEAM_NAME = "Sample workspace";
-
 const ignore = () => {};
 
 const TeamSkeleton = () => (
@@ -17,32 +15,24 @@ const TeamSkeleton = () => (
       collapsedGroupIds={[]}
       excludedMemberIds={[]}
       groups={DEMO_GROUPS}
+      isPrivate={false}
+      members={DEMO_MEMBERS}
       membership={{
+        currentUserId: undefined,
         hasClaimedProfile: true,
         isAdmin: false,
-        isAuthenticated: true,
         isMember: true,
         isRequestingJoin: false,
-        members: DEMO_MEMBERS,
-        onRequestJoin: ignore,
-        returnTo: "/",
-        teamId: "sample-workspace",
-        teamName: SAMPLE_TEAM_NAME,
-        teamStatus: "MEMBER",
-      }}
-      nav={{
-        isAdmin: false,
-        isAuthenticated: true,
-        isEditingName: false,
-        onCancelEdit: ignore,
-        onEditName: ignore,
-        onNameChange: ignore,
-        onSaveName: ignore,
-        teamName: SAMPLE_TEAM_NAME,
-        variant: "team",
+        navRole: "member",
+        requestJoin: () => Promise.resolve(),
       }}
       onExcludedMemberIdsChange={ignore}
       onToggleGroupCollapse={ignore}
+      owner={null}
+      returnTo="/"
+      teamId="sample-workspace"
+      teamName="Sample workspace"
+      viewer={{ isArchived: false, status: "MEMBER", userId: null }}
     />
   </Skeleton>
 );

@@ -1,39 +1,19 @@
-import { randomUUID } from "node:crypto";
-
 import { prisma } from "@repo/db";
-import { hashPassword } from "better-auth/crypto";
 
 import { expect, test } from "../fixtures/workspace.fixture";
 import { makeTestEmail } from "../helpers/test-email";
+import { createVerifiedUser } from "../support/users";
 
 const PASSWORD = "InvitationTestPassword123!";
 
 for (const isPrivate of [false, true]) {
   test(`manages and accepts an invitation in a ${isPrivate ? "private" : "public"} workspace`, async ({
     browser,
-    createdTeamIds,
     homePage,
     page,
   }, testInfo) => {
     const email = makeTestEmail(testInfo);
-    const userId = randomUUID();
-    const password = await hashPassword(PASSWORD);
-    await prisma.user.create({
-      data: {
-        accounts: {
-          create: {
-            accountId: userId,
-            issuer: "local:credential",
-            password,
-            providerId: "credential",
-          },
-        },
-        email,
-        emailVerified: true,
-        id: userId,
-        name: "Invited Friend",
-      },
-    });
+    const userId = await createVerifiedUser({ email, name: "Invited Friend", password: PASSWORD });
     const invitee = await browser.newContext({ storageState: { cookies: [], origins: [] } });
 
     try {
@@ -41,7 +21,6 @@ for (const isPrivate of [false, true]) {
       await homePage.createWorkspace("E2E Invitation Lifecycle");
       await expect(page).toHaveURL(/\/[a-f0-9-]{36}$/);
       const teamId = new URL(page.url()).pathname.slice(1);
-      createdTeamIds.push(teamId);
       await page.getByRole("button", { name: /add team member/i }).click();
       await page.getByLabel("Full name").fill("Invited Friend");
       await page.getByLabel("Email (optional)").fill(email);

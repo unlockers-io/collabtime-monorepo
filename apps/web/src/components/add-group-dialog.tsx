@@ -10,42 +10,34 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { Field, FieldDescription, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import { ClientReadyForm } from "@repo/ui/compositions/client-ready-form";
 import { FormAlert } from "@repo/ui/compositions/form-alert";
-import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
+import type { z } from "zod";
 
+import { TextField } from "@/components/text-field";
 import { useTeamWrite } from "@/hooks/use-team-write";
-import { createGroup } from "@/lib/actions/group-actions";
+import { bindField } from "@/lib/bind-field";
+import { GROUP_NAME_MAX_LENGTH, upToCharacters } from "@/lib/limits";
+import { TeamGroupInputSchema } from "@/lib/validation";
 
 type AddGroupDialogProps = {
   teamId: string;
 };
 
-const formSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Group name is required")
-    .max(50, "Group name must be 50 characters or less")
-    .trim(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.input<typeof TeamGroupInputSchema>;
 
 const DEFAULT_VALUES: FormValues = {
   name: "",
 };
 
 const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
-  const writeTeam = useTeamWrite(teamId);
+  const write = useTeamWrite(teamId);
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -58,7 +50,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
     },
     onSubmit: async ({ value }) => {
       setFormError(null);
-      const result = await writeTeam({ submit: () => createGroup(teamId, { name: value.name }) });
+      const result = await write.change("addGroup", value);
 
       if (result.success) {
         setOpen(false);
@@ -71,7 +63,7 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
       focusFirstInvalidField(formApi.formId);
     },
     validationLogic: revalidateLogic(),
-    validators: { onDynamic: formSchema },
+    validators: { onDynamic: TeamGroupInputSchema },
   });
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -117,32 +109,15 @@ const AddGroupDialog = ({ teamId }: AddGroupDialogProps) => {
           <div className="flex flex-col gap-4 py-4">
             <FormAlert message={formError} />
             <form.Field name="name">
-              {(field) => {
-                const isInvalid = !field.state.meta.isValid;
-
-                return (
-                  <Field data-invalid={isInvalid || undefined}>
-                    <FieldLabel htmlFor="group-name">Group name</FieldLabel>
-                    <Input
-                      aria-describedby={
-                        isInvalid ? "group-name-hint group-name-error" : "group-name-hint"
-                      }
-                      aria-invalid={isInvalid}
-                      id="group-name"
-                      onBlur={field.handleBlur}
-                      onChange={(e) => {
-                        field.handleChange(e.target.value);
-                      }}
-                      placeholder="e.g. Engineering"
-                      value={field.state.value}
-                    />
-                    <FieldDescription id="group-name-hint">Up to 50 characters.</FieldDescription>
-                    {isInvalid && (
-                      <FormFieldError errors={field.state.meta.errors} id="group-name-error" />
-                    )}
-                  </Field>
-                );
-              }}
+              {(field) => (
+                <TextField
+                  {...bindField(field)}
+                  description={upToCharacters(GROUP_NAME_MAX_LENGTH)}
+                  id="group-name"
+                  label="Group name"
+                  placeholder="e.g. Engineering"
+                />
+              )}
             </form.Field>
           </div>
 

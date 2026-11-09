@@ -10,7 +10,7 @@ import {
 } from "@repo/ui/components/select";
 import { FormFieldError } from "@repo/ui/compositions/form-field-error";
 
-import { formatHour } from "@/lib/utils";
+import { formatHour } from "@/lib/timezones";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 

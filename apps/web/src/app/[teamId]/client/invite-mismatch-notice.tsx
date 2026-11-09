@@ -3,7 +3,9 @@
 import { Button } from "@repo/ui/components/button";
 import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 
+import { signOutLabel } from "@/components/nav/nav-role";
 import { useSignOut } from "@/hooks/use-sign-out";
+import { withRedirect } from "@/lib/redirect-validation";
 
 type Props = { invitedEmailMasked: string; returnTo: string };
 
@@ -31,7 +33,7 @@ export const InviteMismatchNoticeView = ({
         size="sm"
         variant="outline"
       >
-        {pending ? "Signing out…" : "Switch account"}
+        {pending ? signOutLabel(true) : "Switch account"}
       </Button>
     </div>
   );
@@ -39,7 +41,7 @@ export const InviteMismatchNoticeView = ({
 
 export const InviteMismatchNotice = ({ invitedEmailMasked, returnTo }: Props) => {
   const { handleSignOut, isSigningOut } = useSignOut({
-    redirectTo: `/login?redirect=${encodeURIComponent(returnTo)}`,
+    redirectTo: withRedirect("/login", returnTo),
   });
 
   return (

@@ -1,13 +1,12 @@
 const queryKeys = {
   invitations: ["my-invitations"] as const,
-  joinRequests: (teamId: string) => ["join-requests", teamId] as const,
   myTeams: ["my-teams"] as const,
-  teamInvitations: (teamId: string) => ["team-invitations", teamId] as const,
-  teams: {
-    detail: (teamId: string) => ["teams", teamId] as const,
+  team: {
+    all: (teamId: string) => ["team", teamId] as const,
+    contents: (teamId: string) => ["team", teamId, "contents"] as const,
+    invitations: (teamId: string) => ["team", teamId, "invitations"] as const,
+    joinRequests: (teamId: string) => ["team", teamId, "join-requests"] as const,
   },
 };
 
-const teamMutationKey = (teamId: string) => ["team-mutation", teamId] as const;
-
-export { queryKeys, teamMutationKey };
+export { queryKeys };
