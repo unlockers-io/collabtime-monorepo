@@ -41,7 +41,7 @@
     "@repo/portless-env": "workspace:*",
     "@shadcn/lint": "0.2.0",
     "@types/node": "^26.6.2",
-    "better-auth": "^1.7.6",
+    "better-auth": "^1.7.20",
     "fallow": "^3.28.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.1",
@@ -51,7 +51,7 @@
     "oxlint-plugin-react-doctor": "^0.9.14",
     "oxlint-tsgolint": "^7.0.2003",
     "turbo": "^2.11.3",
-    "zod": "^4.6.5",
+    "zod": "^4.6.7",
     "zod-compiler": "^2.0.7"
   },
   "lint-staged": {
