@@ -163,7 +163,7 @@ const MemberTimelineRow = ({
           >
             {member.name.charAt(0).toUpperCase()}
             {dayOffset !== 0 && (
-              <span className="absolute -right-1 -bottom-1 flex h-3.5 min-w-3.5 items-center justify-center bg-foreground px-0.5 font-mono text-(length:--text-micro) font-bold text-background">
+              <span className="absolute -right-1 -bottom-1 flex h-3.5 min-w-3.5 items-center justify-center bg-foreground px-0.5 font-mono text-micro font-bold text-background">
                 {dayOffset > 0 ? `+${dayOffset}` : dayOffset}
               </span>
             )}

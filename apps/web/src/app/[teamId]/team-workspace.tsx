@@ -97,7 +97,7 @@ const TeamWorkspace = ({
 
         {members.length > 0 && <TeamInsights groups={groups} members={orderedMembers} />}
 
-        <div className="grid grid-cols-1 items-start gap-10 xl:grid-cols-team [&>*]:min-w-0">
+        <div className="grid grid-cols-1 items-start gap-10 *:min-w-0 xl:grid-cols-team">
           <SectionCard>
             <SectionCardHeader>
               <SectionCardTitle icon={Users}>Team members</SectionCardTitle>
