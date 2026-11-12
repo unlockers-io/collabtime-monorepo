@@ -18,7 +18,7 @@ const STEPS = [
 const HowItWorks = () => (
   <Section className="border-t border-border" id="how-it-works">
     <div className="flex flex-col gap-12 sm:gap-16">
-      <h2 className="max-w-(--container-measure-hero) font-display text-4xl font-semibold tracking-hero text-balance sm:text-5xl">
+      <h2 className="max-w-measure-hero font-display text-4xl font-semibold tracking-hero text-balance sm:text-5xl">
         Three steps to a workable meeting time
       </h2>
 

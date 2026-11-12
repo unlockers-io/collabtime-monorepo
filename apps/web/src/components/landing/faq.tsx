@@ -47,7 +47,7 @@ const Faq = () => (
             key={question}
           >
             <dt className="text-base font-medium text-foreground sm:text-lg">{question}</dt>
-            <dd className="max-w-(--container-measure-footer) text-base text-pretty text-muted-foreground sm:text-sm">
+            <dd className="max-w-measure-footer text-base text-pretty text-muted-foreground sm:text-sm">
               {answer}
             </dd>
           </div>

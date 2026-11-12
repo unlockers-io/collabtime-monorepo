@@ -31,7 +31,7 @@ const TeamTitle = ({ isAdmin, teamId, teamName }: TeamTitleProps) => {
   });
 
   const heading = (
-    <h1 className="min-w-0 font-display text-4xl font-semibold tracking-hero text-balance break-words sm:text-6xl">
+    <h1 className="min-w-0 font-display text-4xl font-semibold tracking-hero text-balance wrap-break-word sm:text-6xl">
       {workspaceName(teamName)}
     </h1>
   );
