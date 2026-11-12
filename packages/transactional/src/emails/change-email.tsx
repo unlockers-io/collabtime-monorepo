@@ -37,7 +37,7 @@ const ChangeEmail = ({ changeUrl, currentEmail, newEmail, username }: ChangeEmai
 
       <Text className="m-0 mb-4 text-sm text-muted-foreground">
         If you didn&apos;t request this change, ignore this email: the change won&apos;t happen and
-        your account email stays as {currentEmail}. The confirmation link expires in 24 hours.
+        your account email stays as {currentEmail}. The confirmation link expires in 1 hour.
       </Text>
 
       <Divider spacing="sm" />

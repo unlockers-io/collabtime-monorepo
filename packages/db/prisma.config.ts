@@ -24,7 +24,6 @@ export default defineConfig({
     url: databaseUrl(),
   },
   migrations: {
-    path: "prisma/migrations",
     seed: "npx tsx src/seed.ts",
   },
   schema: "prisma/schema.prisma",
