@@ -25,7 +25,7 @@ type AuthLifecycleContext = {
 type AuthConfig = {
   allowedHosts: Array<string>;
   extraPlugins?: Array<BetterAuthPlugin>;
-  mailer: MailerConfig | null;
+  mailer: MailerConfig;
   onSessionCreated?: (userId: string, ctx: AuthLifecycleContext) => Promise<void>;
   onUserCreated?: (userId: string, ctx: AuthLifecycleContext) => Promise<void>;
   prisma: PrismaClient;
@@ -108,37 +108,31 @@ const createAuth = (config: AuthConfig) => {
       enabled: true,
       maxPasswordLength: PASSWORD_LENGTH.max,
       minPasswordLength: PASSWORD_LENGTH.min,
-      onExistingUserSignUp: mailer
-        ? async ({ user }, request) => {
-            const origin = request?.headers.get("origin") ?? "";
+      onExistingUserSignUp: async ({ user }, request) => {
+        const origin = request?.headers.get("origin") ?? "";
 
-            const result = await sendTransactionalEmail(
-              {
-                resetPasswordUrl: `${origin}/recover`,
-                signInUrl: `${origin}/login`,
-                type: "sign-up-attempt",
-                userEmail: user.email,
-                userId: user.id,
-                username: user.name,
-              },
-              mailer,
-            );
+        const result = await sendTransactionalEmail(
+          {
+            resetPasswordUrl: `${origin}/recover`,
+            signInUrl: `${origin}/login`,
+            type: "sign-up-attempt",
+            userEmail: user.email,
+            userId: user.id,
+            username: user.name,
+          },
+          mailer,
+        );
 
-            if (!result.success) {
-              log.error({
-                error: result.error,
-                message: "Failed to send sign-up attempt email",
-                route: "auth",
-              });
-            }
-          }
-        : undefined,
-      requireEmailVerification: Boolean(mailer),
-      sendResetPassword: async ({ url, user }) => {
-        if (!mailer) {
-          return;
+        if (!result.success) {
+          log.error({
+            error: result.error,
+            message: "Failed to send sign-up attempt email",
+            route: "auth",
+          });
         }
-
+      },
+      requireEmailVerification: true,
+      sendResetPassword: async ({ url, user }) => {
         const result = await sendTransactionalEmail(
           {
             resetUrl: url,
@@ -161,10 +155,6 @@ const createAuth = (config: AuthConfig) => {
       callbackURL: "/",
       sendOnSignIn: true,
       sendVerificationEmail: async ({ url, user }) => {
-        if (!mailer) {
-          return;
-        }
-
         const result = await sendTransactionalEmail(
           {
             type: "welcome",
@@ -211,10 +201,6 @@ const createAuth = (config: AuthConfig) => {
       changeEmail: {
         enabled: true,
         sendChangeEmailConfirmation: async ({ newEmail, url, user }) => {
-          if (!mailer) {
-            return;
-          }
-
           const result = await sendTransactionalEmail(
             {
               changeUrl: url,

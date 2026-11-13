@@ -1,61 +1,44 @@
+# Written by `standy sync` from the saas template and `.github/ci/policy.json`. Change those, never this file.
 name: E2E Tests
-
 on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: 38 4 * * 1
-
+    - cron: 25 5 * * 1
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
   pull-requests: read
-
 jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      CI: true
-      DATABASE_URL: postgresql://test:test@localhost:5432/test
-      PGAPPNAME: collabtime:ci:e2e
       BETTER_AUTH_SECRET: test-secret-minimum-32-characters-long-for-e2e
-      EXPOSE_TESTING_API: 1
-      WEB_APP_URL: http://localhost:3000
-      REDIS_URL: redis://localhost:6379
-      RESEND_API_KEY: re_e2e_stub
-      RESEND_BASE_URL: http://127.0.0.1:3999
-      RESEND_FROM_EMAIL: noreply@email.collabtime.io
-      # Disable Sentry in CI: the tunnel proxy + browser SDK can't reach
-      # ingest.us.sentry.io from GH runners and hangs Playwright's
-      # networkidle waits. NEXT_PUBLIC_ prefix is required so the value
-      # gets inlined into the client bundle at build time.
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      EXPOSE_TESTING_API: "1"
       NEXT_PUBLIC_DISABLE_SENTRY: "true"
+      PGAPPNAME: collabtime:ci:e2e
+      REDIS_URL: redis://localhost:6379
+      RESEND_FROM_EMAIL: noreply@email.collabtime.io
+      WEB_APP_URL: http://localhost:3000
     services:
       postgres:
         image: postgres:18-alpine
         env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
           POSTGRES_DB: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_USER: test
         ports:
           - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 1s
-          --health-timeout 5s
-          --health-retries 30
+        options: --health-cmd pg_isready --health-interval 1s --health-timeout 5s --health-retries 30
       redis:
         image: redis:8-alpine
         ports:
           - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 1s
-          --health-timeout 5s
-          --health-retries 30
+        options: --health-cmd "redis-cli ping" --health-interval 1s --health-timeout 5s --health-retries 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -103,8 +86,11 @@ jobs:
       - name: Install Playwright browsers and system deps
         run: pnpm exec playwright install --with-deps chromium
       - run: node .github/ci/ci.mjs run e2e -- pnpm test:e2e
+      # The organisation's artifact storage quota can run out, and a report that
+      # fails to upload should not turn a green suite red.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
+        continue-on-error: true
         with:
           name: playwright-report
           path: playwright-report/

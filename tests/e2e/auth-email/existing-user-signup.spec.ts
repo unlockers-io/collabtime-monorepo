@@ -1,11 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { prisma } from "@repo/db";
 
-import { waitForEmail } from "../helpers/resend";
+import { waitForEmail } from "../helpers/mail";
 import { makeTestEmail } from "../helpers/test-email";
 import { webUrl } from "../urls";
-
-test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -36,12 +34,10 @@ test.describe("Sign-up for an existing email (enumeration prevention)", () => {
     expect(users).toHaveLength(1);
     expect(users[0]?.name).toBe("Original Name");
 
-    const mail = await waitForEmail({
+    await waitForEmail({
       sinceMs: since,
       subject: /sign[\s-]?up|attempt|tried/i,
       to: email,
     });
-
-    expect(mail.last_event).not.toBe("bounced");
   });
 });

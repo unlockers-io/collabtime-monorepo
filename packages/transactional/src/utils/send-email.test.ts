@@ -1,11 +1,11 @@
 import { createElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createSendEmail } from "./send-email";
-import type { SendEmailTransport } from "./send-email";
+import type { Transport } from "../transport";
 
-const sendMock = vi.fn<SendEmailTransport>();
-const sendEmail = createSendEmail(sendMock);
+import { sendEmail } from "./send-email";
+
+const sendMock = vi.fn<Transport>();
 
 describe("sendEmail from validation", () => {
   beforeEach(() => {
@@ -17,27 +17,27 @@ describe("sendEmail from validation", () => {
 
   it('accepts "Display Name <email>" form in from', async () => {
     const result = await sendEmail({
-      apiKey: "re_test",
       from: "Collabtime <noreply@email.collabtime.io>",
       subject: "x",
       template,
       to: "delivered+test@resend.dev",
+      transport: sendMock,
     });
 
     expect(result.success).toBe(true);
     expect(sendMock).toHaveBeenCalledOnce();
-    expect(sendMock.mock.calls[0]?.[1]).toMatchObject({
+    expect(sendMock.mock.calls[0]?.[0]).toMatchObject({
       from: "Collabtime <noreply@email.collabtime.io>",
     });
   });
 
   it("accepts bare email in from", async () => {
     const result = await sendEmail({
-      apiKey: "re_test",
       from: "noreply@email.collabtime.io",
       subject: "x",
       template,
       to: "delivered+test@resend.dev",
+      transport: sendMock,
     });
 
     expect(result.success).toBe(true);
@@ -45,11 +45,11 @@ describe("sendEmail from validation", () => {
 
   it("rejects from values that are neither bare email nor wrapped form", async () => {
     const result = await sendEmail({
-      apiKey: "re_test",
       from: "not-an-email",
       subject: "x",
       template,
       to: "delivered+test@resend.dev",
+      transport: sendMock,
     });
 
     expect(result.success).toBe(false);

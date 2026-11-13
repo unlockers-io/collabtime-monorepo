@@ -1,11 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-import { verification } from "../fixtures/verification.fixture";
-import { extractLink, waitForEmail } from "../helpers/resend";
+import { verificationLink } from "../fixtures/verification.fixture";
+import { extractLink, waitForEmail } from "../helpers/mail";
 import { makeTestEmail } from "../helpers/test-email";
 import { webUrl } from "../urls";
-
-test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -19,14 +17,18 @@ test.describe("Password reset", () => {
     const email = makeTestEmail(testInfo);
     const originalPassword = "OriginalPassword1!";
     const newPassword = "BrandNewPassword2!";
+    const signedUpAt = Date.now();
 
     const signUp = await request.post(`${webUrl}/api/auth/sign-up/email`, {
       data: { email, name: "Reset Me", password: originalPassword },
     });
 
     expect([200, 201]).toContain(signUp.status());
-    const verify = await verification.forVerifyEmail(email);
-    const verified = await page.request.get(verify.url);
+
+    const verified = await page.request.get(
+      await verificationLink({ sinceMs: signedUpAt, subject: /verify/i, to: email }),
+    );
+
     expect(verified.ok()).toBe(true);
     await page.context().clearCookies();
 
@@ -43,8 +45,6 @@ test.describe("Password reset", () => {
       subject: /reset/i,
       to: email,
     });
-
-    expect(mail.last_event).not.toBe("bounced");
 
     const resetUrl = extractLink(mail, /\/reset-password\/[^"?]+\?callbackURL=/);
     await page.goto(resetUrl);

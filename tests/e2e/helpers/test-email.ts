@@ -1,17 +1,13 @@
-import crypto from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 import type { TestInfo } from "@playwright/test";
 
-// Local-part budget (RFC 5321: 64 chars): `delivered+new-<8>-<28>` is
-// 51 chars, leaving room for the `new-` prefix the change-email spec
-// adds. GITHUB_RUN_ID is sliced to its last 8 chars so a long CI id
-// doesn't tip the address past 64 and trip Resend's "Invalid `to`
-// field" rejection.
+// Resend delivers `delivered+<label>@resend.dev` without reputation cost; the short slug keeps a
+// change-email `new-` label inside RFC 5321's 64-character local part.
 const makeTestEmail = (info: TestInfo): string => {
-  const slug = info.title.replaceAll(/\W+/g, "-").toLowerCase().slice(0, 28);
-  const run = (process.env.GITHUB_RUN_ID ?? crypto.randomBytes(4).toString("hex")).slice(-8);
+  const slug = info.title.replaceAll(/\W+/gv, "-").toLowerCase().slice(0, 28);
 
-  return `delivered+${run}-${info.retry}-${slug}@resend.dev`;
+  return `delivered+${randomBytes(4).toString("hex")}-${slug}@resend.dev`;
 };
 
 export { makeTestEmail };

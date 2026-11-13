@@ -1,11 +1,9 @@
+import { verificationLink } from "../fixtures/verification.fixture";
 import { expect, test } from "../fixtures/workspace.fixture";
 import { holdScripts } from "../helpers/hold-scripts";
-import { extractLink, waitForEmail } from "../helpers/resend";
 import { makeTestEmail } from "../helpers/test-email";
 import { HomePage } from "../pages/home.page";
 import { webUrl } from "../urls";
-
-test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
 const SPACE_PASSWORD = "SpacePassword1!";
 
@@ -69,9 +67,7 @@ test.describe("Private space password self-join", () => {
       await page.getByRole("button", { name: /create account/i }).click();
       await expect(page.getByText(/check your email/i)).toBeVisible({ timeout: 10_000 });
 
-      const mail = await waitForEmail({ sinceMs: since, subject: /verify/i, to: email });
-      expect(mail.last_event).not.toBe("bounced");
-      const verifyUrl = extractLink(mail, /\/api\/auth\/verify-email\?token=/);
+      const verifyUrl = await verificationLink({ sinceMs: since, subject: /verify/i, to: email });
 
       const clicker = await browser.newContext();
       const clickerPage = await clicker.newPage();

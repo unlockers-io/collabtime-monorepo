@@ -1,10 +1,9 @@
+import { verificationLink } from "../fixtures/verification.fixture";
 import { expect, test } from "../fixtures/workspace.fixture";
-import { extractLink, waitForEmail } from "../helpers/resend";
+import { extractLink, waitForEmail } from "../helpers/mail";
 import { makeTestEmail } from "../helpers/test-email";
 import { HomePage } from "../pages/home.page";
 import { webUrl } from "../urls";
-
-test.skip(!process.env.RESEND_API_KEY, "needs RESEND_API_KEY (test mode)");
 
 test("invitation email carries a guest through signup and acceptance", async ({
   browser,
@@ -35,8 +34,7 @@ test("invitation email carries a guest through signup and acceptance", async ({
     await guestPage.getByLabel("Password", { exact: true }).fill("SecurePassword1!");
     await guestPage.getByRole("button", { name: /create account/i }).click();
     await expect(guestPage.getByText(/check your email/i)).toBeVisible();
-    const verification = await waitForEmail({ sinceMs, subject: /verify/i, to: email });
-    await guestPage.goto(extractLink(verification, /\/api\/auth\/verify-email\?token=/));
+    await guestPage.goto(await verificationLink({ sinceMs, subject: /verify/i, to: email }));
     await expect(guestPage).toHaveURL(link);
     await expect(
       guestPage.getByText("You've been invited to E2E Invitation Workspace"),

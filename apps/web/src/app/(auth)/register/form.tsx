@@ -2,7 +2,6 @@
 
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Suspense, use, useState } from "react";
 
 import { TextField } from "@/components/text-field";
@@ -39,7 +38,6 @@ const SignInLink = ({ searchParams }: Props) => {
 };
 
 const RegisterForm = ({ searchParams }: Props) => {
-  const { push, refresh } = useRouter();
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
   const auth = useAuthSubmit();
 
@@ -62,16 +60,7 @@ const RegisterForm = ({ searchParams }: Props) => {
           return authErrorKind(result.error);
         }
 
-        const sessionToken = result.data.token;
-
-        if (sessionToken === null || sessionToken === "") {
-          setSentToEmail(value.email);
-
-          return null;
-        }
-
-        push(redirect);
-        refresh();
+        setSentToEmail(value.email);
 
         return null;
       });

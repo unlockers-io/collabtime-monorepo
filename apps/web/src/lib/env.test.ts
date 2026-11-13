@@ -118,4 +118,9 @@ describe("getEnv", () => {
     vi.stubEnv("RESEND_API_KEY", undefined);
     expect(getEnv("RESEND_API_KEY")).toBeUndefined();
   });
+
+  it("returns the selected mail transport", () => {
+    vi.stubEnv("MAIL_TRANSPORT", "outbox");
+    expect(getEnv("MAIL_TRANSPORT")).toBe("outbox");
+  });
 });

@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./sender": "./src/sender.ts"
+    "./sender": "./src/sender.ts",
+    "./transport": "./src/transport.ts"
   },
   "scripts": {
     "lint": "oxlint src",

@@ -2,32 +2,7 @@ import { test, expect } from "../fixtures/auth.fixture";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
-const skipUnderResend = !!process.env.RESEND_API_KEY;
-
 test.describe("Register", () => {
-  test("registers a new user and redirects to home", async ({ page, registerPage }) => {
-    test.skip(skipUnderResend, "Resend-enabled flow is covered by auth-email/* specs");
-
-    const uniqueEmail = `e2e-register-${Date.now()}@collabtime.localhost`;
-
-    await registerPage.goto();
-    await registerPage.register("Test Register User", uniqueEmail, "TestPassword123!");
-
-    await expect(page).toHaveURL("/", { timeout: 10_000 });
-    await expect(page.getByRole("button", { name: /create a workspace/i })).toBeVisible();
-  });
-
-  test("shows error for duplicate email", async ({ page, registerPage, testUser }) => {
-    test.skip(skipUnderResend, "Resend-enabled flow is covered by auth-email/* specs");
-
-    await registerPage.goto();
-    await registerPage.register(testUser.name, testUser.email, testUser.password);
-
-    await expect(page.locator('[data-slot="form-alert"]')).toContainText(/already exists/i, {
-      timeout: 5000,
-    });
-  });
-
   test("shows validation error for empty name", async ({ page, registerPage }) => {
     await registerPage.goto();
 
