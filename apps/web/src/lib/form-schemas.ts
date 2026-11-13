@@ -1,4 +1,4 @@
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@repo/auth/password";
+import { PASSWORD_LENGTH } from "@repo/auth/policy";
 import { z } from "zod";
 
 import { upToCharacters } from "./limits";
@@ -9,8 +9,8 @@ const emailSchema = z.email("Please enter a valid email");
 
 const newPasswordSchema = z
   .string()
-  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
-  .max(PASSWORD_MAX_LENGTH, "Password is too long");
+  .min(PASSWORD_LENGTH.min, `Password must be at least ${PASSWORD_LENGTH.min} characters`)
+  .max(PASSWORD_LENGTH.max, "Password is too long");
 
 const accountNameSchema = z
   .string()
@@ -42,7 +42,7 @@ const resetPasswordSchema = z
   });
 
 const ACCOUNT_NAME_HINT = upToCharacters(ACCOUNT_NAME_MAX_LENGTH);
-const NEW_PASSWORD_HINT = `Must be at least ${PASSWORD_MIN_LENGTH} characters long.`;
+const NEW_PASSWORD_HINT = `Must be at least ${PASSWORD_LENGTH.min} characters long.`;
 
 export {
   ACCOUNT_NAME_HINT,
