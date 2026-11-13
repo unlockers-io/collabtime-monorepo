@@ -53,9 +53,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ success: true, teamId: space.teamId });
     }
 
-    // Private with no credential used to answer 200 without ever setting the
-    // access cookie, so the gate re-rendered and the guest looped forever. There
-    // is no password that can open this space; say that instead of implying one.
+    // No password can open a private space that has none; say that instead of refusing each guess.
     if (accessPassword === null || accessPassword === "") {
       return NextResponse.json(
         { error: "This space is private and has no access password. Ask the owner for access." },

@@ -33,11 +33,7 @@ type JoinRequestRowProps = {
   teamId: string;
 };
 
-/**
- * Each row owns its action. A panel-level "which request is busy" slot could
- * only describe one row, so starting a second action cleared the first row's
- * spinner and re-enabled its buttons mid-flight, allowing a duplicate submit.
- */
+/** Each row owns its pending state, so acting on one request never re-enables another's buttons. */
 const JoinRequestRow = ({ request, teamId }: JoinRequestRowProps) => {
   const write = useTeamWrite(teamId);
   const [action, setAction] = useState<RowAction>(null);

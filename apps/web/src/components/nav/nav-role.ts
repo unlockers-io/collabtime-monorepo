@@ -1,8 +1,4 @@
-/**
- * Shared by the desktop and mobile menus so the two cannot disagree. Replaces an
- * (isAdmin?, isAuthenticated) pair whose 6 combinations included a signed-out
- * admin. "account" is the no-team-context case.
- */
+/** Shared by the desktop and mobile menus so the two cannot disagree. "account" is the no-team-context case. */
 type NavRole = "account" | "admin" | "guest" | "member";
 
 const ROLE_LABELS = {
