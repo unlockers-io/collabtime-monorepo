@@ -7,6 +7,7 @@ applyPortlessUrls(["WEB_APP_URL"]);
 const WORKSPACE_ID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 const nextConfig: NextConfig = {
+  agentRules: false,
   allowedDevOrigins: ["collabtime.web.localhost", "*.collabtime.web.localhost", "*.vercel.app"],
   cacheComponents: true,
   experimental: {

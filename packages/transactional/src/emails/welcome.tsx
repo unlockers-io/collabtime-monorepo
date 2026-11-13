@@ -33,7 +33,7 @@ const WelcomeEmail = ({ userEmail, username, verificationUrl }: WelcomeEmailProp
 
       <Text className="m-0 mb-4 text-sm text-muted-foreground">
         If you didn&apos;t create an account with {APP_NAME}, you can safely ignore this email. The
-        verification link expires in 24 hours.
+        verification link expires in 1 hour.
       </Text>
 
       <Text className="m-0 mb-4 text-sm text-muted-foreground">
