@@ -1,15 +1,14 @@
+# Written by `standy sync` from the saas template. Change the template, never this file.
 name: React Doctor
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
-# The only workflow needing write scopes: the action posts a PR summary comment
-# and a "React Doctor" commit status. Dropping either silently removes its output.
 permissions:
   contents: read
-  issues: write
   pull-requests: write
+  issues: write
   statuses: write
 
 concurrency:
