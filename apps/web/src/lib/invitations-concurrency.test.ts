@@ -24,7 +24,7 @@ const setup = async () => {
     createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2 })] }),
   );
   const clock = { now: NOW };
-  const store = createMemoryInvitationStore(harness.membershipStore.grant, () => clock.now);
+  const store = createMemoryInvitationStore(() => clock.now);
   const transition = vi.fn(store.transition);
 
   const deps: InvitationDeps<undefined> = {
@@ -92,41 +92,6 @@ describe("invitation concurrency", () => {
     expect(removed?.members).toEqual([]);
     expect(harness.findMembership(user.id)).toBeNull();
   });
-
-  it.each([true, false])(
-    "serializes a concurrent revoke while membership commit succeeds=%s",
-    async (succeeds) => {
-      const { harness, id, invitations, store } = await setup();
-      const paused = Promise.withResolvers<undefined>();
-      const resume = Promise.withResolvers<undefined>();
-      const persist = harness.membershipStore.grant.getMockImplementation();
-
-      if (!persist) {
-        throw new Error("Membership persistence must be configured");
-      }
-
-      harness.membershipStore.grant.mockImplementationOnce(async (grant, transaction) => {
-        paused.resolve(undefined);
-        await resume.promise;
-
-        if (!succeeds) {
-          throw new Error("Database unavailable");
-        }
-
-        await persist(grant, transaction);
-      });
-      const accept = invitations.accept(user, id);
-      await paused.promise;
-      const revoke = invitations.revoke(access, id);
-      await setImmediate();
-      resume.resolve(undefined);
-
-      expect(await accept).toMatchObject({ success: succeeds });
-      expect(await revoke).toMatchObject({ success: !succeeds });
-      expect(await store.find(id)).toMatchObject({ status: succeeds ? "ACCEPTED" : "REVOKED" });
-      expect(harness.findMembership(user.id) !== null).toBe(succeeds);
-    },
-  );
 
   it("rejects acceptance when the invitation expires while granting the slot", async () => {
     const { expire, harness, id, invitations, store, transition } = await setup();

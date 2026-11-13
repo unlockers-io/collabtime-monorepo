@@ -48,7 +48,7 @@ const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides
   }
 
   const clock = { now: NOW };
-  const store = createMemoryInvitationStore(harness.membershipStore.grant, () => clock.now);
+  const store = createMemoryInvitationStore(() => clock.now);
   const hits = new Map<string, number>();
   const outbox: Array<TransactionalEmail> = [];
   const race: { next?: () => Promise<void> } = {};
@@ -348,19 +348,6 @@ describe("deciding", () => {
     expect(harness.findMembership("invitee")).toBeNull();
     expect(await pending()).toEqual([]);
     expect(notifyInviter).not.toHaveBeenCalled();
-  });
-
-  it("hands the slot back when the commit fails, so a retry claims it", async () => {
-    const { harness, invitations, invite, pending, slot } = await setup();
-    const id = await invite();
-    harness.membershipStore.grant.mockRejectedValueOnce(new Error("Database unavailable"));
-
-    expect(await invitations.accept(invitee, id)).toEqual(STALE);
-    expect(await slot()).toEqual(createTestMember({ id: VALID_UUID_2 }));
-    expect(await pending()).toMatchObject([{ id }]);
-
-    expect(await invitations.accept(invitee, id)).toMatchObject({ success: true });
-    expect(harness.findMembership("invitee")).toEqual({ archivedAt: null, role: "MEMBER" });
   });
 
   it("leaves the invitation pending when the team is gone", async () => {

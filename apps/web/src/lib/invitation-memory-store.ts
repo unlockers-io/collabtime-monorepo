@@ -1,6 +1,5 @@
 import { isInvitationOpen } from "./invitation-expiry";
 import type { InvitationStore, StoredInvitation } from "./invitations";
-import type { MembershipStore } from "./membership";
 
 const newestFirst = (left: StoredInvitation, right: StoredInvitation): number =>
   right.createdAt.getTime() - left.createdAt.getTime();
@@ -8,10 +7,7 @@ const newestFirst = (left: StoredInvitation, right: StoredInvitation): number =>
 const sameVersion = (left: StoredInvitation, right: StoredInvitation): boolean =>
   left.status === right.status && left.updatedAt.getTime() === right.updatedAt.getTime();
 
-const createMemoryInvitationStore = (
-  grantMembership: MembershipStore<undefined>["grant"],
-  now: () => Date = () => new Date(),
-) => {
+const createMemoryInvitationStore = (now: () => Date = () => new Date()) => {
   const invitations = new Map<string, StoredInvitation>();
   let created = 0;
   let clock = 0;
@@ -69,33 +65,23 @@ const createMemoryInvitationStore = (
         return Promise.resolve(invitation);
       }),
     transition: (expected, change) =>
-      write(async () => {
+      write(() => {
         const current = invitations.get(expected.id);
 
         if (current === undefined || !sameVersion(current, expected)) {
-          return false;
+          return Promise.resolve(false);
         }
 
         if (
           (change.status === "ACCEPTED" || change.status === "DECLINED") &&
           !isInvitationOpen(current, now())
         ) {
-          return false;
+          return Promise.resolve(false);
         }
 
-        if (change.status === "ACCEPTED") {
-          await grantMembership(change.membership, undefined);
-          invitations.set(current.id, {
-            ...current,
-            memberId: change.memberId,
-            status: change.status,
-            updatedAt: stamp(),
-          });
-        } else {
-          invitations.set(current.id, { ...current, ...change, updatedAt: stamp() });
-        }
+        invitations.set(current.id, { ...current, ...change, updatedAt: stamp() });
 
-        return true;
+        return Promise.resolve(true);
       }),
   };
 

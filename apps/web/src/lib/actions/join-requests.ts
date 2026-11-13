@@ -6,19 +6,18 @@ import { after } from "next/server";
 import { log } from "@/lib/observability";
 import { authenticate, authorizeTeamAdmin } from "@/lib/team-auth";
 
-import { grantMembership, membershipUpsert } from "../membership";
+import { grantMembership } from "../membership";
 import { teamNotifier } from "../team-notifications";
 import { readTeamRecord } from "../team-store";
 
 import { createJoinRequestActions } from "./join-requests-core";
 
 const joinRequestActions = createJoinRequestActions({
-  approveMembership: async (requestId, membership, transaction) => {
+  approveRequest: async (requestId, transaction) => {
     await transaction.joinRequest.update({
       data: { status: "APPROVED" },
       where: { id: requestId, status: "PENDING" },
     });
-    await transaction.membership.upsert(membershipUpsert(membership));
   },
   authenticate,
   authorizeTeamAdmin,
