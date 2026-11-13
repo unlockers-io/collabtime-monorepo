@@ -37,7 +37,7 @@ This repo follows the fleet's shared standards, checked by `standy` (`~/dev/stan
 - **Monorepo**: Turborepo + pnpm workspaces, Node >=24, `packageManager: pnpm@11.13.1`
 - **Lint / format**: oxlint + oxfmt (NOT ESLint/Prettier), `oxlint-config-awesomeness`
 - **Tests**: Vitest (unit), Playwright (e2e: chromium, firefox, webkit)
-- **Bundler**: tsdown for library packages, Turbopack for Next.js dev
+- **Bundler**: Turbopack for Next.js; the workspace packages ship as source and the app compiles them
 - **Dead-code / circular deps**: `fallow`
 
 ## Layout
