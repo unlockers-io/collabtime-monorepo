@@ -11,7 +11,8 @@ import type { TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
 
 import { createMembershipLifecycle, prismaMembershipStore } from "../membership";
 import { teamCommands } from "../team-commands";
-import { postgresTeamStorage, type TeamStorage } from "../team-storage";
+import { writeTeam } from "../team-postgres-repository";
+import { postgresTeamStorage, type TeamStorage, withTeamTransaction } from "../team-storage";
 import { createTeamStore, type TeamStoreDeps } from "../team-store";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
@@ -106,6 +107,10 @@ const createTestIds = () => {
   };
 };
 
+/** Writes a team's contents into the space `resetTestDatabase` made for its id. */
+const seedTeam = (team: TeamRecord): Promise<void> =>
+  withTeamTransaction(team.id, (transaction) => writeTeam(team.id, team, transaction));
+
 const createTestTeamStore = (createId?: () => string) => {
   const ids = createTestIds();
   const invalidateTeamName = vi.fn<TeamStoreDeps["invalidateTeamName"]>();
@@ -133,7 +138,6 @@ const createTestTeamStore = (createId?: () => string) => {
   return {
     applyTeamCommand,
     changeTeamAccess,
-    createTeamContents: store.createTeamContents,
     findMembership: (userId: string, teamId = VALID_UUID) =>
       prisma.membership.findUnique({
         select: { archivedAt: true, role: true },
@@ -171,9 +175,7 @@ const createTestTeamStore = (createId?: () => string) => {
       }),
     seedMembership: (userId: string, role: TeamRole = "MEMBER", archivedAt: Date | null = null) =>
       prisma.membership.create({ data: { archivedAt, role, teamId: VALID_UUID, userId } }),
-    seedTeam: async (team: TeamRecord) => {
-      await store.createTeamContents(team.id, team);
-    },
+    seedTeam,
   };
 };
 
@@ -218,6 +220,7 @@ export {
   createTestTeamRecord,
   createTestTeamStore,
   resetTestDatabase,
+  seedTeam,
   TEST_OWNER_ID,
   VALID_UUID,
   VALID_UUID_2,
