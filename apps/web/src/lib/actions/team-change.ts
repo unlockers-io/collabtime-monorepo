@@ -9,11 +9,11 @@ import { applyTeamCommand } from "../team-store";
 import { createTeamChangeAction } from "./team-change-core";
 
 const changeTeam = createTeamChangeAction({
-  accessChanges: { removeMember: revokeMemberAccess },
   applyTeamCommand,
   authorizeTeamAdmin,
   authorizeTeamMember,
   reportError: log.error,
+  revokeMemberAccess,
 });
 
 export { changeTeam };

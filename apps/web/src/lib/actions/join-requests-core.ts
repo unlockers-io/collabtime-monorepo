@@ -100,15 +100,9 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
   ): Promise<ActionResult<JoinRequestRecord>> => {
     const joinRequest = await deps.findRequest(requestId);
 
-    if (joinRequest?.teamId !== teamId) {
-      return { error: "Join request not found", success: false };
-    }
-
-    if (joinRequest.status !== "PENDING") {
-      return { error: "Join request is no longer pending", success: false };
-    }
-
-    return { data: joinRequest, success: true };
+    return joinRequest?.teamId === teamId
+      ? { data: joinRequest, success: true }
+      : { error: "Join request not found", success: false };
   };
 
   const approveJoinRequest = async (

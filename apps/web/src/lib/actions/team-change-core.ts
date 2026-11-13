@@ -21,14 +21,16 @@ type AccessChanges<TTransaction> = {
 };
 
 type TeamChangeDeps<TTransaction> = {
-  accessChanges: AccessChanges<TTransaction>;
   applyTeamCommand: ApplyTeamCommand<TTransaction>;
   authorizeTeamAdmin: typeof authorizeTeamAdmin;
   authorizeTeamMember: typeof authorizeTeamMember;
   reportError: (event: ActionErrorEvent) => void;
+  revokeMemberAccess: NonNullable<AccessChanges<TTransaction>["removeMember"]>;
 };
 
 const createTeamChangeAction = <TTransaction>(deps: TeamChangeDeps<TTransaction>) => {
+  const accessChanges: AccessChanges<TTransaction> = { removeMember: deps.revokeMemberAccess };
+
   return async <TName extends TeamChangeName>(
     teamId: string,
     name: TName,
@@ -61,7 +63,7 @@ const createTeamChangeAction = <TTransaction>(deps: TeamChangeDeps<TTransaction>
       const applied = await deps.applyTeamCommand(
         access.data.teamId,
         change.command(parsed.args, actor),
-        deps.accessChanges[name]?.(access.data),
+        accessChanges[name]?.(access.data),
       );
 
       return applied.ok

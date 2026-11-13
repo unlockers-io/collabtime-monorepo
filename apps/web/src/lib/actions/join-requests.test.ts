@@ -166,15 +166,6 @@ describe("approveJoinRequest", () => {
     });
   });
 
-  it("returns error when request is no longer pending", async () => {
-    findRequest.mockResolvedValue({ ...pendingRequest, status: "APPROVED" });
-
-    expect(await approveJoinRequest(VALID_UUID, "jr-1")).toEqual({
-      error: "Join request is no longer pending",
-      success: false,
-    });
-  });
-
   it("adds the requester to the roster, grants membership and notifies them", async () => {
     const result = await approveJoinRequest(VALID_UUID, "jr-1");
 

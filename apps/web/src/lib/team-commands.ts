@@ -59,7 +59,7 @@ const withMember = (team: TeamRecord, member: TeamMember): TeamRecord => ({
   members: team.members.map((current) => (current.id === member.id ? member : current)),
 });
 
-/** `order` is the position in the list, so nothing else may assign it. */
+/** Keeps `order` equal to the position in the list. */
 const inOrder = <TItem extends { order: number }>(items: Array<TItem>): Array<TItem> =>
   items.map((item, order) => ({ ...item, order }));
 
