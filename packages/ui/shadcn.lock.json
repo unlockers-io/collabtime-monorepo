@@ -1,94 +1,89 @@
 {
-  "version": 1,
-  "upstreamCommit": "2b3e6d4f8d9161fe5c19340dc383aade392012dd",
-  "registryBase": "https://ui.shadcn.com/r/styles/base-nova",
-  "style": "base-nova",
+  "version": 2,
+  "registries": {
+    "@shadcn": {
+      "upstreamCommit": "2b3e6d4f8d9161fe5c19340dc383aade392012dd"
+    }
+  },
   "componentsDirectory": "src/components",
-  "normalizations": [
-    "Repository formatting, import paths, declaration ordering, and RSC boundaries.",
-    "Arbitrary values replaced with equivalent named theme tokens or utilities.",
-    "Registry markers resolved to installed styling and Sonner CSS variables moved to its utility.",
-    "Strictly typed conditions and theme values, with reduced-motion support.",
-    "Composite internals render at the primitive layer when no-restyle prohibits the upstream call; public APIs and DOM composition are retained."
-  ],
   "files": {
     "src/components/badge.tsx": {
-      "registry": "badge",
+      "registry": "@shadcn/badge",
       "registrySha256": "ccc20021cdcbf0fb23c0d4d28f1da4adde8e51ba59f4b11dd2722ed97a5ee3a4",
       "sha256": "99ced74312f20c69e5ed1928ad884772fcaad03e24ed92f307dfbc3846d7e738"
     },
     "src/components/button.tsx": {
-      "registry": "button",
+      "registry": "@shadcn/button",
       "registrySha256": "9ba7e870178813f0552b818a913a2792fb500c779e36395740b4973e3025d427",
       "sha256": "b78018fbb870dcae0cdd1d2d4d7ebbd70742ade1bc69c7f3dd0f7af429c4c52b"
     },
     "src/components/card.tsx": {
-      "registry": "card",
+      "registry": "@shadcn/card",
       "registrySha256": "e73e3fe00ab2e14c4db1dccb1ff5c67041a94c0926ac3216c1dc6dd6dee9d7e0",
       "sha256": "b9fb8d4a85ad45ab819b95a1adf56b40fc50e35c5cfb32668d78b4a47f112ac3"
     },
     "src/components/dialog.tsx": {
-      "registry": "dialog",
+      "registry": "@shadcn/dialog",
       "registrySha256": "40fc321d25eb9590d07db54b00d9bc1a74274a549aa06d5915a34ba302ed8b94",
       "sha256": "7c6ce64b39b2a71f67c34a3720497d5ebe19af4a6b6a29b4e6582dc61563c125"
     },
     "src/components/dropdown-menu.tsx": {
-      "registry": "dropdown-menu",
+      "registry": "@shadcn/dropdown-menu",
       "registrySha256": "335c59dba30145f434a9cc9ccb0438a3c5e2afe857fc11b029de1ecb415224d7",
       "sha256": "9b090379ef5146d293c0206d55995b63c5929f756970b01c19fe4be1e20758c2"
     },
     "src/components/field.tsx": {
-      "registry": "field",
+      "registry": "@shadcn/field",
       "registrySha256": "586110f5563cbb5dc0929207ee34361f1349cf2f816465799c60b98821e4cedc",
       "sha256": "fbfc85c0b7dea9a152557740ed3d2c7b09fc73c6b1d974e7206d08c0c69d3d23"
     },
     "src/components/input.tsx": {
-      "registry": "input",
+      "registry": "@shadcn/input",
       "registrySha256": "bbad1bba130ac9750a61844eeb8f043e8a710846e07689fa85398b80a46c2741",
       "sha256": "d25707203e870873fb105596afcf7adcf642a2f824b59a34c8063643526de49c"
     },
     "src/components/label.tsx": {
-      "registry": "label",
+      "registry": "@shadcn/label",
       "registrySha256": "89b01e14fd39dceece9fa421e71e78ea83286bd43a2ca1c2f55d2e8d3958fff2",
       "sha256": "efd1a70bfaa327dcaa775603615206a6b4bc7231e36bb9e94063a7da7fe29d80"
     },
     "src/components/scroll-area.tsx": {
-      "registry": "scroll-area",
+      "registry": "@shadcn/scroll-area",
       "registrySha256": "be6cdcfbf02a2fa091ec92cb2bc34e35b8a4e4b3a2d041973cfcd68396e6da1d",
       "sha256": "78c1c98a502009331e0f0c720611dde30d3bcfd0d41974793481b37020b0f6bb"
     },
     "src/components/select.tsx": {
-      "registry": "select",
+      "registry": "@shadcn/select",
       "registrySha256": "425e9b0a28b72617f18fabd75384050113295b88e7ba01c35bede2c72bd5d476",
       "sha256": "c31cf729a69c94781b23a08c3abb771a647f7641596ded50b76da0c6d2bde067"
     },
     "src/components/separator.tsx": {
-      "registry": "separator",
+      "registry": "@shadcn/separator",
       "registrySha256": "3ad65962485f464592201cb90017b3d52a5c9fe272ce41ee049485b4c42e0d76",
       "sha256": "8fb33b270fb4f4f9cb6d583ff2f476ff485adf022d6c14c55a150285b50475b5"
     },
     "src/components/sonner.tsx": {
-      "registry": "sonner",
+      "registry": "@shadcn/sonner",
       "registrySha256": "831967f80f645ac3908b356a44748698a9ceed1c6a51b232dd5e87c52a54d7c3",
       "sha256": "44059c798297cc9a276aeaa7eb5135f3b799aabb82420ffc229d5da72b76d6df"
     },
     "src/components/spinner.tsx": {
-      "registry": "spinner",
+      "registry": "@shadcn/spinner",
       "registrySha256": "d949d0b91ff34620eecf2bb359536fd3e6942b518dc0a396b77fd02a90661b61",
       "sha256": "890d09b7469b0f9ea6dd34314575862d96bd9614b7441204e238459e46d87dbe"
     },
     "src/components/switch.tsx": {
-      "registry": "switch",
+      "registry": "@shadcn/switch",
       "registrySha256": "1f22350ccbf358a3aa198305c41d91e146abc0a7d5b18a9a23488b8d6b264ab4",
       "sha256": "b3df544b52bd2d2d1166d5cce8b86d8f57ca4b714cb20fd2431c986b577d23a3"
     },
     "src/components/textarea.tsx": {
-      "registry": "textarea",
+      "registry": "@shadcn/textarea",
       "registrySha256": "8f01f6bc4ee556263bae7644e8b527022fa77ff203f33a258bb47142ef7d9c81",
       "sha256": "b3d4705b703ed903844f571e9657c3ba8896eeadd7094aa4baf762131e226d78"
     },
     "src/components/tooltip.tsx": {
-      "registry": "tooltip",
+      "registry": "@shadcn/tooltip",
       "registrySha256": "2f55867faecee2d3616cfd8c6a80b538909a21e62fdfa2788b1ead56093e5395",
       "sha256": "2995b984a24397281b378ce0e3869e1c8f550959f190d775d99ac370b12c35c9"
     }
