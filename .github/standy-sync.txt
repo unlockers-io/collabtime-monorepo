@@ -6,6 +6,7 @@
 .github/workflows/friction-log.yml
 .github/workflows/react-doctor.yml
 packages/auth/src/env-config.ts
+packages/auth/src/policy.ts
 packages/config-next/package.json
 packages/config-next/src/index.ts
 packages/config-next/tsconfig.json
