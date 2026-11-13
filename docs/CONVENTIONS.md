@@ -61,7 +61,6 @@ This document records the defaults used across the collabtime monorepo. New code
 
 - Linter: oxlint. Not ESLint.
 - Formatter: oxfmt. Not Prettier.
-- Bundler (library packages: `@repo/db`, `@repo/transactional`): tsdown.
 - Bundler (web): Next.js' Turbopack in dev, native in build.
 
 ## Routes
