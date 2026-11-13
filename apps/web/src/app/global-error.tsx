@@ -1,10 +1,15 @@
 "use client";
 
 import { ThemeProvider } from "@repo/ui/compositions/theme-provider";
+import { useErrorReport } from "@repo/ui/hooks/use-error-report";
+import type { BoundaryError } from "@repo/ui/hooks/use-error-report";
 import { captureException } from "@sentry/nextjs";
-import { useEffect, useRef } from "react";
 
 import styles from "./global-error.module.css";
+
+const report = (error: BoundaryError) => {
+  captureException(error);
+};
 
 type GlobalErrorProps = {
   error: Error & { digest?: string };
@@ -12,12 +17,7 @@ type GlobalErrorProps = {
 };
 
 const GlobalError = ({ error, reset }: GlobalErrorProps) => {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    captureException(error);
-    headingRef.current?.focus();
-  }, [error]);
+  const headingRef = useErrorReport(error, report);
 
   return (
     <html className={styles.document} lang="en" suppressHydrationWarning>

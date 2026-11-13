@@ -1,9 +1,14 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
+import { useErrorReport } from "@repo/ui/hooks/use-error-report";
+import type { BoundaryError } from "@repo/ui/hooks/use-error-report";
 import { captureException } from "@sentry/nextjs";
 import { AlertCircle, RefreshCw } from "lucide-react";
-import { useEffect, useRef } from "react";
+
+const report = (error: BoundaryError) => {
+  captureException(error);
+};
 
 type RouteErrorProps = {
   error: Error & { digest?: string };
@@ -11,12 +16,7 @@ type RouteErrorProps = {
 };
 
 const RouteError = ({ error, reset }: RouteErrorProps) => {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    captureException(error);
-    headingRef.current?.focus();
-  }, [error]);
+  const headingRef = useErrorReport(error, report);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6">
