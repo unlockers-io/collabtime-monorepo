@@ -1,103 +1,98 @@
 import { updateTag } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
 
-import { log } from "@/lib/observability";
 import type { TeamRecord } from "@/types";
 
 import type { TeamCommand } from "./team-commands";
+import type { TeamEventKind } from "./team-events";
 import { postgresTeamStorage, type TeamStorage } from "./team-storage";
 import { UUIDSchema } from "./validation";
 
 type TeamStoreDeps<TTransaction = undefined> = {
   createId: () => string;
   invalidateTeamName: (teamId: string) => void;
-  reportError: (event: Parameters<typeof log.error>[0]) => void;
   storage: TeamStorage<TTransaction>;
 };
 
-type TeamContentsFailureReason = "rejected" | "write-failed";
-
 type TeamSummary = { memberCount: number; name: string };
 
-type TeamContentsFailure = { error: string; ok: false; reason: TeamContentsFailureReason };
+type TeamContentsFailure = { error: string; ok: false };
 
 type TeamContentsResult<TValue> =
   | TeamContentsFailure
   | { ok: true; team: TeamRecord; value: TValue };
 
+/** Runs in the command's transaction, after its contents are written. */
+type AccessChange<TValue, TTransaction> = (
+  value: TValue,
+  transaction: TTransaction,
+) => Promise<void>;
+
 type ApplyTeamCommand<TTransaction> = <TValue>(
   teamId: string,
   command: TeamCommand<TValue>,
-  transaction: TTransaction,
+  changeAccess?: AccessChange<TValue, TTransaction>,
 ) => Promise<TeamContentsResult<TValue>>;
 
 const isUuid = (value: string): boolean => UUIDSchema.safeParse(value).success;
 const teamNameTag = (teamId: string): string => `team-name:${teamId}`;
 
 const createTeamStore = <TTransaction>(deps: TeamStoreDeps<TTransaction>) => {
-  const applyInTransaction: ApplyTeamCommand<TTransaction> = async (
+  /** Rejections are returned; a failed write throws and rolls the whole change back. */
+  const applyTeamCommand: ApplyTeamCommand<TTransaction> = async (
     teamId,
     command,
-    transaction,
+    changeAccess,
   ) => {
-    const team = isUuid(teamId) ? await deps.storage.read(teamId, transaction) : null;
+    const applied = await deps.storage.transaction(teamId, async (transaction) => {
+      const events: Array<TeamEventKind> = [];
+      const team = isUuid(teamId) ? await deps.storage.read(teamId, transaction) : null;
 
-    if (team === null) {
-      return { error: "Team not found", ok: false, reason: "rejected" };
-    }
-
-    const outcome = command(team, { createId: deps.createId });
-
-    if (!outcome.ok) {
-      return { ...outcome, reason: "rejected" };
-    }
-
-    if (JSON.stringify(outcome.team) !== JSON.stringify(team)) {
-      await deps.storage.write(teamId, outcome.team, transaction);
-    }
-
-    return outcome;
-  };
-
-  const applyTeamCommand = async <TValue>(
-    teamId: string,
-    command: TeamCommand<TValue>,
-  ): Promise<TeamContentsResult<TValue>> => {
-    try {
-      const previous = { contents: "", name: "" };
-
-      const outcome = await deps.storage.transaction(teamId, async (transaction) => {
-        return applyInTransaction(
-          teamId,
-          (team, context) => {
-            previous.contents = JSON.stringify(team);
-            previous.name = team.name;
-
-            return command(team, context);
-          },
-          transaction,
-        );
-      });
-
-      if (outcome.ok && JSON.stringify(outcome.team) !== previous.contents) {
-        await deps.storage.publish(teamId);
-
-        if (outcome.team.name !== previous.name) {
-          deps.invalidateTeamName(teamId);
-        }
+      if (team === null) {
+        return { events, outcome: { error: "Team not found", ok: false as const }, renamed: false };
       }
 
-      return outcome;
-    } catch (error) {
-      deps.reportError({
-        error,
-        message: "Failed to save the team",
-        route: "lib/team-store",
-        teamId,
-      });
+      const outcome = command(team, { createId: deps.createId });
 
-      return { error: "Failed to save the team", ok: false, reason: "write-failed" };
+      if (!outcome.ok) {
+        return { events, outcome, renamed: false };
+      }
+
+      const changed = JSON.stringify(outcome.team) !== JSON.stringify(team);
+
+      if (changed) {
+        await deps.storage.write(teamId, outcome.team, transaction);
+      }
+
+      if (changed || changeAccess) {
+        events.push("contents");
+      }
+
+      if (changeAccess) {
+        await changeAccess(outcome.value, transaction);
+        events.push("space");
+      }
+
+      return { events, outcome, renamed: outcome.team.name !== team.name };
+    });
+
+    if (applied.events.length > 0) {
+      await deps.storage.publish(teamId, applied.events);
     }
+
+    if (applied.renamed) {
+      deps.invalidateTeamName(teamId);
+    }
+
+    return applied.outcome;
+  };
+
+  const changeTeamAccess = async (
+    teamId: string,
+    change: (transaction: TTransaction) => Promise<void>,
+  ): Promise<void> => {
+    await deps.storage.transaction(teamId, change);
+    await deps.storage.publish(teamId, ["space"]);
   };
 
   const createTeamContents = async (
@@ -106,7 +101,7 @@ const createTeamStore = <TTransaction>(deps: TeamStoreDeps<TTransaction>) => {
   ): Promise<TeamContentsFailure | { ok: true }> => {
     return deps.storage.transaction(teamId, async (transaction) => {
       if (await deps.storage.read(teamId, transaction)) {
-        return { error: "Team already exists", ok: false, reason: "rejected" };
+        return { error: "Team already exists", ok: false };
       }
 
       await deps.storage.write(teamId, team, transaction);
@@ -139,8 +134,8 @@ const createTeamStore = <TTransaction>(deps: TeamStoreDeps<TTransaction>) => {
   };
 
   return {
-    applyInTransaction,
     applyTeamCommand,
+    changeTeamAccess,
     createTeamContents,
     readTeamRecord,
     readTeamSummaries,
@@ -148,19 +143,18 @@ const createTeamStore = <TTransaction>(deps: TeamStoreDeps<TTransaction>) => {
   };
 };
 
-const { applyInTransaction, applyTeamCommand, readTeamRecord, readTeamSummaries, readTeamSummary } =
+const { applyTeamCommand, changeTeamAccess, readTeamRecord, readTeamSummaries, readTeamSummary } =
   createTeamStore({
     createId: uuidv4,
     invalidateTeamName: (teamId) => {
       updateTag(teamNameTag(teamId));
     },
-    reportError: log.error,
     storage: postgresTeamStorage,
   });
 
 export {
-  applyInTransaction,
   applyTeamCommand,
+  changeTeamAccess,
   createTeamStore,
   readTeamRecord,
   readTeamSummaries,
@@ -168,10 +162,4 @@ export {
   teamNameTag,
 };
 
-export type {
-  ApplyTeamCommand,
-  TeamContentsFailure,
-  TeamContentsFailureReason,
-  TeamContentsResult,
-  TeamStoreDeps,
-};
+export type { AccessChange, ApplyTeamCommand, TeamContentsFailure, TeamStoreDeps };

@@ -1,7 +1,7 @@
 import type { authenticate, authorizeTeamAdmin } from "@/lib/team-auth";
 
 import { displayName } from "../display-name";
-import type { GrantMembership, MembershipGrant } from "../membership";
+import type { GrantMembership } from "../membership";
 import { UUIDSchema } from "../validation";
 
 import type { ActionErrorEvent, ActionResult } from "./types";
@@ -25,11 +25,7 @@ type PendingJoinRequestView = {
 };
 
 type JoinRequestDeps<TTransaction> = {
-  approveMembership: (
-    requestId: string,
-    membership: MembershipGrant,
-    transaction: TTransaction,
-  ) => Promise<void>;
+  approveRequest: (requestId: string, transaction: TTransaction) => Promise<void>;
   authenticate: typeof authenticate;
   authorizeTeamAdmin: typeof authorizeTeamAdmin;
   denyRequest: (requestId: string) => Promise<void>;
@@ -134,14 +130,11 @@ const createJoinRequestActions = <TTransaction>(deps: JoinRequestDeps<TTransacti
 
       const joinRequest = found.data;
 
-      const granted = await deps.grantMembership({
-        commit: (membership, _memberId, transaction) =>
-          deps.approveMembership(requestId, membership, transaction),
-        role: "MEMBER",
-        slot: { name: displayName(joinRequest.user.name, joinRequest.user.email) },
-        teamId: joinRequest.teamId,
-        userId: joinRequest.userId,
-      });
+      const granted = await deps.grantMembership(
+        { role: "MEMBER", teamId: joinRequest.teamId, userId: joinRequest.userId },
+        { name: displayName(joinRequest.user.name, joinRequest.user.email) },
+        (_memberId, transaction) => deps.approveRequest(requestId, transaction),
+      );
 
       if (!granted.ok) {
         return { error: granted.error, success: false };

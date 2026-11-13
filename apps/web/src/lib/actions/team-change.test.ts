@@ -23,11 +23,11 @@ const guards = createTestGuards();
 const reportError = vi.fn<TeamChangeDeps["reportError"]>();
 
 const changeTeam = createTeamChangeAction({
+  accessChanges: { removeMember: harness.revokeMemberAccess },
   applyTeamCommand: harness.applyTeamCommand,
   authorizeTeamAdmin: guards.authorizeTeamAdmin,
   authorizeTeamMember: guards.authorizeTeamMember,
   reportError,
-  revokeMembership: harness.revokeMembership,
 });
 
 const { seedTeam } = harness;
@@ -520,7 +520,7 @@ describe("removal cleanup", () => {
     const persisted = await persistedTeam();
     expect(persisted.members).toEqual([member]);
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ memberId: VALID_UUID_2, teamId: VALID_UUID }),
+      expect.objectContaining({ message: "Failed to remove member", teamId: VALID_UUID }),
     );
 
     expect(await changeTeam(VALID_UUID, "removeMember", { memberId: VALID_UUID_2 })).toMatchObject({
@@ -840,18 +840,17 @@ describe("write failures", () => {
     const store = createTeamStore({
       createId: () => VALID_UUID,
       invalidateTeamName: vi.fn<() => void>(),
-      reportError: vi.fn<() => void>(),
       storage: { ...storage, write: () => Promise.reject(new Error("Postgres unavailable")) },
     });
 
     await storage.write(VALID_UUID, createTestTeamRecord(), undefined);
 
     const failingChange = createTeamChangeAction({
+      accessChanges: {},
       applyTeamCommand: store.applyTeamCommand,
       authorizeTeamAdmin: guards.authorizeTeamAdmin,
       authorizeTeamMember: guards.authorizeTeamMember,
       reportError,
-      revokeMembership: harness.revokeMembership,
     });
 
     expect(await failingChange(VALID_UUID, "renameTeam", { name: "Renamed" })).toEqual({

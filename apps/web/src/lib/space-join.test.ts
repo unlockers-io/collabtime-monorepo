@@ -18,7 +18,7 @@ const verifyAccessToken = vi.fn<SpaceJoinDeps["verifyAccessToken"]>();
 
 const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
   findPrivateSpaces,
-  grantMembership: harness.grantMembership,
+  grantViewerAccess: harness.grantViewerAccess,
   reportError,
   verifyAccessToken,
 });

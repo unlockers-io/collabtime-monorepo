@@ -10,9 +10,10 @@ import type { TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
 
 import { createMembershipLifecycle, type MembershipStore } from "../membership";
 import { createMemoryMembershipStore } from "../membership-memory-store";
-import type { TeamEventKind } from "../team-events";
+import { teamCommands } from "../team-commands";
 import { createMemoryTeamStorage } from "../team-memory-storage";
-import { createTeamStore, type TeamStoreDeps } from "../team-store";
+import type { TeamStorage } from "../team-storage";
+import { type ApplyTeamCommand, createTeamStore, type TeamStoreDeps } from "../team-store";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 const VALID_UUID_2 = "660e8400-e29b-41d4-a716-446655440001";
@@ -67,16 +68,12 @@ const createMockSession = (overrides?: { email?: string; name?: string; userId?:
 
 const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
   const invalidateTeamName = vi.fn<TeamStoreDeps["invalidateTeamName"]>();
-  const reportError = vi.fn<TeamStoreDeps["reportError"]>();
+  const publish = vi.fn<TeamStorage["publish"]>().mockResolvedValue();
   let memberships = createMemoryMembershipStore();
   let teamStorage = createMemoryTeamStorage();
 
-  const lock: MembershipStore<undefined>["lock"] = (teamId, run) =>
-    teamStorage.transaction(teamId, () => memberships.lock(teamId, run));
-
   const membershipStore = {
     grant: vi.fn<MembershipStore<undefined>["grant"]>(),
-    lock,
     revoke: vi.fn<MembershipStore<undefined>["revoke"]>(),
   };
 
@@ -84,8 +81,12 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
     createTeamStore({
       createId,
       invalidateTeamName,
-      reportError,
-      storage: teamStorage,
+      storage: {
+        ...teamStorage,
+        publish,
+        transaction: (teamId, run) =>
+          teamStorage.transaction(teamId, () => memberships.lock(teamId, run)),
+      },
     });
 
   let store = build();
@@ -102,44 +103,45 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
 
   wireMemberships();
 
-  const applyTeamCommand: typeof store.applyTeamCommand = (teamId, command) =>
-    store.applyTeamCommand(teamId, command);
+  const applyTeamCommand: ApplyTeamCommand<undefined> = (teamId, command, changeAccess) =>
+    store.applyTeamCommand(teamId, command, changeAccess);
 
-  const publish = vi
-    .fn<(teamId: string, kinds: Array<TeamEventKind>) => Promise<void>>()
-    .mockResolvedValue();
+  const changeTeamAccess: typeof store.changeTeamAccess = (teamId, change) =>
+    store.changeTeamAccess(teamId, change);
 
-  const applyInTransaction: typeof store.applyInTransaction = (teamId, command, transaction) =>
-    store.applyInTransaction(teamId, command, transaction);
-
-  const { grantMembership, revokeMembership } = createMembershipLifecycle({
-    applyInTransaction,
-    publish,
+  const { grantMembership, grantViewerAccess, revokeMemberAccess } = createMembershipLifecycle({
+    applyTeamCommand,
+    changeTeamAccess,
     store: membershipStore,
   });
 
   return {
-    applyInTransaction,
     applyTeamCommand,
+    changeTeamAccess,
     createTeamContents: (teamId: string, team: TeamRecord) =>
       store.createTeamContents(teamId, team),
     findMembership: (userId: string, teamId = VALID_UUID) => memberships.read(teamId, userId),
     grantMembership,
+    grantViewerAccess,
     invalidateTeamName,
     invitationsRevoked: (memberId: string) => memberships.invitationsRevoked(VALID_UUID, memberId),
     membershipStore,
     publish,
     readTeam: (teamId = VALID_UUID) => store.readTeamRecord(teamId),
-    reportError,
     reset: () => {
       teamStorage = createMemoryTeamStorage();
       store = build();
       publish.mockClear();
       wireMemberships();
       invalidateTeamName.mockReset();
-      reportError.mockReset();
     },
-    revokeMembership,
+    revokeMemberAccess,
+    revokeMembership: ({ access, memberId }: { access: TeamAccess; memberId: string }) =>
+      applyTeamCommand(
+        access.teamId,
+        teamCommands.removeMember(memberId),
+        revokeMemberAccess(access),
+      ),
     seedMembership: (userId: string, role: TeamRole = "MEMBER", archivedAt: Date | null = null) => {
       memberships.seed(VALID_UUID, userId, { archivedAt, role });
     },

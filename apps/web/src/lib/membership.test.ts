@@ -36,18 +36,18 @@ describe("grantMembership", () => {
   it("claims the invited slot and creates the membership", async () => {
     await seed();
 
-    expect(
-      await harness.grantMembership({ ...bob, slot: { memberId: VALID_UUID_2, name: "Bob" } }),
-    ).toEqual({ memberId: VALID_UUID_2, ok: true });
+    expect(await harness.grantMembership(bob, { memberId: VALID_UUID_2, name: "Bob" })).toEqual({
+      memberId: VALID_UUID_2,
+      ok: true,
+    });
     expect(await roster()).toMatchObject([bobsSlot]);
     expect(harness.findMembership("bob")).toEqual({ archivedAt: null, role: "MEMBER" });
   });
 
   it("leaves no membership when the slot claim fails", async () => {
-    expect(await harness.grantMembership({ ...bob, slot: { name: "Bob" } })).toEqual({
+    expect(await harness.grantMembership(bob, { name: "Bob" })).toEqual({
       error: "Team not found",
       ok: false,
-      reason: "rejected",
     });
     expect(harness.findMembership("bob")).toBeNull();
   });
@@ -56,21 +56,21 @@ describe("grantMembership", () => {
     await seed(createTestTeamRecord());
     harness.membershipStore.grant.mockRejectedValue(new Error("Database unavailable"));
 
-    await expect(harness.grantMembership({ ...bob, slot: { name: "Bob" } })).rejects.toThrow(
+    await expect(harness.grantMembership(bob, { name: "Bob" })).rejects.toThrow(
       "Database unavailable",
     );
     expect(await roster()).toEqual([]);
   });
 
-  it("hands a claimed slot back when the caller's commit fails", async () => {
+  it("hands a claimed slot back when what the grant answers fails", async () => {
     await seed();
-    const commit = vi.fn<() => Promise<void>>();
-    commit.mockRejectedValue(new Error("Invitation is no longer pending"));
+    const first = vi.fn<() => Promise<void>>();
+    first.mockRejectedValue(new Error("Invitation is no longer pending"));
 
     await expect(
-      harness.grantMembership({ ...bob, commit, slot: { memberId: VALID_UUID_2, name: "Bob" } }),
+      harness.grantMembership(bob, { memberId: VALID_UUID_2, name: "Bob" }, first),
     ).rejects.toThrow("Invitation is no longer pending");
-    expect(commit).toHaveBeenCalledWith(bob, VALID_UUID_2, undefined);
+    expect(first).toHaveBeenCalledWith(VALID_UUID_2, undefined);
     expect(await roster()).toEqual([invitedSlot]);
     expect(harness.findMembership("bob")).toBeNull();
   });
@@ -79,7 +79,7 @@ describe("grantMembership", () => {
     await seed(createTestTeamRecord({ members: [bobsSlot] }));
     harness.membershipStore.grant.mockRejectedValue(new Error("Database unavailable"));
 
-    await expect(harness.grantMembership({ ...bob, slot: { name: "Bob" } })).rejects.toThrow(
+    await expect(harness.grantMembership(bob, { name: "Bob" })).rejects.toThrow(
       "Database unavailable",
     );
     expect(await roster()).toMatchObject([bobsSlot]);
@@ -88,7 +88,7 @@ describe("grantMembership", () => {
   it("grants a password viewer access without a roster slot", async () => {
     await seed();
 
-    await harness.grantMembership({ ...bob, slot: null });
+    await harness.grantViewerAccess(bob);
 
     expect(harness.findMembership("bob")).toEqual({ archivedAt: null, role: "MEMBER" });
     expect(await roster()).toEqual([invitedSlot]);
@@ -97,7 +97,7 @@ describe("grantMembership", () => {
   it("un-archives a returning member and keeps their role", async () => {
     harness.seedMembership("bob", "ADMIN", new Date());
 
-    await harness.grantMembership({ ...bob, slot: null });
+    await harness.grantViewerAccess(bob);
 
     expect(harness.findMembership("bob")).toEqual({ archivedAt: null, role: "ADMIN" });
   });
@@ -124,7 +124,6 @@ describe("revokeMembership", () => {
     expect(await harness.revokeMembership({ access, memberId: "missing" })).toEqual({
       error: "Member not found",
       ok: false,
-      reason: "rejected",
     });
     expect(harness.findMembership("bob")).not.toBeNull();
     expect(harness.membershipStore.revoke).not.toHaveBeenCalled();
@@ -154,10 +153,7 @@ describe("revokeMembership", () => {
   it("publishes only committed membership changes", async () => {
     await seed();
 
-    const granted = await harness.grantMembership({
-      ...bob,
-      slot: { memberId: VALID_UUID_2, name: "Bob" },
-    });
+    const granted = await harness.grantMembership(bob, { memberId: VALID_UUID_2, name: "Bob" });
 
     expect(granted.ok).toBe(true);
     expect(harness.publish).toHaveBeenCalledExactlyOnceWith(VALID_UUID, ["contents", "space"]);

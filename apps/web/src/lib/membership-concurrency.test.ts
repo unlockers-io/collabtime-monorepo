@@ -11,15 +11,12 @@ import {
   VALID_UUID_2,
 } from "./actions/test-helpers";
 import { createMembershipLifecycle, type MembershipStore } from "./membership";
+import { teamCommands } from "./team-commands";
+import type { ApplyTeamCommand } from "./team-store";
 
 const access = createTestAccess();
-
-const request = {
-  role: "MEMBER" as const,
-  slot: { memberId: VALID_UUID_2, name: "Bob" },
-  teamId: VALID_UUID,
-  userId: "bob",
-};
+const bob = { role: "MEMBER" as const, teamId: VALID_UUID, userId: "bob" };
+const slot = { memberId: VALID_UUID_2, name: "Bob" };
 
 const setup = async () => {
   const harness = createTestTeamStore(randomUUID);
@@ -30,15 +27,36 @@ const setup = async () => {
   return harness;
 };
 
+type Harness = ReturnType<typeof createTestTeamStore>;
+
 const lifecycle = (
-  harness: ReturnType<typeof createTestTeamStore>,
+  harness: Harness,
   store: MembershipStore<undefined>,
+  applyTeamCommand: ApplyTeamCommand<undefined> = harness.applyTeamCommand,
 ) =>
   createMembershipLifecycle({
-    applyInTransaction: harness.applyInTransaction,
-    publish: harness.publish,
+    applyTeamCommand,
+    changeTeamAccess: harness.changeTeamAccess,
     store,
   });
+
+/** Runs `after` once, right after the first command commits. */
+const afterFirstCommit = (harness: Harness, after: () => Promise<void>) => {
+  let pending = true;
+
+  const applyTeamCommand: ApplyTeamCommand<undefined> = async (teamId, command, changeAccess) => {
+    const result = await harness.applyTeamCommand(teamId, command, changeAccess);
+
+    if (pending) {
+      pending = false;
+      await after();
+    }
+
+    return result;
+  };
+
+  return applyTeamCommand;
+};
 
 describe("membership operation interleavings", () => {
   it("waits for a granting operation before revoking its access and roster slot", async () => {
@@ -55,7 +73,7 @@ describe("membership operation interleavings", () => {
       },
     });
 
-    const grant = first.grantMembership(request);
+    const grant = first.grantMembership(bob, slot);
     await paused.promise;
     const revoke = harness.revokeMembership({ access, memberId: VALID_UUID_2 });
     resume.resolve(undefined);
@@ -69,25 +87,19 @@ describe("membership operation interleavings", () => {
 
   it("serializes a regrant after the complete revocation", async () => {
     const harness = await setup();
-    await harness.grantMembership(request);
-    let regrant = true;
+    await harness.grantMembership(bob, slot);
 
-    const lock: MembershipStore<undefined>["lock"] = async (teamId, run) => {
-      const result = await harness.membershipStore.lock(teamId, run);
-
-      if (regrant) {
-        regrant = false;
-        await harness.grantMembership(request);
-      }
-
-      return result;
-    };
-
-    const remover = lifecycle(harness, { ...harness.membershipStore, lock });
-
-    expect(await remover.revokeMembership({ access, memberId: VALID_UUID_2 })).toMatchObject({
-      ok: true,
+    const applyTeamCommand = afterFirstCommit(harness, async () => {
+      await harness.grantMembership(bob, slot);
     });
+
+    expect(
+      await applyTeamCommand(
+        VALID_UUID,
+        teamCommands.removeMember(VALID_UUID_2),
+        harness.revokeMemberAccess(access),
+      ),
+    ).toMatchObject({ ok: true });
     expect(harness.findMembership("bob")).not.toBeNull();
     const team = await harness.readTeam();
     expect(team?.members).toMatchObject([{ userId: "bob" }]);
@@ -99,22 +111,16 @@ describe("membership operation interleavings", () => {
 
   it("does not compensate a database commit whose successful response was lost", async () => {
     const harness = await setup();
-    let loseResponse = true;
 
-    const lock: MembershipStore<undefined>["lock"] = async (teamId, run) => {
-      const result = await harness.membershipStore.lock(teamId, run);
+    const failing = lifecycle(
+      harness,
+      harness.membershipStore,
+      afterFirstCommit(harness, () => Promise.reject(new Error("Connection lost after commit"))),
+    );
 
-      if (loseResponse) {
-        loseResponse = false;
-        throw new Error("Connection lost after commit");
-      }
-
-      return result;
-    };
-
-    const failing = lifecycle(harness, { ...harness.membershipStore, lock });
-
-    await expect(failing.grantMembership(request)).rejects.toThrow("Connection lost after commit");
+    await expect(failing.grantMembership(bob, slot)).rejects.toThrow(
+      "Connection lost after commit",
+    );
     expect(harness.findMembership("bob")).not.toBeNull();
     const team = await harness.readTeam();
     expect(team?.members).toMatchObject([{ userId: "bob" }]);

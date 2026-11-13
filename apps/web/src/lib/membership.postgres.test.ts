@@ -8,9 +8,36 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { createMockSession, createTestMember, createTestTeamRecord } from "./actions/test-helpers";
 import { createInvitations, type InvitationDeps, prismaInvitationStore } from "./invitations";
 import { createMembershipLifecycle, prismaMembershipStore } from "./membership";
+import type { TeamAccess } from "./team-auth";
 import { teamCommands } from "./team-commands";
-import { postgresTeamStorage } from "./team-storage";
+import { postgresTeamStorage, type TeamStorage } from "./team-storage";
 import { createTeamStore } from "./team-store";
+
+type Storage = TeamStorage<Prisma.TransactionClient>;
+
+type Lifecycle = ReturnType<typeof createMembershipLifecycle<Prisma.TransactionClient>>;
+
+const once = () => {
+  const paused = Promise.withResolvers<undefined>();
+  const resume = Promise.withResolvers<undefined>();
+  let pending = true;
+
+  const pause = async () => {
+    if (pending) {
+      pending = false;
+      paused.resolve(undefined);
+      await resume.promise;
+    }
+  };
+
+  return {
+    pause,
+    paused: paused.promise,
+    resume: () => {
+      resume.resolve(undefined);
+    },
+  };
+};
 
 const enabled = process.env.MEMBERSHIP_POSTGRES_TESTS === "1";
 
@@ -34,29 +61,38 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     await prisma.space.create({ data: { ownerId: owner.id, teamId } });
     const reportError = vi.fn<() => void>();
 
-    const publish = vi
-      .fn<(id: string, kinds?: Array<string>) => Promise<void>>()
-      .mockResolvedValue();
+    const publish = vi.fn<Storage["publish"]>().mockResolvedValue();
 
-    const teamStore = createTeamStore({
-      createId: randomUUID,
-      invalidateTeamName: vi.fn<() => void>(),
-      reportError,
-      storage: { ...postgresTeamStorage, publish },
-    });
+    const storeOver = (storage: Partial<Storage> = {}) =>
+      createTeamStore({
+        createId: randomUUID,
+        invalidateTeamName: vi.fn<() => void>(),
+        storage: { ...postgresTeamStorage, publish, ...storage },
+      });
 
+    const teamStore = storeOver();
     const harness = { ...teamStore, readTeam: teamStore.readTeamRecord, reportError };
     await harness.createTeamContents(
       teamId,
       createTestTeamRecord({ id: teamId, members: [createTestMember({ id: memberId })] }),
     );
 
-    const lifecycle = () =>
-      createMembershipLifecycle({
-        applyInTransaction: harness.applyInTransaction,
-        publish,
-        store: prismaMembershipStore,
-      });
+    const lifecycle = (
+      store = prismaMembershipStore,
+      { applyTeamCommand, changeTeamAccess } = teamStore,
+    ) => {
+      const access = createMembershipLifecycle({ applyTeamCommand, changeTeamAccess, store });
+
+      return {
+        ...access,
+        revokeMembership: (revocation: { access: TeamAccess; memberId: string }) =>
+          applyTeamCommand(
+            teamId,
+            teamCommands.removeMember(revocation.memberId),
+            access.revokeMemberAccess(revocation.access),
+          ),
+      };
+    };
 
     const membership = lifecycle();
     const transition = vi.fn(prismaInvitationStore.transition);
@@ -102,6 +138,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
       publish,
       readMembership,
       service,
+      storeOver,
       teamId,
       transition,
       user,
@@ -183,44 +220,23 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
       user,
     } = await setup();
 
-    const paused = Promise.withResolvers<undefined>();
-    const resume = Promise.withResolvers<undefined>();
-    let pause = true;
+    const claimed = once();
 
-    const applyTeamCommand: typeof harness.applyInTransaction = async (
-      idToApply,
-      command,
-      transaction,
-    ) => {
-      const result = await harness.applyInTransaction(idToApply, command, transaction);
+    const delayed: Lifecycle["grantMembership"] = (grant, slot, first) =>
+      membership.grantMembership(grant, slot, async (claimedId, transaction) => {
+        await claimed.pause();
+        await first?.(claimedId, transaction);
+      });
 
-      if (pause) {
-        pause = false;
-        paused.resolve(undefined);
-        await resume.promise;
-      }
+    const losing = createInvitations({ ...deps, grantMembership: delayed }).accept(user, id);
 
-      return result;
-    };
-
-    const delayed = createMembershipLifecycle({
-      applyInTransaction: applyTeamCommand,
-      publish: vi.fn().mockResolvedValue(undefined),
-      store: prismaMembershipStore,
-    });
-
-    const losing = createInvitations({ ...deps, grantMembership: delayed.grantMembership }).accept(
-      user,
-      id,
-    );
-
-    await paused.promise;
+    await claimed.paused;
 
     try {
       await setTimeout(5200);
       expect(await service.accept(user, id)).toMatchObject({ success: true });
     } finally {
-      resume.resolve(undefined);
+      claimed.resume();
     }
 
     expect(await losing).toMatchObject({ success: false });
@@ -232,50 +248,47 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
   }, 15_000);
 
   it("fences removal after its transaction times out and another server grants access", async () => {
-    const { access, harness, id, memberId, membership, readMembership, service, teamId, user } =
-      await setup();
+    const {
+      access,
+      harness,
+      id,
+      lifecycle,
+      memberId,
+      membership,
+      readMembership,
+      service,
+      storeOver,
+      teamId,
+      user,
+    } = await setup();
 
     expect(await service.accept(user, id)).toMatchObject({ success: true });
-    const paused = Promise.withResolvers<undefined>();
-    const resume = Promise.withResolvers<undefined>();
-    let calls = 0;
+    const locked = once();
 
-    const applyTeamCommand: typeof harness.applyInTransaction = async (
-      idToApply,
-      command,
-      transaction,
-    ) => {
-      calls += 1;
+    const delayed = lifecycle(
+      prismaMembershipStore,
+      storeOver({
+        read: async (idToRead, transaction) => {
+          await locked.pause();
 
-      if (calls === 1) {
-        paused.resolve(undefined);
-        await resume.promise;
-      }
-
-      return harness.applyInTransaction(idToApply, command, transaction);
-    };
-
-    const delayed = createMembershipLifecycle({
-      applyInTransaction: applyTeamCommand,
-      publish: vi.fn().mockResolvedValue(undefined),
-      store: prismaMembershipStore,
-    });
+          return postgresTeamStorage.read(idToRead, transaction);
+        },
+      }),
+    );
 
     const removing = Promise.allSettled([delayed.revokeMembership({ access, memberId })]);
-    await paused.promise;
+    await locked.paused;
 
     try {
       await setTimeout(5200);
       expect(
-        await membership.grantMembership({
-          role: "MEMBER",
-          slot: { memberId, name: "Returning" },
-          teamId,
-          userId: user.id,
-        }),
+        await membership.grantMembership(
+          { role: "MEMBER", teamId, userId: user.id },
+          { memberId, name: "Returning" },
+        ),
       ).toMatchObject({ ok: true });
     } finally {
-      resume.resolve(undefined);
+      locked.resume();
     }
 
     expect(await removing).toMatchObject([
@@ -296,27 +309,16 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
       const storedTeam = await harness.readTeam(teamId);
       expect(storedTeam?.members[0]?.userId).toBe(user.id);
     });
+    const grant = { role: "MEMBER" as const, teamId, userId: user.id };
+    const slot = { memberId, name: "Member" };
     await expect(
-      membership.grantMembership({
-        commit: () => Promise.reject(new Error("rollback")),
-        role: "MEMBER",
-        slot: { memberId, name: "Member" },
-        teamId,
-        userId: user.id,
-      }),
+      membership.grantMembership(grant, slot, () => Promise.reject(new Error("rollback"))),
     ).rejects.toThrow("rollback");
     expect(publish).not.toHaveBeenCalled();
     expect(await readMembership()).toBeNull();
     const storedTeam = await harness.readTeam(teamId);
     expect(storedTeam?.members[0]?.userId).toBeUndefined();
-    expect(
-      await membership.grantMembership({
-        role: "MEMBER",
-        slot: { memberId, name: "Member" },
-        teamId,
-        userId: user.id,
-      }),
-    ).toMatchObject({ ok: true });
+    expect(await membership.grantMembership(grant, slot)).toMatchObject({ ok: true });
     expect(publish).toHaveBeenCalledOnce();
   });
 
@@ -325,9 +327,13 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     const entered = Promise.withResolvers<number>();
     const resume = Promise.withResolvers<undefined>();
 
+    const grant = { role: "MEMBER" as const, teamId, userId: user.id };
+
     const writing = Promise.allSettled([
-      membership.grantMembership({
-        commit: async (grant, _memberId, transaction) => {
+      membership.grantMembership(
+        grant,
+        { memberId, name: "Member" },
+        async (_memberId, transaction) => {
           await prismaMembershipStore.grant(grant, transaction);
 
           const rows = await transaction.$queryRaw<
@@ -338,11 +344,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
           await resume.promise;
           await transaction.$queryRaw`SELECT 1`;
         },
-        role: "MEMBER",
-        slot: { memberId, name: "Member" },
-        teamId,
-        userId: user.id,
-      }),
+      ),
     ]);
 
     const pid = await entered.promise;
@@ -360,12 +362,10 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
   it("serializes ordinary roster writes with membership transactions", async () => {
     const { harness, memberId, membership, teamId, user } = await setup();
     await Promise.all([
-      membership.grantMembership({
-        role: "MEMBER",
-        slot: { memberId, name: "Member" },
-        teamId,
-        userId: user.id,
-      }),
+      membership.grantMembership(
+        { role: "MEMBER", teamId, userId: user.id },
+        { memberId, name: "Member" },
+      ),
       harness.applyTeamCommand(teamId, teamCommands.addGroup("Engineering")),
       harness.applyTeamCommand(teamId, teamCommands.renameTeam("Concurrent")),
     ]);
@@ -382,7 +382,7 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     await prisma.membership.create({
       data: { archivedAt: new Date(), role: "ADMIN", teamId, userId: user.id },
     });
-    await membership.grantMembership({ role: "MEMBER", slot: null, teamId, userId: user.id });
+    await membership.grantViewerAccess({ role: "MEMBER", teamId, userId: user.id });
     expect(
       await prisma.membership.findUnique({ where: { userId_teamId: { teamId, userId: user.id } } }),
     ).toMatchObject({ archivedAt: null, role: "ADMIN" });
@@ -444,16 +444,58 @@ describe.skipIf(!enabled)("membership transactions against Postgres", () => {
     },
   );
 
-  it("rolls back the invitation and claim when membership persistence fails", async () => {
+  it.each([true, false])(
+    "holds a concurrent revoke until an acceptance whose membership write succeeds=%s ends",
+    async (succeeds) => {
+      const { access, deps, id, lifecycle, readMembership, service, user } = await setup();
+      const granting = once();
+
+      const slow = lifecycle({
+        ...prismaMembershipStore,
+        grant: async (grant, transaction) => {
+          await granting.pause();
+
+          if (!succeeds) {
+            throw new Error("Database unavailable");
+          }
+
+          await prismaMembershipStore.grant(grant, transaction);
+        },
+      });
+
+      const accept = createInvitations({ ...deps, grantMembership: slow.grantMembership }).accept(
+        user,
+        id,
+      );
+
+      await granting.paused;
+      const revoke = service.revoke(access, id);
+      await setTimeout(200);
+      granting.resume();
+
+      expect(await accept).toMatchObject({ success: succeeds });
+      expect(await revoke).toMatchObject({ success: !succeeds });
+      expect(await prismaInvitationStore.find(id)).toMatchObject({
+        status: succeeds ? "ACCEPTED" : "REVOKED",
+      });
+      expect((await readMembership()) !== null).toBe(succeeds);
+    },
+  );
+
+  it("rolls back the invitation and claim when membership persistence fails, so a retry claims it", async () => {
     const { harness, id, memberId, readMembership, service, teamId, user } = await setup();
 
-    expect(await service.accept({ ...user, id: "missing-user" }, id)).toMatchObject({
+    expect(await service.accept({ ...user, id: "missing-user" }, id)).toEqual({
+      error: "Could not update this invitation. Refresh and try again.",
       success: false,
     });
     expect(await prismaInvitationStore.find(id)).toMatchObject({ status: "PENDING" });
     expect(await readMembership()).toBeNull();
     const team = await harness.readTeam(teamId);
     expect(team?.members).toEqual([createTestMember({ id: memberId })]);
+
+    expect(await service.accept(user, id)).toMatchObject({ success: true });
+    expect(await readMembership()).toMatchObject({ archivedAt: null, role: "MEMBER" });
   });
 
   it("keeps legacy invitations open and allows admin management of expired invitations", async () => {

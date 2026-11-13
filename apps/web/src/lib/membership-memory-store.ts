@@ -29,26 +29,6 @@ const createMemoryMembershipStore = () => {
 
       return Promise.resolve();
     },
-    lock: async (teamId, run) => {
-      const previous = locks.get(teamId);
-      const gate = Promise.withResolvers<undefined>();
-      locks.set(teamId, gate.promise);
-      await previous;
-      const before = structuredClone(stateFor(teamId));
-
-      try {
-        return await run(undefined);
-      } catch (error) {
-        teams.set(teamId, before);
-        throw error;
-      } finally {
-        gate.resolve(undefined);
-
-        if (locks.get(teamId) === gate.promise) {
-          locks.delete(teamId);
-        }
-      }
-    },
     revoke: ({ memberId, teamId, userId }) => {
       const state = stateFor(teamId);
       state.revokedSlots.add(memberId);
@@ -61,10 +41,35 @@ const createMemoryMembershipStore = () => {
     },
   };
 
+  const lock = async <T>(
+    teamId: string,
+    run: (transaction: undefined) => Promise<T>,
+  ): Promise<T> => {
+    const previous = locks.get(teamId);
+    const gate = Promise.withResolvers<undefined>();
+    locks.set(teamId, gate.promise);
+    await previous;
+    const before = structuredClone(stateFor(teamId));
+
+    try {
+      return await run(undefined);
+    } catch (error) {
+      teams.set(teamId, before);
+      throw error;
+    } finally {
+      gate.resolve(undefined);
+
+      if (locks.get(teamId) === gate.promise) {
+        locks.delete(teamId);
+      }
+    }
+  };
+
   return {
     ...store,
     invitationsRevoked: (teamId: string, memberId: string): boolean =>
       stateFor(teamId).revokedSlots.has(memberId),
+    lock,
     read: (teamId: string, userId: string): StoredMembership | null =>
       stateFor(teamId).memberships.get(userId) ?? null,
     seed: (teamId: string, userId: string, membership: StoredMembership) => {

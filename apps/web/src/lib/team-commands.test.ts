@@ -32,7 +32,6 @@ const storeWith = async (team: TeamRecord) => {
       return `new-${issued}`;
     },
     invalidateTeamName: vi.fn<() => void>(),
-    reportError: vi.fn<() => void>(),
     storage: createMemoryTeamStorage(),
   });
 
@@ -97,7 +96,7 @@ describe("member groups", () => {
     ]);
 
     for (const result of results) {
-      expect(result).toEqual({ error: "Group not found", ok: false, reason: "rejected" });
+      expect(result).toEqual({ error: "Group not found", ok: false });
     }
 
     const stored = await team.stored();

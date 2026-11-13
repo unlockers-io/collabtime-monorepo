@@ -26,7 +26,6 @@ const setup = () => {
   const store = createTeamStore({
     createId: () => `member-${++issued}`,
     invalidateTeamName,
-    reportError: vi.fn<() => void>(),
     storage,
   });
 
@@ -58,10 +57,9 @@ describe("transactional team store", () => {
       await persist?.(...args);
       throw new Error("connection lost");
     });
-    expect(await store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("New"))).toMatchObject({
-      ok: false,
-      reason: "write-failed",
-    });
+    await expect(
+      store.applyTeamCommand(VALID_UUID, teamCommands.renameTeam("New")),
+    ).rejects.toThrow("connection lost");
     expect(await store.readTeamRecord(VALID_UUID)).toEqual(team);
     expect(storage.publish).not.toHaveBeenCalled();
   });
