@@ -1,8 +1,9 @@
+// @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TeamStatus } from "@/types";
 
-import { createMockSession, VALID_UUID } from "./actions/test-helpers";
+import { createMockSession, resetTestDatabase, VALID_UUID } from "./actions/test-helpers";
 import { isSpaceOwner } from "./team-auth";
 import { resolveViewer } from "./team-viewer";
 import { issueAccessCookie } from "./workspace-access";
@@ -25,7 +26,7 @@ const spaces = { private: privateSpace, public: { ...privateSpace, isPrivate: fa
 
 type Access = ReturnType<typeof createTestAccessStore>;
 
-type Caller = { arrange?: (access: Access) => void; userId?: string };
+type Caller = { arrange?: (access: Access) => Promise<void> | void; userId?: string };
 
 const SIGNED_OUT = "Authentication required";
 const NOT_A_MEMBER = "You are not a member of this team";
@@ -35,15 +36,13 @@ const withCookie = (hash: string) => (access: Access) => {
   access.setToken(privateSpace.id, issueAccessCookie(privateSpace.id, hash).value);
 };
 
-const invited = (expiresAt: Date | null) => (access: Access) => {
+const invited = (expiresAt: Date | null) => (access: Access) =>
   access.addInvitation({ email: EMAIL, expiresAt, teamId: VALID_UUID });
-};
 
 const member =
   (role: "ADMIN" | "MEMBER", archivedAt: Date | null = null, userId = USER_ID) =>
-  (access: Access) => {
+  (access: Access) =>
     access.addMembership(VALID_UUID, userId, { archivedAt, role });
-  };
 
 /**
  * Who may do what. `view` is [public space, private space]; `changeOwn` and `administer`
@@ -120,9 +119,7 @@ const policy: Array<
   [
     "a user with a pending join request",
     {
-      arrange: (access) => {
-        access.addJoinRequest(VALID_UUID, USER_ID);
-      },
+      arrange: (access) => access.addJoinRequest(VALID_UUID, USER_ID),
       userId: USER_ID,
     },
     {
@@ -202,7 +199,7 @@ const policy: Array<
 
 const answersFor = async ({ arrange, userId }: Caller) => {
   const access = createTestAccessStore();
-  arrange?.(access);
+  await arrange?.(access);
   const session = userId === undefined ? null : createMockSession({ email: EMAIL, userId });
   access.signIn(session);
   const guards = access.auth;
@@ -237,8 +234,9 @@ const answersFor = async ({ arrange, userId }: Caller) => {
   };
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv("SPACE_ACCESS_SECRET", "test-space-secret-at-least-32-characters");
+  await resetTestDatabase();
 });
 
 afterEach(() => {

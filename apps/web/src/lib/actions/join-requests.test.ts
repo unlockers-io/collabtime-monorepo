@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as joinRequests from "./join-requests";
@@ -50,7 +51,7 @@ const pendingRequest = {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  harness.reset();
+  await harness.reset();
   await harness.seedTeam(createTestTeamRecord());
   approveRequest.mockResolvedValue();
   denyRequest.mockResolvedValue();
@@ -183,24 +184,24 @@ describe("approveJoinRequest", () => {
     expect(team?.members).toEqual([
       expect.objectContaining({ id: "test-uuid", name: "Bob", userId: "user-456" }),
     ]);
-    expect(approveRequest).toHaveBeenCalledWith("jr-1", undefined);
+    expect(approveRequest).toHaveBeenCalledWith("jr-1", expect.anything());
     expect(harness.membershipStore.grant).toHaveBeenCalledWith(
       { role: "MEMBER", teamId: VALID_UUID, userId: "user-456" },
-      undefined,
+      expect.anything(),
     );
-    expect(harness.findMembership("user-456")).toEqual({ archivedAt: null, role: "MEMBER" });
+    expect(await harness.findMembership("user-456")).toEqual({ archivedAt: null, role: "MEMBER" });
     expect(notifyRequester).toHaveBeenCalledWith(pendingRequest, "approved");
   });
 
   it("grants nothing when the roster refuses the slot", async () => {
-    harness.reset();
+    await harness.reset();
 
     expect(await approveJoinRequest(VALID_UUID, "jr-1")).toEqual({
       error: "Team not found",
       success: false,
     });
     expect(approveRequest).not.toHaveBeenCalled();
-    expect(harness.findMembership("user-456")).toBeNull();
+    expect(await harness.findMembership("user-456")).toBeNull();
     expect(notifyRequester).not.toHaveBeenCalled();
   });
 
@@ -213,7 +214,7 @@ describe("approveJoinRequest", () => {
     });
     const team = await harness.readTeam();
     expect(team?.members).toEqual([]);
-    expect(harness.findMembership("user-456")).toBeNull();
+    expect(await harness.findMembership("user-456")).toBeNull();
     expect(notifyRequester).not.toHaveBeenCalled();
   });
 });

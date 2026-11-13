@@ -1,5 +1,7 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
+import type { Prisma } from "@repo/db";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -20,6 +22,7 @@ const slot = { memberId: VALID_UUID_2, name: "Bob" };
 
 const setup = async () => {
   const harness = createTestTeamStore(randomUUID);
+  await harness.reset();
   await harness.seedTeam(
     createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2 })] }),
   );
@@ -31,8 +34,8 @@ type Harness = ReturnType<typeof createTestTeamStore>;
 
 const lifecycle = (
   harness: Harness,
-  store: MembershipStore<undefined>,
-  applyTeamCommand: ApplyTeamCommand<undefined> = harness.applyTeamCommand,
+  store: MembershipStore<Prisma.TransactionClient>,
+  applyTeamCommand: ApplyTeamCommand<Prisma.TransactionClient> = harness.applyTeamCommand,
 ) =>
   createMembershipLifecycle({
     applyTeamCommand,
@@ -44,7 +47,11 @@ const lifecycle = (
 const afterFirstCommit = (harness: Harness, after: () => Promise<void>) => {
   let pending = true;
 
-  const applyTeamCommand: ApplyTeamCommand<undefined> = async (teamId, command, changeAccess) => {
+  const applyTeamCommand: ApplyTeamCommand<Prisma.TransactionClient> = async (
+    teamId,
+    command,
+    changeAccess,
+  ) => {
     const result = await harness.applyTeamCommand(teamId, command, changeAccess);
 
     if (pending) {
@@ -80,7 +87,7 @@ describe("membership operation interleavings", () => {
 
     expect(await grant).toMatchObject({ ok: true });
     expect(await revoke).toMatchObject({ ok: true });
-    expect(harness.findMembership("bob")).toBeNull();
+    expect(await harness.findMembership("bob")).toBeNull();
     const team = await harness.readTeam();
     expect(team?.members).toEqual([]);
   });
@@ -100,13 +107,13 @@ describe("membership operation interleavings", () => {
         harness.revokeMemberAccess(access),
       ),
     ).toMatchObject({ ok: true });
-    expect(harness.findMembership("bob")).not.toBeNull();
+    expect(await harness.findMembership("bob")).not.toBeNull();
     const team = await harness.readTeam();
     expect(team?.members).toMatchObject([{ userId: "bob" }]);
     expect(
       await harness.revokeMembership({ access, memberId: team?.members[0]?.id ?? "missing" }),
     ).toMatchObject({ ok: true });
-    expect(harness.findMembership("bob")).toBeNull();
+    expect(await harness.findMembership("bob")).toBeNull();
   });
 
   it("does not compensate a database commit whose successful response was lost", async () => {
@@ -121,12 +128,12 @@ describe("membership operation interleavings", () => {
     await expect(failing.grantMembership(bob, slot)).rejects.toThrow(
       "Connection lost after commit",
     );
-    expect(harness.findMembership("bob")).not.toBeNull();
+    expect(await harness.findMembership("bob")).not.toBeNull();
     const team = await harness.readTeam();
     expect(team?.members).toMatchObject([{ userId: "bob" }]);
     expect(await harness.revokeMembership({ access, memberId: VALID_UUID_2 })).toMatchObject({
       ok: true,
     });
-    expect(harness.findMembership("bob")).toBeNull();
+    expect(await harness.findMembership("bob")).toBeNull();
   });
 });

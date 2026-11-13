@@ -1,23 +1,23 @@
-import { describe, expect, it, vi } from "vitest";
+// @vitest-environment node
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createTestMember,
   createTestTeamRecord,
+  resetTestDatabase,
   VALID_UUID,
   VALID_UUID_2,
 } from "./actions/test-helpers";
 import { teamCommands } from "./team-commands";
-import { createMemoryTeamStorage } from "./team-memory-storage";
+import { postgresTeamStorage, type TeamStorage } from "./team-storage";
 import { createTeamStore, teamNameTag } from "./team-store";
 
 const setup = () => {
-  const memory = createMemoryTeamStorage();
-
   const storage = {
-    ...memory,
-    publish: vi.fn(memory.publish),
-    readBatch: vi.fn(memory.readBatch),
-    write: vi.fn(memory.write),
+    ...postgresTeamStorage,
+    publish: vi.fn<TeamStorage["publish"]>().mockResolvedValue(),
+    readBatch: vi.fn(postgresTeamStorage.readBatch),
+    write: vi.fn(postgresTeamStorage.write),
   };
 
   const invalidateTeamName = vi.fn<() => void>();
@@ -31,6 +31,8 @@ const setup = () => {
 
   return { invalidateTeamName, storage, store };
 };
+
+beforeEach(resetTestDatabase);
 
 describe("transactional team store", () => {
   it("keeps concurrent edits without retries", async () => {

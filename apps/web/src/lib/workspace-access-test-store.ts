@@ -1,37 +1,35 @@
+import { type InvitationStatus, type JoinRequestStatus, prisma } from "@repo/db";
 import { vi } from "vitest";
 
-import { createMemoryInvitationStore } from "./invitation-memory-store";
-import type { StoredInvitation } from "./invitations";
-import { createTeamAuth } from "./team-auth";
-import type { ViewerDeps } from "./team-viewer";
+import type { TeamRole } from "@/types";
+
+import { TEST_OWNER_ID } from "./actions/test-helpers";
+import { createTeamAuth, findTeamMembership } from "./team-auth";
+import { type ViewerDeps, viewerDeps as postgresViewerDeps } from "./team-viewer";
 
 type TeamAuthDeps = Parameters<typeof createTeamAuth>[0];
 
-type StoredMembership = NonNullable<Awaited<ReturnType<TeamAuthDeps["findMembership"]>>>;
-
 type Session = Awaited<ReturnType<TeamAuthDeps["getSession"]>>;
 
-const viewerKey = (teamId: string, userId: string) => `${teamId}:${userId}`;
+type InvitationSeed = {
+  email?: string;
+  expiresAt?: Date | null;
+  id?: string;
+  status?: InvitationStatus;
+  teamId: string;
+};
 
+/** Team access over the test database; only the cookie jar and the session are stand-ins. */
 const createTestAccessStore = () => {
-  const invitations = createMemoryInvitationStore();
-  const joinRequests = new Map<string, string>();
-  const memberships = new Map<string, StoredMembership>();
   const tokens = new Map<string, string>();
   let session: Session = null;
 
   const store = {
-    findJoinRequest: vi.fn<ViewerDeps["findJoinRequest"]>((teamId, userId) => {
-      const status = joinRequests.get(viewerKey(teamId, userId));
-
-      return Promise.resolve(status === undefined ? null : { status });
-    }),
-    findMembership: vi.fn<TeamAuthDeps["findMembership"]>((teamId, userId) =>
-      Promise.resolve(memberships.get(viewerKey(teamId, userId)) ?? null),
-    ),
+    findJoinRequest: vi.fn(postgresViewerDeps.findJoinRequest),
+    findMembership: vi.fn(findTeamMembership),
     invitations: {
-      find: vi.fn(invitations.find),
-      listOpenForEmail: vi.fn(invitations.listOpenForEmail),
+      find: vi.fn(postgresViewerDeps.invitations.find),
+      listOpenForEmail: vi.fn(postgresViewerDeps.invitations.listOpenForEmail),
     },
     readAccessToken: vi.fn<TeamAuthDeps["readAccessToken"]>((spaceId) =>
       Promise.resolve(tokens.get(spaceId)),
@@ -52,32 +50,42 @@ const createTestAccessStore = () => {
   };
 
   return {
-    addInvitation: (invitation: Partial<StoredInvitation> & Pick<StoredInvitation, "teamId">) => {
-      invitations.seed({
-        createdAt: new Date(0),
-        email: "test@example.com",
-        expiresAt: null,
-        id: "cmf12345678901234567890123",
-        invitedBy: { email: "owner@example.com", name: "Owner" },
-        memberId: "member-1",
-        status: "PENDING",
-        updatedAt: new Date(0),
-        ...invitation,
+    addInvitation: async (invitation: InvitationSeed) => {
+      await prisma.invitation.create({
+        data: {
+          email: "test@example.com",
+          id: "cmf12345678901234567890123",
+          invitedById: TEST_OWNER_ID,
+          memberId: "member-1",
+          ...invitation,
+        },
       });
     },
-    addJoinRequest: (teamId: string, userId: string, status = "PENDING") => {
-      joinRequests.set(viewerKey(teamId, userId), status);
+    addJoinRequest: async (
+      teamId: string,
+      userId: string,
+      status: JoinRequestStatus = "PENDING",
+    ) => {
+      await prisma.joinRequest.upsert({
+        create: { status, teamId, userId },
+        update: { status },
+        where: { userId_teamId: { teamId, userId } },
+      });
     },
-    addMembership: (teamId: string, userId: string, membership?: Partial<StoredMembership>) => {
-      memberships.set(viewerKey(teamId, userId), {
-        archivedAt: null,
-        role: "MEMBER",
-        ...membership,
+    addMembership: async (
+      teamId: string,
+      userId: string,
+      membership: { archivedAt?: Date | null; role?: TeamRole } = {},
+    ) => {
+      await prisma.membership.upsert({
+        create: { ...membership, teamId, userId },
+        update: membership,
+        where: { userId_teamId: { teamId, userId } },
       });
     },
     auth,
-    removeMembership: (teamId: string, userId: string) => {
-      memberships.delete(viewerKey(teamId, userId));
+    removeMembership: async (teamId: string, userId: string) => {
+      await prisma.membership.delete({ where: { userId_teamId: { teamId, userId } } });
     },
     setToken: (spaceId: string, token: string) => {
       tokens.set(spaceId, token);

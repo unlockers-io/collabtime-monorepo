@@ -1,6 +1,12 @@
+// @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createMockSession, VALID_UUID } from "./actions/test-helpers";
+import {
+  createMockSession,
+  resetTestDatabase,
+  VALID_UUID,
+  VALID_UUID_2,
+} from "./actions/test-helpers";
 import type { TeamSpace } from "./team-auth";
 import { resolveViewer } from "./team-viewer";
 import { issueAccessCookie } from "./workspace-access";
@@ -38,8 +44,9 @@ const setup = () => {
   return { access, guestWithCookie, viewerOf };
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv("SPACE_ACCESS_SECRET", "test-space-secret-at-least-32-characters");
+  await resetTestDatabase();
 });
 
 afterEach(() => {
@@ -112,7 +119,7 @@ describe("resolveViewer access", () => {
 
   it("admits a member to a private space with one membership read", async () => {
     const { access, viewerOf } = setup();
-    access.addMembership(VALID_UUID, "user-1", { role: "ADMIN" });
+    await access.addMembership(VALID_UUID, "user-1", { role: "ADMIN" });
 
     expect(await viewerOf(member)).toMatchObject({
       canView: true,
@@ -131,7 +138,7 @@ describe("resolveViewer access", () => {
 
   it("reports archived memberships", async () => {
     const { access, viewerOf } = setup();
-    access.addMembership(VALID_UUID, "user-1", { archivedAt: new Date() });
+    await access.addMembership(VALID_UUID, "user-1", { archivedAt: new Date() });
 
     expect(await viewerOf(member)).toMatchObject({ isArchived: true, status: "MEMBER" });
   });
@@ -157,7 +164,7 @@ describe("resolveViewer access", () => {
 describe("resolveViewer relation", () => {
   it("surfaces an open invitation addressed to the viewer's normalized email", async () => {
     const { access, viewerOf } = setup();
-    access.addInvitation({ email: "member@example.com", id: "invite-1", teamId: VALID_UUID });
+    await access.addInvitation({ email: "member@example.com", id: "invite-1", teamId: VALID_UUID });
     const session = createMockSession({ email: " MEMBER@Example.com ", userId: "user-1" });
 
     expect(await viewerOf(session)).toMatchObject({
@@ -173,7 +180,7 @@ describe("resolveViewer relation", () => {
     { expiresAt: new Date(0) },
   ])("ignores a closed invitation: %j", async (override) => {
     const { access, viewerOf } = setup();
-    access.addInvitation({ email: "member@example.com", teamId: VALID_UUID, ...override });
+    await access.addInvitation({ email: "member@example.com", teamId: VALID_UUID, ...override });
 
     const viewer = await viewerOf(member);
 
@@ -183,11 +190,11 @@ describe("resolveViewer relation", () => {
 
   it("prioritizes membership over an invitation, and an invitation over a join request", async () => {
     const { access, viewerOf } = setup();
-    access.addInvitation({ email: "member@example.com", teamId: VALID_UUID });
-    access.addJoinRequest(VALID_UUID, "user-1");
+    await access.addInvitation({ email: "member@example.com", teamId: VALID_UUID });
+    await access.addJoinRequest(VALID_UUID, "user-1");
 
     expect(await viewerOf(member, publicSpace)).toMatchObject({ status: "INVITED" });
-    access.addMembership(VALID_UUID, "user-1");
+    await access.addMembership(VALID_UUID, "user-1");
     const viewer = await viewerOf(member, publicSpace);
     expect(viewer.status).toBe("MEMBER");
     expect(viewer.invitation).toBeUndefined();
@@ -195,16 +202,16 @@ describe("resolveViewer relation", () => {
 
   it("reports a pending join request", async () => {
     const { access, viewerOf } = setup();
-    access.addJoinRequest(VALID_UUID, "user-1");
+    await access.addJoinRequest(VALID_UUID, "user-1");
 
     expect(await viewerOf(member, publicSpace)).toMatchObject({ status: "PENDING" });
-    access.addJoinRequest(VALID_UUID, "user-1", "REJECTED");
+    await access.addJoinRequest(VALID_UUID, "user-1", "DENIED");
     expect(await viewerOf(member, publicSpace)).toMatchObject({ status: "none" });
   });
 
   it("masks a hinted invitation addressed to another email", async () => {
     const { access, viewerOf } = setup();
-    access.addInvitation({ email: "friend@example.com", id: HINT, teamId: VALID_UUID });
+    await access.addInvitation({ email: "friend@example.com", id: HINT, teamId: VALID_UUID });
 
     expect(await viewerOf(member, publicSpace, HINT)).toMatchObject({
       inviteMismatch: { invitedEmailMasked: "f***@example.com" },
@@ -214,14 +221,14 @@ describe("resolveViewer relation", () => {
 
   it.each([
     { email: "MEMBER@example.com" },
-    { teamId: "another-team" },
+    { teamId: VALID_UUID_2 },
     { status: "REVOKED" as const },
     { expiresAt: new Date(0) },
   ])(
     "hides the hint for the viewer's own, unrelated or closed invitation: %j",
     async (override) => {
       const { access, viewerOf } = setup();
-      access.addInvitation({
+      await access.addInvitation({
         email: "friend@example.com",
         id: HINT,
         teamId: VALID_UUID,
@@ -238,7 +245,7 @@ describe("resolveViewer relation", () => {
     const { access, viewerOf } = setup();
 
     await viewerOf(null, privateSpace, HINT);
-    access.addMembership(VALID_UUID, "user-1");
+    await access.addMembership(VALID_UUID, "user-1");
     await viewerOf(member, publicSpace, HINT);
 
     expect(access.store.invitations.find).not.toHaveBeenCalled();

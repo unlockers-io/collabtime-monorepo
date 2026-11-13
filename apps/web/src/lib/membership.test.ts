@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TeamRecord } from "@/types";
@@ -28,9 +29,7 @@ const roster = async () => {
 const seed = (team: TeamRecord = createTestTeamRecord({ members: [invitedSlot] })) =>
   harness.seedTeam(team);
 
-beforeEach(() => {
-  harness.reset();
-});
+beforeEach(() => harness.reset());
 
 describe("grantMembership", () => {
   it("claims the invited slot and creates the membership", async () => {
@@ -41,7 +40,7 @@ describe("grantMembership", () => {
       ok: true,
     });
     expect(await roster()).toMatchObject([bobsSlot]);
-    expect(harness.findMembership("bob")).toEqual({ archivedAt: null, role: "MEMBER" });
+    expect(await harness.findMembership("bob")).toEqual({ archivedAt: null, role: "MEMBER" });
   });
 
   it("leaves no membership when the slot claim fails", async () => {
@@ -49,7 +48,7 @@ describe("grantMembership", () => {
       error: "Team not found",
       ok: false,
     });
-    expect(harness.findMembership("bob")).toBeNull();
+    expect(await harness.findMembership("bob")).toBeNull();
   });
 
   it("removes a slot it created when the membership write fails", async () => {
@@ -70,9 +69,9 @@ describe("grantMembership", () => {
     await expect(
       harness.grantMembership(bob, { memberId: VALID_UUID_2, name: "Bob" }, first),
     ).rejects.toThrow("Invitation is no longer pending");
-    expect(first).toHaveBeenCalledWith(VALID_UUID_2, undefined);
+    expect(first).toHaveBeenCalledWith(VALID_UUID_2, expect.anything());
     expect(await roster()).toEqual([invitedSlot]);
-    expect(harness.findMembership("bob")).toBeNull();
+    expect(await harness.findMembership("bob")).toBeNull();
   });
 
   it("keeps a slot the user already owned when the membership write fails", async () => {
@@ -90,42 +89,43 @@ describe("grantMembership", () => {
 
     await harness.grantViewerAccess(bob);
 
-    expect(harness.findMembership("bob")).toEqual({ archivedAt: null, role: "MEMBER" });
+    expect(await harness.findMembership("bob")).toEqual({ archivedAt: null, role: "MEMBER" });
     expect(await roster()).toEqual([invitedSlot]);
   });
 
   it("un-archives a returning member and keeps their role", async () => {
-    harness.seedMembership("bob", "ADMIN", new Date());
+    await harness.seedMembership("bob", "ADMIN", new Date());
 
     await harness.grantViewerAccess(bob);
 
-    expect(harness.findMembership("bob")).toEqual({ archivedAt: null, role: "ADMIN" });
+    expect(await harness.findMembership("bob")).toEqual({ archivedAt: null, role: "ADMIN" });
   });
 });
 
 describe("revokeMembership", () => {
   it("revokes access and pending invitations, then removes the slot", async () => {
     await seed(createTestTeamRecord({ members: [bobsSlot] }));
-    harness.seedMembership("bob");
+    await harness.seedMembership("bob");
+    await harness.seedInvitation(VALID_UUID_2);
 
     expect(await harness.revokeMembership({ access, memberId: VALID_UUID_2 })).toMatchObject({
       ok: true,
       value: bobsSlot,
     });
     expect(await roster()).toEqual([]);
-    expect(harness.findMembership("bob")).toBeNull();
-    expect(harness.invitationsRevoked(VALID_UUID_2)).toBe(true);
+    expect(await harness.findMembership("bob")).toBeNull();
+    expect(await harness.invitationStatus(VALID_UUID_2)).toBe("REVOKED");
   });
 
   it("leaves access intact when the contents reject the removal", async () => {
     await seed(createTestTeamRecord({ members: [bobsSlot] }));
-    harness.seedMembership("bob");
+    await harness.seedMembership("bob");
 
     expect(await harness.revokeMembership({ access, memberId: "missing" })).toEqual({
       error: "Member not found",
       ok: false,
     });
-    expect(harness.findMembership("bob")).not.toBeNull();
+    expect(await harness.findMembership("bob")).not.toBeNull();
     expect(harness.membershipStore.revoke).not.toHaveBeenCalled();
   });
 
@@ -141,13 +141,13 @@ describe("revokeMembership", () => {
 
   it("keeps the remover's own membership", async () => {
     await seed(createTestTeamRecord({ members: [createTestMember({ userId: ADMIN_ID })] }));
-    harness.seedMembership(ADMIN_ID);
+    await harness.seedMembership(ADMIN_ID);
 
     expect(await harness.revokeMembership({ access, memberId: VALID_UUID })).toMatchObject({
       ok: true,
     });
     expect(await roster()).toEqual([]);
-    expect(harness.findMembership(ADMIN_ID)).not.toBeNull();
+    expect(await harness.findMembership(ADMIN_ID)).not.toBeNull();
   });
 
   it("publishes only committed membership changes", async () => {
@@ -163,7 +163,7 @@ describe("revokeMembership", () => {
       "rollback",
     );
     expect(harness.publish).not.toHaveBeenCalled();
-    expect(harness.findMembership("bob")).not.toBeNull();
+    expect(await harness.findMembership("bob")).not.toBeNull();
     expect(await roster()).toMatchObject([bobsSlot]);
   });
 });

@@ -4,7 +4,8 @@ import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createMockSession } from "@/lib/actions/test-helpers";
+import { createMockSession, resetTestDatabase } from "@/lib/actions/test-helpers";
+import type * as TeamAuth from "@/lib/team-auth";
 import type * as TeamViewer from "@/lib/team-viewer";
 import { createTestAccessStore } from "@/lib/workspace-access-test-store";
 
@@ -19,7 +20,10 @@ const mocks = vi.hoisted(() => ({
   readPublicTeam: vi.fn(),
 }));
 
-vi.mock("@repo/db", () => ({ prisma: { space: { findUnique: mocks.findSpace } } }));
+vi.mock("@/lib/team-auth", async (importOriginal) => ({
+  ...(await importOriginal<typeof TeamAuth>()),
+  findTeamSpace: mocks.findSpace,
+}));
 
 vi.mock("@/lib/auth-server", () => ({ getSession: mocks.getSession }));
 
@@ -31,6 +35,7 @@ vi.mock("@/lib/team-viewer", async (importOriginal) => {
   const actual = await importOriginal<typeof TeamViewer>();
 
   return {
+    ...actual,
     resolveViewer: (input: Parameters<typeof actual.resolveViewer>[0]) =>
       actual.resolveViewer(input, access.viewerDeps),
   };
@@ -80,8 +85,9 @@ const renderPage = async (invite?: string | Array<string>) => {
   render(await renderTeamPage({ params, searchParams: Promise.resolve({ invite }) }));
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetAllMocks();
+  await resetTestDatabase();
   access = createTestAccessStore();
   mocks.findSpace.mockResolvedValue(privateSpace);
   mocks.getSession.mockResolvedValue(createMockSession());
@@ -93,7 +99,7 @@ beforeEach(() => {
 
 describe("workspace access", () => {
   it("shows private invitation acceptance without fetching or hydrating the roster", async () => {
-    access.addInvitation({ teamId: TEAM_ID });
+    await access.addInvitation({ teamId: TEAM_ID });
     await renderPage();
     expect(screen.getByRole("button", { name: "Accept invitation" })).toBeVisible();
     expect(screen.queryByText("Password gate")).toBeNull();
@@ -109,15 +115,15 @@ describe("workspace access", () => {
   });
 
   it("keeps a signed-in outsider at the gate", async () => {
-    access.addInvitation({ status: "DECLINED", teamId: TEAM_ID });
+    await access.addInvitation({ status: "DECLINED", teamId: TEAM_ID });
     await renderPage();
     expect(screen.getByText("Password gate")).toBeVisible();
     expect(mocks.readPublicTeam).not.toHaveBeenCalled();
   });
 
   it("opens a private workspace to members with one membership read", async () => {
-    access.addMembership(TEAM_ID, "user-123");
-    access.addInvitation({ teamId: TEAM_ID });
+    await access.addMembership(TEAM_ID, "user-123");
+    await access.addInvitation({ teamId: TEAM_ID });
     await renderPage();
     expect(screen.getByText("Workspace: MEMBER")).toBeVisible();
     expect(mocks.readPublicTeam).toHaveBeenCalledWith(TEAM_ID, "user-123");
@@ -126,7 +132,7 @@ describe("workspace access", () => {
 
   it("passes invitation status to a public workspace", async () => {
     mocks.findSpace.mockResolvedValue({ ...privateSpace, isPrivate: false });
-    access.addInvitation({ id: "invite-1", teamId: TEAM_ID });
+    await access.addInvitation({ id: "invite-1", teamId: TEAM_ID });
     await renderPage();
     expect(mocks.clientProps).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -162,9 +168,9 @@ describe("workspace access", () => {
 });
 
 describe("invitation hints", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mocks.findSpace.mockResolvedValue({ ...privateSpace, isPrivate: false });
-    access.addInvitation({ email: "friend@example.com", id: HINT, teamId: TEAM_ID });
+    await access.addInvitation({ email: "friend@example.com", id: HINT, teamId: TEAM_ID });
   });
 
   it("shows a masked notice to a signed-in user with another email", async () => {

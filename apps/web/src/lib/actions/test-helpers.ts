@@ -1,3 +1,4 @@
+import { prisma } from "@repo/db";
 import { vi } from "vitest";
 
 import type {
@@ -8,12 +9,10 @@ import type {
 } from "@/lib/team-auth";
 import type { TeamGroup, TeamMember, TeamRecord, TeamRole } from "@/types";
 
-import { createMembershipLifecycle, type MembershipStore } from "../membership";
-import { createMemoryMembershipStore } from "../membership-memory-store";
+import { createMembershipLifecycle, prismaMembershipStore } from "../membership";
 import { teamCommands } from "../team-commands";
-import { createMemoryTeamStorage } from "../team-memory-storage";
-import type { TeamStorage } from "../team-storage";
-import { type ApplyTeamCommand, createTeamStore, type TeamStoreDeps } from "../team-store";
+import { postgresTeamStorage, type TeamStorage } from "../team-storage";
+import { createTeamStore, type TeamStoreDeps } from "../team-store";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 const VALID_UUID_2 = "660e8400-e29b-41d4-a716-446655440001";
@@ -66,48 +65,64 @@ const createMockSession = (overrides?: { email?: string; name?: string; userId?:
   },
 });
 
-const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
+const TEST_OWNER_ID = "owner-1";
+
+/** The accounts the server tests act as; `user-123` is the one `createMockSession` signs in. */
+const TEST_USERS = [
+  { email: "test@example.com", id: "user-123", name: "Test User" },
+  { email: "owner@example.com", id: TEST_OWNER_ID, name: "Owner" },
+  ...["bob", "invitee", "member-1", "other", "user-1", "user-9", "user-456"].map((id) => ({
+    email: `${id}@example.com`,
+    id,
+    name: null,
+  })),
+];
+
+/** Empties this worker's database, then adds the test accounts and three spaces without contents. */
+const resetTestDatabase = async (): Promise<void> => {
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "User" CASCADE');
+  await prisma.user.createMany({ data: TEST_USERS });
+  await prisma.space.createMany({
+    data: [VALID_UUID, VALID_UUID_2, VALID_UUID_3].map((teamId) => ({
+      ownerId: TEST_OWNER_ID,
+      teamId,
+    })),
+  });
+};
+
+/** `test-uuid`, then `test-uuid-2`, …: member and group ids are primary keys. */
+const createTestIds = () => {
+  let issued = 0;
+
+  return {
+    next: () => {
+      issued += 1;
+
+      return issued === 1 ? "test-uuid" : `test-uuid-${issued}`;
+    },
+    reset: () => {
+      issued = 0;
+    },
+  };
+};
+
+const createTestTeamStore = (createId?: () => string) => {
+  const ids = createTestIds();
   const invalidateTeamName = vi.fn<TeamStoreDeps["invalidateTeamName"]>();
   const publish = vi.fn<TeamStorage["publish"]>().mockResolvedValue();
-  let memberships = createMemoryMembershipStore();
-  let teamStorage = createMemoryTeamStorage();
 
   const membershipStore = {
-    grant: vi.fn<MembershipStore<undefined>["grant"]>(),
-    revoke: vi.fn<MembershipStore<undefined>["revoke"]>(),
+    grant: vi.fn(prismaMembershipStore.grant),
+    revoke: vi.fn(prismaMembershipStore.revoke),
   };
 
-  const build = () =>
-    createTeamStore({
-      createId,
-      invalidateTeamName,
-      storage: {
-        ...teamStorage,
-        publish,
-        transaction: (teamId, run) =>
-          teamStorage.transaction(teamId, () => memberships.lock(teamId, run)),
-      },
-    });
+  const store = createTeamStore({
+    createId: createId ?? ids.next,
+    invalidateTeamName,
+    storage: { ...postgresTeamStorage, publish },
+  });
 
-  let store = build();
-
-  const wireMemberships = () => {
-    memberships = createMemoryMembershipStore();
-    membershipStore.grant
-      .mockReset()
-      .mockImplementation((grant) => memberships.grant(grant, undefined));
-    membershipStore.revoke
-      .mockReset()
-      .mockImplementation((revocation) => memberships.revoke(revocation, undefined));
-  };
-
-  wireMemberships();
-
-  const applyTeamCommand: ApplyTeamCommand<undefined> = (teamId, command, changeAccess) =>
-    store.applyTeamCommand(teamId, command, changeAccess);
-
-  const changeTeamAccess: typeof store.changeTeamAccess = (teamId, change) =>
-    store.changeTeamAccess(teamId, change);
+  const { applyTeamCommand, changeTeamAccess } = store;
 
   const { grantMembership, grantViewerAccess, revokeMemberAccess } = createMembershipLifecycle({
     applyTeamCommand,
@@ -118,21 +133,29 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
   return {
     applyTeamCommand,
     changeTeamAccess,
-    createTeamContents: (teamId: string, team: TeamRecord) =>
-      store.createTeamContents(teamId, team),
-    findMembership: (userId: string, teamId = VALID_UUID) => memberships.read(teamId, userId),
+    createTeamContents: store.createTeamContents,
+    findMembership: (userId: string, teamId = VALID_UUID) =>
+      prisma.membership.findUnique({
+        select: { archivedAt: true, role: true },
+        where: { userId_teamId: { teamId, userId } },
+      }),
     grantMembership,
     grantViewerAccess,
     invalidateTeamName,
-    invitationsRevoked: (memberId: string) => memberships.invitationsRevoked(VALID_UUID, memberId),
+    invitationStatus: async (memberId: string) => {
+      const invitation = await prisma.invitation.findFirst({ where: { memberId } });
+
+      return invitation?.status;
+    },
     membershipStore,
     publish,
     readTeam: (teamId = VALID_UUID) => store.readTeamRecord(teamId),
-    reset: () => {
-      teamStorage = createMemoryTeamStorage();
-      store = build();
+    reset: async () => {
+      await resetTestDatabase();
+      ids.reset();
       publish.mockClear();
-      wireMemberships();
+      membershipStore.grant.mockReset().mockImplementation(prismaMembershipStore.grant);
+      membershipStore.revoke.mockReset().mockImplementation(prismaMembershipStore.revoke);
       invalidateTeamName.mockReset();
     },
     revokeMemberAccess,
@@ -142,9 +165,12 @@ const createTestTeamStore = (createId: () => string = () => "test-uuid") => {
         teamCommands.removeMember(memberId),
         revokeMemberAccess(access),
       ),
-    seedMembership: (userId: string, role: TeamRole = "MEMBER", archivedAt: Date | null = null) => {
-      memberships.seed(VALID_UUID, userId, { archivedAt, role });
-    },
+    seedInvitation: (memberId: string, email = "invited@example.com") =>
+      prisma.invitation.create({
+        data: { email, invitedById: TEST_OWNER_ID, memberId, teamId: VALID_UUID },
+      }),
+    seedMembership: (userId: string, role: TeamRole = "MEMBER", archivedAt: Date | null = null) =>
+      prisma.membership.create({ data: { archivedAt, role, teamId: VALID_UUID, userId } }),
     seedTeam: async (team: TeamRecord) => {
       await store.createTeamContents(team.id, team);
     },
@@ -191,6 +217,8 @@ export {
   createTestMember,
   createTestTeamRecord,
   createTestTeamStore,
+  resetTestDatabase,
+  TEST_OWNER_ID,
   VALID_UUID,
   VALID_UUID_2,
   VALID_UUID_3,
