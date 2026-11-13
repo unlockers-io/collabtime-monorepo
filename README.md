@@ -113,7 +113,7 @@ Next.js 16, React 19, strict TypeScript, Tailwind CSS v4, Base UI, TanStack Quer
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [project conventions](docs/CONVENTIONS.md). Report vulnerabilities through [SECURITY.md](SECURITY.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md), [project conventions](docs/CONVENTIONS.md) and the [open decisions](docs/open-decisions.md). Report vulnerabilities through [SECURITY.md](SECURITY.md).
 
 ## License
 
