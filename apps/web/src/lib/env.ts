@@ -1,3 +1,4 @@
+import { authEnv } from "@repo/auth/env-config";
 import { senderAddressSchema } from "@repo/transactional/sender";
 import { z } from "zod";
 
@@ -50,4 +51,7 @@ const getEnv = <K extends keyof Env>(key: K): Partial<Env>[K] => {
   return result.data[key];
 };
 
-export { validateEnv, getEnv };
+// Read as the auth package read it: an empty CORS_ORIGINS means no origin, which emptyStringAsUndefined would turn into the default.
+const getAuthEnv = () => authEnv.parse(process.env);
+
+export { getAuthEnv, getEnv, validateEnv };

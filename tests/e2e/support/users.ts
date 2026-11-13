@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { prisma } from "@repo/db";
 import { hashPassword } from "better-auth/crypto";
+
+import { prisma } from "../helpers/database";
 
 /** The shared signed-in user every authenticated project starts as. */
 const E2E_USER = {

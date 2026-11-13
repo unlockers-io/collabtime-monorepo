@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { prisma } from "@repo/db";
 
 import { verificationLink } from "../fixtures/verification.fixture";
+import { prisma } from "../helpers/database";
 import { makeTestEmail } from "../helpers/test-email";
 import { webUrl } from "../urls";
 

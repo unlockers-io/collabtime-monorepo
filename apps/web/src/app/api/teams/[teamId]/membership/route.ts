@@ -1,8 +1,8 @@
-import { prisma } from "@repo/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
+import { getPrisma } from "@/lib/db";
 import { log, withEvlog } from "@/lib/observability";
 
 const patchSchema = z.object({
@@ -27,7 +27,7 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
     const archivedAt = archived ? new Date() : null;
 
     // Scoped to the caller's own row, so the write is the membership check.
-    const { count } = await prisma.membership.updateMany({
+    const { count } = await getPrisma().membership.updateMany({
       data: { archivedAt },
       where: { teamId, userId: session.user.id },
     });

@@ -1,5 +1,6 @@
-import { type Prisma, prisma } from "@repo/db";
+import type { Prisma } from "@repo/db";
 
+import { getPrisma } from "@/lib/db";
 import type { TeamRecord } from "@/types";
 
 import { publishTeamEvent, type TeamEventKind } from "./team-events";
@@ -17,7 +18,7 @@ const withTeamTransaction = <T>(
   teamId: string,
   run: (transaction: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> =>
-  prisma.$transaction(async (transaction) => {
+  getPrisma().$transaction(async (transaction) => {
     await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`team:${teamId}`}, 0))`;
 
     return run(transaction);
@@ -27,12 +28,12 @@ const postgresTeamStorage: TeamStorage<Prisma.TransactionClient> = {
   publish: async (teamId, kinds) => {
     await Promise.all(kinds.map((kind) => publishTeamEvent(teamId, kind)));
   },
-  read: async (teamId, transaction = prisma) => {
+  read: async (teamId, transaction = getPrisma()) => {
     const teams = await readTeams([teamId], transaction);
 
     return teams[0] ?? null;
   },
-  readBatch: (teamIds) => readTeams(teamIds, prisma),
+  readBatch: (teamIds) => readTeams(teamIds, getPrisma()),
   transaction: withTeamTransaction,
   write: writeTeam,
 };

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { prisma } from "@repo/db";
 
+import { prisma } from "../helpers/database";
 import { waitForEmail } from "../helpers/mail";
 import { makeTestEmail } from "../helpers/test-email";
 import { webUrl } from "../urls";

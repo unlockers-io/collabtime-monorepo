@@ -1,5 +1,4 @@
-import { prisma } from "@repo/db";
-
+import { getPrisma } from "@/lib/db";
 import type { authenticate } from "@/lib/team-auth";
 import type { TeamMember, TeamRecord } from "@/types";
 
@@ -55,7 +54,7 @@ const createTeamAction = (deps: TeamCreateDeps) => {
         };
       }
 
-      const administered = await prisma.membership.count({
+      const administered = await getPrisma().membership.count({
         where: { role: "ADMIN", userId: user.id },
       });
 

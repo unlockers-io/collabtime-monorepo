@@ -1,6 +1,8 @@
 import { execFile } from "node:child_process";
 import { availableParallelism } from "node:os";
 
+import { createPrismaClient } from "@repo/db";
+
 const COMPOSE_DATABASE_URL = "postgresql://collabtime:collabtime123@localhost:5433/collabtime";
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
 
@@ -34,7 +36,7 @@ const setup = async () => {
   process.env.DATABASE_URL = server.toString();
   process.env.TEST_DATABASE_SERVER = server.toString();
 
-  const { prisma } = await import("@repo/db");
+  const prisma = createPrismaClient(server.toString());
   const prefix = `${server.pathname.slice(1)}_test_`;
   const template = `${prefix}template`;
 

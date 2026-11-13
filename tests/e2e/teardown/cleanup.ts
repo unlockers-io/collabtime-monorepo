@@ -1,5 +1,4 @@
-import { prisma } from "@repo/db";
-
+import { prisma } from "../helpers/database";
 import { assertLocalDatabase } from "../support/assert-local";
 import { E2E_USER } from "../support/users";
 

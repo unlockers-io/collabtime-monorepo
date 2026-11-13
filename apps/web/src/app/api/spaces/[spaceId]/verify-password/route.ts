@@ -1,10 +1,10 @@
-import { prisma } from "@repo/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { getClientIp } from "@/lib/client-ip";
 import { verifyPassword } from "@/lib/crypto";
+import { getPrisma } from "@/lib/db";
 import { log, withEvlog } from "@/lib/observability";
 import { joinPrivateSpace } from "@/lib/space-join";
 import { checkRateLimit } from "@/lib/space-rate-limit";
@@ -32,7 +32,7 @@ export const POST = withEvlog(async (request: Request, { params }: Params) => {
       return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
     }
 
-    const space = await prisma.space.findUnique({
+    const space = await getPrisma().space.findUnique({
       select: {
         accessPassword: true,
         id: true,

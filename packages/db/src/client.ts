@@ -3,42 +3,17 @@ import { Pool } from "pg";
 
 import { PrismaClient } from "./generated/client";
 
-declare global {
-  var prisma: PrismaClient | undefined;
-}
-
-const assertDatabaseUrl = () => {
-  const url = process.env.DATABASE_URL;
-
-  if (url === undefined || url.trim() === "") {
-    throw new Error(
-      "DATABASE_URL is not set. Set it in the environment; packages/db/.env.example has the local value.",
-    );
+const createPrismaClient = (databaseUrl: string) => {
+  // node-postgres reads a blank connection string as absent and connects to libpq's defaults.
+  if (databaseUrl.trim() === "") {
+    throw new Error("createPrismaClient needs a database URL and got a blank one.");
   }
+
+  const pool = new Pool({ connectionString: databaseUrl });
+
+  return new PrismaClient({ adapter: new PrismaPg(pool, { disposeExternalPool: true }) });
 };
 
-class PrismaPgRequiringUrl extends PrismaPg {
-  override async connect() {
-    assertDatabaseUrl();
-
-    return super.connect();
-  }
-}
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-const adapter = new PrismaPgRequiringUrl(pool, { disposeExternalPool: true });
-
-export const prisma =
-  globalThis.prisma ??
-  new PrismaClient({
-    adapter,
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalThis.prisma = prisma;
-}
+export { createPrismaClient };
 
 export * from "./generated/client";

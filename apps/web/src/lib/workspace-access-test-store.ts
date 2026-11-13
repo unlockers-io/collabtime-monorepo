@@ -1,6 +1,7 @@
-import { type InvitationStatus, type JoinRequestStatus, prisma } from "@repo/db";
+import type { InvitationStatus, JoinRequestStatus } from "@repo/db";
 import { vi } from "vitest";
 
+import { getPrisma } from "@/lib/db";
 import type { TeamRole } from "@/types";
 
 import { TEST_OWNER_ID } from "./actions/test-helpers";
@@ -51,7 +52,7 @@ const createTestAccessStore = () => {
 
   return {
     addInvitation: async (invitation: InvitationSeed) => {
-      await prisma.invitation.create({
+      await getPrisma().invitation.create({
         data: {
           email: "test@example.com",
           id: "cmf12345678901234567890123",
@@ -66,7 +67,7 @@ const createTestAccessStore = () => {
       userId: string,
       status: JoinRequestStatus = "PENDING",
     ) => {
-      await prisma.joinRequest.upsert({
+      await getPrisma().joinRequest.upsert({
         create: { status, teamId, userId },
         update: { status },
         where: { userId_teamId: { teamId, userId } },
@@ -77,7 +78,7 @@ const createTestAccessStore = () => {
       userId: string,
       membership: { archivedAt?: Date | null; role?: TeamRole } = {},
     ) => {
-      await prisma.membership.upsert({
+      await getPrisma().membership.upsert({
         create: { ...membership, teamId, userId },
         update: membership,
         where: { userId_teamId: { teamId, userId } },
@@ -85,7 +86,7 @@ const createTestAccessStore = () => {
     },
     auth,
     removeMembership: async (teamId: string, userId: string) => {
-      await prisma.membership.delete({ where: { userId_teamId: { teamId, userId } } });
+      await getPrisma().membership.delete({ where: { userId_teamId: { teamId, userId } } });
     },
     setToken: (spaceId: string, token: string) => {
       tokens.set(spaceId, token);
