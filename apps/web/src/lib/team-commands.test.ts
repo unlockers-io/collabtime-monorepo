@@ -172,6 +172,26 @@ describe("ordering", () => {
     });
   });
 
+  it("keeps every member at its own position when one joins after a removal", async () => {
+    const team = await storeWith(
+      createTestTeamRecord({
+        members: Array.from({ length: 3 }, (_, order) =>
+          createTestMember({ id: `member-${order}`, order }),
+        ),
+      }),
+    );
+
+    await team.apply(teamCommands.removeMember("member-0"));
+    await team.apply(teamCommands.addMember(memberInput));
+
+    const stored = await team.stored();
+    expect(stored.members.map((member) => [member.id, member.order])).toEqual([
+      ["member-1", 0],
+      ["member-2", 1],
+      ["new-1", 2],
+    ]);
+  });
+
   it("refuses a reorder that drops, invents or repeats an id", async () => {
     const team = await storeWith(
       createTestTeamRecord({
