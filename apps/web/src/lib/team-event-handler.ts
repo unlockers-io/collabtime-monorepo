@@ -1,11 +1,11 @@
 import { getClientIp } from "./client-ip";
 import type { log } from "./observability";
+import type { AccessCheck, TeamSpace } from "./team-auth";
 import type { Admission, AdmissionViewer } from "./team-event-admission";
 import { createTeamEventStream, type AccessResult } from "./team-event-stream";
 import type { TeamListener } from "./team-events";
 import { ACCESS_LOSS_STATUS, TEAM_EVENTS_ROUTE } from "./team-live-protocol";
 import { UUIDSchema } from "./validation";
-import type { AccessCheck, WorkspaceSpace } from "./workspace-access";
 
 type CapturedAccess = { canView: AccessCheck; userId: string | undefined };
 
@@ -13,7 +13,7 @@ type TeamEventHandlerDeps = {
   acquire: (viewer: AdmissionViewer) => Promise<Admission>;
   captureAccess: (spaceId: string) => Promise<CapturedAccess>;
   enabled: () => boolean;
-  findSpace: (teamId: string) => Promise<WorkspaceSpace | null>;
+  findSpace: (teamId: string) => Promise<TeamSpace | null>;
   hub: {
     isReady: () => boolean;
     subscribe: (teamId: string, listener: TeamListener) => () => void;

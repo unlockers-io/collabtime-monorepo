@@ -8,7 +8,14 @@ import { createMockSession, createTestTeamRecord, VALID_UUID } from "./test-help
 
 type TeamReadDeps = Parameters<typeof createTeamReadActions>[0];
 
-const space = { accessPassword: "hash", id: "space-1", isPrivate: true, teamId: VALID_UUID };
+const space = {
+  accessPassword: "hash",
+  id: "space-1",
+  isPrivate: true,
+  ownerId: "owner-1",
+  teamId: VALID_UUID,
+};
+
 const team = createTestTeamRecord();
 
 const setup = () => {
@@ -17,7 +24,7 @@ const setup = () => {
   const getSession = vi.fn<TeamReadDeps["getSession"]>().mockResolvedValue(null);
 
   const { getPublicTeam } = createTeamReadActions({
-    accessStore: access.store,
+    canViewTeam: access.auth.canViewTeam,
     findSpace,
     getSession,
     readPublicTeam: vi.fn<TeamReadDeps["readPublicTeam"]>().mockResolvedValue(team),

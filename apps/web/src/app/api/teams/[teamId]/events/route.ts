@@ -1,11 +1,9 @@
-import { prisma } from "@repo/db";
-
 import { getSession } from "@/lib/auth-server";
 import { log, withEvlog } from "@/lib/observability";
+import { captureAccessCheck, findTeamSpace } from "@/lib/team-auth";
 import { acquireTeamEventConnection } from "@/lib/team-event-admission";
 import { createTeamEventsHandler } from "@/lib/team-event-handler";
 import { isLiveSyncEnabled, teamEventHub } from "@/lib/team-events";
-import { captureAccessCheck } from "@/lib/workspace-access";
 
 const handleEvents = createTeamEventsHandler({
   acquire: acquireTeamEventConnection,
@@ -16,11 +14,7 @@ const handleEvents = createTeamEventsHandler({
     return { canView: await captureAccessCheck(spaceId, userId), userId };
   },
   enabled: isLiveSyncEnabled,
-  findSpace: (teamId) =>
-    prisma.space.findUnique({
-      select: { accessPassword: true, id: true, isPrivate: true, teamId: true },
-      where: { teamId },
-    }),
+  findSpace: findTeamSpace,
   hub: teamEventHub,
   log,
 });

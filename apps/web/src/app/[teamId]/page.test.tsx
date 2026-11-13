@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMockSession } from "@/lib/actions/test-helpers";
-import type * as WorkspaceAccess from "@/lib/workspace-access";
+import type * as TeamViewer from "@/lib/team-viewer";
 import { createTestAccessStore } from "@/lib/workspace-access-test-store";
 
 import renderTeamPage from "./page";
@@ -27,12 +27,12 @@ vi.mock("@/lib/public-team", () => ({ readPublicTeam: mocks.readPublicTeam }));
 
 vi.mock("@/lib/team-meta", () => ({ getTeamName: vi.fn() }));
 
-vi.mock("@/lib/workspace-access", async (importOriginal) => {
-  const actual = await importOriginal<typeof WorkspaceAccess>();
+vi.mock("@/lib/team-viewer", async (importOriginal) => {
+  const actual = await importOriginal<typeof TeamViewer>();
 
   return {
     resolveViewer: (input: Parameters<typeof actual.resolveViewer>[0]) =>
-      actual.resolveViewer(input, access.store),
+      actual.resolveViewer(input, access.viewerDeps),
   };
 });
 
@@ -104,7 +104,7 @@ describe("workspace access", () => {
     mocks.getSession.mockResolvedValue(null);
     await renderPage();
     expect(screen.getByText("Password gate")).toBeVisible();
-    expect(access.store.findInvitation).not.toHaveBeenCalled();
+    expect(access.store.invitations.listOpenForEmail).not.toHaveBeenCalled();
     expect(mocks.readPublicTeam).not.toHaveBeenCalled();
   });
 
@@ -196,6 +196,6 @@ describe("invitation hints", () => {
     expect(mocks.gateProps).toHaveBeenCalledWith(
       expect.objectContaining({ returnTo: `/${TEAM_ID}?invite=${HINT}` }),
     );
-    expect(access.store.findInvitationById).not.toHaveBeenCalled();
+    expect(access.store.invitations.find).not.toHaveBeenCalled();
   });
 });
