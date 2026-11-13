@@ -1,6 +1,6 @@
+import { displayName } from "@repo/identity";
 import { Heading, Link, Text } from "react-email";
 
-import { APP_NAME } from "../brand";
 import { Button } from "../components/button";
 import { Card } from "../components/card";
 import { Divider } from "../components/divider";
@@ -25,7 +25,7 @@ const InvitationEmail = ({
 }: InvitationEmailProps) => {
   return (
     <BaseLayout
-      preview={`${inviterName} invited you to join ${teamLabel(teamName)} on ${APP_NAME}`}
+      preview={`${inviterName} invited you to join ${teamLabel(teamName)} on ${displayName}`}
     >
       <Heading className="mt-0 mb-4 text-2xl font-semibold tracking-tight text-balance break-words text-foreground">
         You&apos;ve been invited
@@ -33,7 +33,7 @@ const InvitationEmail = ({
 
       <Text className="m-0 mb-6 text-base text-pretty break-words text-muted-foreground">
         <strong className="text-foreground">{inviterName}</strong> invited you to join{" "}
-        <strong className="text-foreground">{teamLabel(teamName)}</strong> on {APP_NAME}.
+        <strong className="text-foreground">{teamLabel(teamName)}</strong> on {displayName}.
       </Text>
 
       <div className="mb-6">

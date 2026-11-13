@@ -1,6 +1,7 @@
+import { displayName } from "@repo/identity";
 import type { MetadataRoute } from "next";
 
-import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
+import { APP_DESCRIPTION } from "@/lib/constants";
 import { THEME_COLORS } from "@/lib/theme-colors";
 
 const manifest = (): MetadataRoute.Manifest => ({
@@ -33,8 +34,8 @@ const manifest = (): MetadataRoute.Manifest => ({
     },
   ],
   id: "/",
-  name: APP_NAME,
-  short_name: APP_NAME,
+  name: displayName,
+  short_name: displayName,
   start_url: "/",
   theme_color: THEME_COLORS.dark,
 });

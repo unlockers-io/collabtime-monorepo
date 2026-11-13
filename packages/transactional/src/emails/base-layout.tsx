@@ -1,7 +1,7 @@
+import { displayName, origins } from "@repo/identity";
 import * as React from "react";
 import { Body, Container, Head, Html, Link, Preview, Section, Tailwind, Text } from "react-email";
 
-import { APP_NAME, APP_URL } from "../brand";
 import { BrandLogo } from "../components/brand-logo";
 import { tailwindConfig } from "../styles/theme";
 
@@ -14,7 +14,7 @@ type BaseLayoutProps = {
 
 const BaseLayout = ({
   children,
-  footerText = `You're receiving this email because you have an account with ${APP_NAME}.`,
+  footerText = `You're receiving this email because you have an account with ${displayName}.`,
   preview,
   unsubscribeUrl,
 }: BaseLayoutProps) => {
@@ -33,7 +33,7 @@ const BaseLayout = ({
         <Body className="m-0 bg-muted p-4 font-sans">
           <Container className="mx-auto w-full max-w-150 overflow-hidden border border-border bg-card">
             <Section className="bg-primary px-6 py-8 text-center">
-              <Link className="inline-block no-underline" href={APP_URL}>
+              <Link className="inline-block no-underline" href={origins.apex}>
                 <BrandLogo />
               </Link>
             </Section>
@@ -46,8 +46,11 @@ const BaseLayout = ({
               <Text className="m-0 mb-4 text-sm text-muted-foreground">{footerText}</Text>
 
               <Text className="mb-4 text-sm text-muted-foreground">
-                <Link className="text-sm font-semibold text-foreground no-underline" href={APP_URL}>
-                  Visit {APP_NAME}
+                <Link
+                  className="text-sm font-semibold text-foreground no-underline"
+                  href={origins.apex}
+                >
+                  Visit {displayName}
                 </Link>
                 {unsubscribeUrl !== undefined && unsubscribeUrl !== "" && (
                   <>
@@ -63,7 +66,7 @@ const BaseLayout = ({
               </Text>
 
               <Text className="m-0 text-xs text-muted-foreground">
-                © {copyrightYear} {APP_NAME}. All rights reserved.
+                © {copyrightYear} {displayName}. All rights reserved.
               </Text>
             </Section>
           </Container>

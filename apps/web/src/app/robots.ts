@@ -1,6 +1,5 @@
+import { origins } from "@repo/identity";
 import type { MetadataRoute } from "next";
-
-import { SITE_URL } from "@/lib/constants";
 
 const robots = (): MetadataRoute.Robots => ({
   rules: {
@@ -16,7 +15,7 @@ const robots = (): MetadataRoute.Robots => ({
     ],
     userAgent: "*",
   },
-  sitemap: `${SITE_URL}/sitemap.xml`,
+  sitemap: `${origins.web}/sitemap.xml`,
 });
 
 export default robots;

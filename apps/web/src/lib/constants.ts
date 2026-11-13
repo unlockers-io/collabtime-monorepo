@@ -1,5 +1,3 @@
-const APP_NAME = "Collabtime";
-
 const APP_TITLE = "Collabtime – Team Timezone Visualizer";
 
 const APP_DESCRIPTION =
@@ -10,8 +8,6 @@ const APP_TAGLINE = "Find the hour everyone is awake";
 const APP_DESCRIPTION_SHORT = APP_TAGLINE;
 
 const APP_REPO_URL = "https://github.com/unlockers-io/collabtime-monorepo";
-
-const SITE_URL = "https://www.collabtime.io";
 
 const APP_KEYWORDS = [
   "timezone",
@@ -28,9 +24,7 @@ export {
   APP_DESCRIPTION,
   APP_DESCRIPTION_SHORT,
   APP_KEYWORDS,
-  APP_NAME,
   APP_REPO_URL,
   APP_TAGLINE,
   APP_TITLE,
-  SITE_URL,
 };
