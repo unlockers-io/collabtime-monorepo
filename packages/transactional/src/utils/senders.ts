@@ -1,6 +1,7 @@
+import { displayName } from "@repo/identity";
 import * as React from "react";
 
-import { APP_NAME, DEFAULT_FROM } from "../brand";
+import { DEFAULT_FROM } from "../brand";
 import { ChangeEmail } from "../emails/change-email";
 import { InvitationEmail } from "../emails/invitation";
 import { InvitationDecided } from "../emails/invitation-decided";
@@ -111,7 +112,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
 
     case "change-email-confirmation": {
       return {
-        subject: `Confirm change of your ${APP_NAME} account email`,
+        subject: `Confirm change of your ${displayName} account email`,
         template: React.createElement(ChangeEmail, {
           changeUrl: email.changeUrl,
           currentEmail: email.currentEmail,
@@ -124,7 +125,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
 
     case "invitation": {
       return {
-        subject: `${email.inviterName} invited you to join ${teamLabel(email.teamName)} on ${APP_NAME}`,
+        subject: `${email.inviterName} invited you to join ${teamLabel(email.teamName)} on ${displayName}`,
         template: React.createElement(InvitationEmail, {
           expiresAt: email.expiresAt,
           inviterName: email.inviterName,
@@ -138,7 +139,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
 
     case "password-reset": {
       return {
-        subject: `Reset your ${APP_NAME} password`,
+        subject: `Reset your ${displayName} password`,
         template: React.createElement(PasswordResetEmail, {
           browserInfo: email.browserInfo,
           ipAddress: email.ipAddress,
@@ -152,7 +153,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
 
     case "sign-up-attempt": {
       return {
-        subject: `Sign-up attempt with your ${APP_NAME} account`,
+        subject: `Sign-up attempt with your ${displayName} account`,
         template: React.createElement(SignUpAttemptEmail, {
           resetPasswordUrl: email.resetPasswordUrl,
           signInUrl: email.signInUrl,
@@ -168,7 +169,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
         email.username !== undefined && email.username !== "" ? `, ${email.username}` : "";
 
       return {
-        subject: `Welcome to ${APP_NAME}${greetingName}! Please verify your email`,
+        subject: `Welcome to ${displayName}${greetingName}! Please verify your email`,
         template: React.createElement(WelcomeEmail, {
           userEmail: email.userEmail,
           username: email.username,

@@ -23,7 +23,9 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@repo/auth": "workspace:*",
+    "@repo/config-next": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/identity": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/portless-env": "workspace:*",
     "@repo/social-image": "workspace:*",
@@ -43,7 +45,6 @@
     "react-dom": "^19.3.0",
     "skullet": "0.0.3",
     "sonner": "^2.0.8",
-    "uuid": "^14.0.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {

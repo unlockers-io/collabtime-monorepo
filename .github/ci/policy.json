@@ -2,6 +2,25 @@
   "version": 1,
   "profile": "saas",
   "mode": "affected",
+  "check": {
+    "env": {
+      "DATABASE_URL": "postgresql://test:test@localhost:5432/test",
+      "PGAPPNAME": "collabtime:ci:test"
+    },
+    "services": {
+      "postgres": {
+        "image": "postgres:18-alpine",
+        "env": {
+          "POSTGRES_USER": "test",
+          "POSTGRES_PASSWORD": "test",
+          "POSTGRES_DB": "test"
+        },
+        "ports": ["5432:5432"],
+        "options": "--health-cmd pg_isready --health-interval 1s --health-timeout 5s --health-retries 30"
+      }
+    },
+    "setup": [{ "run": "pnpm db:push" }]
+  },
   "e2e": {
     "env": {
       "DATABASE_URL": "postgresql://test:test@localhost:5432/test",

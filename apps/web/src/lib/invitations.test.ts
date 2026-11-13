@@ -1,3 +1,5 @@
+// @vitest-environment node
+import { type Prisma, prisma } from "@repo/db";
 import type { TransactionalEmail } from "@repo/transactional";
 import { describe, expect, it, vi } from "vitest";
 
@@ -14,19 +16,18 @@ import {
 } from "./actions/test-helpers";
 import { maskEmail } from "./display-name";
 import { isInvitationOpen } from "./invitation-expiry";
-import { createMemoryInvitationStore } from "./invitation-memory-store";
 import {
   createInvitations,
   INVITATION_EXPIRED_ERROR,
   type InvitationDeps,
   openInvitationWhere,
-  type StoredInvitation,
+  prismaInvitationStore,
 } from "./invitations";
 import { createRateLimiter } from "./space-rate-limit";
 
-const NOW = new Date("2026-09-10T12:00:00Z");
+const NOW = new Date("2099-09-10T12:00:00Z");
 const DAY = 86_400_000;
-const EXPIRY = "2026-09-24T12:00:00.000Z";
+const EXPIRY = "2099-09-24T12:00:00.000Z";
 const EMAIL = "invitee@example.com";
 const NOT_PENDING = { error: "This invitation is no longer pending", success: false };
 const STALE = { error: "Could not update this invitation. Refresh and try again.", success: false };
@@ -36,23 +37,27 @@ const invitee = createMockSession({ email: EMAIL, name: "Ivy", userId: "invitee"
 const invitedTeam = createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2 })] });
 const request = { email: EMAIL, memberId: VALID_UUID_2 };
 
-type Overrides = Partial<
-  Pick<InvitationDeps<undefined>, "checkRateLimit" | "isMember" | "sendEmail">
->;
+type Deps = InvitationDeps<Prisma.TransactionClient>;
+
+type Overrides = Partial<Pick<Deps, "checkRateLimit" | "isMember" | "sendEmail">>;
+
+const rewrite = (id: string, data: { expiresAt?: null; teamId?: string }) =>
+  prisma.invitation.update({ data, where: { id } });
 
 const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides = {}) => {
   const harness = createTestTeamStore();
+  await harness.reset();
 
   if (team !== null) {
     await harness.seedTeam(team);
   }
 
   const clock = { now: NOW };
-  const store = createMemoryInvitationStore(harness.membershipStore.grant, () => clock.now);
+  const store = prismaInvitationStore;
   const hits = new Map<string, number>();
   const outbox: Array<TransactionalEmail> = [];
   const race: { next?: () => Promise<void> } = {};
-  const notifyInviter = vi.fn<InvitationDeps<undefined>["notifyInviter"]>();
+  const notifyInviter = vi.fn<Deps["notifyInviter"]>();
 
   const invitations = createInvitations({
     appUrl: () => "https://app.example.com",
@@ -69,7 +74,7 @@ const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides
     notifyInviter,
     now: () => clock.now,
     readTeamRecord: (teamId) => harness.readTeam(teamId),
-    reportError: vi.fn<InvitationDeps<undefined>["reportError"]>(),
+    reportError: vi.fn<Deps["reportError"]>(),
     sendEmail: (email) => {
       outbox.push(email);
 
@@ -115,16 +120,6 @@ const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides
     clock.now = new Date(clock.now.getTime() + days * DAY);
   };
 
-  const rewrite = async (id: string, patch: Partial<StoredInvitation>) => {
-    const stored = await store.find(id);
-
-    if (stored === null) {
-      throw new Error(`Invitation ${id} is missing`);
-    }
-
-    store.seed({ ...stored, ...patch });
-  };
-
   return {
     advance,
     harness,
@@ -134,7 +129,6 @@ const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides
     outbox,
     pending,
     race,
-    rewrite,
     slot,
     store,
   };
@@ -212,7 +206,11 @@ describe("inviting", () => {
 
   it("counts invites and resends against the same sender limit", async () => {
     const { invitations, invite, outbox } = await setup();
-    const [id = ""] = await Promise.all(Array.from({ length: 50 }, () => invite()));
+    let id = "";
+
+    for (let sent = 0; sent < 50; sent += 1) {
+      id = await invite();
+    }
 
     expect(await invitations.resend(admin, id)).toEqual({
       error: "Too many invitations. Try again later.",
@@ -253,7 +251,7 @@ describe("inviting", () => {
     advance(1);
 
     expect(await invite()).toBe(id);
-    expect(await pending()).toMatchObject([{ expiresAt: "2026-09-25T12:00:00.000Z", id }]);
+    expect(await pending()).toMatchObject([{ expiresAt: "2099-09-25T12:00:00.000Z", id }]);
     expect(await invitations.accept(invitee, id)).toMatchObject({ success: true });
   });
 });
@@ -269,7 +267,7 @@ describe("deciding", () => {
       success: true,
     });
     expect(await slot()).toMatchObject({ userId: "invitee" });
-    expect(harness.findMembership("invitee")).toEqual({ archivedAt: null, role: "MEMBER" });
+    expect(await harness.findMembership("invitee")).toEqual({ archivedAt: null, role: "MEMBER" });
     expect(await pending()).toEqual([]);
     expect(notifyInviter).toHaveBeenCalledWith(
       expect.objectContaining({ id }),
@@ -284,7 +282,7 @@ describe("deciding", () => {
 
     expect(await invitations.decline(invitee, id)).toEqual({ data: undefined, success: true });
     expect(await slot()).toEqual(createTestMember({ id: VALID_UUID_2 }));
-    expect(harness.findMembership("invitee")).toBeNull();
+    expect(await harness.findMembership("invitee")).toBeNull();
     expect(notifyInviter).toHaveBeenCalledWith(
       expect.objectContaining({ id }),
       invitee,
@@ -316,7 +314,7 @@ describe("deciding", () => {
   });
 
   it("keeps legacy invitations without an expiry open", async () => {
-    const { advance, invitations, invite, rewrite } = await setup();
+    const { advance, invitations, invite } = await setup();
     const id = await invite();
     await rewrite(id, { expiresAt: null });
     advance(365);
@@ -345,26 +343,13 @@ describe("deciding", () => {
 
     expect(await invitations.accept(invitee, id)).toEqual(STALE);
     expect(await slot()).toEqual(createTestMember({ id: VALID_UUID_2 }));
-    expect(harness.findMembership("invitee")).toBeNull();
+    expect(await harness.findMembership("invitee")).toBeNull();
     expect(await pending()).toEqual([]);
     expect(notifyInviter).not.toHaveBeenCalled();
   });
 
-  it("hands the slot back when the commit fails, so a retry claims it", async () => {
-    const { harness, invitations, invite, pending, slot } = await setup();
-    const id = await invite();
-    harness.membershipStore.grant.mockRejectedValueOnce(new Error("Database unavailable"));
-
-    expect(await invitations.accept(invitee, id)).toEqual(STALE);
-    expect(await slot()).toEqual(createTestMember({ id: VALID_UUID_2 }));
-    expect(await pending()).toMatchObject([{ id }]);
-
-    expect(await invitations.accept(invitee, id)).toMatchObject({ success: true });
-    expect(harness.findMembership("invitee")).toEqual({ archivedAt: null, role: "MEMBER" });
-  });
-
   it("leaves the invitation pending when the team is gone", async () => {
-    const { harness, invitations, invite, notifyInviter, rewrite, store } = await setup();
+    const { harness, invitations, invite, notifyInviter, store } = await setup();
     const id = await invite();
     await rewrite(id, { teamId: VALID_UUID_2 });
 
@@ -372,7 +357,7 @@ describe("deciding", () => {
       error: "Team not found",
       success: false,
     });
-    expect(harness.findMembership("invitee", VALID_UUID_2)).toBeNull();
+    expect(await harness.findMembership("invitee", VALID_UUID_2)).toBeNull();
     expect(await store.find(id)).toMatchObject({ status: "PENDING" });
     expect(notifyInviter).not.toHaveBeenCalled();
   });
@@ -399,9 +384,9 @@ describe("managing", () => {
       data: { emailSent: true },
       success: true,
     });
-    expect(await pending()).toMatchObject([{ expiresAt: "2026-10-24T12:00:00.000Z", id }]);
+    expect(await pending()).toMatchObject([{ expiresAt: "2099-10-24T12:00:00.000Z", id }]);
     expect(outbox.at(-1)).toMatchObject({
-      expiresAt: "2026-10-24T12:00:00.000Z",
+      expiresAt: "2099-10-24T12:00:00.000Z",
       inviterName: "Test User",
     });
     expect(await invitations.accept(invitee, id)).toMatchObject({ success: true });

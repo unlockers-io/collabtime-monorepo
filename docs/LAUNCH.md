@@ -71,13 +71,13 @@ The GitHub description and requested topics are configured. No push, deployment,
 
 The local review covers signup rejection at eight characters and success at twelve, the empty dashboard, workspace creation, CSV import, public/private toggling, guest password access, and invitation acceptance before the private gate. It also checks the seed timeline, Singapore viewer time, desktop/mobile presentation in both themes, headers, noindex metadata, FAQ JSON-LD, and recovery after failed team-content reads. The browser recovered after the test contents were restored; the retry button behavior is also covered by a component test.
 
-The original member/group deletion E2E cases remain skipped: their broad `rounded` container selectors resolve to multiple nested containers. Creation coverage is enabled. Existing email integration suites need dedicated email credentials, and the pre-existing sync suites remain skipped; a green local run does not claim coverage from skipped tests.
+Member and group creation and deletion, and sign-out, are covered by E2E. Existing email integration suites need dedicated email credentials, and the pre-existing sync suites remain skipped; a green local run does not claim coverage from skipped tests.
 
 Launch caps use simple checks: 200 members per workspace, 50 groups, and 50 administered workspaces per user, including archived memberships. CSV imports remain limited to 100 rows per request. These checks do not guarantee limits under simultaneous writes.
 
 ## Follow-ups
 
-- Repair the legacy member/group deletion selectors and revisit skipped sync tests.
+- Revisit skipped sync tests.
 - Run email integration tests with a dedicated test inbox and Resend configuration.
 - Full IANA timezone picker; current fuzzy viewer matching uses the nearest current UTC offset and may map to a region with different daylight-saving rules.
 - Legal pages, analytics, OAuth, and settings email-change UI.

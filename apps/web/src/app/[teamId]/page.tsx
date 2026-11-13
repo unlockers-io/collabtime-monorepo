@@ -1,4 +1,3 @@
-import { prisma } from "@repo/db";
 import { dehydrate } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -9,9 +8,10 @@ import { workspaceName } from "@/lib/display-name";
 import { readPublicTeam } from "@/lib/public-team";
 import { createQueryClient } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
+import { findTeamSpace } from "@/lib/team-auth";
 import { getTeamName } from "@/lib/team-meta";
+import { resolveViewer } from "@/lib/team-viewer";
 import { CuidSchema, UUIDSchema } from "@/lib/validation";
-import { resolveViewer } from "@/lib/workspace-access";
 import { QueryProvider } from "@/providers/query-provider";
 
 import { TeamPageClient } from "./client";
@@ -28,12 +28,8 @@ export const generateMetadata = async ({ params }: TeamPageProps): Promise<Metad
   const robots = { follow: false, googleBot: { follow: false, index: false }, index: false };
 
   // A null name is either an unnamed workspace or a dead link; only the latter 404s.
-  if (teamName === null && UUIDSchema.safeParse(teamId).success) {
-    const space = await prisma.space.findUnique({ select: { id: true }, where: { teamId } });
-
-    if (!space) {
-      return { robots, title: "Workspace not found" };
-    }
+  if (teamName === null && UUIDSchema.safeParse(teamId).success && !(await findTeamSpace(teamId))) {
+    return { robots, title: "Workspace not found" };
   }
 
   return {
@@ -50,10 +46,7 @@ const TeamPage = async ({ params, searchParams }: TeamPageProps) => {
   const invite = CuidSchema.safeParse(query.invite);
   const returnTo = `/${teamId}${invite.success ? `?invite=${invite.data}` : ""}`;
 
-  const [session, space] = await Promise.all([
-    getSession(),
-    prisma.space.findUnique({ where: { teamId } }),
-  ]);
+  const [session, space] = await Promise.all([getSession(), findTeamSpace(teamId)]);
 
   if (!space) {
     notFound();

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@repo/db";
+import { slug } from "@repo/identity";
 import { log } from "@repo/observability";
 import { loopbackUrl } from "@repo/portless-env/apps";
 import type { MailerConfig } from "@repo/transactional";
@@ -7,7 +8,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import type { BetterAuthPlugin } from "better-auth/types";
 
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./password";
+import { PASSWORD_LENGTH } from "./policy";
 
 type SecondaryStorage = {
   delete: (key: string) => Promise<void>;
@@ -59,7 +60,7 @@ const createAuth = (config: AuthConfig) => {
     },
 
     advanced: {
-      cookiePrefix: "collabtime",
+      cookiePrefix: slug,
       defaultCookieAttributes: {
         httpOnly: true,
         sameSite: "lax" as const,
@@ -105,8 +106,8 @@ const createAuth = (config: AuthConfig) => {
 
     emailAndPassword: {
       enabled: true,
-      maxPasswordLength: PASSWORD_MAX_LENGTH,
-      minPasswordLength: PASSWORD_MIN_LENGTH,
+      maxPasswordLength: PASSWORD_LENGTH.max,
+      minPasswordLength: PASSWORD_LENGTH.min,
       onExistingUserSignUp: async ({ user }, request) => {
         const origin = request?.headers.get("origin") ?? "";
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -18,7 +19,7 @@ const verifyAccessToken = vi.fn<SpaceJoinDeps["verifyAccessToken"]>();
 
 const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
   findPrivateSpaces,
-  grantMembership: harness.grantMembership,
+  grantViewerAccess: harness.grantViewerAccess,
   reportError,
   verifyAccessToken,
 });
@@ -30,9 +31,9 @@ const validFor = (...validTokens: Array<string>) => {
 const space = (id: string, teamId: string) => ({ accessPassword: "hash", id, teamId });
 
 describe("joinPrivateSpacesFromCookies", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    harness.reset();
+    await harness.reset();
     findPrivateSpaces.mockResolvedValue([]);
   });
 
@@ -97,15 +98,15 @@ describe("joinPrivateSpacesFromCookies", () => {
       space("space1", VALID_UUID),
       space("space2", VALID_UUID_2),
     ]);
-    harness.seedMembership("user-1", "MEMBER", new Date());
+    await harness.seedMembership("user-1", "MEMBER", new Date());
 
     await joinPrivateSpacesFromCookies(
       "user-1",
       "space-access-space1=good; space-access-space2=other",
     );
 
-    expect(harness.findMembership("user-1")).toEqual({ archivedAt: null, role: "MEMBER" });
-    expect(harness.findMembership("user-1", VALID_UUID_2)).toEqual({
+    expect(await harness.findMembership("user-1")).toEqual({ archivedAt: null, role: "MEMBER" });
+    expect(await harness.findMembership("user-1", VALID_UUID_2)).toEqual({
       archivedAt: null,
       role: "MEMBER",
     });
@@ -126,9 +127,7 @@ describe("joinPrivateSpacesFromCookies", () => {
 });
 
 describe("joinPrivateSpace", () => {
-  beforeEach(() => {
-    harness.reset();
-  });
+  beforeEach(() => harness.reset());
 
   it("grants access without adding the viewer to the roster", async () => {
     const team = createTestTeamRecord({ members: [createTestMember()] });
@@ -136,15 +135,15 @@ describe("joinPrivateSpace", () => {
 
     await joinPrivateSpace("user-9", VALID_UUID);
 
-    expect(harness.findMembership("user-9")).toEqual({ archivedAt: null, role: "MEMBER" });
+    expect(await harness.findMembership("user-9")).toEqual({ archivedAt: null, role: "MEMBER" });
     expect(await harness.readTeam()).toEqual(team);
   });
 
   it("never demotes an existing role", async () => {
-    harness.seedMembership("user-9", "ADMIN");
+    await harness.seedMembership("user-9", "ADMIN");
 
     await joinPrivateSpace("user-9", VALID_UUID);
 
-    expect(harness.findMembership("user-9")).toEqual({ archivedAt: null, role: "ADMIN" });
+    expect(await harness.findMembership("user-9")).toEqual({ archivedAt: null, role: "ADMIN" });
   });
 });

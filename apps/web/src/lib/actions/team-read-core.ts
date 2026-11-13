@@ -1,6 +1,5 @@
 import type { getSession } from "@/lib/auth-server";
-import { canViewWorkspace } from "@/lib/workspace-access";
-import type { WorkspaceAccessStore, WorkspaceSpace } from "@/lib/workspace-access";
+import type { canViewTeam, TeamSpace } from "@/lib/team-auth";
 import type { Team } from "@/types";
 
 import type { readPublicTeam } from "../public-team";
@@ -9,8 +8,8 @@ import { UUIDSchema } from "../validation";
 import type { ActionErrorEvent, ActionResult } from "./types";
 
 type TeamReadDeps = {
-  accessStore: WorkspaceAccessStore;
-  findSpace: (teamId: string) => Promise<WorkspaceSpace | null>;
+  canViewTeam: typeof canViewTeam;
+  findSpace: (teamId: string) => Promise<TeamSpace | null>;
   getSession: typeof getSession;
   readPublicTeam: typeof readPublicTeam;
   reportError: (event: ActionErrorEvent) => void;
@@ -34,7 +33,7 @@ const createTeamReadActions = (deps: TeamReadDeps) => {
       const session = await deps.getSession();
       const userId = session?.user.id;
 
-      if (!(await canViewWorkspace(space, userId, deps.accessStore))) {
+      if (!(await deps.canViewTeam(space, userId))) {
         return { error: "This team is private", success: false };
       }
 

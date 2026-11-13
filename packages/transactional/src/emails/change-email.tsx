@@ -1,6 +1,6 @@
+import { displayName } from "@repo/identity";
 import { Heading, Link, Text } from "react-email";
 
-import { APP_NAME } from "../brand";
 import { Button } from "../components/button";
 import { Divider } from "../components/divider";
 
@@ -15,13 +15,13 @@ type ChangeEmailProps = {
 
 const ChangeEmail = ({ changeUrl, currentEmail, newEmail, username }: ChangeEmailProps) => {
   return (
-    <BaseLayout preview={`Confirm your new ${APP_NAME} account email address.`}>
+    <BaseLayout preview={`Confirm your new ${displayName} account email address.`}>
       <Heading className="mt-0 mb-4 text-2xl font-semibold tracking-tight text-balance break-words text-foreground">
         Confirm your new email
       </Heading>
 
       <Text className="m-0 mb-6 text-base text-pretty break-words text-muted-foreground">
-        You requested to change the email on your {APP_NAME} account
+        You requested to change the email on your {displayName} account
         {username !== undefined && username !== "" ? ` (${username})` : ""} from{" "}
         <strong>{currentEmail}</strong> to <strong>{newEmail}</strong>. Confirm to complete the
         change.

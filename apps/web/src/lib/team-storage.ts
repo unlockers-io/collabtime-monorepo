@@ -2,11 +2,11 @@ import { type Prisma, prisma } from "@repo/db";
 
 import type { TeamRecord } from "@/types";
 
-import { publishTeamEvent } from "./team-events";
+import { publishTeamEvent, type TeamEventKind } from "./team-events";
 import { readTeams, writeTeam } from "./team-postgres-repository";
 
 type TeamStorage<TTransaction = undefined> = {
-  publish: (teamId: string) => Promise<void>;
+  publish: (teamId: string, kinds: Array<TeamEventKind>) => Promise<void>;
   read: (teamId: string, transaction?: TTransaction) => Promise<TeamRecord | null>;
   readBatch: (teamIds: Array<string>) => Promise<Array<TeamRecord>>;
   transaction: <T>(teamId: string, run: (transaction: TTransaction) => Promise<T>) => Promise<T>;
@@ -24,7 +24,9 @@ const withTeamTransaction = <T>(
   });
 
 const postgresTeamStorage: TeamStorage<Prisma.TransactionClient> = {
-  publish: (teamId) => publishTeamEvent(teamId, "contents"),
+  publish: async (teamId, kinds) => {
+    await Promise.all(kinds.map((kind) => publishTeamEvent(teamId, kind)));
+  },
   read: async (teamId, transaction = prisma) => {
     const teams = await readTeams([teamId], transaction);
 

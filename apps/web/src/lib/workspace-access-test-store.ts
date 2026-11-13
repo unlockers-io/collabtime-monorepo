@@ -1,71 +1,100 @@
+import { type InvitationStatus, type JoinRequestStatus, prisma } from "@repo/db";
 import { vi } from "vitest";
 
-import type { WorkspaceAccessStore } from "./workspace-access";
+import type { TeamRole } from "@/types";
 
-type StoredInvitation = NonNullable<Awaited<ReturnType<WorkspaceAccessStore["findInvitation"]>>>;
+import { TEST_OWNER_ID } from "./actions/test-helpers";
+import { createTeamAuth, findTeamMembership } from "./team-auth";
+import { type ViewerDeps, viewerDeps as postgresViewerDeps } from "./team-viewer";
 
-type StoredMembership = NonNullable<Awaited<ReturnType<WorkspaceAccessStore["findMembership"]>>>;
+type TeamAuthDeps = Parameters<typeof createTeamAuth>[0];
 
-const viewerKey = (teamId: string, userId: string) => `${teamId}:${userId}`;
+type Session = Awaited<ReturnType<TeamAuthDeps["getSession"]>>;
 
+type InvitationSeed = {
+  email?: string;
+  expiresAt?: Date | null;
+  id?: string;
+  status?: InvitationStatus;
+  teamId: string;
+};
+
+/** Team access over the test database; only the cookie jar and the session are stand-ins. */
 const createTestAccessStore = () => {
-  const invitations: Array<StoredInvitation> = [];
-  const joinRequests = new Map<string, string>();
-  const memberships = new Map<string, StoredMembership>();
   const tokens = new Map<string, string>();
+  let session: Session = null;
 
   const store = {
-    findInvitation: vi.fn<WorkspaceAccessStore["findInvitation"]>((teamId, email) =>
-      Promise.resolve(
-        invitations.find(
-          (invitation) => invitation.teamId === teamId && invitation.email === email,
-        ) ?? null,
-      ),
-    ),
-    findInvitationById: vi.fn<WorkspaceAccessStore["findInvitationById"]>((invitationId) =>
-      Promise.resolve(invitations.find((invitation) => invitation.id === invitationId) ?? null),
-    ),
-    findJoinRequest: vi.fn<WorkspaceAccessStore["findJoinRequest"]>((teamId, userId) => {
-      const status = joinRequests.get(viewerKey(teamId, userId));
-
-      return Promise.resolve(status === undefined ? null : { status });
-    }),
-    findMembership: vi.fn<WorkspaceAccessStore["findMembership"]>((teamId, userId) =>
-      Promise.resolve(memberships.get(viewerKey(teamId, userId)) ?? null),
-    ),
-    getToken: vi.fn<WorkspaceAccessStore["getToken"]>((spaceId) =>
+    findJoinRequest: vi.fn(postgresViewerDeps.findJoinRequest),
+    findMembership: vi.fn(findTeamMembership),
+    invitations: {
+      find: vi.fn(postgresViewerDeps.invitations.find),
+      listOpenForEmail: vi.fn(postgresViewerDeps.invitations.listOpenForEmail),
+    },
+    readAccessToken: vi.fn<TeamAuthDeps["readAccessToken"]>((spaceId) =>
       Promise.resolve(tokens.get(spaceId)),
     ),
-  } satisfies WorkspaceAccessStore;
+  };
+
+  const auth = createTeamAuth({
+    findMembership: store.findMembership,
+    getSession: () => Promise.resolve(session),
+    readAccessToken: store.readAccessToken,
+    reportError: vi.fn<TeamAuthDeps["reportError"]>(),
+  });
+
+  const viewerDeps: ViewerDeps = {
+    findJoinRequest: store.findJoinRequest,
+    invitations: store.invitations,
+    readTeamAccess: auth.readTeamAccess,
+  };
 
   return {
-    addInvitation: (invitation: Partial<StoredInvitation> & Pick<StoredInvitation, "teamId">) => {
-      invitations.push({
-        email: "test@example.com",
-        expiresAt: null,
-        id: "cmf12345678901234567890123",
-        invitedBy: { email: "owner@example.com", name: "Owner" },
-        status: "PENDING",
-        ...invitation,
+    addInvitation: async (invitation: InvitationSeed) => {
+      await prisma.invitation.create({
+        data: {
+          email: "test@example.com",
+          id: "cmf12345678901234567890123",
+          invitedById: TEST_OWNER_ID,
+          memberId: "member-1",
+          ...invitation,
+        },
       });
     },
-    addJoinRequest: (teamId: string, userId: string, status = "PENDING") => {
-      joinRequests.set(viewerKey(teamId, userId), status);
-    },
-    addMembership: (teamId: string, userId: string, membership?: Partial<StoredMembership>) => {
-      memberships.set(viewerKey(teamId, userId), {
-        archivedAt: null,
-        role: "MEMBER",
-        ...membership,
+    addJoinRequest: async (
+      teamId: string,
+      userId: string,
+      status: JoinRequestStatus = "PENDING",
+    ) => {
+      await prisma.joinRequest.upsert({
+        create: { status, teamId, userId },
+        update: { status },
+        where: { userId_teamId: { teamId, userId } },
       });
     },
-    removeMembership: (teamId: string, userId: string) => {
-      memberships.delete(viewerKey(teamId, userId));
+    addMembership: async (
+      teamId: string,
+      userId: string,
+      membership: { archivedAt?: Date | null; role?: TeamRole } = {},
+    ) => {
+      await prisma.membership.upsert({
+        create: { ...membership, teamId, userId },
+        update: membership,
+        where: { userId_teamId: { teamId, userId } },
+      });
+    },
+    auth,
+    removeMembership: async (teamId: string, userId: string) => {
+      await prisma.membership.delete({ where: { userId_teamId: { teamId, userId } } });
     },
     setToken: (spaceId: string, token: string) => {
       tokens.set(spaceId, token);
     },
+    signIn: (next: Session) => {
+      session = next;
+    },
     store,
+    viewerDeps,
   };
 };
 

@@ -7,7 +7,7 @@
   "tasks": {
     "build": {
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^db:generate", "db:generate"],
       "env": [
         "AUTH_ALLOWED_HOSTS",
         "BETTER_AUTH_SECRET",
@@ -25,16 +25,16 @@
       ]
     },
     "lint": {
-      "dependsOn": ["^build", "db:generate"]
+      "dependsOn": ["^db:generate", "db:generate"]
     },
     "typecheck": {
-      "dependsOn": ["^build", "db:generate"]
+      "dependsOn": ["^db:generate", "db:generate"]
     },
     "format:check": {
       "cache": false
     },
     "dev": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^db:generate"],
       "cache": false,
       "persistent": true,
       "env": [
@@ -52,7 +52,7 @@
       ]
     },
     "dev:ci": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^db:generate"],
       "cache": false,
       "persistent": true,
       "env": [
@@ -70,7 +70,6 @@
       ]
     },
     "start": {
-      "dependsOn": ["^build"],
       "cache": false,
       "env": [
         "AUTH_ALLOWED_HOSTS",
@@ -100,7 +99,7 @@
       "env": ["REDIS_URL"]
     },
     "test": {
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^db:generate", "db:generate"],
       "outputs": ["coverage/**"],
       "cache": false,
       "env": [
@@ -118,12 +117,12 @@
       ]
     },
     "test:watch": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^db:generate"],
       "cache": false,
       "persistent": true
     },
     "test:coverage": {
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^db:generate", "db:generate"],
       "outputs": ["coverage/**"],
       "cache": false
     }

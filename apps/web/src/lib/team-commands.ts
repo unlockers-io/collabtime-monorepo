@@ -59,6 +59,10 @@ const withMember = (team: TeamRecord, member: TeamMember): TeamRecord => ({
   members: team.members.map((current) => (current.id === member.id ? member : current)),
 });
 
+/** Keeps `order` equal to the position in the list. */
+const inOrder = <TItem extends { order: number }>(items: Array<TItem>): Array<TItem> =>
+  items.map((item, order) => ({ ...item, order }));
+
 const reorderById = <TItem extends { id: string; order: number }>(
   items: Array<TItem>,
   ids: Array<string>,
@@ -69,13 +73,9 @@ const reorderById = <TItem extends { id: string; order: number }>(
     return null;
   }
 
-  const reordered = ids.flatMap((id, order) => {
-    const item = byId.get(id);
+  const reordered = ids.flatMap((id) => byId.get(id) ?? []);
 
-    return item ? [{ ...item, order }] : [];
-  });
-
-  return reordered.length === ids.length ? reordered : null;
+  return reordered.length === ids.length ? inOrder(reordered) : null;
 };
 
 const appendMembers = (
@@ -90,7 +90,9 @@ const appendMembers = (
     return reject(GROUP_NOT_FOUND);
   }
 
-  return { ok: true, team: { ...team, members: [...team.members, ...added] }, value: added };
+  const members = inOrder([...team.members, ...added]);
+
+  return { ok: true, team: { ...team, members }, value: added };
 };
 
 const addMember =
@@ -167,7 +169,7 @@ const removeMember =
       return reject(MEMBER_NOT_FOUND);
     }
 
-    const members = team.members.filter((current) => current.id !== memberId);
+    const members = inOrder(team.members.filter((current) => current.id !== memberId));
 
     return { ok: true, team: { ...team, members }, value: member };
   };
@@ -252,13 +254,7 @@ const removeGroup =
       return reject(GROUP_NOT_FOUND);
     }
 
-    const groups: Array<TeamGroup> = [];
-
-    for (const group of team.groups) {
-      if (group.id !== groupId) {
-        groups.push({ ...group, order: groups.length });
-      }
-    }
+    const groups = inOrder(team.groups.filter((group) => group.id !== groupId));
 
     const members = team.members.map((member) =>
       member.groupId === groupId ? { ...member, groupId: undefined } : member,

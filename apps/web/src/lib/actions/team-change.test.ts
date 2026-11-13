@@ -1,7 +1,8 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TeamChangeArgs } from "../team-changes";
-import { createMemoryTeamStorage } from "../team-memory-storage";
+import { postgresTeamStorage } from "../team-storage";
 import { createTeamStore } from "../team-store";
 
 import { createTeamChangeAction } from "./team-change-core";
@@ -27,7 +28,7 @@ const changeTeam = createTeamChangeAction({
   authorizeTeamAdmin: guards.authorizeTeamAdmin,
   authorizeTeamMember: guards.authorizeTeamMember,
   reportError,
-  revokeMembership: harness.revokeMembership,
+  revokeMemberAccess: harness.revokeMemberAccess,
 });
 
 const { seedTeam } = harness;
@@ -50,8 +51,8 @@ const validMemberInput: TeamChangeArgs<"addMember"> = {
   workingHoursStart: 9,
 };
 
-beforeEach(() => {
-  harness.reset();
+beforeEach(async () => {
+  await harness.reset();
   guards.reset();
   reportError.mockReset();
 });
@@ -74,13 +75,14 @@ describe("authorization", () => {
     });
 
     await seedTeam(team);
-    harness.seedMembership("other");
+    await harness.seedMembership("other");
+    await harness.seedInvitation(VALID_UUID_2);
     guards.authorizeTeamAdmin.mockResolvedValue({ error: "Admin access required", success: false });
 
     expect(await run()).toEqual({ error: "Admin access required", success: false });
     expect(guards.authorizeTeamAdmin).toHaveBeenCalledWith(VALID_UUID);
-    expect(harness.findMembership("other")).not.toBeNull();
-    expect(harness.invitationsRevoked(VALID_UUID_2)).toBe(false);
+    expect(await harness.findMembership("other")).not.toBeNull();
+    expect(await harness.invitationStatus(VALID_UUID_2)).toBe("PENDING");
     expect(harness.invalidateTeamName).not.toHaveBeenCalled();
     expect(await harness.readTeam()).toEqual(team);
   });
@@ -496,7 +498,8 @@ describe("removal cleanup", () => {
     await seedTeam(
       createTestTeamRecord({ members: [createTestMember({ id: VALID_UUID_2, userId: "other" })] }),
     );
-    harness.seedMembership("other");
+    await harness.seedMembership("other");
+    await harness.seedInvitation(VALID_UUID_2);
 
     expect(await changeTeam(VALID_UUID, "removeMember", { memberId: VALID_UUID_2 })).toEqual({
       data: undefined,
@@ -504,8 +507,8 @@ describe("removal cleanup", () => {
     });
     const persisted = await persistedTeam();
     expect(persisted.members).toEqual([]);
-    expect(harness.findMembership("other")).toBeNull();
-    expect(harness.invitationsRevoked(VALID_UUID_2)).toBe(true);
+    expect(await harness.findMembership("other")).toBeNull();
+    expect(await harness.invitationStatus(VALID_UUID_2)).toBe("REVOKED");
   });
 
   it("keeps the slot to remove again when revoking access fails", async () => {
@@ -520,7 +523,7 @@ describe("removal cleanup", () => {
     const persisted = await persistedTeam();
     expect(persisted.members).toEqual([member]);
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ memberId: VALID_UUID_2, teamId: VALID_UUID }),
+      expect.objectContaining({ message: "Failed to remove member", teamId: VALID_UUID }),
     );
 
     expect(await changeTeam(VALID_UUID, "removeMember", { memberId: VALID_UUID_2 })).toMatchObject({
@@ -544,12 +547,12 @@ describe("removal cleanup", () => {
         members: [createTestMember({ id: VALID_UUID_2, userId: "user-123" })],
       }),
     );
-    harness.seedMembership("user-123");
+    await harness.seedMembership("user-123");
 
     expect(await changeTeam(VALID_UUID, "removeMember", { memberId: VALID_UUID_2 })).toMatchObject({
       success: true,
     });
-    expect(harness.findMembership("user-123")).not.toBeNull();
+    expect(await harness.findMembership("user-123")).not.toBeNull();
   });
 });
 
@@ -835,23 +838,23 @@ describe("group limits", () => {
 
 describe("write failures", () => {
   it("names the change when the write itself fails", async () => {
-    const storage = createMemoryTeamStorage();
-
     const store = createTeamStore({
       createId: () => VALID_UUID,
       invalidateTeamName: vi.fn<() => void>(),
-      reportError: vi.fn<() => void>(),
-      storage: { ...storage, write: () => Promise.reject(new Error("Postgres unavailable")) },
+      storage: {
+        ...postgresTeamStorage,
+        write: () => Promise.reject(new Error("Postgres unavailable")),
+      },
     });
 
-    await storage.write(VALID_UUID, createTestTeamRecord(), undefined);
+    await seedTeam(createTestTeamRecord());
 
     const failingChange = createTeamChangeAction({
       applyTeamCommand: store.applyTeamCommand,
       authorizeTeamAdmin: guards.authorizeTeamAdmin,
       authorizeTeamMember: guards.authorizeTeamMember,
       reportError,
-      revokeMembership: harness.revokeMembership,
+      revokeMemberAccess: harness.revokeMemberAccess,
     });
 
     expect(await failingChange(VALID_UUID, "renameTeam", { name: "Renamed" })).toEqual({

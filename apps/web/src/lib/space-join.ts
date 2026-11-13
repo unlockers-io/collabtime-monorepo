@@ -3,7 +3,7 @@ import { prisma } from "@repo/db";
 import { log } from "@/lib/observability";
 import { parseAccessCookies, verifyAccessToken } from "@/lib/workspace-access";
 
-import { type GrantMembership, grantMembership } from "./membership";
+import { grantViewerAccess } from "./membership";
 
 // Capped before the query: an unauthenticated caller controls how many access cookies they send.
 const MAX_CANDIDATE_SPACES = 20;
@@ -14,15 +14,14 @@ type ErrorEvent = Parameters<typeof log.error>[0];
 
 type SpaceJoinDeps = {
   findPrivateSpaces: (spaceIds: Array<string>) => Promise<Array<PrivateSpace>>;
-  grantMembership: GrantMembership;
+  grantViewerAccess: typeof grantViewerAccess;
   reportError: (event: ErrorEvent) => void;
   verifyAccessToken: (token: string, spaceId: string, accessPassword: string | null) => boolean;
 };
 
 const createSpaceJoiner = (deps: SpaceJoinDeps) => {
   const joinPrivateSpace = (userId: string, teamId: string) =>
-    // Password viewers stay off the roster until they add their own profile.
-    deps.grantMembership({ role: "MEMBER", slot: null, teamId, userId });
+    deps.grantViewerAccess({ role: "MEMBER", teamId, userId });
 
   const joinPrivateSpacesFromCookies = async (
     userId: string,
@@ -82,7 +81,7 @@ const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
       select: { accessPassword: true, id: true, teamId: true },
       where: { id: { in: spaceIds }, isPrivate: true },
     }),
-  grantMembership,
+  grantViewerAccess,
   reportError: log.error,
   verifyAccessToken,
 });

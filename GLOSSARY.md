@@ -6,16 +6,17 @@ Domain terms, and the module that owns each one. Paths are under `apps/web/src/`
 
 - **Team**: the unit users collaborate in. Identified by `teamId`; the URL is `/{teamId}`.
 - **Space**: the Postgres row that gives a team its owner, visibility (`isPrivate`) and access password. One per team, linked by `teamId`. The UI calls it a workspace.
-- **Team contents**: a team's name, members and groups. Stored in PostgreSQL with the space, groups and members; live summaries read the same records. Redis carries live notifications. Owned by `lib/team-store.ts`; the rules for changing it are the commands in `lib/team-commands.ts`, and `lib/team-changes.ts` lists every change a client can ask for.
+- **Team contents**: a team's name, members and groups. Stored in PostgreSQL with the space, groups and members; live summaries read the same records. Redis carries live notifications. Owned by `lib/team-store.ts`: every change to an existing team goes through its `applyTeamCommand`, which locks the team, writes, changes access in the same transaction and publishes (creation writes the first contents in `lib/actions/team-create-core.ts`); the rules for changing it are the commands in `lib/team-commands.ts`, and `lib/team-changes.ts` lists every change a client can ask for.
 - **Member**: a person on a team's roster, with a timezone, working hours and an optional group. A member can exist without an account.
 - **Working window** (`workingWindow` in `lib/timezones.ts`): a member's hours as a start minute and a length. An end before the start runs past midnight; an end equal to the start means all day.
 - **Member slot**: a member that a user has claimed (`userId` set). Claiming and releasing a slot are team contents commands.
 - **Group**: a named set of members. A member whose `groupId` names a group that no longer exists is ungrouped (`isUngrouped` in `lib/team-schedule.ts`).
-- **Membership**: the Postgres row that grants a user a role (`ADMIN` or `MEMBER`) on a team. A membership and its member slot change together through `lib/membership.ts` (`grantMembership`, `revokeMembership`). Password viewers get a membership without a slot.
+- **Membership**: the Postgres row that grants a user a role (`ADMIN` or `MEMBER`) on a team. A membership and its member slot change together: `lib/membership.ts` grants one with a slot claim (`grantMembership`) and revokes one with a member's removal (`revokeMemberAccess`). Password viewers get a membership without a slot (`grantViewerAccess`).
 - **Invitation**: an email-bound offer to join a team as a given member. Its states are PENDING, ACCEPTED, DECLINED and REVOKED, and it expires after 14 days. Owned by `lib/invitations.ts`.
 - **Join request**: a user's request for an admin to let them into a team.
-- **Viewer**: who is looking at a team and what they may do. That covers their role, an open invitation, a pending join request, a guest grant from the access cookie, and owner status. `resolveViewer` in `lib/workspace-access.ts` computes it, and every access decision reads it.
-- **Access cookie**: the signed per-space cookie that grants a guest access to a private space after they enter the password. Only `lib/workspace-access.ts` issues, reads or parses it.
+- **Team access**: what a caller may do to a team. `lib/team-auth.ts` answers it for every entry point: the guards server actions open with, who may view a team (anyone for a public space, members and password holders for a private one), and the owner rule for visibility and deletion.
+- **Viewer**: who is looking at a team page. That is their team access plus how they relate to the team: an open invitation or a pending join request. `resolveViewer` in `lib/team-viewer.ts` computes it.
+- **Access cookie**: the signed per-space cookie that grants a guest access to a private space after they enter the password. Only `lib/workspace-access.ts` issues, reads or parses it; `lib/team-auth.ts` decides what it grants.
 
 ## Modules
 

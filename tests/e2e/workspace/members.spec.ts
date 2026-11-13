@@ -28,27 +28,24 @@ test.describe("Member Management", () => {
     });
   });
 
-  // The legacy rounded-container selector matches multiple nested containers; tracked in docs/LAUNCH.md.
-  test.skip("removes a member from the workspace", async ({ page }) => {
+  test("removes a member from the workspace", async ({ page }) => {
     await page.getByRole("button", { name: /add team member/i }).click();
     await page.getByLabel("Full name").click();
     await page.getByLabel("Full name").pressSequentially("Bob Smith", { delay: 10 });
     await page.keyboard.press("Tab");
     await page.getByRole("button", { name: /add member/i }).click();
-    await expect(page.getByText("Bob Smith")).toBeVisible({ timeout: 5000 });
 
-    const memberCard = page.locator("[class*='rounded']").filter({
-      hasText: "Bob Smith",
+    const membersSection = page.locator("section").filter({
+      has: page.getByRole("heading", { exact: true, name: "Team members" }),
     });
 
-    await memberCard.getByRole("button", { name: /remove|delete/i }).click();
+    const bob = membersSection.getByText("Bob Smith", { exact: true });
+    await expect(bob).toBeVisible({ timeout: 5000 });
 
-    const confirmButton = page.getByRole("button", { name: /confirm|remove|delete/i });
+    await page.getByRole("button", { name: "More actions for Bob Smith" }).click();
+    await page.getByRole("menuitem", { name: "Remove from workspace" }).click();
+    await page.getByRole("button", { exact: true, name: "Remove member" }).click();
 
-    if (await confirmButton.isVisible().catch(() => false)) {
-      await confirmButton.click();
-    }
-
-    await expect(page.getByText("Bob Smith")).not.toBeVisible({ timeout: 5000 });
+    await expect(bob).toBeHidden({ timeout: 5000 });
   });
 });

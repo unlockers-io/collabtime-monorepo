@@ -1,5 +1,6 @@
 import "@/styles/globals.css";
 
+import { displayName, origins } from "@repo/identity";
 import { Toaster } from "@repo/ui/components/sonner";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Manrope } from "next/font/google";
@@ -12,10 +13,8 @@ import {
   APP_DESCRIPTION,
   APP_DESCRIPTION_SHORT,
   APP_KEYWORDS,
-  APP_NAME,
   APP_REPO_URL,
   APP_TITLE,
-  SITE_URL,
 } from "@/lib/constants";
 import { THEME_COLORS } from "@/lib/theme-colors";
 
@@ -45,15 +44,15 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  authors: [{ name: APP_NAME }],
-  creator: APP_NAME,
+  authors: [{ name: displayName }],
+  creator: displayName,
   description: APP_DESCRIPTION,
   keywords: APP_KEYWORDS,
-  metadataBase: new URL(SITE_URL),
+  metadataBase: new URL(origins.web),
   openGraph: {
     description: APP_DESCRIPTION_SHORT,
     locale: "en_US",
-    siteName: APP_NAME,
+    siteName: displayName,
     title: APP_TITLE,
     type: "website",
   },
@@ -70,7 +69,7 @@ export const metadata: Metadata = {
   },
   title: {
     default: APP_TITLE,
-    template: `%s · ${APP_NAME}`,
+    template: `%s · ${displayName}`,
   },
   twitter: {
     card: "summary_large_image",

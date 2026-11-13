@@ -1,14 +1,27 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+// @vitest-environment node
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { issueAccessCookie } from "../workspace-access";
 import { createTestAccessStore } from "../workspace-access-test-store";
 
 import { createTeamReadActions } from "./team-read-core";
-import { createMockSession, createTestTeamRecord, VALID_UUID } from "./test-helpers";
+import {
+  createMockSession,
+  createTestTeamRecord,
+  resetTestDatabase,
+  VALID_UUID,
+} from "./test-helpers";
 
 type TeamReadDeps = Parameters<typeof createTeamReadActions>[0];
 
-const space = { accessPassword: "hash", id: "space-1", isPrivate: true, teamId: VALID_UUID };
+const space = {
+  accessPassword: "hash",
+  id: "space-1",
+  isPrivate: true,
+  ownerId: "owner-1",
+  teamId: VALID_UUID,
+};
+
 const team = createTestTeamRecord();
 
 const setup = () => {
@@ -17,7 +30,7 @@ const setup = () => {
   const getSession = vi.fn<TeamReadDeps["getSession"]>().mockResolvedValue(null);
 
   const { getPublicTeam } = createTeamReadActions({
-    accessStore: access.store,
+    canViewTeam: access.auth.canViewTeam,
     findSpace,
     getSession,
     readPublicTeam: vi.fn<TeamReadDeps["readPublicTeam"]>().mockResolvedValue(team),
@@ -26,6 +39,8 @@ const setup = () => {
 
   return { access, findSpace, getPublicTeam, getSession };
 };
+
+beforeEach(resetTestDatabase);
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -71,7 +86,7 @@ describe("getPublicTeam", () => {
   it("allows private team access for members via their membership", async () => {
     const state = setup();
     state.getSession.mockResolvedValue(createMockSession());
-    state.access.addMembership(VALID_UUID, "user-123");
+    await state.access.addMembership(VALID_UUID, "user-123");
 
     expect(await state.getPublicTeam(VALID_UUID)).toEqual({ data: team, success: true });
     expect(state.access.store.findMembership).toHaveBeenCalledOnce();

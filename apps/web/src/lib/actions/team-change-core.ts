@@ -1,8 +1,7 @@
 import type { authorizeTeamAdmin, authorizeTeamMember, TeamAccess } from "@/lib/team-auth";
-import type { applyTeamCommand, TeamContentsFailure } from "@/lib/team-store";
+import type { AccessChange, ApplyTeamCommand } from "@/lib/team-store";
 
 import { displayName } from "../display-name";
-import type { RevokeMembership } from "../membership";
 import {
   isTeamChangeName,
   parseTeamChange,
@@ -15,54 +14,22 @@ import {
 
 import type { ActionErrorEvent, ActionResult } from "./types";
 
-type TeamChangeDeps = {
-  applyTeamCommand: typeof applyTeamCommand;
+type AccessChanges<TTransaction> = {
+  [TName in TeamChangeName]?: (
+    access: TeamAccess,
+  ) => AccessChange<TeamChangeParts[TName]["value"], TTransaction>;
+};
+
+type TeamChangeDeps<TTransaction> = {
+  applyTeamCommand: ApplyTeamCommand<TTransaction>;
   authorizeTeamAdmin: typeof authorizeTeamAdmin;
   authorizeTeamMember: typeof authorizeTeamMember;
   reportError: (event: ActionErrorEvent) => void;
-  revokeMembership: RevokeMembership;
+  revokeMemberAccess: NonNullable<AccessChanges<TTransaction>["removeMember"]>;
 };
 
-type ServerApply<TName extends TeamChangeName> = (
-  access: TeamAccess,
-  args: TeamChangeParts[TName]["args"],
-) => Promise<ActionResult<TeamChangeReply<TName>>>;
-
-type ServerApplies = { [TName in TeamChangeName]?: ServerApply<TName> };
-
-const REMOVE_FAILED = `Failed to ${teamChanges.removeMember.failure}`;
-
-/** A rejected command keeps its reason; a failed write names the action instead. */
-const failed = ({ error, reason }: TeamContentsFailure, failure: string) => ({
-  error: reason === "write-failed" ? `Failed to ${failure}` : error,
-  success: false as const,
-});
-
-const createTeamChangeAction = (deps: TeamChangeDeps) => {
-  // Removing a member also revokes their access in the same transaction.
-  const serverApply: ServerApplies = {
-    removeMember: async (access, { memberId }) => {
-      try {
-        const revoked = await deps.revokeMembership({ access, memberId });
-
-        if (!revoked.ok) {
-          return failed(revoked, teamChanges.removeMember.failure);
-        }
-
-        return { data: undefined, success: true };
-      } catch (error) {
-        deps.reportError({
-          error,
-          memberId,
-          message: REMOVE_FAILED,
-          route: "actions/team-change",
-          teamId: access.teamId,
-        });
-
-        return { error: REMOVE_FAILED, success: false };
-      }
-    },
-  };
+const createTeamChangeAction = <TTransaction>(deps: TeamChangeDeps<TTransaction>) => {
+  const accessChanges: AccessChanges<TTransaction> = { removeMember: deps.revokeMemberAccess };
 
   return async <TName extends TeamChangeName>(
     teamId: string,
@@ -89,23 +56,30 @@ const createTeamChangeAction = (deps: TeamChangeDeps) => {
       return { error: parsed.error, success: false };
     }
 
-    const apply = serverApply[name];
-
-    if (apply) {
-      return apply(access.data, parsed.args);
-    }
-
     const { user } = access.data;
     const actor = { id: user.id, name: displayName(user.name, user.email) };
 
-    const applied = await deps.applyTeamCommand(
-      access.data.teamId,
-      change.command(parsed.args, actor),
-    );
+    try {
+      const applied = await deps.applyTeamCommand(
+        access.data.teamId,
+        change.command(parsed.args, actor),
+        accessChanges[name]?.(access.data),
+      );
 
-    return applied.ok
-      ? { data: change.reply(applied.value), success: true }
-      : failed(applied, change.failure);
+      return applied.ok
+        ? { data: change.reply(applied.value), success: true }
+        : { error: applied.error, success: false };
+    } catch (error) {
+      const message = `Failed to ${change.failure}`;
+      deps.reportError({
+        error,
+        message,
+        route: "actions/team-change",
+        teamId: access.data.teamId,
+      });
+
+      return { error: message, success: false };
+    }
   };
 };
 

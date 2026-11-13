@@ -1,17 +1,19 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { VALID_UUID } from "./actions/test-helpers";
+import { resetTestDatabase, VALID_UUID } from "./actions/test-helpers";
+import type { TeamSpace } from "./team-auth";
 import { createTeamEventsHandler, type TeamEventHandlerDeps } from "./team-event-handler";
 import type { TeamListener } from "./team-events";
-import { captureAccessCheck, issueAccessCookie, type WorkspaceSpace } from "./workspace-access";
+import { issueAccessCookie } from "./workspace-access";
 import { createTestAccessStore } from "./workspace-access-test-store";
 
 const setup = () => {
-  const space: WorkspaceSpace = {
+  const space: TeamSpace = {
     accessPassword: "password-hash",
     id: "space-1",
     isPrivate: false,
+    ownerId: "owner-1",
     teamId: VALID_UUID,
   };
 
@@ -20,7 +22,7 @@ const setup = () => {
   const viewer: { userId?: string } = {};
 
   const captureAccess = vi.fn<TeamEventHandlerDeps["captureAccess"]>(async (spaceId) => ({
-    canView: await captureAccessCheck(spaceId, viewer.userId, access.store),
+    canView: await access.auth.captureAccessCheck(spaceId, viewer.userId),
     userId: viewer.userId,
   }));
 
@@ -74,8 +76,9 @@ const setup = () => {
   };
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv("SPACE_ACCESS_SECRET", "test-space-access-secret-with-32-characters");
+  await resetTestDatabase();
 });
 
 afterEach(() => {
@@ -126,9 +129,9 @@ describe("team events handler", () => {
     state.space.accessPassword = "rotated-password-hash";
     await expect(state.handle(request, VALID_UUID)).resolves.toHaveProperty("status", 403);
     state.viewer.userId = "member-1";
-    state.access.addMembership(VALID_UUID, "member-1");
+    await state.access.addMembership(VALID_UUID, "member-1");
     await expect(state.handle(request, VALID_UUID)).resolves.toHaveProperty("status", 204);
-    state.access.removeMembership(VALID_UUID, "member-1");
+    await state.access.removeMembership(VALID_UUID, "member-1");
     await expect(state.handle(request, VALID_UUID)).resolves.toHaveProperty("status", 403);
     expect(state.acquire).not.toHaveBeenCalled();
   });
@@ -148,7 +151,7 @@ describe("team events handler", () => {
     state.space.isPrivate = true;
     state.viewer.userId = "user-1";
     await expect(state.handle(state.request, VALID_UUID)).resolves.toHaveProperty("status", 403);
-    state.access.addMembership(VALID_UUID, "user-1");
+    await state.access.addMembership(VALID_UUID, "user-1");
     const response = await state.handle(state.request, VALID_UUID);
     expect(response.status).toBe(200);
     expect(state.acquire).toHaveBeenCalledWith({ ip: "192.0.2.1", userId: "user-1" });
@@ -172,7 +175,7 @@ describe("team events handler", () => {
     const revokedFrame = await reader.read();
     expect(new TextDecoder().decode(revokedFrame.value)).toContain("event: revoked");
     await expect(reader.read()).resolves.toHaveProperty("done", true);
-    expect(state.access.store.getToken).toHaveBeenCalledTimes(1);
+    expect(state.access.store.readAccessToken).toHaveBeenCalledTimes(1);
     expect(state.release).toHaveBeenCalledTimes(1);
   });
 

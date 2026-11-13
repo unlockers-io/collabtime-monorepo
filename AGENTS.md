@@ -37,7 +37,7 @@ This repo follows the fleet's shared standards, checked by `standy` (`~/dev/stan
 - **Monorepo**: Turborepo + pnpm workspaces, Node >=24, `packageManager: pnpm@11.13.1`
 - **Lint / format**: oxlint + oxfmt (NOT ESLint/Prettier), `oxlint-config-awesomeness`
 - **Tests**: Vitest (unit), Playwright (e2e: chromium, firefox, webkit)
-- **Bundler**: tsdown for library packages, Turbopack for Next.js dev
+- **Bundler**: Turbopack for Next.js; the workspace packages ship as source and the app compiles them
 - **Dead-code / circular deps**: `fallow`
 
 ## Layout
@@ -110,7 +110,7 @@ Docker host ports: Postgres `5433`, Redis `6379`. Only one project's stack runs 
 
 App configs call `applyPortlessUrls(["WEB_APP_URL"])` from `@repo/portless-env` at the top of `next.config.ts`. It runs `portless get` once per app and fills each env var only when it is unset or still holds its canonical default; a failed lookup throws. It is a no-op unless `PORTLESS_URL` is set, so CI and production keep their real values. Tests in `tests/e2e` import URLs from `tests/e2e/urls.ts`, which asks portless locally and uses the loopback port in CI. Import the package by bare specifier: a relative path resolves from the process cwd and breaks `next start apps/web` from the repo root.
 
-The `dev` script, `allowedDevOrigins` and the e2e workflow's `WEB_APP_URL` must stay literal; `packages/portless-env/src/apps.test.ts` asserts they match the registry.
+The `dev` script and the e2e workflow's `WEB_APP_URL` must stay literal; `packages/portless-env/src/apps.test.ts` asserts they match the registry.
 
 ## Environment variables
 
@@ -140,6 +140,7 @@ Validated in `apps/web/src/lib/env.ts` with Zod at startup; access via `getEnv(k
 - **`/` serves two pages**: `app/page.tsx` reads the session and renders `components/landing/` when logged out, `app/home-client.tsx` (the dashboard) when logged in. The outer `Suspense` fallback is intentionally `null`: either page can follow it, so no skeleton fits. The dashboard header streams ahead of the workspace list, whose skeleton (`home-client/workspaces-skeleton.tsx`) is a Skullet `SkeletonSuspense` measured from sample workspaces.
 - **Skeletons**: every loading state is a Skullet skeleton measured from the real component rendered with sample data, never a hand-built placeholder. A Suspense boundary uses `SkeletonSuspense` with the sample as `skeleton`. A route `loading.tsx` renders the page's view inside `<Skeleton loading>`, as `app/[teamId]/team-skeleton.tsx` does with the demo team. Views that need the viewer's timezone and clock (`TimezoneVisualizer`, `TeamInsights`) read `useViewerClock`, which returns a fixed sample until the client knows them, and draw from it inside `<Skeleton loading={!isKnown}>`, so they render on the server too. Skullet's colours and motion come from the `--skullet-*` properties in `apps/web/src/styles/globals.css`.
 - **Landing product demo**: `components/landing/product-preview.tsx` renders the real `TimezoneVisualizer` against the static team in `demo-team.ts`, which the team page skeleton reuses. `getTeamSchedule` is pure, so the demo needs no fetching. Keep `demo-team.ts` hours as they are unless you re-check the overlap: they are picked so four of five members share a real window.
+- **Unit tests use Postgres**: `pnpm test` needs the Docker Postgres up (`docker compose up -d postgres`), or a `DATABASE_URL` for another local server. `apps/web/src/test/postgres-global-setup.ts` gives each Vitest worker its own empty database there (`<database>_test_<n>`, dropped when the run ends), so a test can truncate and use fixed ids without seeing the dev rows. It refuses a host that is not local.
 - **Design guidelines**: landing work follows the `design` skill's rule files. Two deliberate deviations, both because the repo's own lint wins: no `role="list"` on `<ul>` (oxlint `no-redundant-roles` errors on it), and the shared button keeps its ring-based `focus-visible` treatment rather than `outline-*`.
 
 ## Linting & formatting
