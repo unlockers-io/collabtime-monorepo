@@ -39,9 +39,7 @@ const once = () => {
   };
 };
 
-const enabled = process.env.MEMBERSHIP_POSTGRES_TESTS === "1";
-
-describe.skipIf(!enabled)("membership transactions against Postgres", () => {
+describe("membership transactions against Postgres", () => {
   const users: Array<string> = [];
 
   const setup = async () => {

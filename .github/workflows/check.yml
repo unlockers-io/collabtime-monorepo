@@ -14,6 +14,19 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      PGAPPNAME: collabtime:ci:test
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_USER: test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 1s --health-timeout 5s --health-retries 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -53,6 +66,8 @@ jobs:
       # Type-aware linting resolves generated Prisma client types.
       - if: ${{ !cancelled() }}
         run: pnpm turbo db:generate
+      - if: ${{ !cancelled() }}
+        run: pnpm db:push
       - name: Check formatting
         if: ${{ !cancelled() }}
         run: node .github/ci/ci.mjs run lint -- pnpm format:check
