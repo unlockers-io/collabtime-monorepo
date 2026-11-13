@@ -1,7 +1,8 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { prisma } from "@repo/db";
-import { v4 as uuidv4 } from "uuid";
 
 import { log } from "@/lib/observability";
 import { authenticate } from "@/lib/team-auth";
@@ -16,8 +17,8 @@ import { createTeamAction } from "./team-create-core";
 const createTeam = createTeamAction({
   authenticate,
   countAdminTeams: (userId) => prisma.membership.count({ where: { role: "ADMIN", userId } }),
-  createId: uuidv4,
-  createMember: (overrides) => newTeamMember(uuidv4(), overrides),
+  createId: randomUUID,
+  createMember: (overrides) => newTeamMember(randomUUID(), overrides),
   now: () => new Date(),
   persistTeam: (userId, team) =>
     withTeamTransaction(team.id, async (transaction) => {
