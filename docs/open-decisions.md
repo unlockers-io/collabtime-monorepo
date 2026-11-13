@@ -22,11 +22,11 @@ When one is decided, do it and delete its entry.
 **Today.** The repo says two things.
 
 - `apps/web/package.json` has `vercel-build`, which runs `pnpm --filter @repo/db db:deploy` before the build. `db:deploy` in `packages/db/package.json` runs `prisma db push` against `DIRECT_DATABASE_URL` when `VERCEL_ENV` is `production` and does nothing anywhere else. `README.md` describes this as how production gets its schema.
-- `apps/web/vercel.json` sets `buildCommand` to `pnpm --filter @repo/db db:generate && pnpm exec next build`, with no `db:deploy`. Vercel runs a `buildCommand` from `vercel.json` in place of the `vercel-build` script when the project's root directory is `apps/web`.
+- `apps/web/vercel.json` sets `buildCommand` to `pnpm --filter @repo/db db:generate && pnpm exec next build`, with no `db:deploy`.
 
-So either production pushes the schema on every deploy, or it has pushed nothing since `vercel.json` got its `buildCommand`. No schema change has merged since then, so nothing has shown which.
+The Vercel project's root directory is `apps/web`, so that `vercel.json` applies, and a `buildCommand` there runs in place of the `vercel-build` script. Read that way, production has pushed nothing on deploy since `vercel.json` got its `buildCommand`, and the `README.md` paragraph is wrong. No schema change has merged since then, so nothing has broken or proved it.
 
-**Why it is open.** A deploy that pushes applies every additive change with the code that needs it, and refuses anything that loses data: the build fails and the old deployment keeps serving. A deploy that pushes nothing needs someone to run `pnpm db:push` against production before the code merges. The fleet's shared standard says a Vercel-hosted repo pushes nothing on deploy and keeps no `db:deploy` wrapper, so the first reading is also a recorded difference from it.
+**Why it is open.** A deploy that pushes applies every additive change with the code that needs it, and refuses anything that loses data: the build fails and the old deployment keeps serving. A deploy that pushes nothing needs someone to run `pnpm db:push` against production before the code merges. The fleet's shared standard says a Vercel-hosted repo pushes nothing on deploy and keeps no `db:deploy` wrapper, so the `vercel-build` script is also a recorded difference from it.
 
 **What a column drop looks like when the deploy pushes.** `prisma db push` stops at "data loss" and the build fails. Do it in three steps:
 
@@ -38,10 +38,12 @@ Making a column required is the same shape: backfill by hand first, or the push 
 
 **Options.**
 
-- **Keep the production-only push (recommended).** Delete `buildCommand` from `apps/web/vercel.json` so the repo has one build command, and keep `db:deploy` with its `VERCEL_ENV` guard. Additive changes need no manual step, previews never touch production, and a destructive change fails closed. The shared standard would then describe the guard instead of forbidding the wrapper.
-- **Push by hand.** Delete `vercel-build`, `db:deploy`, `DIRECT_DATABASE_URL` and the `README.md` paragraph. Matches the standard as written. Every schema change, additive ones included, needs a manual push before its code deploys, and forgetting one breaks production at runtime instead of at build time.
+- **Push on production deploys (recommended).** Delete `buildCommand` from `apps/web/vercel.json` so `vercel-build` runs again, and keep `db:deploy` with its `VERCEL_ENV` guard. Additive changes need no manual step, previews never touch production, and a destructive change fails closed. The shared standard would then describe the guard instead of forbidding the wrapper.
+- **Push by hand.** Delete `vercel-build`, `db:deploy`, `DIRECT_DATABASE_URL` and the `README.md` paragraph, which is what production appears to do already. Matches the standard as written. Every schema change, additive ones included, needs a manual push before its code deploys, and forgetting one breaks production at runtime instead of at build time.
 
-**Know first.** Open the build log of the latest production deployment in Vercel and look for `db:deploy` or `prisma db push`. Check Settings → Build and Deployment for the root directory and any build command override.
+Until one is chosen, treat every schema change as needing a manual `pnpm db:push` against production before its code merges.
+
+**Know first.** Open the build log of the latest production deployment in Vercel and look for `db:deploy` or `prisma db push`; its absence confirms the reading above. Check Settings → Build and Deployment for a build command override.
 
 **Unlocks.** Entries 2, 3, 4 and 5 all end in a schema change; this decides how each one reaches production.
 
