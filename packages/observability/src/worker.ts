@@ -8,8 +8,6 @@ const initWorkerLogger = (opts: { service: string }): void => {
   initLogger(buildConfig(opts.service));
 };
 
-type JobLogContext = { jobId: string; queue: string };
-
-const createJobLogger = (ctx: JobLogContext) => createLogger(ctx);
+const createJobLogger = (context: Parameters<typeof createLogger>[0]) => createLogger(context);
 
 export { createJobLogger, initWorkerLogger };
