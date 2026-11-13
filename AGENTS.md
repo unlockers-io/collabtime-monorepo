@@ -181,6 +181,7 @@ Three workflows are checked in: `check.yml` (one job running the secret scan, fo
 
 - Conventions: [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)
 - Domain terms and the modules that own them: [`GLOSSARY.md`](GLOSSARY.md)
+- Choices nobody has made yet, with their options: [`docs/open-decisions.md`](docs/open-decisions.md)
 - Better Auth docs: <https://better-auth.com>
 - Prisma 7: <https://www.prisma.io/docs>
 - oxlint: <https://oxc.rs>
