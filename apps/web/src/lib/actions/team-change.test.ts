@@ -24,11 +24,11 @@ const guards = createTestGuards();
 const reportError = vi.fn<TeamChangeDeps["reportError"]>();
 
 const changeTeam = createTeamChangeAction({
-  accessChanges: { removeMember: harness.revokeMemberAccess },
   applyTeamCommand: harness.applyTeamCommand,
   authorizeTeamAdmin: guards.authorizeTeamAdmin,
   authorizeTeamMember: guards.authorizeTeamMember,
   reportError,
+  revokeMemberAccess: harness.revokeMemberAccess,
 });
 
 const { seedTeam } = harness;
@@ -850,11 +850,11 @@ describe("write failures", () => {
     await seedTeam(createTestTeamRecord());
 
     const failingChange = createTeamChangeAction({
-      accessChanges: {},
       applyTeamCommand: store.applyTeamCommand,
       authorizeTeamAdmin: guards.authorizeTeamAdmin,
       authorizeTeamMember: guards.authorizeTeamMember,
       reportError,
+      revokeMemberAccess: harness.revokeMemberAccess,
     });
 
     expect(await failingChange(VALID_UUID, "renameTeam", { name: "Renamed" })).toEqual({
