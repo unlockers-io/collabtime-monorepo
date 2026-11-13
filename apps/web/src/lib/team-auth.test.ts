@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -5,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { getSession } from "@/lib/auth-server";
 
-import { createMockSession, VALID_UUID } from "./actions/test-helpers";
+import { createMockSession, resetTestDatabase, VALID_UUID } from "./actions/test-helpers";
 import { createTeamAuth } from "./team-auth";
 import { issueAccessCookie } from "./workspace-access";
 import { createTestAccessStore } from "./workspace-access-test-store";
@@ -141,15 +142,16 @@ describe("member roles", () => {
 describe("captureAccessCheck", () => {
   it("reads the cookie once and rechecks the current password and membership", async () => {
     vi.stubEnv("SPACE_ACCESS_SECRET", "test-space-secret-at-least-32-characters");
+    await resetTestDatabase();
     const access = createTestAccessStore();
     access.setToken(privateSpace.id, issueAccessCookie(privateSpace.id, HASH).value);
     const canView = await access.auth.captureAccessCheck(privateSpace.id, "user-1");
 
     expect(await canView(privateSpace)).toBe(true);
     expect(await canView({ ...privateSpace, accessPassword: "rotated-hash" })).toBe(false);
-    access.addMembership(VALID_UUID, "user-1");
+    await access.addMembership(VALID_UUID, "user-1");
     expect(await canView({ ...privateSpace, accessPassword: "rotated-hash" })).toBe(true);
-    access.removeMembership(VALID_UUID, "user-1");
+    await access.removeMembership(VALID_UUID, "user-1");
     expect(await canView({ ...privateSpace, accessPassword: "rotated-hash" })).toBe(false);
     expect(access.store.readAccessToken).toHaveBeenCalledOnce();
     vi.unstubAllEnvs();

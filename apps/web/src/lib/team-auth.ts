@@ -145,6 +145,12 @@ const createTeamAuth = (deps: TeamAuthDeps) => {
   };
 };
 
+const findTeamMembership = (teamId: string, userId: string): Promise<Membership | null> =>
+  prisma.membership.findUnique({
+    select: { archivedAt: true, role: true },
+    where: { userId_teamId: { teamId, userId } },
+  });
+
 const findTeamSpace = (teamId: string): Promise<TeamSpace | null> =>
   prisma.space.findUnique({
     select: { accessPassword: true, id: true, isPrivate: true, ownerId: true, teamId: true },
@@ -159,11 +165,7 @@ const {
   captureAccessCheck,
   readTeamAccess,
 } = createTeamAuth({
-  findMembership: (teamId, userId) =>
-    prisma.membership.findUnique({
-      select: { archivedAt: true, role: true },
-      where: { userId_teamId: { teamId, userId } },
-    }),
+  findMembership: findTeamMembership,
   getSession,
   readAccessToken,
   reportError: log.error,
@@ -176,6 +178,7 @@ export {
   canViewTeam,
   captureAccessCheck,
   createTeamAuth,
+  findTeamMembership,
   findTeamSpace,
   isSpaceOwner,
   readTeamAccess,

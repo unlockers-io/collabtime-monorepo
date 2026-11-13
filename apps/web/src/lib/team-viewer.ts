@@ -84,6 +84,6 @@ const resolveViewer = async (
   };
 };
 
-export { resolveViewer };
+export { resolveViewer, viewerDeps };
 
 export type { Viewer, ViewerDeps };
