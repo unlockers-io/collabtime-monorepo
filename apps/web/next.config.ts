@@ -1,3 +1,4 @@
+import { baseNextConfig, securityHeaders } from "@repo/config-next";
 import { applyPortlessUrls } from "@repo/portless-env";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
@@ -7,28 +8,21 @@ applyPortlessUrls(["WEB_APP_URL"]);
 const WORKSPACE_ID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 const nextConfig: NextConfig = {
-  agentRules: false,
-  allowedDevOrigins: ["collabtime.web.localhost", "*.collabtime.web.localhost", "*.vercel.app"],
-  cacheComponents: true,
-  experimental: {
+  ...baseNextConfig("web", {
     exposeTestingApiInProductionBuild: process.env.EXPOSE_TESTING_API === "1",
     instantInsights: { validationLevel: "manual-warning" },
-    turbopackRustReactCompiler: true,
-  },
+  }),
+  agentRules: false,
   headers: () =>
     Promise.resolve([
       {
         headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          ...securityHeaders,
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
         ],
         source: "/:path*",
       },
     ]),
-  partialPrefetching: true,
-  reactStrictMode: true,
   redirects: () =>
     Promise.resolve([{ destination: "/register", permanent: true, source: "/signup" }]),
   rewrites: () =>
@@ -51,17 +45,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default {
-  ...withSentryConfig(nextConfig, {
-    authToken: process.env.SENTRY_AUTH_TOKEN,
-    org: "unlockers-io",
-    project: "collabtime-web",
-    silent: false,
-    sourcemaps: {
-      deleteSourcemapsAfterUpload: true,
-    },
-    tunnelRoute: process.env.GITHUB_ACTIONS ? undefined : "/monitoring",
-    widenClientFileUpload: true,
-  }),
-  reactCompiler: true,
-};
+export default withSentryConfig(nextConfig, {
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  org: "unlockers-io",
+  project: "collabtime-web",
+  silent: false,
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  tunnelRoute: process.env.GITHUB_ACTIONS ? undefined : "/monitoring",
+  widenClientFileUpload: true,
+});

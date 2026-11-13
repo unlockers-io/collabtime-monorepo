@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
 
-import { apps, canonicalHostname, canonicalUrl, canonicalUrls, loopbackUrl } from "./apps";
+import { apps, canonicalUrl, canonicalUrls, loopbackUrl } from "./apps";
 
 const appIds = ["web"] as const;
 
@@ -32,11 +32,6 @@ describe("literals that cannot import the registry", () => {
   it.each(appIds)("runs the %s dev script under its portless name", async (app) => {
     const { scripts } = JSON.parse(await repoFile(`apps/${app}/package.json`));
     expect(scripts.dev).toMatch(new RegExp(`^portless run --name ${apps[app].name} `));
-  });
-
-  it.each(appIds)("allows the %s dev origins in next.config.ts", async (app) => {
-    const config = await repoFile(`apps/${app}/next.config.ts`);
-    expect(config).toContain(`"${canonicalHostname(app)}", "*.${canonicalHostname(app)}"`);
   });
 
   it("points CI's WEB_APP_URL at the web app's loopback URL", async () => {

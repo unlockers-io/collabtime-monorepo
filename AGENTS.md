@@ -110,7 +110,7 @@ Docker host ports: Postgres `5433`, Redis `6379`. Only one project's stack runs 
 
 App configs call `applyPortlessUrls(["WEB_APP_URL"])` from `@repo/portless-env` at the top of `next.config.ts`. It runs `portless get` once per app and fills each env var only when it is unset or still holds its canonical default; a failed lookup throws. It is a no-op unless `PORTLESS_URL` is set, so CI and production keep their real values. Tests in `tests/e2e` import URLs from `tests/e2e/urls.ts`, which asks portless locally and uses the loopback port in CI. Import the package by bare specifier: a relative path resolves from the process cwd and breaks `next start apps/web` from the repo root.
 
-The `dev` script, `allowedDevOrigins` and the e2e workflow's `WEB_APP_URL` must stay literal; `packages/portless-env/src/apps.test.ts` asserts they match the registry.
+The `dev` script and the e2e workflow's `WEB_APP_URL` must stay literal; `packages/portless-env/src/apps.test.ts` asserts they match the registry.
 
 ## Environment variables
 
