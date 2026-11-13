@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth-server";
 import { hashPassword } from "@/lib/crypto";
 import { log, withEvlog } from "@/lib/observability";
+import { isSpaceOwner } from "@/lib/team-auth";
 import { publishTeamEvent } from "@/lib/team-events";
 import { teamNameTag } from "@/lib/team-store";
 import { SpaceAccessPasswordSchema } from "@/lib/validation";
@@ -42,7 +43,7 @@ const loadOwnedSpace = async (spaceId: string): Promise<OwnedSpaceResult> => {
     };
   }
 
-  if (space.ownerId !== session.user.id) {
+  if (!isSpaceOwner(space, session.user.id)) {
     return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 

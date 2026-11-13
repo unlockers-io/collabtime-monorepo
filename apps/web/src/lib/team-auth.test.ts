@@ -7,6 +7,18 @@ import type { getSession } from "@/lib/auth-server";
 
 import { createMockSession, VALID_UUID } from "./actions/test-helpers";
 import { createTeamAuth } from "./team-auth";
+import { issueAccessCookie } from "./workspace-access";
+import { createTestAccessStore } from "./workspace-access-test-store";
+
+const HASH = "$2b$10$abcdefghijklmnopqrstuv";
+
+const privateSpace = {
+  accessPassword: HASH,
+  id: "space-1",
+  isPrivate: true,
+  ownerId: "owner-1",
+  teamId: VALID_UUID,
+};
 
 type TeamAuthDeps = Parameters<typeof createTeamAuth>[0];
 
@@ -17,6 +29,7 @@ const reportError = vi.fn<TeamAuthDeps["reportError"]>();
 const { authenticate, authorizeTeamAdmin, authorizeTeamMember } = createTeamAuth({
   findMembership: mockedFindMembership,
   getSession: mockedGetSession,
+  readAccessToken: vi.fn<TeamAuthDeps["readAccessToken"]>(),
   reportError,
 });
 
@@ -82,7 +95,7 @@ describe.each([
   it("grants an admin", async () => {
     const session = createMockSession({ userId: "user-1" });
     mockedGetSession.mockResolvedValue(session);
-    mockedFindMembership.mockResolvedValue({ role: "ADMIN" });
+    mockedFindMembership.mockResolvedValue({ archivedAt: null, role: "ADMIN" });
 
     expect(await authorize(VALID_UUID)).toEqual({
       data: { teamId: VALID_UUID, user: session.user },
@@ -107,7 +120,7 @@ describe("member roles", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedGetSession.mockResolvedValue(createMockSession({ userId: "user-1" }));
-    mockedFindMembership.mockResolvedValue({ role: "MEMBER" });
+    mockedFindMembership.mockResolvedValue({ archivedAt: null, role: "MEMBER" });
   });
 
   it("refuses a member admin access", async () => {
@@ -122,5 +135,23 @@ describe("member roles", () => {
       data: { teamId: VALID_UUID },
       success: true,
     });
+  });
+});
+
+describe("captureAccessCheck", () => {
+  it("reads the cookie once and rechecks the current password and membership", async () => {
+    vi.stubEnv("SPACE_ACCESS_SECRET", "test-space-secret-at-least-32-characters");
+    const access = createTestAccessStore();
+    access.setToken(privateSpace.id, issueAccessCookie(privateSpace.id, HASH).value);
+    const canView = await access.auth.captureAccessCheck(privateSpace.id, "user-1");
+
+    expect(await canView(privateSpace)).toBe(true);
+    expect(await canView({ ...privateSpace, accessPassword: "rotated-hash" })).toBe(false);
+    access.addMembership(VALID_UUID, "user-1");
+    expect(await canView({ ...privateSpace, accessPassword: "rotated-hash" })).toBe(true);
+    access.removeMembership(VALID_UUID, "user-1");
+    expect(await canView({ ...privateSpace, accessPassword: "rotated-hash" })).toBe(false);
+    expect(access.store.readAccessToken).toHaveBeenCalledOnce();
+    vi.unstubAllEnvs();
   });
 });

@@ -1,63 +1,17 @@
 import crypto from "node:crypto";
 
 import { envAuthConfig } from "@repo/auth/env-config";
-import { prisma } from "@repo/db";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
-import { displayName, maskEmail } from "@/lib/display-name";
 import { getEnv } from "@/lib/env";
-import { isInvitationOpen } from "@/lib/invitation-expiry";
 import { log } from "@/lib/observability";
-import { normalizeEmail } from "@/lib/validation";
-import { isTeamRole } from "@/types";
-import type { TeamRole, TeamStatus } from "@/types";
 
 const SPACE_ACCESS_COOKIE_PREFIX = "space-access-";
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 // v2 binds the grant to the credential it was issued against.
 const TOKEN_VERSION = "v2";
-
-type WorkspaceSpace = {
-  accessPassword: string | null;
-  id: string;
-  isPrivate: boolean;
-  teamId: string;
-};
-
-type StoredInvitation = {
-  email: string;
-  expiresAt: Date | null;
-  id: string;
-  invitedBy: { email: string; name: string | null };
-  status: string;
-  teamId: string;
-};
-
-type StoredMembership = { archivedAt: Date | null; role: string };
-
-type WorkspaceAccessStore = {
-  findInvitation: (teamId: string, email: string) => Promise<StoredInvitation | null>;
-  findInvitationById: (invitationId: string) => Promise<StoredInvitation | null>;
-  findJoinRequest: (teamId: string, userId: string) => Promise<{ status: string } | null>;
-  findMembership: (teamId: string, userId: string) => Promise<StoredMembership | null>;
-  getToken: (spaceId: string) => Promise<string | undefined>;
-};
-
-type ViewerSession = { user: { email: string; id: string } };
-
-type Viewer = {
-  canView: boolean;
-  guestGrant: boolean;
-  invitation?: { id: string; inviterName: string };
-  inviteMismatch?: { invitedEmailMasked: string };
-  isArchived: boolean;
-  isOwner: boolean;
-  status: TeamStatus;
-};
-
-type AccessCheck = (space: WorkspaceSpace) => Promise<boolean>;
 
 let warnedAboutFallback = false;
 
@@ -214,166 +168,10 @@ const parseAccessCookies = (
   return accessCookies;
 };
 
-const invitationSelect = {
-  email: true,
-  expiresAt: true,
-  id: true,
-  invitedBy: { select: { email: true, name: true } },
-  status: true,
-  teamId: true,
-} as const;
+const readAccessToken = async (spaceId: string): Promise<string | undefined> => {
+  const cookieStore = await cookies();
 
-const workspaceAccessStore: WorkspaceAccessStore = {
-  findInvitation: (teamId, email) =>
-    prisma.invitation.findUnique({
-      select: invitationSelect,
-      where: { email_teamId: { email, teamId } },
-    }),
-  findInvitationById: (invitationId) =>
-    prisma.invitation.findUnique({ select: invitationSelect, where: { id: invitationId } }),
-  findJoinRequest: (teamId, userId) =>
-    prisma.joinRequest.findUnique({
-      select: { status: true },
-      where: { userId_teamId: { teamId, userId } },
-    }),
-  findMembership: (teamId, userId) =>
-    prisma.membership.findUnique({
-      select: { archivedAt: true, role: true },
-      where: { userId_teamId: { teamId, userId } },
-    }),
-  getToken: async (spaceId) => {
-    const cookieStore = await cookies();
-
-    return cookieStore.get(accessCookieName(spaceId))?.value;
-  },
+  return cookieStore.get(accessCookieName(spaceId))?.value;
 };
 
-const isMembership = (
-  membership: StoredMembership | null,
-): membership is StoredMembership & { role: TeamRole } =>
-  membership !== null && isTeamRole(membership.role);
-
-const hasGuestGrant = async (space: WorkspaceSpace, store: WorkspaceAccessStore) => {
-  if (!space.isPrivate) {
-    return false;
-  }
-
-  const token = await store.getToken(space.id);
-
-  return token !== undefined && verifyAccessToken(token, space.id, space.accessPassword);
-};
-
-const canViewWorkspace = async (
-  space: WorkspaceSpace,
-  userId: string | undefined,
-  store: WorkspaceAccessStore,
-): Promise<boolean> => {
-  if (!space.isPrivate || (await hasGuestGrant(space, store))) {
-    return true;
-  }
-
-  return userId !== undefined && isMembership(await store.findMembership(space.teamId, userId));
-};
-
-/** Reads the cookie once up front: live-stream rechecks run after the request has ended. */
-const captureAccessCheck = async (
-  spaceId: string,
-  userId: string | undefined,
-  store: WorkspaceAccessStore = workspaceAccessStore,
-): Promise<AccessCheck> => {
-  const token = await store.getToken(spaceId);
-  const captured: WorkspaceAccessStore = { ...store, getToken: () => Promise.resolve(token) };
-
-  return (space) => canViewWorkspace(space, userId, captured);
-};
-
-type Relation = Pick<Viewer, "invitation" | "isArchived" | "status">;
-
-const STRANGER: Relation = { isArchived: false, status: "none" };
-
-const readRelation = async (
-  teamId: string,
-  user: ViewerSession["user"],
-  store: WorkspaceAccessStore,
-): Promise<Relation> => {
-  const [membership, invitation, joinRequest] = await Promise.all([
-    store.findMembership(teamId, user.id),
-    store.findInvitation(teamId, normalizeEmail(user.email)),
-    store.findJoinRequest(teamId, user.id),
-  ]);
-
-  if (isMembership(membership)) {
-    return { isArchived: membership.archivedAt !== null, status: membership.role };
-  }
-
-  if (invitation !== null && isInvitationOpen(invitation, new Date())) {
-    const inviterName = displayName(invitation.invitedBy.name, invitation.invitedBy.email);
-
-    return { invitation: { id: invitation.id, inviterName }, isArchived: false, status: "INVITED" };
-  }
-
-  return { isArchived: false, status: joinRequest?.status === "PENDING" ? "PENDING" : "none" };
-};
-
-const findInviteMismatch = async (
-  inviteHint: string,
-  teamId: string,
-  email: string,
-  store: WorkspaceAccessStore,
-): Promise<Viewer["inviteMismatch"]> => {
-  const invitation = await store.findInvitationById(inviteHint);
-
-  if (
-    invitation?.teamId !== teamId ||
-    !isInvitationOpen(invitation, new Date()) ||
-    normalizeEmail(invitation.email) === normalizeEmail(email)
-  ) {
-    return undefined;
-  }
-
-  return { invitedEmailMasked: maskEmail(invitation.email) };
-};
-
-const resolveViewer = async (
-  {
-    inviteHint,
-    session,
-    space,
-  }: {
-    inviteHint: string | undefined;
-    session: ViewerSession | null;
-    space: WorkspaceSpace & { ownerId: string };
-  },
-  store: WorkspaceAccessStore = workspaceAccessStore,
-): Promise<Viewer> => {
-  const [guestGrant, relation] = await Promise.all([
-    hasGuestGrant(space, store),
-    session === null ? STRANGER : readRelation(space.teamId, session.user, store),
-  ]);
-
-  const isMember = relation.status === "ADMIN" || relation.status === "MEMBER";
-  const isOutsider = relation.status === "none" || relation.status === "PENDING";
-
-  return {
-    ...relation,
-    canView: !space.isPrivate || guestGrant || isMember,
-    guestGrant,
-    inviteMismatch:
-      session !== null && inviteHint !== undefined && isOutsider
-        ? await findInviteMismatch(inviteHint, space.teamId, session.user.email, store)
-        : undefined,
-    isOwner: session?.user.id === space.ownerId,
-  };
-};
-
-export {
-  canViewWorkspace,
-  captureAccessCheck,
-  issueAccessCookie,
-  parseAccessCookies,
-  resolveViewer,
-  verifyAccessToken,
-  workspaceAccessStore,
-};
-
-export type { AccessCheck, Viewer, WorkspaceAccessStore, WorkspaceSpace };
+export { issueAccessCookie, parseAccessCookies, readAccessToken, verifyAccessToken };

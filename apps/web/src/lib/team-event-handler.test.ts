@@ -2,16 +2,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { VALID_UUID } from "./actions/test-helpers";
+import type { TeamSpace } from "./team-auth";
 import { createTeamEventsHandler, type TeamEventHandlerDeps } from "./team-event-handler";
 import type { TeamListener } from "./team-events";
-import { captureAccessCheck, issueAccessCookie, type WorkspaceSpace } from "./workspace-access";
+import { issueAccessCookie } from "./workspace-access";
 import { createTestAccessStore } from "./workspace-access-test-store";
 
 const setup = () => {
-  const space: WorkspaceSpace = {
+  const space: TeamSpace = {
     accessPassword: "password-hash",
     id: "space-1",
     isPrivate: false,
+    ownerId: "owner-1",
     teamId: VALID_UUID,
   };
 
@@ -20,7 +22,7 @@ const setup = () => {
   const viewer: { userId?: string } = {};
 
   const captureAccess = vi.fn<TeamEventHandlerDeps["captureAccess"]>(async (spaceId) => ({
-    canView: await captureAccessCheck(spaceId, viewer.userId, access.store),
+    canView: await access.auth.captureAccessCheck(spaceId, viewer.userId),
     userId: viewer.userId,
   }));
 
@@ -172,7 +174,7 @@ describe("team events handler", () => {
     const revokedFrame = await reader.read();
     expect(new TextDecoder().decode(revokedFrame.value)).toContain("event: revoked");
     await expect(reader.read()).resolves.toHaveProperty("done", true);
-    expect(state.access.store.getToken).toHaveBeenCalledTimes(1);
+    expect(state.access.store.readAccessToken).toHaveBeenCalledTimes(1);
     expect(state.release).toHaveBeenCalledTimes(1);
   });
 

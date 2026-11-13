@@ -3,10 +3,10 @@ import { prisma } from "@repo/db";
 import type { ActionErrorEvent, ActionResult } from "@/lib/actions/types";
 import { getSession } from "@/lib/auth-server";
 import { log } from "@/lib/observability";
-import { isTeamRole } from "@/types";
 import type { TeamRole } from "@/types";
 
 import { UUIDSchema } from "./validation";
+import { readAccessToken, verifyAccessToken } from "./workspace-access";
 
 type SessionUser = NonNullable<Awaited<ReturnType<typeof getSession>>>["user"];
 
@@ -15,19 +15,30 @@ type TeamAccess = {
   user: SessionUser;
 };
 
+type TeamSpace = {
+  accessPassword: string | null;
+  id: string;
+  isPrivate: boolean;
+  ownerId: string;
+  teamId: string;
+};
+
+type Membership = { archivedAt: Date | null; role: TeamRole };
+
+type AccessCheck = (space: TeamSpace) => Promise<boolean>;
+
 type TeamAuthDeps = {
-  findMembership: (teamId: string, userId: string) => Promise<{ role: string } | null>;
+  findMembership: (teamId: string, userId: string) => Promise<Membership | null>;
   getSession: typeof getSession;
+  readAccessToken: (spaceId: string) => Promise<string | undefined>;
   reportError: (event: ActionErrorEvent) => void;
 };
 
+/** Visibility and deletion belong to the owner, whatever their role. */
+const isSpaceOwner = (space: Pick<TeamSpace, "ownerId">, userId: string | undefined): boolean =>
+  space.ownerId === userId;
+
 const createTeamAuth = (deps: TeamAuthDeps) => {
-  const findRole = async (teamId: string, userId: string): Promise<TeamRole | null> => {
-    const membership = await deps.findMembership(teamId, userId);
-
-    return membership !== null && isTeamRole(membership.role) ? membership.role : null;
-  };
-
   const authenticate = async (): Promise<ActionResult<SessionUser>> => {
     const session = await deps.getSession();
 
@@ -51,13 +62,13 @@ const createTeamAuth = (deps: TeamAuthDeps) => {
     }
 
     try {
-      const role = await findRole(teamId, auth.data.id);
+      const membership = await deps.findMembership(teamId, auth.data.id);
 
-      if (role === null) {
+      if (membership === null) {
         return { error: "You are not a member of this team", success: false };
       }
 
-      if (!allows(role)) {
+      if (!allows(membership.role)) {
         return { error: "Admin access required", success: false };
       }
 
@@ -73,19 +84,101 @@ const createTeamAuth = (deps: TeamAuthDeps) => {
 
   const authorizeTeamMember = (teamId: string) => authorizeTeam(teamId, () => true);
 
-  return { authenticate, authorizeTeamAdmin, authorizeTeamMember };
+  const hasGuestGrant = async (
+    space: TeamSpace,
+    readToken: TeamAuthDeps["readAccessToken"],
+  ): Promise<boolean> => {
+    if (!space.isPrivate) {
+      return false;
+    }
+
+    const token = await readToken(space.id);
+
+    return token !== undefined && verifyAccessToken(token, space.id, space.accessPassword);
+  };
+
+  const canView = async (
+    space: TeamSpace,
+    userId: string | undefined,
+    readToken: TeamAuthDeps["readAccessToken"],
+  ): Promise<boolean> =>
+    !space.isPrivate ||
+    (await hasGuestGrant(space, readToken)) ||
+    (userId !== undefined && (await deps.findMembership(space.teamId, userId)) !== null);
+
+  /** A public space is open to anyone; a private one to its members and password holders. */
+  const canViewTeam = (space: TeamSpace, userId: string | undefined): Promise<boolean> =>
+    canView(space, userId, deps.readAccessToken);
+
+  /** Reads the cookie once up front: live-stream rechecks run after the request has ended. */
+  const captureAccessCheck = async (
+    spaceId: string,
+    userId: string | undefined,
+  ): Promise<AccessCheck> => {
+    const token = await deps.readAccessToken(spaceId);
+
+    return (space) => canView(space, userId, () => Promise.resolve(token));
+  };
+
+  /** `canViewTeam` with what granted it, for the page that has to show both. */
+  const readTeamAccess = async (space: TeamSpace, userId: string | undefined) => {
+    const [guestGrant, membership] = await Promise.all([
+      hasGuestGrant(space, deps.readAccessToken),
+      userId === undefined ? null : deps.findMembership(space.teamId, userId),
+    ]);
+
+    return {
+      canView: !space.isPrivate || guestGrant || membership !== null,
+      guestGrant,
+      isOwner: isSpaceOwner(space, userId),
+      membership,
+    };
+  };
+
+  return {
+    authenticate,
+    authorizeTeamAdmin,
+    authorizeTeamMember,
+    canViewTeam,
+    captureAccessCheck,
+    readTeamAccess,
+  };
 };
 
-const { authenticate, authorizeTeamAdmin, authorizeTeamMember } = createTeamAuth({
+const findTeamSpace = (teamId: string): Promise<TeamSpace | null> =>
+  prisma.space.findUnique({
+    select: { accessPassword: true, id: true, isPrivate: true, ownerId: true, teamId: true },
+    where: { teamId },
+  });
+
+const {
+  authenticate,
+  authorizeTeamAdmin,
+  authorizeTeamMember,
+  canViewTeam,
+  captureAccessCheck,
+  readTeamAccess,
+} = createTeamAuth({
   findMembership: (teamId, userId) =>
     prisma.membership.findUnique({
-      select: { role: true },
+      select: { archivedAt: true, role: true },
       where: { userId_teamId: { teamId, userId } },
     }),
   getSession,
+  readAccessToken,
   reportError: log.error,
 });
 
-export { authenticate, authorizeTeamAdmin, authorizeTeamMember, createTeamAuth };
+export {
+  authenticate,
+  authorizeTeamAdmin,
+  authorizeTeamMember,
+  canViewTeam,
+  captureAccessCheck,
+  createTeamAuth,
+  findTeamSpace,
+  isSpaceOwner,
+  readTeamAccess,
+};
 
-export type { SessionUser, TeamAccess };
+export type { AccessCheck, SessionUser, TeamAccess, TeamSpace };

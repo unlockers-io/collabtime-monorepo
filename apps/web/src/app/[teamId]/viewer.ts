@@ -1,4 +1,4 @@
-import type { Viewer } from "@/lib/workspace-access";
+import type { Viewer } from "@/lib/team-viewer";
 
 /** What the team page's client knows about who is looking at it. */
 type TeamPageViewer = Pick<Viewer, "invitation" | "inviteMismatch" | "isArchived" | "status"> & {
