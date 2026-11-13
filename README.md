@@ -102,7 +102,7 @@ Next.js 16, React 19, strict TypeScript, Tailwind CSS v4, Base UI, TanStack Quer
 | `pnpm typecheck`                                   | Check TypeScript                            |
 | `pnpm lint`                                        | Run oxlint                                  |
 | `pnpm format`, `pnpm format:check`                 | Format or check with oxfmt                  |
-| `pnpm test`                                        | Run Vitest                                  |
+| `pnpm test`                                        | Run Vitest (needs the Docker Postgres)      |
 | `pnpm test:e2e`, `pnpm test:e2e:ui`                | Run Playwright or its interactive UI        |
 | `pnpm db:generate`, `pnpm db:push`, `pnpm db:seed` | Generate client, apply schema, seed locally |
 | `pnpm fallow:dead`                                 | Find dead code and unused exports           |

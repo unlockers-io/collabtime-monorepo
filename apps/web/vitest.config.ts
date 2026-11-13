@@ -22,5 +22,9 @@ export default mergeConfig(
         { find: /^@sentry\/nextjs$/v, replacement: sentryClientEntry },
       ],
     },
+    test: {
+      globalSetup: ["./src/test/postgres-global-setup.ts"],
+      setupFiles: ["./src/test/postgres-worker.ts"],
+    },
   }),
 );
