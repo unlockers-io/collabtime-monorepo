@@ -1,13 +1,6 @@
-const apps = {
-  web: { name: "collabtime.web", port: 3000 },
-} as const;
+import { apps, urlEnv } from "@repo/portless-env/registry";
 
 type App = keyof typeof apps;
-
-const urlEnv = {
-  CORS_ORIGINS: ["web"],
-  WEB_APP_URL: ["web"],
-} as const satisfies Record<string, ReadonlyArray<App>>;
 
 type UrlEnvKey = keyof typeof urlEnv;
 
@@ -39,14 +32,14 @@ const localHostPatterns = [
 ];
 
 export {
-  apps,
   canonicalHostname,
   canonicalUrl,
   canonicalUrls,
   localHostPatterns,
   loopbackOrigins,
   loopbackUrl,
-  urlEnv,
 };
+
+export { apps, urlEnv } from "@repo/portless-env/registry";
 
 export type { App, UrlEnvKey };
