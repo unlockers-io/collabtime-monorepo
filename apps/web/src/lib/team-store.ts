@@ -1,5 +1,6 @@
+import { randomUUID } from "node:crypto";
+
 import { updateTag } from "next/cache";
-import { v4 as uuidv4 } from "uuid";
 
 import type { TeamRecord } from "@/types";
 
@@ -145,7 +146,7 @@ const createTeamStore = <TTransaction>(deps: TeamStoreDeps<TTransaction>) => {
 
 const { applyTeamCommand, changeTeamAccess, readTeamRecord, readTeamSummaries, readTeamSummary } =
   createTeamStore({
-    createId: uuidv4,
+    createId: randomUUID,
     invalidateTeamName: (teamId) => {
       updateTag(teamNameTag(teamId));
     },
