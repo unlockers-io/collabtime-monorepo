@@ -96,21 +96,6 @@ const createTeamStore = <TTransaction>(deps: TeamStoreDeps<TTransaction>) => {
     await deps.storage.publish(teamId, ["space"]);
   };
 
-  const createTeamContents = async (
-    teamId: string,
-    team: TeamRecord,
-  ): Promise<TeamContentsFailure | { ok: true }> => {
-    return deps.storage.transaction(teamId, async (transaction) => {
-      if (await deps.storage.read(teamId, transaction)) {
-        return { error: "Team already exists", ok: false };
-      }
-
-      await deps.storage.write(teamId, team, transaction);
-
-      return { ok: true };
-    });
-  };
-
   const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
     if (!isUuid(teamId)) {
       return null;
@@ -137,7 +122,6 @@ const createTeamStore = <TTransaction>(deps: TeamStoreDeps<TTransaction>) => {
   return {
     applyTeamCommand,
     changeTeamAccess,
-    createTeamContents,
     readTeamRecord,
     readTeamSummaries,
     readTeamSummary,

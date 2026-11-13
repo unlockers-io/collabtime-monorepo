@@ -1,64 +1,96 @@
+// @vitest-environment node
+import { prisma } from "@repo/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { readTeamRecord } from "../team-store";
+
 import { createTeamAction } from "./team-create-core";
-import { createTestGuards, createTestMember } from "./test-helpers";
+import {
+  createTestGuards,
+  createTestMember,
+  resetTestDatabase,
+  TEST_OWNER_ID,
+  VALID_UUID,
+} from "./test-helpers";
 
-type Deps = Parameters<typeof createTeamAction>[0];
-
+const TEAM_ID = "880e8400-e29b-41d4-a716-446655440003";
+const USER_ID = "user-123";
 const guards = createTestGuards();
-const persistTeam = vi.fn<Deps["persistTeam"]>();
-const countAdminTeams = vi.fn<Deps["countAdminTeams"]>();
+const createId = vi.fn<() => string>();
 
 const createTeam = createTeamAction({
   authenticate: guards.authenticate,
-  countAdminTeams,
-  createId: () => "team-id",
+  createId,
   createMember: createTestMember,
   now: () => new Date("2026-01-01"),
-  persistTeam,
   reportError: vi.fn<() => void>(),
 });
 
-beforeEach(() => {
+const administer = async (count: number) => {
+  const teamIds = Array.from({ length: count }, () => crypto.randomUUID());
+
+  await prisma.space.createMany({
+    data: teamIds.map((teamId) => ({ ownerId: TEST_OWNER_ID, teamId })),
+  });
+  await prisma.membership.createMany({
+    data: teamIds.map((teamId) => ({ role: "ADMIN" as const, teamId, userId: USER_ID })),
+  });
+};
+
+const created = () => prisma.space.findUnique({ where: { teamId: TEAM_ID } });
+
+beforeEach(async () => {
   guards.reset();
-  persistTeam.mockReset().mockResolvedValue();
-  countAdminTeams.mockReset().mockResolvedValue(0);
+  createId.mockReset().mockReturnValue(TEAM_ID);
+  await resetTestDatabase();
 });
 
 describe("create team", () => {
   it.each(["", "   ", "a".repeat(101)])("rejects invalid names %s", async (name) => {
     expect(await createTeam("Europe/Berlin", name)).toMatchObject({ success: false });
-    expect(persistTeam).not.toHaveBeenCalled();
+    expect(await created()).toBeNull();
   });
+
   it("requires a session", async () => {
     guards.authenticate.mockResolvedValue({ error: "Authentication required", success: false });
     expect(await createTeam("Europe/Berlin", "Team")).toMatchObject({ success: false });
-    expect(persistTeam).not.toHaveBeenCalled();
+    expect(await created()).toBeNull();
   });
-  it("persists the entire team with its claimed creator in one call", async () => {
+
+  it("stores the space, the team with its claimed creator, and their admin membership", async () => {
     expect(await createTeam("Europe/Berlin", "  Team  ")).toEqual({
-      data: "team-id",
+      data: TEAM_ID,
       success: true,
     });
-    expect(persistTeam).toHaveBeenCalledWith(
-      "user-123",
-      expect.objectContaining({
-        members: [expect.objectContaining({ timezone: "Europe/Berlin", userId: "user-123" })],
-        name: "Team",
+    expect(await created()).toMatchObject({ isPrivate: false, ownerId: USER_ID });
+    expect(await readTeamRecord(TEAM_ID)).toMatchObject({
+      createdAt: "2026-01-01T00:00:00.000Z",
+      members: [{ timezone: "Europe/Berlin", userId: USER_ID }],
+      name: "Team",
+    });
+    expect(
+      await prisma.membership.findUnique({
+        where: { userId_teamId: { teamId: TEAM_ID, userId: USER_ID } },
       }),
-    );
+    ).toMatchObject({ archivedAt: null, role: "ADMIN" });
   });
-  it("reports a transaction failure", async () => {
-    persistTeam.mockRejectedValue(new Error("database unavailable"));
+
+  it("stores nothing when the transaction fails", async () => {
+    createId.mockReturnValue(VALID_UUID);
+
     expect(await createTeam("Europe/Berlin", "Team")).toEqual({
       error: "Failed to create team",
       success: false,
     });
+    expect(await readTeamRecord(VALID_UUID)).toBeNull();
+    expect(await prisma.membership.count({ where: { userId: USER_ID } })).toBe(0);
   });
+
   it.each([49, 50])("enforces the administration limit at %i", async (count) => {
-    countAdminTeams.mockResolvedValue(count);
+    await administer(count);
     const result = await createTeam("Europe/Berlin", "Team");
+
     expect(result.success).toBe(count < 50);
-    expect(persistTeam).toHaveBeenCalledTimes(count < 50 ? 1 : 0);
+    expect((await created()) !== null).toBe(count < 50);
   });
 });

@@ -5,7 +5,12 @@ import { setTimeout } from "node:timers/promises";
 import { type Prisma, prisma } from "@repo/db";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
-import { createMockSession, createTestMember, createTestTeamRecord } from "./actions/test-helpers";
+import {
+  createMockSession,
+  createTestMember,
+  createTestTeamRecord,
+  seedTeam,
+} from "./actions/test-helpers";
 import { createInvitations, type InvitationDeps, prismaInvitationStore } from "./invitations";
 import { createMembershipLifecycle, prismaMembershipStore } from "./membership";
 import type { TeamAccess } from "./team-auth";
@@ -70,8 +75,7 @@ describe("membership transactions against Postgres", () => {
 
     const teamStore = storeOver();
     const harness = { ...teamStore, readTeam: teamStore.readTeamRecord, reportError };
-    await harness.createTeamContents(
-      teamId,
+    await seedTeam(
       createTestTeamRecord({ id: teamId, members: [createTestMember({ id: memberId })] }),
     );
 
