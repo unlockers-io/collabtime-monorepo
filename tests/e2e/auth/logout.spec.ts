@@ -2,15 +2,15 @@ import { test, expect } from "../fixtures/auth.fixture";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test.describe.skip("Logout", () => {
+test.describe("Logout", () => {
   test("signs out from the team page and redirects to home", async ({
     homePage,
+    loginPage,
     page,
-    registerPage,
+    testUser,
   }) => {
-    const logoutEmail = `e2e-logout-${Date.now()}@collabtime.localhost`;
-    await registerPage.goto();
-    await registerPage.register("Logout Test User", logoutEmail, "TestPassword123!");
+    await loginPage.goto();
+    await loginPage.login(testUser.email, testUser.password);
     await expect(page).toHaveURL("/", { timeout: 10_000 });
 
     await homePage.createWorkspace();
@@ -29,6 +29,6 @@ test.describe.skip("Logout", () => {
 
     await expect(page).toHaveURL("/", { timeout: 10_000 });
 
-    await expect(page.getByRole("link", { name: /get started/i })).toBeVisible();
+    await expect(page.getByRole("banner").getByRole("link", { name: "Sign in" })).toBeVisible();
   });
 });

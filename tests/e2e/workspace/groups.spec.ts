@@ -20,27 +20,19 @@ test.describe("Group Management", () => {
     await expect(page.getByText("Engineering", { exact: true })).toBeVisible({ timeout: 5000 });
   });
 
-  // The legacy rounded-container selector matches multiple nested containers; tracked in docs/LAUNCH.md.
-  test.skip("deletes a group", async ({ page }) => {
+  test("deletes a group", async ({ page }) => {
     await page.getByRole("button", { name: /add group/i }).click();
     await page.getByLabel("Group Name").click();
     await page.getByLabel("Group Name").pressSequentially("Marketing", { delay: 10 });
     await page.keyboard.press("Tab");
     await page.getByRole("button", { name: /create group/i }).click();
-    await expect(page.getByText("Marketing")).toBeVisible({ timeout: 5000 });
 
-    const groupCard = page.locator("[class*='rounded']").filter({
-      hasText: "Marketing",
-    });
+    const marketing = page.getByText("Marketing", { exact: true });
+    await expect(marketing).toBeVisible({ timeout: 5000 });
 
-    await groupCard.getByRole("button", { name: /remove|delete/i }).click();
+    await page.getByRole("button", { name: "Remove group Marketing" }).click();
+    await page.getByRole("button", { exact: true, name: "Remove group" }).click();
 
-    const confirmButton = page.getByRole("button", { name: /confirm|remove|delete/i });
-
-    if (await confirmButton.isVisible().catch(() => false)) {
-      await confirmButton.click();
-    }
-
-    await expect(page.getByText("Marketing")).not.toBeVisible({ timeout: 5000 });
+    await expect(marketing).toBeHidden({ timeout: 5000 });
   });
 });
