@@ -9,11 +9,15 @@ const register = async () => {
   await evlog.register();
 
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { validateEnv } = await import("./lib/env");
-    const { log } = await import("./lib/observability");
+    const [{ validateEnv }, { getMailerConfig }, { log }] = await Promise.all([
+      import("./lib/env"),
+      import("./lib/mailer"),
+      import("./lib/observability"),
+    ]);
 
     try {
       validateEnv();
+      getMailerConfig();
       log.info("instrumentation", "Environment variables validated successfully");
     } catch (error) {
       if (process.env.NODE_ENV === "production") {

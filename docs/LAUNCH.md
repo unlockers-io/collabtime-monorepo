@@ -52,7 +52,7 @@ All captures use local sample data. Review the gallery crops in Product Hunt bef
 - [ ] Confirm Vercel production `WEB_APP_URL=https://www.collabtime.io` and matching authentication host/origin settings.
 - [ ] Confirm `EXPOSE_TESTING_API` is absent from production; never ship the testing API intentionally enabled.
 - [ ] Confirm production `DATABASE_URL`, `DIRECT_DATABASE_URL`, and `REDIS_URL` point at the intended services. Team writes require Redis.
-- [ ] Confirm `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are configured in production, then verify actual email delivery. Email verification is disabled without email configuration.
+- [ ] Confirm `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are configured in production, and `MAIL_TRANSPORT` is unset there, then verify actual email delivery. The app refuses to boot in production without the key.
 - [ ] Confirm security@collabtime.io is a monitored inbox before announcing the reporting policy.
 - [ ] Review production Sentry configuration: routine session recording is off; error replays remain on.
 - [ ] Star/watch the repository and enable GitHub Discussions.

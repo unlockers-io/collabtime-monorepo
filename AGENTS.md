@@ -33,7 +33,7 @@ This repo follows the fleet's shared standards, checked by `standy` (`~/dev/stan
 - **Auth**: Better Auth (email/password)
 - **DB**: Prisma 7 + PostgreSQL via `@prisma/adapter-pg`
 - **Cache / session**: Redis via `ioredis` (Railway in prod, supports `redis://` or `rediss://`)
-- **Email**: Resend (optional)
+- **Email**: Resend in production; a file outbox in dev and e2e (`MAIL_TRANSPORT=outbox`)
 - **Monorepo**: Turborepo + pnpm workspaces, Node >=24, `packageManager: pnpm@11.13.1`
 - **Lint / format**: oxlint + oxfmt (NOT ESLint/Prettier), `oxlint-config-awesomeness`
 - **Tests**: Vitest (unit), Playwright (e2e: chromium, firefox, webkit)
@@ -116,7 +116,9 @@ The `dev` script, `allowedDevOrigins` and the e2e workflow's `WEB_APP_URL` must 
 
 Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (>=32 chars). Those are the only two the schema rejects when absent.
 
-Optional: `REDIS_URL` (`redis://` or `rediss://`), `WEB_APP_URL`, `AUTH_ALLOWED_HOSTS`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (bare email or `Display Name <email>`), `SPACE_ACCESS_SECRET` (>=32 chars), `NODE_ENV`.
+Mail is a port: `getMailerConfig` in `apps/web/src/lib/mailer.ts` builds the one transport with `createTransport` from `@repo/transactional/transport`, and `instrumentation.ts` calls it at boot. It needs `RESEND_API_KEY` unless `MAIL_TRANSPORT=outbox`, which writes each message to a file under the system temp directory (`collabtime-outbox`) where the e2e `waitForEmail` helper reads it. Email verification is always required. `packages/transactional/src/transport.ts` is written by `standy sync`; change it in the standard.
+
+Optional: `REDIS_URL` (`redis://` or `rediss://`), `WEB_APP_URL`, `AUTH_ALLOWED_HOSTS`, `MAIL_TRANSPORT`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (bare email or `Display Name <email>`), `SPACE_ACCESS_SECRET` (>=32 chars), `NODE_ENV`.
 
 `REDIS_URL` also accepts an empty string, because unset GitHub secrets expand to `""` in CI.
 

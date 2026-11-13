@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Transport } from "../transport";
+
 import type { sendEmail } from "./send-email";
 import type { TransactionalEmail } from "./senders";
 import { createTransactionalEmailSender } from "./senders";
 
 const sendEmailMock = vi.fn<typeof sendEmail>();
 const sendTransactionalEmail = createTransactionalEmailSender(sendEmailMock);
+const transport = vi.fn<Transport>();
 
 describe("sendTransactionalEmail", () => {
   beforeEach(() => {
@@ -22,15 +25,11 @@ describe("sendTransactionalEmail", () => {
         username: "Ada",
         verificationUrl: "https://collabtime.io/verify",
       },
-      {
-        apiKey: "re_test",
-        from: "Custom <c@collabtime.io>",
-      },
+      { from: "Custom <c@collabtime.io>", transport },
     );
 
     expect(sendEmailMock).toHaveBeenCalledOnce();
     expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
-      apiKey: "re_test",
       from: "Custom <c@collabtime.io>",
       subject: "Welcome to Collabtime, Ada! Please verify your email",
       tags: [
@@ -38,6 +37,7 @@ describe("sendTransactionalEmail", () => {
         { name: "userId", value: "user-1" },
       ],
       to: "user@example.com",
+      transport,
     });
   });
 
@@ -49,7 +49,7 @@ describe("sendTransactionalEmail", () => {
         userEmail: "user@example.com",
         userId: "user-1",
       },
-      { apiKey: "re_test" },
+      { transport },
     );
 
     expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
@@ -66,7 +66,7 @@ describe("sendTransactionalEmail", () => {
         type: "change-email-confirmation",
         userId: "user-1",
       },
-      { apiKey: "re_test" },
+      { transport },
     );
 
     expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
@@ -84,7 +84,7 @@ describe("sendTransactionalEmail", () => {
         teamUrl: "https://collabtime.io",
         type: "invitation",
       },
-      { apiKey: "re_test" },
+      { transport },
     );
 
     expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
@@ -134,7 +134,7 @@ it.each<TransactionalEmail>([
   },
 ])("renders $type with a workspace fallback and team tags", async (email) => {
   sendEmailMock.mockClear();
-  await sendTransactionalEmail(email, { apiKey: "test" });
+  await sendTransactionalEmail(email, { transport });
   expect(sendEmailMock.mock.calls[0]?.[0]).toMatchObject({
     subject: expect.stringContaining("a workspace"),
     tags: [

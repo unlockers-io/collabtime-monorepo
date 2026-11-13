@@ -51,18 +51,19 @@ The optional seed creates `test@collabtime.dev` / `TestPassword123!` and a sampl
 
 Only `DATABASE_URL` and `BETTER_AUTH_SECRET` (32+ characters) are required by startup validation. See [the environment example](apps/web/.env.example).
 
-| Variable                              | Purpose                                                                                             |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `REDIS_URL`                           | Optional at startup; required for creating and updating teams. Supports `redis://` and `rediss://`. |
-| `LIVE_SYNC_ENABLED`                   | SSE team updates; enabled when unset. Set `false` to use 20-second polling.                         |
-| `WEB_APP_URL`                         | Absolute app URL for links in email; set your public URL in production.                             |
-| `AUTH_ALLOWED_HOSTS`                  | Additional hostnames accepted by Better Auth.                                                       |
-| `CORS_ORIGINS`, `TRUSTED_ORIGINS`     | Browser origins accepted for authentication.                                                        |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Transactional email; without configuration, email verification is disabled.                         |
-| `SPACE_ACCESS_SECRET`                 | Dedicated 32+ character access-token secret; defaults to the auth secret.                           |
-| `SENTRY_AUTH_TOKEN`                   | Optional source-map uploads during builds.                                                          |
-| `NEXT_PUBLIC_DISABLE_SENTRY`          | Set to `true` to disable Sentry reporting.                                                          |
-| `DIRECT_DATABASE_URL`                 | Direct Postgres connection required by Vercel production `db:deploy`.                               |
+| Variable                              | Purpose                                                                                              |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `REDIS_URL`                           | Optional at startup; required for creating and updating teams. Supports `redis://` and `rediss://`.  |
+| `LIVE_SYNC_ENABLED`                   | SSE team updates; enabled when unset. Set `false` to use 20-second polling.                          |
+| `WEB_APP_URL`                         | Absolute app URL for links in email; set your public URL in production.                              |
+| `AUTH_ALLOWED_HOSTS`                  | Additional hostnames accepted by Better Auth.                                                        |
+| `CORS_ORIGINS`, `TRUSTED_ORIGINS`     | Browser origins accepted for authentication.                                                         |
+| `MAIL_TRANSPORT`                      | `outbox` writes email to files in the system temp directory, for dev and e2e. Unset in production.   |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Transactional email through Resend. The app refuses to boot without the key unless the outbox is on. |
+| `SPACE_ACCESS_SECRET`                 | Dedicated 32+ character access-token secret; defaults to the auth secret.                            |
+| `SENTRY_AUTH_TOKEN`                   | Optional source-map uploads during builds.                                                           |
+| `NEXT_PUBLIC_DISABLE_SENTRY`          | Set to `true` to disable Sentry reporting.                                                           |
+| `DIRECT_DATABASE_URL`                 | Direct Postgres connection required by Vercel production `db:deploy`.                                |
 
 ## Deploying
 
@@ -80,7 +81,7 @@ Forkers must replace the Sentry DSNs in the client/server/edge configs or set `N
 
 ## Stack and packages
 
-Next.js 16, React 19, strict TypeScript, Tailwind CSS v4, Base UI, TanStack Query/Form, Better Auth, Prisma 7/Postgres, Redis, and optional Resend. The only app is `@repo/web` in `apps/web`.
+Next.js 16, React 19, strict TypeScript, Tailwind CSS v4, Base UI, TanStack Query/Form, Better Auth, Prisma 7/Postgres, Redis, and Resend. The only app is `@repo/web` in `apps/web`.
 
 | Package                   | Purpose                               |
 | ------------------------- | ------------------------------------- |

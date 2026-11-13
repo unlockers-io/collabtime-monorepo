@@ -8,6 +8,7 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   LIVE_SYNC_ENABLED: z.enum(["true", "false"]).optional(),
+  MAIL_TRANSPORT: z.string().optional(),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   REDIS_URL: z.url("REDIS_URL must be a valid URL").optional(),
   RESEND_API_KEY: z.string().optional(),

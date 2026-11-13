@@ -10,12 +10,13 @@ import { PasswordResetEmail } from "../emails/password-reset";
 import { SignUpAttemptEmail } from "../emails/sign-up-attempt";
 import { WelcomeEmail } from "../emails/welcome";
 import { teamLabel } from "../team-label";
+import type { Transport } from "../transport";
 
 import { sendEmail } from "./send-email";
 
 type MailerConfig = {
-  apiKey: string;
   from?: string;
+  transport: Transport;
 };
 
 type WelcomePayload = {
@@ -196,12 +197,12 @@ const createTransactionalEmailSender =
     const from = config.from !== undefined && config.from !== "" ? config.from : DEFAULT_FROM;
 
     return deliver({
-      apiKey: config.apiKey,
       from,
       subject,
       tags: buildTags(email),
       template,
       to,
+      transport: config.transport,
     });
   };
 
