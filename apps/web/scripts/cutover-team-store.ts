@@ -1,6 +1,6 @@
-import { prisma } from "@repo/db";
 import { Redis } from "ioredis";
 
+import { getPrisma } from "../src/lib/db";
 import { readTeams, writeTeam } from "../src/lib/team-postgres-repository";
 import { decodeTeam } from "../src/lib/team-record-codec";
 import { withTeamTransaction } from "../src/lib/team-storage";
@@ -9,7 +9,7 @@ import type { TeamMember, TeamRecord } from "../src/types";
 const SCAN_COUNT = 200;
 
 const readTeamRecord = async (teamId: string): Promise<TeamRecord | null> => {
-  const teams = await readTeams([teamId], prisma, false);
+  const teams = await readTeams([teamId], getPrisma(), false);
 
   return teams[0] ?? null;
 };
@@ -113,7 +113,7 @@ const claimedUsers = (team: TeamRecord): Array<string> =>
 const validateClaims = async (teamId: string, team: TeamRecord): Promise<void> => {
   const claimed = claimedUsers(team);
 
-  const memberships = await prisma.membership.findMany({
+  const memberships = await getPrisma().membership.findMany({
     select: { userId: true },
     where: { teamId, userId: { in: claimed } },
   });
@@ -130,7 +130,7 @@ const validateClaims = async (teamId: string, team: TeamRecord): Promise<void> =
 };
 
 const validateSnapshot = async (teamId: string, team: TeamRecord): Promise<void> => {
-  const space = await prisma.space.findUnique({
+  const space = await getPrisma().space.findUnique({
     select: { teamCreatedAt: true },
     where: { teamId },
   });
@@ -152,7 +152,7 @@ const verifySnapshot = async (
 ): Promise<Array<string>> => {
   const problems = diffTeam(team, await readTeamRecord(teamId));
 
-  const stored = await prisma.space.findUniqueOrThrow({
+  const stored = await getPrisma().space.findUniqueOrThrow({
     select: { teamExpiresAt: true },
     where: { teamId },
   });
@@ -218,7 +218,7 @@ const main = async (): Promise<void> => {
     }
   } finally {
     await redis.quit();
-    await prisma.$disconnect();
+    await getPrisma().$disconnect();
   }
 };
 

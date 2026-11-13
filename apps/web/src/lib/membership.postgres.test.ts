@@ -2,8 +2,10 @@
 import { randomUUID } from "node:crypto";
 import { setTimeout } from "node:timers/promises";
 
-import { type Prisma, prisma } from "@repo/db";
+import type { Prisma } from "@repo/db";
 import { afterAll, describe, expect, it, vi } from "vitest";
+
+import { getPrisma } from "@/lib/db";
 
 import {
   createMockSession,
@@ -48,20 +50,20 @@ describe("membership transactions against Postgres", () => {
   const users: Array<string> = [];
 
   const setup = async () => {
-    const owner = await prisma.user.create({
+    const owner = await getPrisma().user.create({
       data: { email: `owner-${randomUUID()}@example.com` },
     });
 
     users.push(owner.id);
 
-    const recipient = await prisma.user.create({
+    const recipient = await getPrisma().user.create({
       data: { email: `recipient-${randomUUID()}@example.com` },
     });
 
     users.push(recipient.id);
     const teamId = randomUUID();
     const memberId = randomUUID();
-    await prisma.space.create({ data: { ownerId: owner.id, teamId } });
+    await getPrisma().space.create({ data: { ownerId: owner.id, teamId } });
     const reportError = vi.fn<() => void>();
 
     const publish = vi.fn<Storage["publish"]>().mockResolvedValue();
@@ -127,7 +129,7 @@ describe("membership transactions against Postgres", () => {
     }
 
     const readMembership = () =>
-      prisma.membership.findUnique({ where: { userId_teamId: { teamId, userId: user.id } } });
+      getPrisma().membership.findUnique({ where: { userId_teamId: { teamId, userId: user.id } } });
 
     return {
       access,
@@ -148,8 +150,8 @@ describe("membership transactions against Postgres", () => {
   };
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { id: { in: users } } });
-    await prisma.$disconnect();
+    await getPrisma().user.deleteMany({ where: { id: { in: users } } });
+    await getPrisma().$disconnect();
   });
 
   it("holds a database lock across claim and acceptance, then removes the winning membership", async () => {
@@ -180,7 +182,7 @@ describe("membership transactions against Postgres", () => {
     await paused.promise;
 
     try {
-      const probe = await prisma.$transaction(
+      const probe = await getPrisma().$transaction(
         (transaction) => transaction.$queryRaw<Array<{ available: boolean }>>`
         SELECT pg_try_advisory_xact_lock(hashtextextended(${`team:${teamId}`}, 0)) AS available
       `,
@@ -351,7 +353,7 @@ describe("membership transactions against Postgres", () => {
 
     const pid = await entered.promise;
     expect(pid).toBeGreaterThan(0);
-    await prisma.$queryRaw`SELECT pg_terminate_backend(${pid}::integer)`;
+    await getPrisma().$queryRaw`SELECT pg_terminate_backend(${pid}::integer)`;
     resume.resolve(undefined);
     const results = await writing;
     expect(results[0]?.status).toBe("rejected");
@@ -381,12 +383,14 @@ describe("membership transactions against Postgres", () => {
 
   it("preserves role and viewer-only membership without a roster slot", async () => {
     const { harness, memberId, membership, teamId, user } = await setup();
-    await prisma.membership.create({
+    await getPrisma().membership.create({
       data: { archivedAt: new Date(), role: "ADMIN", teamId, userId: user.id },
     });
     await membership.grantViewerAccess({ role: "MEMBER", teamId, userId: user.id });
     expect(
-      await prisma.membership.findUnique({ where: { userId_teamId: { teamId, userId: user.id } } }),
+      await getPrisma().membership.findUnique({
+        where: { userId_teamId: { teamId, userId: user.id } },
+      }),
     ).toMatchObject({ archivedAt: null, role: "ADMIN" });
     const storedTeam = await harness.readTeam(teamId);
     expect(storedTeam?.members).toEqual([createTestMember({ id: memberId })]);
@@ -398,7 +402,7 @@ describe("membership transactions against Postgres", () => {
       const { harness, id, memberId, readMembership, service, teamId, transition, user } =
         await setup();
 
-      await prisma.invitation.update({
+      await getPrisma().invitation.update({
         data: { expiresAt: new Date(Date.now() + 250) },
         where: { id },
       });
@@ -421,14 +425,14 @@ describe("membership transactions against Postgres", () => {
     "rechecks %s expiry after waiting for an invitation row lock",
     async (decision) => {
       const { id, readMembership, service, user } = await setup();
-      await prisma.invitation.update({
+      await getPrisma().invitation.update({
         data: { expiresAt: new Date(Date.now() + 400) },
         where: { id },
       });
       const locked = Promise.withResolvers<undefined>();
       const release = Promise.withResolvers<undefined>();
 
-      const holder = prisma.$transaction(async (transaction) => {
+      const holder = getPrisma().$transaction(async (transaction) => {
         await transaction.$executeRaw`SELECT "id" FROM "Invitation" WHERE "id" = ${id} FOR UPDATE`;
         locked.resolve(undefined);
         await release.promise;
@@ -502,11 +506,14 @@ describe("membership transactions against Postgres", () => {
 
   it("keeps legacy invitations open and allows admin management of expired invitations", async () => {
     const { access, id, service, user } = await setup();
-    await prisma.invitation.update({ data: { expiresAt: new Date(0) }, where: { id } });
+    await getPrisma().invitation.update({ data: { expiresAt: new Date(0) }, where: { id } });
     expect(await service.resend(access, id)).toMatchObject({ success: true });
-    await prisma.invitation.update({ data: { expiresAt: new Date(0) }, where: { id } });
+    await getPrisma().invitation.update({ data: { expiresAt: new Date(0) }, where: { id } });
     expect(await service.revoke(access, id)).toMatchObject({ success: true });
-    await prisma.invitation.update({ data: { expiresAt: null, status: "PENDING" }, where: { id } });
+    await getPrisma().invitation.update({
+      data: { expiresAt: null, status: "PENDING" },
+      where: { id },
+    });
     expect(await service.accept(user, id)).toMatchObject({ success: true });
   });
 });

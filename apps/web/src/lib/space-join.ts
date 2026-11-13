@@ -1,5 +1,4 @@
-import { prisma } from "@repo/db";
-
+import { getPrisma } from "@/lib/db";
 import { log } from "@/lib/observability";
 import { parseAccessCookies, verifyAccessToken } from "@/lib/workspace-access";
 
@@ -77,7 +76,7 @@ const createSpaceJoiner = (deps: SpaceJoinDeps) => {
 
 const { joinPrivateSpace, joinPrivateSpacesFromCookies } = createSpaceJoiner({
   findPrivateSpaces: (spaceIds) =>
-    prisma.space.findMany({
+    getPrisma().space.findMany({
       select: { accessPassword: true, id: true, teamId: true },
       where: { id: { in: spaceIds }, isPrivate: true },
     }),

@@ -1,8 +1,9 @@
-import { type InvitationStatus, type Prisma, prisma } from "@repo/db";
+import type { InvitationStatus, Prisma } from "@repo/db";
 import type { TransactionalEmail } from "@repo/transactional";
 import { after } from "next/server";
 
 import type { ActionErrorEvent, ActionResult } from "@/lib/actions/types";
+import { getPrisma } from "@/lib/db";
 import type { PendingTeamInvitation, TeamRecord } from "@/types";
 
 import { getAppUrl } from "./app-url";
@@ -411,21 +412,21 @@ const commitRecipientDecision = async (
 };
 
 const prismaInvitationStore: InvitationStore<Prisma.TransactionClient> = {
-  find: (id) => prisma.invitation.findUnique({ include, where: { id } }),
+  find: (id) => getPrisma().invitation.findUnique({ include, where: { id } }),
   listOpenForEmail: (email, now) =>
-    prisma.invitation.findMany({
+    getPrisma().invitation.findMany({
       include,
       orderBy: newestFirst,
       where: { email, ...openInvitationWhere(now) },
     }),
   listPendingForTeam: (teamId) =>
-    prisma.invitation.findMany({
+    getPrisma().invitation.findMany({
       include,
       orderBy: newestFirst,
       where: { status: "PENDING", teamId },
     }),
   putPending: ({ invitedBy, ...draft }) =>
-    prisma.invitation.upsert({
+    getPrisma().invitation.upsert({
       create: { ...draft, invitedById: invitedBy.id },
       include,
       update: { ...draft, invitedById: invitedBy.id, status: "PENDING" },
@@ -437,7 +438,7 @@ const prismaInvitationStore: InvitationStore<Prisma.TransactionClient> = {
     if (change.status === "PENDING" || change.status === "REVOKED") {
       const nextVersion = new Date(Math.max(Date.now(), updatedAt.getTime() + 1));
 
-      const { count } = await prisma.invitation.updateMany({
+      const { count } = await getPrisma().invitation.updateMany({
         data: { ...change, updatedAt: nextVersion },
         where: { id, status, updatedAt },
       });
@@ -448,7 +449,7 @@ const prismaInvitationStore: InvitationStore<Prisma.TransactionClient> = {
     const decide = (within: Prisma.TransactionClient) =>
       commitRecipientDecision(within, expected, change);
 
-    return transaction ? decide(transaction) : prisma.$transaction(decide);
+    return transaction ? decide(transaction) : getPrisma().$transaction(decide);
   },
 };
 
@@ -457,7 +458,7 @@ const invitations = createInvitations({
   checkRateLimit,
   grantMembership,
   isMember: async (teamId, email) =>
-    (await prisma.membership.findFirst({ where: { teamId, user: { email } } })) !== null,
+    (await getPrisma().membership.findFirst({ where: { teamId, user: { email } } })) !== null,
   notifyInviter: (invitation, user, decision) => {
     after(() => teamNotifier.notifyInviterOfDecision(invitation, user, decision));
   },

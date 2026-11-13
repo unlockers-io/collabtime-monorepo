@@ -1,5 +1,6 @@
-import { prisma } from "@repo/db";
 import type { TransactionalEmail } from "@repo/transactional";
+
+import { getPrisma } from "@/lib/db";
 
 import type { ActionErrorEvent } from "./actions/types";
 import { getAppUrl } from "./app-url";
@@ -99,7 +100,7 @@ export const createTeamNotifier = (deps: NotifierDeps) => {
 export const teamNotifier = createTeamNotifier({
   appUrl: getAppUrl,
   listTeamAdmins: async (teamId) => {
-    const memberships = await prisma.membership.findMany({
+    const memberships = await getPrisma().membership.findMany({
       select: { user: { select: { email: true, name: true } } },
       where: { archivedAt: null, role: "ADMIN", teamId },
     });

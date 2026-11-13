@@ -1,6 +1,6 @@
-import { prisma } from "@repo/db";
 import { vi } from "vitest";
 
+import { getPrisma } from "@/lib/db";
 import type {
   authenticate,
   authorizeTeamAdmin,
@@ -81,9 +81,9 @@ const TEST_USERS = [
 
 /** Empties this worker's database, then adds the test accounts and three spaces without contents. */
 const resetTestDatabase = async (): Promise<void> => {
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "User" CASCADE');
-  await prisma.user.createMany({ data: TEST_USERS });
-  await prisma.space.createMany({
+  await getPrisma().$executeRawUnsafe('TRUNCATE TABLE "User" CASCADE');
+  await getPrisma().user.createMany({ data: TEST_USERS });
+  await getPrisma().space.createMany({
     data: [VALID_UUID, VALID_UUID_2, VALID_UUID_3].map((teamId) => ({
       ownerId: TEST_OWNER_ID,
       teamId,
@@ -139,7 +139,7 @@ const createTestTeamStore = (createId?: () => string) => {
     applyTeamCommand,
     changeTeamAccess,
     findMembership: (userId: string, teamId = VALID_UUID) =>
-      prisma.membership.findUnique({
+      getPrisma().membership.findUnique({
         select: { archivedAt: true, role: true },
         where: { userId_teamId: { teamId, userId } },
       }),
@@ -147,7 +147,7 @@ const createTestTeamStore = (createId?: () => string) => {
     grantViewerAccess,
     invalidateTeamName,
     invitationStatus: async (memberId: string) => {
-      const invitation = await prisma.invitation.findFirst({ where: { memberId } });
+      const invitation = await getPrisma().invitation.findFirst({ where: { memberId } });
 
       return invitation?.status;
     },
@@ -170,11 +170,11 @@ const createTestTeamStore = (createId?: () => string) => {
         revokeMemberAccess(access),
       ),
     seedInvitation: (memberId: string, email = "invited@example.com") =>
-      prisma.invitation.create({
+      getPrisma().invitation.create({
         data: { email, invitedById: TEST_OWNER_ID, memberId, teamId: VALID_UUID },
       }),
     seedMembership: (userId: string, role: TeamRole = "MEMBER", archivedAt: Date | null = null) =>
-      prisma.membership.create({ data: { archivedAt, role, teamId: VALID_UUID, userId } }),
+      getPrisma().membership.create({ data: { archivedAt, role, teamId: VALID_UUID, userId } }),
     seedTeam,
   };
 };

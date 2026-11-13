@@ -1,5 +1,4 @@
-import { prisma } from "@repo/db";
-
+import { getPrisma } from "@/lib/db";
 import { readTeamSummaries } from "@/lib/team-store";
 
 import { displayName, workspaceName } from "./display-name";
@@ -7,7 +6,7 @@ import type { MyTeam, PendingInvitation } from "./home-lists";
 import { invitations } from "./invitations";
 
 const getMyTeams = async (userId: string): Promise<Array<MyTeam>> => {
-  const memberships = await prisma.membership.findMany({
+  const memberships = await getPrisma().membership.findMany({
     orderBy: { createdAt: "desc" },
     where: { userId },
   });
@@ -16,7 +15,7 @@ const getMyTeams = async (userId: string): Promise<Array<MyTeam>> => {
 
   const [summaries, ownedSpaces] = await Promise.all([
     readTeamSummaries(teamIds),
-    prisma.space.findMany({
+    getPrisma().space.findMany({
       select: { id: true, teamId: true },
       where: { ownerId: userId, teamId: { in: teamIds } },
     }),

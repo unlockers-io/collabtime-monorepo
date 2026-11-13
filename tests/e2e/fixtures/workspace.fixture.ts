@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { prisma } from "@repo/db";
 import { Redis } from "ioredis";
 
+import { prisma } from "../helpers/database";
 import { createVerifiedUser } from "../support/users";
 import { webUrl } from "../urls";
 

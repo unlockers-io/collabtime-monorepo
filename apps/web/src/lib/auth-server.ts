@@ -1,11 +1,12 @@
 import { envAuthConfig } from "@repo/auth/env-config";
 import { createAuth, type Auth, type AuthConfig } from "@repo/auth/server";
-import { prisma } from "@repo/db";
 import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
 import { cache } from "react";
 
-import { getEnv } from "./env";
+import { getPrisma } from "@/lib/db";
+
+import { getAuthEnv, getEnv } from "./env";
 import { getMailerConfig } from "./mailer";
 import { log } from "./observability";
 import { getRedis, incrementWithExpiry, isRedisConfigured } from "./redis";
@@ -37,13 +38,15 @@ const getAuthConfig = (): AuthConfig => {
   }
 
   return {
-    ...envAuthConfig({ additionalAllowedHosts: ["collabtime.io", "www.collabtime.io"] }),
+    ...envAuthConfig(getAuthEnv(), {
+      additionalAllowedHosts: ["collabtime.io", "www.collabtime.io"],
+    }),
     extraPlugins: [nextCookies()],
     mailer: getMailerConfig(),
     onSessionCreated: (userId, { cookieHeader }) =>
       joinPrivateSpacesFromCookies(userId, cookieHeader),
     onUserCreated: (userId, { cookieHeader }) => joinPrivateSpacesFromCookies(userId, cookieHeader),
-    prisma,
+    prisma: getPrisma(),
     secondaryStorage: isRedisConfigured() ? redisSecondaryStorage() : undefined,
     secret,
   };

@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 
 import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { prisma } from "@repo/db";
 
 import { expect, test } from "../fixtures/workspace.fixture";
+import { prisma } from "../helpers/database";
 import { createVerifiedUser } from "../support/users";
 import { webUrl } from "../urls";
 

@@ -1,5 +1,4 @@
-import { prisma } from "@repo/db";
-
+import { getPrisma } from "@/lib/db";
 import { displayName, maskEmail } from "@/lib/display-name";
 import { isInvitationOpen } from "@/lib/invitation-expiry";
 import { type InvitationStore, prismaInvitationStore } from "@/lib/invitations";
@@ -28,7 +27,7 @@ type ViewerDeps = {
 
 const viewerDeps: ViewerDeps = {
   findJoinRequest: (teamId, userId) =>
-    prisma.joinRequest.findUnique({
+    getPrisma().joinRequest.findUnique({
       select: { status: true },
       where: { userId_teamId: { teamId, userId } },
     }),

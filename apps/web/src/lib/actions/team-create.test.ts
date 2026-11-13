@@ -1,6 +1,7 @@
 // @vitest-environment node
-import { prisma } from "@repo/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { getPrisma } from "@/lib/db";
 
 import { readTeamRecord } from "../team-store";
 
@@ -29,15 +30,15 @@ const createTeam = createTeamAction({
 const administer = async (count: number) => {
   const teamIds = Array.from({ length: count }, () => crypto.randomUUID());
 
-  await prisma.space.createMany({
+  await getPrisma().space.createMany({
     data: teamIds.map((teamId) => ({ ownerId: TEST_OWNER_ID, teamId })),
   });
-  await prisma.membership.createMany({
+  await getPrisma().membership.createMany({
     data: teamIds.map((teamId) => ({ role: "ADMIN" as const, teamId, userId: USER_ID })),
   });
 };
 
-const created = () => prisma.space.findUnique({ where: { teamId: TEAM_ID } });
+const created = () => getPrisma().space.findUnique({ where: { teamId: TEAM_ID } });
 
 beforeEach(async () => {
   guards.reset();
@@ -69,7 +70,7 @@ describe("create team", () => {
       name: "Team",
     });
     expect(
-      await prisma.membership.findUnique({
+      await getPrisma().membership.findUnique({
         where: { userId_teamId: { teamId: TEAM_ID, userId: USER_ID } },
       }),
     ).toMatchObject({ archivedAt: null, role: "ADMIN" });
@@ -83,7 +84,7 @@ describe("create team", () => {
       success: false,
     });
     expect(await readTeamRecord(VALID_UUID)).toBeNull();
-    expect(await prisma.membership.count({ where: { userId: USER_ID } })).toBe(0);
+    expect(await getPrisma().membership.count({ where: { userId: USER_ID } })).toBe(0);
   });
 
   it.each([49, 50])("enforces the administration limit at %i", async (count) => {

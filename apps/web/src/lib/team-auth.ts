@@ -1,7 +1,6 @@
-import { prisma } from "@repo/db";
-
 import type { ActionErrorEvent, ActionResult } from "@/lib/actions/types";
 import { getSession } from "@/lib/auth-server";
+import { getPrisma } from "@/lib/db";
 import { log } from "@/lib/observability";
 import type { TeamRole } from "@/types";
 
@@ -146,13 +145,13 @@ const createTeamAuth = (deps: TeamAuthDeps) => {
 };
 
 const findTeamMembership = (teamId: string, userId: string): Promise<Membership | null> =>
-  prisma.membership.findUnique({
+  getPrisma().membership.findUnique({
     select: { archivedAt: true, role: true },
     where: { userId_teamId: { teamId, userId } },
   });
 
 const findTeamSpace = (teamId: string): Promise<TeamSpace | null> =>
-  prisma.space.findUnique({
+  getPrisma().space.findUnique({
     select: { accessPassword: true, id: true, isPrivate: true, ownerId: true, teamId: true },
     where: { teamId },
   });

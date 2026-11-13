@@ -1,8 +1,8 @@
 "use server";
 
-import { prisma } from "@repo/db";
 import { after } from "next/server";
 
+import { getPrisma } from "@/lib/db";
 import { log } from "@/lib/observability";
 import { authenticate, authorizeTeamAdmin } from "@/lib/team-auth";
 
@@ -22,25 +22,25 @@ const joinRequestActions = createJoinRequestActions({
   authenticate,
   authorizeTeamAdmin,
   denyRequest: async (requestId) => {
-    await prisma.joinRequest.update({
+    await getPrisma().joinRequest.update({
       data: { status: "DENIED" },
       where: { id: requestId, status: "PENDING" },
     });
   },
   findRequest: (requestId) =>
-    prisma.joinRequest.findUnique({
+    getPrisma().joinRequest.findUnique({
       include: { user: true },
       where: { id: requestId, status: "PENDING" },
     }),
   grantMembership,
   listPending: async (teamId) => {
     const [requests, memberships] = await Promise.all([
-      prisma.joinRequest.findMany({
+      getPrisma().joinRequest.findMany({
         include: { user: { select: { email: true, id: true, name: true } } },
         orderBy: { createdAt: "asc" },
         where: { status: "PENDING", teamId },
       }),
-      prisma.membership.findMany({ select: { userId: true }, where: { teamId } }),
+      getPrisma().membership.findMany({ select: { userId: true }, where: { teamId } }),
     ]);
 
     return { memberUserIds: memberships.map((membership) => membership.userId), requests };
@@ -48,8 +48,8 @@ const joinRequestActions = createJoinRequestActions({
   loadJoinContext: async (teamId, userId) => {
     const [team, existingMembership, existingRequest] = await Promise.all([
       readTeamRecord(teamId),
-      prisma.membership.findUnique({ where: { userId_teamId: { teamId, userId } } }),
-      prisma.joinRequest.findUnique({ where: { userId_teamId: { teamId, userId } } }),
+      getPrisma().membership.findUnique({ where: { userId_teamId: { teamId, userId } } }),
+      getPrisma().joinRequest.findUnique({ where: { userId_teamId: { teamId, userId } } }),
     ]);
 
     return {
@@ -66,7 +66,7 @@ const joinRequestActions = createJoinRequestActions({
   },
   reportError: log.error,
   upsertRequest: (teamId, userId) =>
-    prisma.joinRequest.upsert({
+    getPrisma().joinRequest.upsert({
       create: { status: "PENDING", teamId, userId },
       update: { status: "PENDING" },
       where: { userId_teamId: { teamId, userId } },

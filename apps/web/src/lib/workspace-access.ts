@@ -4,7 +4,7 @@ import { envAuthConfig } from "@repo/auth/env-config";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
-import { getEnv } from "@/lib/env";
+import { getAuthEnv, getEnv } from "@/lib/env";
 import { log } from "@/lib/observability";
 
 const SPACE_ACCESS_COOKIE_PREFIX = "space-access-";
@@ -132,7 +132,7 @@ const issueAccessCookie = (spaceId: string, accessPasswordHash: string) => ({
   maxAge: TOKEN_TTL_SECONDS,
   name: accessCookieName(spaceId),
   sameSite: "lax" as const,
-  secure: envAuthConfig().useSecureCookies,
+  secure: envAuthConfig(getAuthEnv()).useSecureCookies,
   value: createAccessToken(spaceId, accessPasswordHash),
 });
 

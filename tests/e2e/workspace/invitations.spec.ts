@@ -1,6 +1,5 @@
-import { prisma } from "@repo/db";
-
 import { expect, test } from "../fixtures/workspace.fixture";
+import { prisma } from "../helpers/database";
 import { makeTestEmail } from "../helpers/test-email";
 import { createVerifiedUser } from "../support/users";
 

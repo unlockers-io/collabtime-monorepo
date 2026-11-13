@@ -1,10 +1,11 @@
-import { prisma, type Space } from "@repo/db";
+import type { Space } from "@repo/db";
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getSession } from "@/lib/auth-server";
 import { hashPassword } from "@/lib/crypto";
+import { getPrisma } from "@/lib/db";
 import { log, withEvlog } from "@/lib/observability";
 import { isSpaceOwner } from "@/lib/team-auth";
 import { publishTeamEvent } from "@/lib/team-events";
@@ -32,7 +33,7 @@ const loadOwnedSpace = async (spaceId: string): Promise<OwnedSpaceResult> => {
     return { ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
-  const space = await prisma.space.findUnique({
+  const space = await getPrisma().space.findUnique({
     where: { id: spaceId },
   });
 
@@ -93,7 +94,7 @@ export const PATCH = withEvlog(async (request: Request, { params }: Params) => {
 
     const updateData = { accessPassword, isPrivate: updates.visibility === "private" };
 
-    const updatedSpace = await prisma.space.update({
+    const updatedSpace = await getPrisma().space.update({
       data: updateData,
       where: { id: spaceId },
     });
@@ -124,7 +125,7 @@ export const DELETE = withEvlog(async (_request: Request, { params }: Params) =>
       return owned.response;
     }
 
-    await prisma.space.delete({
+    await getPrisma().space.delete({
       where: { id: spaceId },
     });
 

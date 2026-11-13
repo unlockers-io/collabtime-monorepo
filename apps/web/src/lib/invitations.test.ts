@@ -1,8 +1,9 @@
 // @vitest-environment node
-import { type Prisma, prisma } from "@repo/db";
+import type { Prisma } from "@repo/db";
 import type { TransactionalEmail } from "@repo/transactional";
 import { describe, expect, it, vi } from "vitest";
 
+import { getPrisma } from "@/lib/db";
 import type { TeamRecord } from "@/types";
 
 import {
@@ -42,7 +43,7 @@ type Deps = InvitationDeps<Prisma.TransactionClient>;
 type Overrides = Partial<Pick<Deps, "checkRateLimit" | "isMember" | "sendEmail">>;
 
 const rewrite = (id: string, data: { expiresAt?: null; teamId?: string }) =>
-  prisma.invitation.update({ data, where: { id } });
+  getPrisma().invitation.update({ data, where: { id } });
 
 const setup = async (team: TeamRecord | null = invitedTeam, overrides: Overrides = {}) => {
   const harness = createTestTeamStore();
