@@ -1,10 +1,11 @@
+import { displayName } from "@repo/identity";
 import { dehydrate } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LandingPage } from "@/components/landing";
 import { getSession } from "@/lib/auth-server";
-import { APP_DESCRIPTION_SHORT, APP_NAME, APP_TITLE } from "@/lib/constants";
+import { APP_DESCRIPTION_SHORT, APP_TITLE } from "@/lib/constants";
 import { getMyTeams, getPendingInvitations } from "@/lib/home-data";
 import { log } from "@/lib/observability";
 import { createQueryClient } from "@/lib/query-client";
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     description: APP_DESCRIPTION_SHORT,
     locale: "en_US",
-    siteName: APP_NAME,
+    siteName: displayName,
     title: APP_TITLE,
     type: "website",
     url: "/",

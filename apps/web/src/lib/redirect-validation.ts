@@ -1,6 +1,6 @@
 const FALLBACK_PATH = "/";
 
-const ANCHOR_ORIGIN = "https://collabtime.invalid";
+const ANCHOR_ORIGIN = "https://anchor.invalid";
 
 type RedirectParam = Array<string> | string | null | undefined;
 

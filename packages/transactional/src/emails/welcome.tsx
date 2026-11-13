@@ -1,6 +1,6 @@
+import { displayName } from "@repo/identity";
 import { Heading, Link, Text } from "react-email";
 
-import { APP_NAME } from "../brand";
 import { Button } from "../components/button";
 import { Divider } from "../components/divider";
 
@@ -14,9 +14,9 @@ type WelcomeEmailProps = {
 
 const WelcomeEmail = ({ userEmail, username, verificationUrl }: WelcomeEmailProps) => {
   return (
-    <BaseLayout preview={`Welcome to ${APP_NAME}. Verify your email to get started.`}>
+    <BaseLayout preview={`Welcome to ${displayName}. Verify your email to get started.`}>
       <Heading className="mt-0 mb-4 text-2xl font-semibold tracking-tight text-balance break-words text-foreground">
-        Welcome to {APP_NAME}.
+        Welcome to {displayName}.
       </Heading>
 
       <Text className="m-0 mb-6 text-base text-pretty break-words text-muted-foreground">
@@ -32,8 +32,8 @@ const WelcomeEmail = ({ userEmail, username, verificationUrl }: WelcomeEmailProp
       <Divider />
 
       <Text className="m-0 mb-4 text-sm text-muted-foreground">
-        If you didn&apos;t create an account with {APP_NAME}, you can safely ignore this email. The
-        verification link expires in 1 hour.
+        If you didn&apos;t create an account with {displayName}, you can safely ignore this email.
+        The verification link expires in 1 hour.
       </Text>
 
       <Text className="m-0 mb-4 text-sm text-muted-foreground">

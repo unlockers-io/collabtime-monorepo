@@ -1,7 +1,8 @@
+import { displayName, origins } from "@repo/identity";
 import { parseFont, svgText } from "@repo/social-image";
 import { ImageResponse } from "next/og";
 
-import { APP_NAME, APP_TAGLINE, APP_TITLE, SITE_URL } from "@/lib/constants";
+import { APP_TAGLINE, APP_TITLE } from "@/lib/constants";
 import manrope from "@/lib/fonts/manrope-semibold.json" with { type: "json" };
 import { BRAND_INK, THEME_COLORS } from "@/lib/theme-colors";
 
@@ -49,8 +50,8 @@ const OpengraphImage = () =>
         </g>
       ))}
       <rect fill="none" height={24} stroke={BRAND_INK} strokeWidth={4} width={24} x={66} y={534} />
-      {svgText(APP_NAME, { color: BRAND_INK, font: display, size: 30, x: 110, y: 558 })}
-      {svgText(`Free and open source · ${new URL(SITE_URL).host}`, {
+      {svgText(displayName, { color: BRAND_INK, font: display, size: 30, x: 110, y: 558 })}
+      {svgText(`Free and open source · ${new URL(origins.web).host}`, {
         anchor: "end",
         color: COLORS.muted,
         size: 20,

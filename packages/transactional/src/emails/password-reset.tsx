@@ -1,6 +1,6 @@
+import { displayName } from "@repo/identity";
 import { Heading, Link, Text } from "react-email";
 
-import { APP_NAME } from "../brand";
 import { Button } from "../components/button";
 import { Card } from "../components/card";
 import { Divider } from "../components/divider";
@@ -23,7 +23,7 @@ const PasswordResetEmail = ({
   username,
 }: PasswordResetEmailProps) => {
   return (
-    <BaseLayout preview={`Reset your ${APP_NAME} password`}>
+    <BaseLayout preview={`Reset your ${displayName} password`}>
       <Heading className="mt-0 mb-4 text-2xl font-semibold tracking-tight text-balance break-words text-foreground">
         Reset your password
       </Heading>
@@ -33,7 +33,7 @@ const PasswordResetEmail = ({
       </Text>
 
       <Text className="m-0 mb-6 text-base text-pretty break-words text-muted-foreground">
-        We received a request to reset the password on your {APP_NAME} account. If you made this
+        We received a request to reset the password on your {displayName} account. If you made this
         request, use the button below to set a new password.
       </Text>
 
