@@ -41,6 +41,28 @@ describe("sendTransactionalEmail", () => {
     });
   });
 
+  it("stamps the template with the year the email is sent", async () => {
+    vi.useFakeTimers({ now: new Date("2031-03-01T00:00:00Z"), toFake: ["Date"] });
+
+    try {
+      await sendTransactionalEmail(
+        {
+          recipientEmail: "owner@example.com",
+          requesterName: "Ada",
+          teamId: "team-1",
+          teamName: "Ops",
+          teamUrl: "https://collabtime.io/t/ops",
+          type: "join-request-received",
+        },
+        { transport },
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(sendEmailMock.mock.calls[0]?.[0].template.props).toMatchObject({ year: 2031 });
+  });
+
   it("falls back to the default from when the mailer omits it", async () => {
     await sendTransactionalEmail(
       {

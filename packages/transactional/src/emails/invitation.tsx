@@ -14,6 +14,7 @@ type InvitationEmailProps = {
   recipientEmail: string;
   teamName: string;
   teamUrl: string;
+  year: number;
 };
 
 const InvitationEmail = ({
@@ -22,10 +23,12 @@ const InvitationEmail = ({
   recipientEmail,
   teamName,
   teamUrl,
+  year,
 }: InvitationEmailProps) => {
   return (
     <BaseLayout
       preview={`${inviterName} invited you to join ${teamLabel(teamName)} on ${displayName}`}
+      year={year}
     >
       <Heading className="mt-0 mb-4 text-2xl font-semibold tracking-tight text-balance break-words text-foreground">
         You&apos;ve been invited

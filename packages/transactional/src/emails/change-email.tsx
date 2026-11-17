@@ -11,11 +11,12 @@ type ChangeEmailProps = {
   currentEmail: string;
   newEmail: string;
   username?: string;
+  year: number;
 };
 
-const ChangeEmail = ({ changeUrl, currentEmail, newEmail, username }: ChangeEmailProps) => {
+const ChangeEmail = ({ changeUrl, currentEmail, newEmail, username, year }: ChangeEmailProps) => {
   return (
-    <BaseLayout preview={`Confirm your new ${displayName} account email address.`}>
+    <BaseLayout preview={`Confirm your new ${displayName} account email address.`} year={year}>
       <Heading className="mt-0 mb-4 text-2xl font-semibold tracking-tight text-balance break-words text-foreground">
         Confirm your new email
       </Heading>
