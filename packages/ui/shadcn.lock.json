@@ -70,7 +70,7 @@
     "src/components/spinner.tsx": {
       "registry": "@shadcn/spinner",
       "registrySha256": "d949d0b91ff34620eecf2bb359536fd3e6942b518dc0a396b77fd02a90661b61",
-      "sha256": "0f2048b2acfc98ceed642f8df93d3ce010940746f063818ae6c62fecf0abbd0a"
+      "sha256": "890d09b7469b0f9ea6dd34314575862d96bd9614b7441204e238459e46d87dbe"
     },
     "src/components/switch.tsx": {
       "registry": "@shadcn/switch",
