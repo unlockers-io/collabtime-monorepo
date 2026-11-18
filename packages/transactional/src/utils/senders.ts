@@ -84,12 +84,12 @@ type TransactionalEmail =
 
 type EmailBuild = { subject: string; template: React.ReactElement; to: string };
 
-const buildEmail = (email: TransactionalEmail): EmailBuild => {
+const buildEmail = (email: TransactionalEmail, year: number): EmailBuild => {
   switch (email.type) {
     case "join-request-received": {
       return {
         subject: `${email.requesterName} requested to join ${teamLabel(email.teamName)}`,
-        template: React.createElement(JoinRequestReceived, email),
+        template: React.createElement(JoinRequestReceived, { ...email, year }),
         to: email.recipientEmail,
       };
     }
@@ -97,7 +97,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
     case "join-request-decided": {
       return {
         subject: `Your request to join ${teamLabel(email.teamName)} was ${email.decision}`,
-        template: React.createElement(JoinRequestDecided, email),
+        template: React.createElement(JoinRequestDecided, { ...email, year }),
         to: email.recipientEmail,
       };
     }
@@ -105,7 +105,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
     case "invitation-decided": {
       return {
         subject: `${email.inviteeName} ${email.decision} your invitation to ${teamLabel(email.teamName)}`,
-        template: React.createElement(InvitationDecided, email),
+        template: React.createElement(InvitationDecided, { ...email, year }),
         to: email.recipientEmail,
       };
     }
@@ -118,6 +118,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
           currentEmail: email.currentEmail,
           newEmail: email.newEmail,
           username: email.username,
+          year,
         }),
         to: email.currentEmail,
       };
@@ -132,6 +133,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
           recipientEmail: email.recipientEmail,
           teamName: email.teamName,
           teamUrl: email.teamUrl,
+          year,
         }),
         to: email.recipientEmail,
       };
@@ -146,6 +148,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
           resetUrl: email.resetUrl,
           userEmail: email.userEmail,
           username: email.username,
+          year,
         }),
         to: email.userEmail,
       };
@@ -159,6 +162,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
           signInUrl: email.signInUrl,
           userEmail: email.userEmail,
           username: email.username,
+          year,
         }),
         to: email.userEmail,
       };
@@ -174,6 +178,7 @@ const buildEmail = (email: TransactionalEmail): EmailBuild => {
           userEmail: email.userEmail,
           username: email.username,
           verificationUrl: email.verificationUrl,
+          year,
         }),
         to: email.userEmail,
       };
@@ -194,7 +199,7 @@ const buildTags = (email: TransactionalEmail) => [
 
 const createTransactionalEmailSender =
   (deliver: typeof sendEmail) => (email: TransactionalEmail, config: MailerConfig) => {
-    const { subject, template, to } = buildEmail(email);
+    const { subject, template, to } = buildEmail(email, new Date().getFullYear());
     const from = config.from !== undefined && config.from !== "" ? config.from : DEFAULT_FROM;
 
     return deliver({

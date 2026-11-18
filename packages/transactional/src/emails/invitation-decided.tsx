@@ -7,13 +7,15 @@ type Props = {
   inviteeName: string;
   teamName: string;
   teamUrl: string;
+  year: number;
 };
 
-const InvitationDecided = ({ decision, inviteeName, teamName, teamUrl }: Props) => (
+const InvitationDecided = ({ decision, inviteeName, teamName, teamUrl, year }: Props) => (
   <TeamNotification
     heading={`Invitation ${decision}`}
     message={`${inviteeName} ${decision} your invitation to ${teamLabel(teamName)}.`}
     teamUrl={teamUrl}
+    year={year}
   />
 );
 
