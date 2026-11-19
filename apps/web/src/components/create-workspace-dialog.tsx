@@ -16,7 +16,7 @@ import { useClientReady } from "@repo/ui/hooks/use-client-ready";
 import { focusFirstInvalidField } from "@repo/ui/lib/focus-first-invalid-field";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useId, useState, useTransition } from "react";
 import { z } from "zod";
 
 import { TextField } from "@/components/text-field";
@@ -37,6 +37,7 @@ type Props = {
 export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isNavigating, startNavigation] = useTransition();
   const id = useId();
   const ready = useClientReady();
 
@@ -59,8 +60,9 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
           return;
         }
 
-        setOpen(false);
-        onCreated(result.data);
+        startNavigation(() => {
+          onCreated(result.data);
+        });
       } catch {
         setError("Could not create your workspace. Please try again.");
       }
@@ -118,7 +120,7 @@ export const CreateWorkspaceDialogView = ({ createWorkspace, onCreated }: Props)
           <form.Subscribe
             selector={(state) => ({
               isEmpty: state.values.name.trim() === "",
-              isSubmitting: state.isSubmitting,
+              isSubmitting: state.isSubmitting || isNavigating,
             })}
           >
             {({ isEmpty, isSubmitting }) => (
