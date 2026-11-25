@@ -46,6 +46,9 @@ importers:
       fallow:
         specifier: ^3.48.0
         version: 3.48.0
+      fallow-type-aware:
+        specifier: ^3.48.0
+        version: 3.48.0(tsrs@0.25.0-ts7.1.0-beta)
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -3835,6 +3838,16 @@ packages:
 
   exsolve@1.0.8:
     resolution: {integrity: sha512-LmDxfWXwcTArk8fUEnOfSZpHOJ6zOMUJKOtFLFqJLoKJetuQG874Uc7/Kki7zFLzYybmZhp1M7+98pfMqeX8yA==}
+
+  fallow-type-aware@3.48.0:
+    resolution: {integrity: sha512-iBY7VlKv1v2CWkrKEsw0HhhIOaQY0ljBmm6w9jpX86AGkDTzB+eHUdTLnYV6IAYuWsKkq9PLZCW1uWmCWN9J/g==}
+    engines: {node: '>=20'}
+    hasBin: true
+    peerDependencies:
+      tsrs: '*'
+    peerDependenciesMeta:
+      tsrs:
+        optional: true
 
   fallow@3.48.0:
     resolution: {integrity: sha512-HtxB5bT7SORwgZ3pbq3BOTfKBHQbPZOwSapDFNljJXepzMVS+Z8H/9CMjTq4GZopVTNBRGIrxNzWaF5bYvs8Yg==}
@@ -8498,6 +8511,12 @@ snapshots:
   expect-type@1.4.0: {}
 
   exsolve@1.0.8: {}
+
+  fallow-type-aware@3.48.0(tsrs@0.25.0-ts7.1.0-beta):
+    dependencies:
+      typescript: 7.0.2
+    optionalDependencies:
+      tsrs: 0.25.0-ts7.1.0-beta
 
   fallow@3.48.0:
     dependencies:

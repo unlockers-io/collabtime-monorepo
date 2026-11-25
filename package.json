@@ -44,6 +44,7 @@
     "@types/node": "^26.6.6",
     "better-auth": "^1.7.28",
     "fallow": "^3.48.0",
+    "fallow-type-aware": "^3.48.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.2",
     "oxfmt": "^0.80.0",
