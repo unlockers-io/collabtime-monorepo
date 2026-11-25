@@ -5,6 +5,8 @@ overrides:
   deepmerge-ts: "^8.0.0"
   mysql2: "^3.23.1"
   "next@>=16.0.0 <16.4.1": "^16.4.1"
+  # shortcut: @sentry/node-core 10 peers @opentelemetry/api <1.10 and a second copy gives next a no-op tracer, drop with sentry 11
+  "@opentelemetry/api": "1.9.1"
 
 auditConfig:
   ignoreGhsas:
