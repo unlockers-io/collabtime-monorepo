@@ -21,10 +21,10 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@base-ui/react": "^1.8.0",
+    "@base-ui/react": "^1.9.0",
     "class-variance-authority": "^0.7.1",
-    "cn": "^0.4.0",
-    "lucide-react": "^1.48.0",
+    "cn": "^0.5.2",
+    "lucide-react": "^1.79.0",
     "next-themes": "^0.4.6",
     "shadcn": "^4.23.0",
     "sonner": "^2.0.8",
@@ -33,13 +33,13 @@
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/postcss": "^4.3.5",
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19.3.0",
-    "postcss": "^8.5.28",
-    "tailwindcss": "^4.3.3",
+    "postcss": "^8.5.33",
+    "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.1"
+    "vitest": "^5.1.1"
   },
   "peerDependencies": {
     "react": "^19.0.0"

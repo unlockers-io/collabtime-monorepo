@@ -26,14 +26,14 @@
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
-    "better-auth": "^1.7.20",
-    "hono": "^4.13.9",
+    "better-auth": "^1.7.28",
+    "hono": "^4.13.21",
     "next": "^16.4.6",
-    "react": "^19.3.0",
+    "react": "^19.3.1",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.1"
+    "vitest": "^5.1.1"
   },
   "peerDependencies": {
     "better-auth": "^1.7.3",

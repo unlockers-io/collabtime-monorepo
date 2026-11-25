@@ -32,28 +32,28 @@
     "check:shadcn": "node .github/ci/check-shadcn.mjs"
   },
   "dependencies": {
-    "ioredis": "^6.0.0"
+    "ioredis": "^6.1.0"
   },
   "devDependencies": {
-    "@next/playwright": "^16.3.6",
-    "@playwright/test": "^1.63.0",
+    "@next/playwright": "^16.4.6",
+    "@playwright/test": "^1.65.1",
     "@repo/db": "workspace:*",
     "@repo/portless-env": "workspace:*",
     "@repo/transactional": "workspace:*",
     "@shadcn/lint": "0.2.0",
-    "@types/node": "^26.6.2",
-    "better-auth": "^1.7.20",
-    "fallow": "^3.28.0",
+    "@types/node": "^26.6.6",
+    "better-auth": "^1.7.28",
+    "fallow": "^3.48.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.5.1",
-    "oxfmt": "^0.70.0",
+    "lint-staged": "^17.6.2",
+    "oxfmt": "^0.80.0",
     "oxlint": "^1.94.0",
     "oxlint-config-awesomeness": "^5.1.0",
-    "oxlint-plugin-react-doctor": "^0.9.14",
+    "oxlint-plugin-react-doctor": "^0.9.23",
     "tsrs": "0.25.0-ts7.1.0-beta",
-    "turbo": "^2.11.3",
+    "turbo": "^2.11.13",
     "zod": "^4.6.7",
-    "zod-compiler": "^2.0.7"
+    "zod-compiler": "^2.0.14"
   },
   "lint-staged": {
     "!(*.d).{ts,tsx,mts,cts,js,jsx,mjs,cjs}": [
