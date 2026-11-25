@@ -18,8 +18,8 @@ import { toast } from "sonner";
 
 import { useTeamWrite } from "@/hooks/use-team-write";
 
-import type { ParsedRow } from "./import-members-dialog/parse-csv";
 import { parseCSV } from "./import-members-dialog/parse-csv";
+import type { ParsedRow } from "./import-members-dialog/parse-csv";
 import { PreviewTable } from "./import-members-dialog/preview-table";
 import { UploadForm } from "./import-members-dialog/upload-form";
 

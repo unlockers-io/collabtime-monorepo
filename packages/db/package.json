@@ -21,20 +21,20 @@
     "postinstall": "pnpm run db:generate"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "^7.10.0",
-    "better-auth": "^1.7.20",
-    "dotenv": "^17.4.2",
-    "pg": "^8.23.0"
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "better-auth": "^1.7.28",
+    "dotenv": "^18.0.10",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.6",
     "@types/pg": "8.23.1",
     "prisma": "^7.10.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.1"
+    "vitest": "^5.1.1"
   }
 }

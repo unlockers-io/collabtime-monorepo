@@ -18,7 +18,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@base-ui/react": "^1.8.0",
+    "@base-ui/react": "^1.9.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -31,18 +31,18 @@
     "@repo/social-image": "workspace:*",
     "@repo/transactional": "workspace:*",
     "@repo/ui": "workspace:*",
-    "@sentry/nextjs": "^10.75.3",
+    "@sentry/nextjs": "^10.78.0",
     "@tanstack/react-form": "^1.33.5",
-    "@tanstack/react-query": "^5.103.2",
+    "@tanstack/react-query": "^5.108.4",
     "bcryptjs": "^3.0.3",
-    "better-auth": "^1.7.20",
-    "ioredis": "^6.0.0",
-    "lucide-react": "^1.48.0",
-    "motion": "^13.4.3",
+    "better-auth": "^1.7.28",
+    "ioredis": "^6.1.0",
+    "lucide-react": "^1.79.0",
+    "motion": "^14.14.0",
     "next": "^16.4.6",
     "next-themes": "^0.4.6",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "skullet": "0.0.3",
     "sonner": "^2.0.8",
     "zod": "^4.6.7"
@@ -50,15 +50,15 @@
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@tailwindcss/postcss": "^4.3.3",
-    "@testing-library/jest-dom": "^7.0.1",
+    "@tailwindcss/postcss": "^4.3.5",
+    "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.3",
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "tailwindcss": "^4.3.3",
+    "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.1"
+    "vitest": "^5.1.1"
   }
 }

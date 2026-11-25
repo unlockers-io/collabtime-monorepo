@@ -19,20 +19,20 @@
   },
   "dependencies": {
     "@repo/identity": "workspace:*",
-    "resend": "^6.29.0",
+    "resend": "^6.39.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@react-email/ui": "^6.11.0",
+    "@react-email/ui": "^6.11.16",
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "react-email": "^6.11.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-email": "^6.11.16",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.1"
+    "vitest": "^5.1.1"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0",

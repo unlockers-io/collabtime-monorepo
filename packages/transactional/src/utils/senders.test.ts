@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Transport } from "../transport";
 
 import type { sendEmail } from "./send-email";
-import type { TransactionalEmail } from "./senders";
 import { createTransactionalEmailSender } from "./senders";
+import type { TransactionalEmail } from "./senders";
 
 const sendEmailMock = vi.fn<typeof sendEmail>();
 const sendTransactionalEmail = createTransactionalEmailSender(sendEmailMock);
