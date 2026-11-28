@@ -1,6 +1,7 @@
 ---
 title: 'oxlint 1.95 cannot lint with the pinned tsrs, and the newer tsrs is blocked by trustPolicy'
 severity: 'minor'
+issue: 'unlockers-io/collabtime-monorepo#378'
 ---
 
 ## Expected Behavior

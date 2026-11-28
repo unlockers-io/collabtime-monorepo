@@ -1,6 +1,7 @@
 ---
 title: 'fontkit 3 breaks the build, the opengraph image fails to prerender'
 severity: 'minor'
+issue: 'unlockers-io/collabtime-monorepo#379'
 ---
 
 ## Expected Behavior
